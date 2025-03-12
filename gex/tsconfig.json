@@ -1,0 +1,52 @@
+﻿{
+	"compileOnSave": true,
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "es6",
+        "lib": [ "es2015", "dom" ],
+        "outDir": "build",
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "moduleResolution": "node",
+
+        "baseUrl": "./src",
+        "paths": {
+            "vue": [ "../node_modules/vue/types/index" ],
+            "vuex": [ "../node_modules/vuex/types/index" ],
+            "moment": [ "../node_modules/moment/moment" ],
+            // "chart.js/*": [ "../node_modules/chart.js/*" ],
+            "chartjs-plugin-annotation": [ "../node_modules/chartjs-plugin-annotation" ],
+            "chartjs-plugin-datalabels": [ "../node_modules/chartjs-plugin" ],
+            "axios": [ "../node_modules/axios/index" ],
+            "loglevel": [ "../node_modules/loglevel/index" ],
+            "signalR": [ "../node_modules/@microsoft/signalr/src/index" ],
+            "@popperjs": [ "../node_modules/@popperjs/core/index" ],
+            "flatpickr": [ "../node_modules/flatpickr/dist/typings" ],
+            "node_modules/*": [ "../node_modules/*" ],
+            "vue-fragment": [ "../node_modules/vue-fragment/types" ],
+            "graphology": [ "../node_modules/graphology-types/index" ],
+            "graphology-layout-forceatlas2": [ "../node_modules/graphology-layout-forceatlas2/index" ],
+            "graphology-layout-forceatlas2-worker": [ "../node_modules/graphology-layout-forceatlas2/worker" ],
+            "sigma": [ "../node_modules/sigma/index" ],
+            "*": [ "./*" ]
+        },
+
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "skipLibCheck": true,
+        "strictPropertyInitialization": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "noEmitOnError": true
+    },
+    "include": [
+        "./src/**/*"
+    ],
+    "exclude": [
+        "./node_modules/**/*",
+        "../node_modules/**/*"
+    ]
+}

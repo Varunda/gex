@@ -1,0 +1,51 @@
+﻿using Dapper.ColumnMapper;
+using gex.Code;
+
+namespace gex.Models.Event {
+
+    [DapperColumnsMapped]
+    public class GameEvent {
+
+        [ColumnMapping("game_id")]
+        public string GameID { get; set; } = "";
+
+        public string Action { get; set; } = GameActionType.UNKNOWN;
+
+        [ColumnMapping("frame")]
+        public long Frame { get; set; }
+
+    }
+
+    public sealed class GameActionType {
+
+        public const string UNKNOWN = "unknown";
+
+        public const string INIT = "init";
+
+        public const string START = "start";
+
+        public const string WIND_UPDATE = "wind_update";
+
+        public const string TEAM_DIED = "team_died";
+
+        public const string UNIT_DEF = "unit_def";
+
+        public const string TEAM_STATS = "team_stats";
+
+        public const string UNIT_CREATED = "unit_created";
+
+        public const string UNIT_KILLED = "unit_killed";
+
+        public const string UNIT_GIVEN = "unit_given";
+
+        public const string UNIT_TAKEN = "unit_taken";
+
+        public const string ARMY_VALUE_UPDATE = "army_value_update";
+
+        public const string END = "end";
+
+        public const string SHUTDOWN = "shutdown";
+
+    }
+
+}

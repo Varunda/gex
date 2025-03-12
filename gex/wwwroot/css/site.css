@@ -1,0 +1,187 @@
+﻿[v-cloak] {
+    display: none;
+}
+
+.strike::before, strike::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+.strike::before {
+    margin-right: 0.25rem;
+    max-width: 1rem;
+}
+.strike::after {
+    margin-left: 0.25rem;
+}
+
+.focus-parent {
+    width: 100%;
+    display: flex;
+    height: 2rem;
+    border: 2px solid black;
+    border-radius: 3px;
+}
+
+.focus-entry {
+    text-align: center;
+    line-height: 2rem;
+}
+
+@-moz-keyframes spin {
+    from { -moz-transform: rotate(0deg); }
+    to { -moz-transform: rotate(360deg); }
+}
+@-webkit-keyframes spin {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+@keyframes spin {
+    from {transform:rotate(0deg);}
+    to {transform:rotate(360deg);}
+}
+
+.loading {
+    animation-name: spin;
+    animation-duration: 1000ms;
+    animation-iteration-count: infinite;
+}
+
+.wt-link {
+    color: var(--green);
+    cursor: pointer;
+}
+
+.wt-link:hover {
+    text-decoration: underline;
+    color: #007053;
+}
+
+:root {
+    --color-vs: #cf17cf;
+    --color-nc: #3f7fff;
+    --color-tr: #ea5e5e;
+    --color-ns: #cbcbcb;
+
+    --color-bg-vs: #9e1acf;
+    --color-bg-nc: #1e56c6;
+    --color-bg-tr: #ba2616;
+    --color-bg-ns: #cbcbcb;
+
+    --color-bg-1: #9e1acf;
+    --color-bg-2: #1e56c6;
+    --color-bg-3: #ba2616;
+    --color-bg-4: #cbcbcb;
+
+    --color-dark-bg-1: #30083f;
+    --color-dark-bg-2: #091a3c;
+    --color-dark-bg-3: #380b07;
+    --color-dark-bg-4: #292929;
+
+    --color-bgc-1: 258, 26, 207;
+    --color-bgc-2: 30, 86, 198;
+    --color-bgc-3: 186, 38, 22;
+    --color-bgc-4: 203, 203, 203;
+}
+
+.wt-header {
+    background-color: var(--secondary);
+    padding: 0.25rem 0.5rem;
+    border-top: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.flex-basis-0 {
+    flex-basis: 0;
+}
+
+.app-busy-sm {
+    max-height: 1rem;
+    vertical-align: middle;
+}
+
+.app-busy {
+    max-height: 2rem;
+    vertical-align: middle;
+}
+
+.app-busy-lg {
+    max-height: 5rem;
+    vertical-align: middle;
+}
+
+.table-sticky-header {
+    border-collapse: collapse;
+}
+
+.table-sticky-header thead tr th {
+    position: sticky;
+    top: 0;
+    border-bottom: 0;
+    border-top: 0;
+    background-color: #222;
+    box-shadow: inset 0px -2px #444;
+}
+
+.th-border-top-0 > * {
+    border-top: 0 !important;
+}
+
+@font-face {
+    font-family: "ps2";
+    src: url("/Geo-Md.ttf");
+}
+
+.ps2-text {
+    line-height: 1;
+    font-family: ps2;
+}
+
+.flex-grow-2 {
+    flex-grow: 2;
+}
+
+.d-grid {
+    display: grid;
+}
+
+@keyframes slide-right-in {
+    0%      { right: -500px; }
+    100%    { right: 0px; }
+}
+
+@keyframes slide-right-out {
+    0%      { right: 0px; }
+    100%    { right: -500px; }
+}
+
+@keyframes slide-left-in {
+    0%      { left: -500px; }
+    100%    { left: 0px; }
+}
+
+@keyframes slide-left-out {
+    0%      { left: 0px; }
+    100%    { left: -500px; }
+}
+
+@keyframes slide-300-in {
+    0%      { right: -300px; }
+    100%    { right: 0px; }
+}
+
+@keyframes slide-300-out {
+    0%      { right: 0px; }
+    100%    { right: -300px; }
+}
+
+.slide-300-in {
+    animation: slide-right-in 1s forwards;
+    z-index: 10;
+}
+
+.slide-300-out {
+    animation: slide-right-out 1s forwards;
+    z-index: 10;
+}
