@@ -3,8 +3,10 @@ using gex.Models.Db;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
+using gex.Services.Db.Readers;
 using gex.Services.Demofile;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -20,9 +22,9 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         private readonly BarMatchDb _MatchDb;
         private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
-        private readonly BarMatchPlayerDb _MatchPlayerDb;
         private readonly BarMatchSpectatorDb _MatchSpectatorDb;
         private readonly BarMatchChatMessageDb _MatchChatMessageDb;
+        private readonly BarMatchPlayerRepository _PlayerRepository;
 
         private readonly BarMatchProcessingDb _ProcessingDb;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -34,8 +36,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             BarMatchProcessingDb processingDb, IOptions<FileStorageOptions> options,
             BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             BarMatchDb matchDb, BarMatchAllyTeamDb matchAllyTeamDb,
-            BarMatchPlayerDb matchPlayerDb, BarMatchSpectatorDb matchSpectatorDb,
-            BarMatchChatMessageDb matchChatMessageDb) :
+            BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
+            BarMatchPlayerRepository playerRepository) :
 
         base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -45,14 +47,19 @@ namespace gex.Services.Hosted.QueueProcessor {
             _HeadlessRunQueue = headlessRunQueue;
             _MatchDb = matchDb;
             _MatchAllyTeamDb = matchAllyTeamDb;
-            _MatchPlayerDb = matchPlayerDb;
             _MatchSpectatorDb = matchSpectatorDb;
             _MatchChatMessageDb = matchChatMessageDb;
+            _PlayerRepository = playerRepository;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
 
-            _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}]");
+            _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}] [filename={entry.FileName}]");
+
+            if (string.IsNullOrEmpty(entry.FileName)) {
+                _Logger.LogError($"cannot parse replay file, filename was not given [gameID={entry.GameID}] [filename={entry.FileName}]");
+                return false;
+            }
 
             Stopwatch stepTimer = Stopwatch.StartNew();
 
@@ -62,14 +69,14 @@ namespace gex.Services.Hosted.QueueProcessor {
             if (existingMatch != null && entry.Force == false) {
                 _Logger.LogInformation($"replay file already parsed [gameID={entry.GameID}]");
 
-                List<BarMatchPlayer> players = await _MatchPlayerDb.GetByGameID(entry.GameID);
+                List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(entry.GameID);
                 runHeadless |= players.Count == 2;
             } else {
                 if (entry.Force == true) {
                     Stopwatch timer = Stopwatch.StartNew();
                     _Logger.LogInformation($"deleting database data due to forced run [gameID={entry.GameID}]");
                     await _MatchAllyTeamDb.DeleteByGameID(entry.GameID);
-                    await _MatchPlayerDb.DeleteByGameID(entry.GameID);
+                    await _PlayerRepository.DeleteByGameID(entry.GameID);
                     await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
                     await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
                     await _MatchDb.Delete(entry.GameID);
@@ -103,7 +110,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 foreach (BarMatchPlayer player in parsed.Players) {
-                    await _MatchPlayerDb.Insert(player);
+                    await _PlayerRepository.Insert(player);
                 }
                 long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
@@ -133,10 +140,12 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.ReplayParsed = DateTime.UtcNow;
             await _ProcessingDb.Upsert(processing);
 
-            if (runHeadless) {
+            if (runHeadless && (entry.ForceForward == true || processing.ReplaySimulated == null)) {
+                _Logger.LogDebug($"putting entry into headless run queue [gameID={entry.GameID}]");
                 _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() {
                     GameID = entry.GameID,
-                    Force = entry.Force
+                    Force = entry.Force,
+                    ForceForward = entry.ForceForward
                 });
             }
 

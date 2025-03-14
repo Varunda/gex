@@ -180,6 +180,7 @@ namespace gex.Services.Demofile {
 
                 }
             }
+
             match.HostSettings = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(hostSettings));
 
             match.GameSettings = game.GetRequiredChild("modoptions");
@@ -196,6 +197,8 @@ namespace gex.Services.Demofile {
             if (header.PacketOffset != reader.Index) {
                 return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
             }
+
+            byte[] winningAllyTeams = [];
 
             int packetCount = 0;
             while (reader.Index < header.StatOffset) {
@@ -234,7 +237,9 @@ namespace gex.Services.Demofile {
                         _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
                     } else {
                         player.StartingPosition = new System.Numerics.Vector3() {
-                            X = x, Y = y, Z = z
+                            X = x,
+                            Y = y,
+                            Z = z
                         };
                     }
 
@@ -263,7 +268,11 @@ namespace gex.Services.Demofile {
                             }
                         }
                     }
-
+                } else if (packet.PacketType == BarPacketType.GAME_OVER) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte size = packetReader.ReadByte();
+                    byte playerNum = packetReader.ReadByte();
+                    winningAllyTeams = packetReader.ReadAll();
                 } else if (packet.PacketType == BarPacketType.QUIT) {
                     _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}]");
                     break;
@@ -337,6 +346,12 @@ namespace gex.Services.Demofile {
             demofile.TeamStatistics = teamStats;
 
             match.Players = players.Values.ToList();
+            foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+                if (winningAllyTeams.Contains((byte)allyTeam.AllyTeamID)) {
+                    allyTeam.Won = true;
+                }
+                allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
+            }
 
             return match;
         }

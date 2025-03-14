@@ -1,4 +1,5 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Code;
+using gex.Code.ExtensionMethods;
 using gex.Models;
 using gex.Models.Event;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -7,9 +8,11 @@ using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,9 +21,18 @@ namespace gex.Services.BarApi {
     public class ActionLogParser {
 
         private readonly ILogger<ActionLogParser> _Logger;
+        private readonly JsonSerializerOptions _JsonOptions;
 
         public ActionLogParser(ILogger<ActionLogParser> logger) {
             _Logger = logger;
+
+            _JsonOptions = new JsonSerializerOptions() {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver() {
+                    Modifiers = {
+                        JsonExtensions.UseActionLogNames<JsonActionLogPropertyNameAttribute>()
+                    }
+                }
+            };
         }
 
         public async Task<Result<GameOutput, string>> Parse(string gameID, string file, CancellationToken cancel) {
@@ -54,52 +66,92 @@ namespace gex.Services.BarApi {
                     }
 
                     else if (action == GameActionType.WIND_UPDATE) {
-                        GameEventWindUpdate e = JsonSerializer.Deserialize<GameEventWindUpdate>(json)!;
+                        GameEventWindUpdate e = Serialize<GameEventWindUpdate>(json)!;
                         output.WindUpdates.Add(e);
                         ev = e;
                     }
 
                     else if (action == GameActionType.TEAM_DIED) {
-                        GameEventTeamDied e = JsonSerializer.Deserialize<GameEventTeamDied>(json)!;
+                        GameEventTeamDied e = Serialize<GameEventTeamDied>(json)!;
                         output.TeamDiedEvents.Add(e);
                         ev = e;
                     } 
 
                     else if (action == GameActionType.UNIT_DEF) {
-                        GameEventUnitDef e = JsonSerializer.Deserialize<GameEventUnitDef>(json)!;
+                        GameEventUnitDef e = Serialize<GameEventUnitDef>(json)!;
                         output.UnitDefinitions.Add(e);
                         ev = e;
                     }
 
                     else if (action == GameActionType.TEAM_STATS) {
-                        GameEventTeamStats e = JsonSerializer.Deserialize<GameEventTeamStats>(json)!;
+                        GameEventTeamStats e = Serialize<GameEventTeamStats>(json)!;
                         output.TeamStats.Add(e);
                         ev = e;
                     } 
 
                     else if (action == GameActionType.UNIT_CREATED) {
-                        GameEventUnitCreated e = JsonSerializer.Deserialize<GameEventUnitCreated>(json)!;
+                        GameEventUnitCreated e = Serialize<GameEventUnitCreated>(json)!;
                         output.UnitsCreated.Add(e);
                         ev = e;
                     }
 
                     else if (action == GameActionType.UNIT_KILLED) {
-                        GameEventUnitKilled e = JsonSerializer.Deserialize<GameEventUnitKilled>(json)!;
+                        GameEventUnitKilled e = Serialize<GameEventUnitKilled>(json)!;
                         output.UnitsKilled.Add(e);
                         ev = e;
                     }
 
                     else if (action == GameActionType.UNIT_GIVEN) {
-                        ev = new GameEventUnitGiven();
+                        // somehow there are duplicate events here, from the game itself
+                        GameEventUnitGiven e = Serialize<GameEventUnitGiven>(json);
+                        e.Frame = frame;
+                        if (output.UnitsGiven.FirstOrDefault(iter => iter.Frame == e.Frame && iter.UnitID == e.UnitID) != null) {
+                            _Logger.LogWarning($"duplicate UnitGiven event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
+                        } else {
+                            output.UnitsGiven.Add(e);
+                        }
+
+                        ev = e;
                     }
 
                     else if (action == GameActionType.UNIT_TAKEN) {
-                        ev = new GameEventUnitTaken();
+                        GameEventUnitTaken e = Serialize<GameEventUnitTaken>(json);
+                        e.Frame = frame;
+                        if (output.UnitsTaken.FirstOrDefault(iter => iter.Frame == e.Frame && iter.UnitID == e.UnitID) != null) {
+                            _Logger.LogWarning($"duplicate UnitTaken event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
+                        } else {
+                            output.UnitsTaken.Add(e);
+                        }
+                        ev = e;
+                    }
+
+                    else if (action == GameActionType.FACTORY_UNIT_CREATE) {
+                        GameEventFactoryUnitCreated e = Serialize<GameEventFactoryUnitCreated>(json)!;
+                        output.FactoryUnitCreated.Add(e);
+                        ev = e;
                     }
 
                     else if (action == GameActionType.ARMY_VALUE_UPDATE) {
-                        GameEventArmyValueUpdate e = JsonSerializer.Deserialize<GameEventArmyValueUpdate>(json)!;
+                        GameEventArmyValueUpdate e = Serialize<GameEventArmyValueUpdate>(json)!;
                         output.ArmyValueUpdates.Add(e);
+                        ev = e;
+                    }
+
+                    else if (action == GameActionType.COMMANDER_POSITION_UPDATE) {
+                        GameEventCommanderPositionUpdate e = Serialize<GameEventCommanderPositionUpdate>(json);
+                        output.CommanderPositionUpdates.Add(e);
+                        ev = e;
+                    }
+
+                    else if (action == GameActionType.TRANSPORT_LOADED) {
+                        GameEventUnitTransportLoaded e = Serialize<GameEventUnitTransportLoaded>(json);
+                        output.TransportLoaded.Add(e);
+                        ev = e;
+                    }
+
+                    else if (action == GameActionType.TRANSPORT_UNLOADED) {
+                        GameEventUnitTransportUnloaded e = Serialize<GameEventUnitTransportUnloaded>(json);
+                        output.TransportUnloaded.Add(e);
                         ev = e;
                     }
 
@@ -149,6 +201,10 @@ namespace gex.Services.BarApi {
             _Logger.LogInformation($"parsed actions [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [file={file}]");
 
             return output;
+        }
+
+        private T Serialize<T>(JsonElement json) {
+            return JsonSerializer.Deserialize<T>(json, _JsonOptions)!;
         }
 
     }

@@ -90,6 +90,7 @@ namespace gex.Models {
             _JsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             _JsonOptions.Converters.Add(new DateTimeJsonConverter());
             _JsonOptions.Converters.Add(new TimeSpanJsonConverter());
+            _JsonOptions.Converters.Add(new Vector3JsonConverter());
         }
 
         public ApiResponseExecutor(ILoggerFactory logger, IHttpResponseStreamWriterFactory writerFactory) { 

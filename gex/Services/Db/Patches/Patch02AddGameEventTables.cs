@@ -25,9 +25,9 @@ namespace gex.Services.Db.Patches {
                     definition_name varchar NOT NULL,
                     name varchar NOT NULL,
                     tooltip varchar NOT NULL,
-                    metal_cost int NOT NULL,
-                    energy_cost int NOT NULL,
-                    health int NOT NULL,
+                    metal_cost double precision NOT NULL,
+                    energy_cost double precision NOT NULL,
+                    health double precision NOT NULL,
                     speed double precision NOT NULL,
                     build_time double precision NOT NULL,
                     unit_group varchar NOT NULL,
@@ -129,6 +129,128 @@ namespace gex.Services.Db.Patches {
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_event_team_stats_game_id ON game_event_team_stats (game_id);
+            
+                CREATE TABLE IF NOT EXISTS game_event_army_value_update (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    team_id int NOT NULL,
+                    value bigint NOT NULL,
+
+                    CONSTRAINT unq_army_value_update_game_id_frame_team_id UNIQUE (game_id, frame, team_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_army_value_update_game_id ON game_event_army_value_update (game_id);
+    
+                CREATE TABLE IF NOT EXISTS game_event_unit_taken (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    team_id int NOT NULL,
+                    new_team_id int NULL,
+                    definition_id int NOT NULL,
+                    unit_x double precision NOT NULL,
+                    unit_y double precision NOT NULL,
+                    unit_z double precision NOT NULL,
+                
+                    CONSTRAINT unq_unit_taken_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_unit_taken ON game_event_unit_taken (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_unit_given (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    team_id int NOT NULL,
+                    new_team_id int NOT NULL,
+                    definition_id int NOT NULL,
+                    unit_x double precision NOT NULL,
+                    unit_y double precision NOT NULL,
+                    unit_z double precision NOT NULL,
+                
+                    CONSTRAINT unq_unit_given_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_unit_given ON game_event_unit_given (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_wind_update (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    value double precision NOT NULL,
+
+                    CONSTRAINT unq_wind_update_game_id_frame UNIQUE (game_id, frame)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_wind_update_game_id ON game_event_wind_update (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_commander_position_update (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    unit_x double precision NOT NULL,
+                    unit_y double precision NOT NULL,
+                    unit_z double precision NOT NULL,
+
+                    CONSTRAINT unq_commander_position_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_commander_position_game_id ON game_event_commander_position_update (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_unit_transport_loaded (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    team_id int NOT NULL,
+                    definition_id int NOT NULL,
+                    transport_unit_id int NOT NULL,
+                    transport_team_id int NOT NULL,
+                    unit_x double precision NOT NULL,
+                    unit_y double precision NOT NULL,
+                    unit_z double precision NOT NULL,
+
+                    CONSTRAINT unq_transport_loaded_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_transport_loaded_game_id ON game_event_unit_transport_loaded (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_unit_transport_unloaded (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    team_id int NOT NULL,
+                    definition_id int NOT NULL,
+                    transport_unit_id int NOT NULL,
+                    transport_team_id int NOT NULL,
+                    unit_x double precision NOT NULL,
+                    unit_y double precision NOT NULL,
+                    unit_z double precision NOT NULL,
+
+                    CONSTRAINT unq_transport_unloaded_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_event_transport_unloaded_game_id ON game_event_unit_transport_unloaded (game_id);
+
+                CREATE TABLE IF NOT EXISTS game_event_factory_unit_created (
+                    id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                    game_id varchar NOT NULL,
+                    frame bigint NOT NULL,
+                    unit_id int NOT NULL,
+                    team_id int NOT NULL,
+                    definition_id int NOT NULL,
+                    factory_unit_id int NOT NULL,
+                    factory_definition_id int NOT NULL,
+                    
+                    CONSTRAINT unq_factory_unit_created_game_id_frame_unit_id UNIQUE (game_id, frame, unit_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_factory_unit_created_game_id ON game_event_factory_unit_created (game_id);
             ");
 
             await cmd.ExecuteNonQueryAsync();

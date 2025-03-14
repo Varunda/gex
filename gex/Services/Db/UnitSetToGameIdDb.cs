@@ -34,7 +34,8 @@ namespace gex.Services.Db {
                     game_id, hash
                 ) VALUES (
                     @GameID, @Hash
-                );
+                ) ON CONFLICT (game_id) DO UPDATE
+                    SET hash = @Hash;
             ");
 
             cmd.AddParameter("GameID", entry.GameID);

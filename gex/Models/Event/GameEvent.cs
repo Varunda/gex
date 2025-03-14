@@ -42,6 +42,14 @@ namespace gex.Models.Event {
 
         public const string ARMY_VALUE_UPDATE = "army_value_update";
 
+        public const string FACTORY_UNIT_CREATE = "factory_unit_created";
+
+        public const string COMMANDER_POSITION_UPDATE = "commander_position_update";
+
+        public const string TRANSPORT_LOADED = "transport_loaded";
+
+        public const string TRANSPORT_UNLOADED = "transport_unloaded";
+
         public const string END = "end";
 
         public const string SHUTDOWN = "shutdown";

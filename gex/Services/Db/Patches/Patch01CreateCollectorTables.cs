@@ -55,6 +55,7 @@ namespace gex.Services.Db.Patches {
                     game_id varchar NOT NULL,
                     ally_team_id int NOT NULL,
                     player_count int NOT NULL,
+                    won boolean NOT NULL,
                     start_box_top numeric NOT NULL,
                     start_box_bottom numeric NOT NULL,
                     start_box_left numeric NOT NULL,

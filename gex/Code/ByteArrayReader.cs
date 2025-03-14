@@ -42,6 +42,10 @@ namespace gex.Code {
             return Encoding.ASCII.GetString(span[..^1]);
         }
 
+        /// <summary>
+        ///     read the rest of the bytes
+        /// </summary>
+        /// <returns></returns>
         public byte[] ReadAll() {
             Span<byte> b = _Data.AsSpan(_Index);
             _Index += b.Length;

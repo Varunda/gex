@@ -1,13 +1,18 @@
-﻿using System.Text.Json.Serialization;
+﻿using Dapper.ColumnMapper;
+using gex.Code;
+using System.Text.Json.Serialization;
 
 namespace gex.Models.Event {
 
+    [DapperColumnsMapped]
     public class GameEventArmyValueUpdate : GameEvent {
 
-        [JsonPropertyName("teamID")]
+        [JsonActionLogPropertyName("teamID")]
+        [ColumnMapping("team_id")]
         public int TeamID { get; set; }
 
-        [JsonPropertyName("value")]
+        [JsonActionLogPropertyName("value")]
+        [ColumnMapping("value")]
         public long Value { get; set; }
 
     }

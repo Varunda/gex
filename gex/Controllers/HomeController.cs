@@ -42,5 +42,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult Match(string gameID) {
+            return View();
+        }
+
     }
 }

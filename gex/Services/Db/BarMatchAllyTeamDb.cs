@@ -30,10 +30,10 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_ally_team (
-                    game_id, ally_team_id, player_count,
+                    game_id, ally_team_id, player_count, won,
                     start_box_top, start_box_bottom, start_box_left, start_box_right
                 ) VALUES (
-                    @GameID, @AllyTeamID, @PlayerCount,
+                    @GameID, @AllyTeamID, @PlayerCount, @Won,
                     @StartBoxTop, @StartBoxBottom, @StartBoxLeft, @StartBoxRight
                 );
             ");
@@ -41,6 +41,7 @@ namespace gex.Services.Db {
             cmd.AddParameter("GameID", allyTeam.GameID);
             cmd.AddParameter("AllyTeamID", allyTeam.AllyTeamID);
             cmd.AddParameter("PlayerCount", allyTeam.PlayerCount);
+            cmd.AddParameter("Won", allyTeam.Won);
             cmd.AddParameter("StartBoxTop", allyTeam.StartBox.Top);
             cmd.AddParameter("StartBoxBottom", allyTeam.StartBox.Bottom);
             cmd.AddParameter("StartBoxLeft", allyTeam.StartBox.Left);

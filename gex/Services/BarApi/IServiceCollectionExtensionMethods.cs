@@ -11,6 +11,7 @@ namespace gex.Services.BarApi {
             services.AddSingleton<BarEngineDownloader>();
             services.AddSingleton<BarHeadlessInstance>();
             services.AddSingleton<ActionLogParser>();
+            services.AddSingleton<BarMapApi>();
         }
 
     }

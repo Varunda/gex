@@ -23,6 +23,17 @@ namespace gex.Services.Db {
             services.AddSingleton<GameEventUnitDefDb>();
             services.AddSingleton<UnitSetToGameIdDb>();
             services.AddSingleton<GameEventTeamStatsDb>();
+            services.AddSingleton<GameEventArmyValueUpdateDb>();
+            services.AddSingleton<GameEventWindUpdateDb>();
+            services.AddSingleton<GameEventCommanderPositionUpdateDb>();
+            services.AddSingleton<GameEventFactoryUnitCreatedDb>();
+            services.AddSingleton<GameEventUnitGivenDb>();
+            services.AddSingleton<GameEventUnitTakenDb>();
+            services.AddSingleton<GameEventTransportLoadedDb>();
+            services.AddSingleton<GameEventTransportUnloadedDb>();
+
+            // other
+            services.AddSingleton<BarMapDb>();
         }
 
     }

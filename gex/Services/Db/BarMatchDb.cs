@@ -3,6 +3,7 @@ using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -71,6 +72,30 @@ namespace gex.Services.Db {
             await conn.CloseAsync();
 
             return match;
+        }
+
+        /// <summary>
+        ///     get recent matches
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetRecent(int offset, int limit) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+                SELECT *
+                    FROM bar_match
+                    ORDER BY start_time DESC
+                    LIMIT {limit}
+                    OFFSET {offset}
+            ");
+
+            await cmd.PrepareAsync();
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd);
+            await conn.CloseAsync();
+
+            return matches;
         }
 
         public async Task Delete(string gameID) {

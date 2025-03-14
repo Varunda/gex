@@ -72,11 +72,15 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.ReplayDownloaded = DateTime.UtcNow;
             await _ProcessingDb.Upsert(processing);
 
-            _ParseQueue.Queue(new GameReplayParseQueueEntry() {
-                GameID = entry.GameID,
-                FileName = replay.FileName,
-                Force = entry.Force
-            });
+            if (entry.ForceForward == true || processing.ReplayParsed == null) {
+                _Logger.LogDebug($"putting entry into parse queue [gameID={entry.GameID}]");
+                _ParseQueue.Queue(new GameReplayParseQueueEntry() {
+                    GameID = entry.GameID,
+                    FileName = replay.FileName,
+                    Force = entry.Force,
+                    ForceForward = entry.ForceForward
+                });
+            }
 
             return true;
         }

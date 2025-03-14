@@ -7,27 +7,27 @@ namespace gex.Models.Event {
     [DapperColumnsMapped]
     public class GameEventUnitCreated : GameEvent {
 
-        [JsonPropertyName("unitID")]
+        [JsonActionLogPropertyName("unitID")]
         [ColumnMapping("unit_id")]
         public int UnitID { get; set; }
 
-        [JsonPropertyName("teamID")]
+        [JsonActionLogPropertyName("teamID")]
         [ColumnMapping("team_id")]
         public int TeamID { get; set; }
 
-        [JsonPropertyName("defID")]
+        [JsonActionLogPropertyName("defID")]
         [ColumnMapping("definition_id")]
         public int DefinitionID { get; set; }
 
-        [JsonPropertyName("unit_x")]
+        [JsonActionLogPropertyName("unit_x")]
         [ColumnMapping("unit_x")]
         public decimal UnitX { get; set; }
 
-        [JsonPropertyName("unit_y")]
+        [JsonActionLogPropertyName("unit_y")]
         [ColumnMapping("unit_y")]
         public decimal UnitY { get; set; }
 
-        [JsonPropertyName("unit_z")]
+        [JsonActionLogPropertyName("unit_z")]
         [ColumnMapping("unit_z")]
         public decimal UnitZ { get; set; }
 

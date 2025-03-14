@@ -10,6 +10,8 @@ namespace gex.Models.Db {
 
         public int PlayerCount { get; set; }
 
+        public bool Won { get; set; }
+
         public Rectangle StartBox { get; set; } = Rectangle.Zero;
 
     }

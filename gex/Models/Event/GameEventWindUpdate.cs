@@ -1,11 +1,15 @@
-﻿using System.Text.Json.Serialization;
+﻿using Dapper.ColumnMapper;
+using gex.Code;
+using System.Text.Json.Serialization;
 
 namespace gex.Models.Event {
 
+    [DapperColumnsMapped]
     public class GameEventWindUpdate : GameEvent {
 
-        [JsonPropertyName("value")]
-        public decimal Value { get; set; }
+        [JsonActionLogPropertyName("value")]
+        [ColumnMapping("value")]
+        public double Value { get; set; }
 
     }
 }

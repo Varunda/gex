@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,14 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameEventUnitDefDb _UnitDefDb;
         private readonly UnitSetToGameIdDb _UnitHashDb;
         private readonly GameEventTeamStatsDb _TeamStatsDb;
+        private readonly GameEventWindUpdateDb _WindUpdateDb;
+        private readonly GameEventCommanderPositionUpdateDb _CommanderPositionDb;
+        private readonly GameEventUnitTakenDb _UnitTakenDb;
+        private readonly GameEventUnitGivenDb _UnitGivenDb;
+        private readonly GameEventTransportLoadedDb _TransportLoadedDb;
+        private readonly GameEventTransportUnloadedDb _TransportUnloadedDb;
+        private readonly GameEventArmyValueUpdateDb _ArmyValueUpdateDb;
+        private readonly GameEventFactoryUnitCreatedDb _FactoryCreateDb;
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -35,7 +44,11 @@ namespace gex.Services.Hosted.QueueProcessor {
             IOptions<FileStorageOptions> options, ActionLogParser actionLogParser,
             GameEventUnitCreatedDb unitCreatedDb, GameEventUnitKilledDb unitKilledDb,
             GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb unitHashDb,
-            GameEventTeamStatsDb teamStatsDb)
+            GameEventTeamStatsDb teamStatsDb, GameEventWindUpdateDb windUpdateDb,
+            GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventUnitTakenDb unitTakenDb,
+            GameEventUnitGivenDb unitGivenDb, GameEventTransportLoadedDb transportLoaded,
+            GameEventTransportUnloadedDb transportUnloaded, GameEventArmyValueUpdateDb armyValueUpdateDb,
+            GameEventFactoryUnitCreatedDb factoryCreateDb)
 
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -48,11 +61,20 @@ namespace gex.Services.Hosted.QueueProcessor {
             _UnitDefDb = unitDefDb;
             _UnitHashDb = unitHashDb;
             _TeamStatsDb = teamStatsDb;
+            _WindUpdateDb = windUpdateDb;
+            _CommanderPositionDb = commanderPositionDb;
+            _UnitTakenDb = unitTakenDb;
+            _UnitGivenDb = unitGivenDb;
+            _TransportLoadedDb = transportLoaded;
+            _TransportUnloadedDb = transportUnloaded;
+            _ArmyValueUpdateDb = armyValueUpdateDb;
+            _FactoryCreateDb = factoryCreateDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
 
-            _Logger.LogInformation($"processing action log [gameID={entry.GameID}]");
+            Stopwatch timer = Stopwatch.StartNew();
+            _Logger.LogInformation($"processing action log [gameID={entry.GameID}] [force={entry.Force}]");
 
             string actionLogPath = Path.Join(_Options.Value.GameLogLocation, entry.GameID, "actions.json");
             if (File.Exists(actionLogPath) == false) {
@@ -67,24 +89,33 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             if (entry.Force == true) {
-                await _TeamStatsDb.DeleteByGameID(entry.GameID);
+                Stopwatch delTimer = Stopwatch.StartNew();
+                _Logger.LogDebug($"deleting old game events [gameID={entry.GameID}]");
+                await _ArmyValueUpdateDb.DeleteByGameID(entry.GameID, cancel);
+                await _CommanderPositionDb.DeleteByGameID(entry.GameID, cancel);
+                await _FactoryCreateDb.DeleteByGameID(entry.GameID, cancel);
+                await _TeamStatsDb.DeleteByGameID(entry.GameID, cancel);
+                await _TransportLoadedDb.DeleteByGameID(entry.GameID, cancel);
+                await _TransportUnloadedDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitCreatedDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitKilledDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitGivenDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitTakenDb.DeleteByGameID(entry.GameID, cancel);
+                await _WindUpdateDb.DeleteByGameID(entry.GameID, cancel);
+                _Logger.LogInformation($"deleted old game events due to force [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
             }
 
-            foreach (GameEventUnitCreated ev in game.Value.UnitsCreated) {
-                await _UnitCreatedDb.Insert(ev);
-            }
-
-            foreach (GameEventUnitKilled ev in game.Value.UnitsKilled) {
-                await _UnitKilledDb.Insert(ev);
-            }
-
-            foreach (GameEventTeamStats ev in game.Value.TeamStats) {
-                try {
-                    await _TeamStatsDb.Insert(ev);
-                } catch (Exception ex) {
-                    _Logger.LogError($"aaaa");
-                }
-            }
+            await _ArmyValueUpdateDb.InsertMany(game.Value.ArmyValueUpdates, cancel);
+            await _CommanderPositionDb.InsertMany(game.Value.CommanderPositionUpdates, cancel);
+            await _FactoryCreateDb.InsertMany(game.Value.FactoryUnitCreated, cancel);
+            await _TeamStatsDb.InsertMany(game.Value.TeamStats, cancel);
+            await _TransportLoadedDb.InsertMany(game.Value.TransportLoaded, cancel);
+            await _TransportUnloadedDb.InsertMany(game.Value.TransportUnloaded, cancel);
+            await _UnitCreatedDb.InsertMany(game.Value.UnitsCreated, cancel);
+            await _UnitKilledDb.InsertMany(game.Value.UnitsKilled, cancel);
+            await _UnitGivenDb.InsertMany(game.Value.UnitsGiven, cancel);
+            await _UnitTakenDb.InsertMany(game.Value.UnitsTaken, cancel);
+            await _WindUpdateDb.InsertMany(game.Value.WindUpdates, cancel);
 
             if (game.Value.UnitDefinitions.Count > 0) {
                 string unitDefHash = game.Value.UnitDefinitions[0].Hash;
@@ -115,6 +146,8 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             processing.ActionsParsed = DateTime.UtcNow;
             await _ProcessingDb.Upsert(processing);
+
+            _Logger.LogInformation($"parsed action log [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return true;
         }

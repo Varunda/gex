@@ -7,55 +7,55 @@ namespace gex.Models.Event {
     [DapperColumnsMapped]
     public class GameEventUnitKilled : GameEvent {
 
-        [JsonPropertyName("unitID")]
+        [JsonActionLogPropertyName("unitID")]
         [ColumnMapping("unit_id")]
         public int UnitID { get; set; }
 
-        [JsonPropertyName("teamID")]
+        [JsonActionLogPropertyName("teamID")]
         [ColumnMapping("team_id")]
         public int TeamID { get; set; }
 
-        [JsonPropertyName("defID")]
+        [JsonActionLogPropertyName("defID")]
         [ColumnMapping("definition_id")]
         public int DefinitionID { get; set; }
 
-        [JsonPropertyName("attackerID")]
+        [JsonActionLogPropertyName("attackerID")]
         [ColumnMapping("attacker_id")]
         public int? AttackerID { get; set; }
 
-        [JsonPropertyName("attackerDefID")]
+        [JsonActionLogPropertyName("attackerDefID")]
         [ColumnMapping("attacker_definition_id")]
         public int? AttackerDefinitionID { get; set; }
 
-        [JsonPropertyName("attackerTeam")]
+        [JsonActionLogPropertyName("attackerTeam")]
         [ColumnMapping("attacker_team")]
         public int? AttackerTeam { get; set; }
 
-        [JsonPropertyName("weaponDefID")]
+        [JsonActionLogPropertyName("weaponDefID")]
         [ColumnMapping("weapon_definition_id")]
         public int WeaponDefinitionID { get; set; }
 
-        [JsonPropertyName("killed_x")]
+        [JsonActionLogPropertyName("killed_x")]
         [ColumnMapping("killed_x")]
         public decimal KilledX { get; set; }
 
-        [JsonPropertyName("killed_y")]
+        [JsonActionLogPropertyName("killed_y")]
         [ColumnMapping("killed_y")]
         public decimal KilledY { get; set; }
 
-        [JsonPropertyName("killed_z")]
+        [JsonActionLogPropertyName("killed_z")]
         [ColumnMapping("killed_z")]
         public decimal KilledZ { get; set; }
 
-        [JsonPropertyName("attacker_x")]
+        [JsonActionLogPropertyName("attacker_x")]
         [ColumnMapping("attacker_x")]
         public decimal? AttackerX { get; set; }
 
-        [JsonPropertyName("attacker_y")]
+        [JsonActionLogPropertyName("attacker_y")]
         [ColumnMapping("attacker_y")]
         public decimal? AttackerY { get; set; }
 
-        [JsonPropertyName("attacker_z")]
+        [JsonActionLogPropertyName("attacker_z")]
         [ColumnMapping("attacker_z")]
         public decimal? AttackerZ { get; set; }
 

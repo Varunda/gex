@@ -20,40 +20,29 @@ namespace gex.Services.Hosted.Startup {
     public class StartupTestService : BackgroundService {
 
         private readonly ILogger<StartupTestService> _Logger;
-        private readonly ActionLogParser _ActionLogParser;
-        private readonly GameEventUnitCreatedDb _UnitCreatedDb;
-        private readonly GameEventUnitKilledDb _UnitKilledDb;
+        private readonly BarMapApi _MapApi;
+        private readonly BarMapDb _MapDb;
 
         public StartupTestService(ILogger<StartupTestService> logger,
-            ActionLogParser actionLogParser, GameEventUnitCreatedDb unitCreatedDb,
-            GameEventUnitKilledDb unitKilledDb) {
+            BarMapApi mapApi, BarMapDb mapDb) {
 
             _Logger = logger;
-            _ActionLogParser = actionLogParser;
-            _UnitCreatedDb = unitCreatedDb;
-            _UnitKilledDb = unitKilledDb;
+            _MapApi = mapApi;
+            _MapDb = mapDb;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancel) {
-
             return Task.Run(async () => {
 
-                Result<GameOutput, string> game = await _ActionLogParser.Parse("8d66cf67f02f9d4ddadd5d51e8042fab", "E:/Gex/GameLogs/8d66cf67f02f9d4ddadd5d51e8042fab/actions.json", cancel);
-                if (game.IsOk == false) {
+                Result<BarMap, string> api = await _MapApi.GetByName("isidis_crack_1.1", cancel);
+                if (api.IsOk == false) {
+                    _Logger.LogError($"failed to get map [error={api.Error}]");
                     return;
                 }
 
-                foreach (GameEventUnitKilled ev in game.Value.UnitsKilled) {
-                    await _UnitKilledDb.Insert(ev);
-                }
+                await _MapDb.Upsert(api.Value);
 
-                List<GameEventUnitKilled> k = await _UnitKilledDb.GetByGameID(game.Value.GameID);
-
-                //await _BarEngineDownloader.DownloadEngine("2025.01.6", cancel);
-                //await _PrDownloader.GetGameVersion("2025.01.6", "Beyond All Reason test-27562-33e445c", cancel);
-                //await _PrDownloader.GetMap("2025.01.6", "Isidis crack 1.1", cancel);
-
-                //await _HeadlessRunner.RunGame("6834cf672f1479b27a6d8010836e609a", cancel);
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }, cancel);
         }
 

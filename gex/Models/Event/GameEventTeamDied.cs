@@ -1,10 +1,11 @@
-﻿using System.Text.Json.Serialization;
+﻿using gex.Code;
+using System.Text.Json.Serialization;
 
 namespace gex.Models.Event {
 
     public class GameEventTeamDied : GameEvent {
 
-        [JsonPropertyName("teamID")]
+        [JsonActionLogPropertyName("teamID")]
         public int TeamID { get; set; }
 
     }

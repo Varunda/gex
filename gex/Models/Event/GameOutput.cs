@@ -18,7 +18,15 @@ namespace gex.Models.Event {
 
         public List<GameEventUnitGiven> UnitsGiven { get; set; } = [];
 
+        public List<GameEventFactoryUnitCreated> FactoryUnitCreated { get; set; } = [];
+
+        public List<GameEventCommanderPositionUpdate> CommanderPositionUpdates { get; set; } = [];
+
         public List<GameEventArmyValueUpdate> ArmyValueUpdates { get; set; } = [];
+
+        public List<GameEventUnitTransportLoaded> TransportLoaded { get; set; } = [];
+
+        public List<GameEventUnitTransportUnloaded> TransportUnloaded { get; set; } = [];
 
         public List<GameEventTeamDied> TeamDiedEvents { get; set; } = [];
 

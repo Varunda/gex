@@ -3,6 +3,7 @@ using gex.Services.Db;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +40,13 @@ namespace gex.Services.Repositories {
             return match;
         }
 
+        public async Task<List<BarMatch>> GetRecent(int offset, int limit) {
+            return await _MatchDb.GetRecent(offset, limit);
+        }
+
         public Task Insert(BarMatch match, CancellationToken cancel) {
+            string cacheKey = string.Format(CACHE_KEY_ID, match.ID);
+            _Cache.Remove(cacheKey);
             return _MatchDb.Insert(match, cancel);
         }
 

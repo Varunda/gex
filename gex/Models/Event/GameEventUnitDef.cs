@@ -14,119 +14,119 @@ namespace gex.Models.Event {
         [ColumnMapping("hash")]
         public string Hash { get; set; } = "";
 
-        [JsonPropertyName("defID")]
+        [JsonActionLogPropertyName("defID")]
         [ColumnMapping("definition_id")]
         public int DefinitionID { get; set; }
 
-        [JsonPropertyName("defName")]
+        [JsonActionLogPropertyName("defName")]
         [ColumnMapping("definition_name")]
         public string DefinitionName { get; set; } = "";
 
-        [JsonPropertyName("name")]
+        [JsonActionLogPropertyName("name")]
         [ColumnMapping("name")]
         public string Name { get; set; } = "";
 
-        [JsonPropertyName("tooltip")]
+        [JsonActionLogPropertyName("tooltip")]
         [ColumnMapping("tooltip")]
         public string Tooltip { get; set; } = "";
 
-        [JsonPropertyName("metalCost")]
+        [JsonActionLogPropertyName("metalCost")]
         [ColumnMapping("metal_cost")]
-        public int MetalCost { get; set; } = 0;
+        public double MetalCost { get; set; } = 0;
 
-        [JsonPropertyName("energyCost")]
+        [JsonActionLogPropertyName("energyCost")]
         [ColumnMapping("energy_cost")]
-        public int EnergyCost { get; set; }
+        public double EnergyCost { get; set; }
 
-        [JsonPropertyName("health")]
+        [JsonActionLogPropertyName("health")]
         [ColumnMapping("health")]
-        public int Health { get; set; }
+        public double Health { get; set; }
 
-        [JsonPropertyName("speed")]
+        [JsonActionLogPropertyName("speed")]
         [ColumnMapping("speed")]
         public double Speed { get; set; }
 
-        [JsonPropertyName("buildTime")]
+        [JsonActionLogPropertyName("buildTime")]
         [ColumnMapping("build_time")]
         public double BuildTime { get; set; }
 
-        [JsonPropertyName("unitGroup")]
+        [JsonActionLogPropertyName("unitGroup")]
         [ColumnMapping("unit_group")]
         public string UnitGroup { get; set; } = "";
 
-        [JsonPropertyName("buildPower")]
+        [JsonActionLogPropertyName("buildPower")]
         [ColumnMapping("build_power")]
         public double BuildPower { get; set; }
 
-        [JsonPropertyName("metalMake")]
+        [JsonActionLogPropertyName("metalMake")]
         [ColumnMapping("metal_make")]
         public double MetalMake { get; set; }
 
-        [JsonPropertyName("isMetalExtractor")]
+        [JsonActionLogPropertyName("isMetalExtractor")]
         [ColumnMapping("is_metal_extractor")]
         public bool IsMetalExtractor { get; set; }
 
-        [JsonPropertyName("extractsMetal")]
+        [JsonActionLogPropertyName("extractsMetal")]
         [ColumnMapping("extracts_metal")]
         public double ExtractsMetal { get; set; }
 
-        [JsonPropertyName("metalStorage")]
+        [JsonActionLogPropertyName("metalStorage")]
         [ColumnMapping("metal_storage")]
         public double MetalStorage { get; set; }
 
-        [JsonPropertyName("windGenerator")]
+        [JsonActionLogPropertyName("windGenerator")]
         [ColumnMapping("wind_generator")]
         public double WindGenerator { get; set; }
 
-        [JsonPropertyName("tidalGenerator")]
+        [JsonActionLogPropertyName("tidalGenerator")]
         [ColumnMapping("tidal_generator")]
         public double TidalGenerator { get; set; }
 
-        [JsonPropertyName("energyProduction")]
+        [JsonActionLogPropertyName("energyProduction")]
         [ColumnMapping("energy_production")]
         public double EnergyProduction { get; set; }
 
-        [JsonPropertyName("energyUpkeep")]
+        [JsonActionLogPropertyName("energyUpkeep")]
         [ColumnMapping("energy_upkeep")]
         public double EnergyUpkeep { get; set; }
 
-        [JsonPropertyName("energyStorage")]
+        [JsonActionLogPropertyName("energyStorage")]
         [ColumnMapping("energy_storage")]
         public double EnergyStorage { get; set; }
 
-        [JsonPropertyName("energyConversionCapacity")]
+        [JsonActionLogPropertyName("energyConversionCapacity")]
         [ColumnMapping("energy_conversion_capacity")]
         public double EnergyConversionCapacity { get; set; }
 
-        [JsonPropertyName("energyConversionEfficiency")]
+        [JsonActionLogPropertyName("energyConversionEfficiency")]
         [ColumnMapping("energy_conversion_efficiency")]
         public double EnergyConversionEfficiency { get; set; }
 
-        [JsonPropertyName("sightDistance")]
+        [JsonActionLogPropertyName("sightDistance")]
         [ColumnMapping("sight_distance")]
         public double SightDistance { get; set; }
 
-        [JsonPropertyName("airSightDistance")]
+        [JsonActionLogPropertyName("airSightDistance")]
         [ColumnMapping("air_sight_distance")]
         public double AirSightDistance { get; set; }
 
-        [JsonPropertyName("attackRange")]
+        [JsonActionLogPropertyName("attackRange")]
         [ColumnMapping("attack_range")]
         public double AttackRange { get; set; }
 
-        [JsonPropertyName("isCommander")]
+        [JsonActionLogPropertyName("isCommander")]
         [ColumnMapping("is_commander")]
         public bool IsCommander { get; set; }
 
-        [JsonPropertyName("isReclaimer")]
+        [JsonActionLogPropertyName("isReclaimer")]
         [ColumnMapping("is_reclaimer")]
         public bool IsReclaimer { get; set; }
 
-        [JsonPropertyName("isFactory")]
+        [JsonActionLogPropertyName("isFactory")]
         [ColumnMapping("is_factory")]
         public bool IsFactory { get; set; }
 
-        [JsonPropertyName("weaponCount")]
+        [JsonActionLogPropertyName("weaponCount")]
         [ColumnMapping("weapon_count")]
         public int WeaponCount { get; set; }
 
@@ -144,9 +144,9 @@ namespace gex.Models.Event {
             hash ^= GetStringHash(DefinitionName);
             hash ^= GetStringHash(Name);
             hash ^= GetStringHash(Tooltip);
-            hash ^= GetIntHash(MetalCost);
-            hash ^= GetIntHash(EnergyCost);
-            hash ^= GetIntHash(Health);
+            hash ^= GetDoubleHash(MetalCost);
+            hash ^= GetDoubleHash(EnergyCost);
+            hash ^= GetDoubleHash(Health);
             hash ^= GetDoubleHash(Speed);
             hash ^= GetDoubleHash(BuildTime);
             hash ^= GetStringHash(UnitGroup);

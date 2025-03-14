@@ -9,21 +9,13 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db {
 
-    public class GameEventUnitKilledDb {
+    public class GameEventUnitKilledDb : BaseGameEventDb<GameEventUnitKilled> {
 
-        private readonly ILogger<GameEventUnitKilledDb> _Logger;
-        private readonly IDbHelper _DbHelper;
+        public GameEventUnitKilledDb(ILoggerFactory loggerFactory, IDbHelper dbHelper)
+            : base("game_event_unit_killed", "unit_killed", loggerFactory, dbHelper) { }
 
-        public GameEventUnitKilledDb(ILogger<GameEventUnitKilledDb> logger,
-            IDbHelper dbHelper) {
-
-            _Logger = logger;
-            _DbHelper = dbHelper;
-        }
-
-        public async Task Insert(GameEventUnitKilled ev) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+        protected override void SetupInsert(GameEventUnitKilled ev, NpgsqlCommand cmd ) {
+            cmd.CommandText = @"
                 INSERT INTO game_event_unit_killed (
                     game_id, frame, unit_id, team_id, definition_id,
                     attacker_id, attacker_team, attacker_definition_id, weapon_definition_id,
@@ -34,8 +26,8 @@ namespace gex.Services.Db {
                     @AttackerID, @AttackerTeam, @AttackerDefID, @WeaponDefID,
                     @KilledX, @KilledY, @KilledZ,
                     @AttackerX, @AttackerY, @AttackerZ
-                ) ON CONFLICT (game_id, frame, unit_id) DO NOTHING;
-            ");
+                );
+            ";
 
             cmd.AddParameter("GameID", ev.GameID);
             cmd.AddParameter("Frame", ev.Frame);
@@ -52,22 +44,6 @@ namespace gex.Services.Db {
             cmd.AddParameter("AttackerX", ev.AttackerX);
             cmd.AddParameter("AttackerY", ev.AttackerY);
             cmd.AddParameter("AttackerZ", ev.AttackerZ);
-            await cmd.PrepareAsync();
-
-            await cmd.ExecuteNonQueryAsync();
-            await conn.CloseAsync();
-        }
-
-        public async Task<List<GameEventUnitKilled>> GetByGameID(string gameID) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            List<GameEventUnitKilled> evs = (await conn.QueryAsync<GameEventUnitKilled>(
-                "SELECT 'unit_killed' \"Action\", * from game_event_unit_killed WHERE game_id = @GameID",
-                new { GameID = gameID }
-            )).ToList();
-
-            await conn.CloseAsync();
-
-            return evs;
         }
 
     }

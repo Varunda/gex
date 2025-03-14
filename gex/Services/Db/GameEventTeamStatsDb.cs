@@ -9,21 +9,13 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db {
 
-    public class GameEventTeamStatsDb {
+    public class GameEventTeamStatsDb : BaseGameEventDb<GameEventTeamStats> {
 
-        private readonly ILogger<GameEventTeamStatsDb> _Logger;
-        private readonly IDbHelper _DbHelper;
+        public GameEventTeamStatsDb(ILoggerFactory loggerFactory, IDbHelper dbHelper)
+            : base("game_event_team_stats", "team_stats", loggerFactory, dbHelper) { }
 
-        public GameEventTeamStatsDb(ILogger<GameEventTeamStatsDb> logger,
-            IDbHelper dbHelper) {
-
-            _Logger = logger;
-            _DbHelper = dbHelper;
-        }
-
-        public async Task Insert(GameEventTeamStats ev) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+        protected override void SetupInsert(GameEventTeamStats ev, NpgsqlCommand cmd) {
+            cmd.CommandText = @"
                 INSERT INTO game_event_team_stats (
                     game_id, frame, team_id,
                     metal_produced, metal_used, metal_excess, metal_sent, metal_received,
@@ -37,7 +29,7 @@ namespace gex.Services.Db {
                     @DamageDealt, @DamageReceived,
                     @UnitsProduced, @UnitsKilled, @UnitsSent, @UnitsCaptured, @UnitsOutCaptured
                 );
-            ");
+            ";
 
             cmd.AddParameter("GameID", ev.GameID);
             cmd.AddParameter("Frame", ev.Frame);
@@ -59,32 +51,6 @@ namespace gex.Services.Db {
             cmd.AddParameter("UnitsSent", ev.UnitsSent);
             cmd.AddParameter("UnitsCaptured", ev.UnitsCaptured);
             cmd.AddParameter("UnitsOutCaptured", ev.UnitsOutCaptured);
-            await cmd.PrepareAsync();
-
-            await cmd.ExecuteNonQueryAsync();
-            await conn.CloseAsync();
-        }
-
-        public async Task<List<GameEventTeamStats>> GetByGameID(string gameID) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return (await conn.QueryAsync<GameEventTeamStats>(
-                "SELECT 'team_stats' \"Action\", * FROM game_event_team_stats WHERE game_id = @GameID",
-                new { GameID = gameID })
-            ).ToList();
-        }
-
-        public async Task DeleteByGameID(string gameID) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
-                DELETE FROM game_event_team_stats
-                    WHERE game_id = @GameID;
-            ");
-
-            cmd.AddParameter("GameID", gameID);
-            await cmd.PrepareAsync();
-
-            await cmd.ExecuteNonQueryAsync();
-            await conn.CloseAsync();
         }
 
     }

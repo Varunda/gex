@@ -12,6 +12,7 @@ namespace gex.Services.Db.Readers {
             allyTeam.GameID = reader.GetString("game_id");
             allyTeam.AllyTeamID = reader.GetInt32("ally_team_id");
             allyTeam.PlayerCount = reader.GetInt32("player_count");
+            allyTeam.Won = reader.GetBoolean("won");
             allyTeam.StartBox.Top = reader.GetFloat("start_box_top");
             allyTeam.StartBox.Bottom = reader.GetFloat("start_box_bottom");
             allyTeam.StartBox.Left = reader.GetFloat("start_box_left");

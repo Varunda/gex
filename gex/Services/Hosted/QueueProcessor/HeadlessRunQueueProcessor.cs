@@ -39,7 +39,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         protected override async Task<bool> _ProcessQueueEntry(HeadlessRunQueueEntry entry, CancellationToken cancel) {
 
-            _Logger.LogInformation($"running game headless [gameID={entry.GameID}]");
+            _Logger.LogInformation($"running game headless [gameID={entry.GameID}] [force={entry.Force}]");
 
             Result<GameOutput, string> output = await _HeadlessRunner.RunGame(entry.GameID, entry.Force, cancel);
 
@@ -54,10 +54,13 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.ReplaySimulated = DateTime.UtcNow;
             await _ProcessingDb.Upsert(processing);
 
-            _ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() {
-                GameID = entry.GameID,
-                Force = entry.Force
-            });
+            if (entry.ForceForward == true || processing.ActionsParsed == null) {
+                _Logger.LogDebug($"putting entry into action log parser [gameID={entry.GameID}]");
+                _ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() {
+                    GameID = entry.GameID,
+                    Force = entry.Force
+                });
+            }
 
             return true;
         }

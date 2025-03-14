@@ -73,7 +73,10 @@ namespace gex {
             services.AddMvc(options => {
 
             }).AddJsonOptions(config => {
+                // don't forget to update these in ApiResponse as well!!!!!!!!!!!!!!!!!!!!!
                 config.JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
+                config.JsonSerializerOptions.Converters.Add(new TimeSpanJsonConverter());
+                config.JsonSerializerOptions.Converters.Add(new Vector3JsonConverter());
             }).AddRazorRuntimeCompilation();
 
             services.AddSwaggerGen(doc => {
@@ -251,6 +254,12 @@ namespace gex {
                 endpoints.MapControllerRoute(
                     name: "api",
                     pattern: "/api/{controller}/{action}"
+                );
+
+                endpoints.MapControllerRoute(
+                    name: "match",
+                    pattern: "/match/{*.}",
+                    defaults: new { controller = "Home", action = "Match" }
                 );
 
                 endpoints.MapSwagger();

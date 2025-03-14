@@ -3,8 +3,10 @@ Spring.Echo("[Gex] started gex!", headless)
 
 local UNIT_DEF_NAMES = {}
 local UNIT_DEF_METAL = {}
+local UNIT_DEF_IS_COMMANDER = {}
 local frame = 0
 local timer
+local commanders = {}
 
 function writeJson(action, data, includeFrame)
     file = io.open("actions.json", "a")
@@ -150,6 +152,7 @@ function widget:Initialize()
 
         UNIT_DEF_NAMES[k] = v["name"]
         UNIT_DEF_METAL[k] = v["metalCost"]
+        UNIT_DEF_IS_COMMANDER[k] = v.customParams.iscommander ~= nil
 	end
     io.flush()
     io.close(file)
@@ -183,6 +186,16 @@ function widget:GameFrame(n)
         writeJson("wind_update", {
             { "value", actual_thing_i_care_about }
         })
+
+        for _,unitID in pairs(commanders) do
+            local posx, posy, posz = Spring.GetUnitPosition(unitID)
+            writeJson("commander_position_update", {
+                { "unitID", unitID },
+                { "posX", posx, },
+                { "posY", posy, },
+                { "posZ", posz, }
+            })
+        end
     end
 
     if (frame % 300 == 0) then
@@ -258,6 +271,12 @@ function widget:GameOver(winningAllyTeams)
 end
 
 function widget:UnitCreated(unitID, unitDefID, teamID)
+
+    if (UNIT_DEF_IS_COMMANDER[unitDefID] == true) then
+        Spring.Echo("commander unit created", unitID, "defID", unitDefID)
+		commanders[unitID] = unitID
+    end
+
     local x, y, z = Spring.GetUnitPosition(unitID)
 
     writeJson("unit_created", {
@@ -272,6 +291,11 @@ function widget:UnitCreated(unitID, unitDefID, teamID)
 end
 
 function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDefID, attackerTeam, weaponDefID)
+
+    if (commanders[unitID] ~= nil) then
+        commanders[unitID] = nil
+    end
+
     local kx, ky, kz = Spring.GetUnitPosition(unitID)
     local ax, ay, az = nil, nil, nil
     if (attackerID ~= nil) then
@@ -293,6 +317,46 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
         { "attacker_x", ax },
         { "attacker_y", ay },
         { "attacker_z", az }
+    })
+end
+
+function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+    local x, y, z = Spring.GetUnitPosition(unitID)
+
+    writeJson("transport_loaded", {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    })
+end
+
+function widget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+    local x, y, z = Spring.GetUnitPosition(unitID)
+
+    writeJson("transport_unloaded", {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    })
+end
+
+function widget:UnitFromFactory(unitID, unitDefID, unitTeam, factID, factDefID, userOrders)
+    writeJson("factory_unit_created", {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "factoryID", factID },
+        { "factoryDefID", factDefID }
     })
 end
 
@@ -364,9 +428,9 @@ function widget:UnitGiven(unitID, unitDefID, newTeamID, teamID)
         { "newTeamID", newTeamID },
         { "defID", unitDefID },
         { "defName", UNIT_DEF_NAMES[unitDefID] },
-        { "unit_x", x },
-        { "unit_y", y },
-        { "unit_z", z },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z },
     })
 end
 
@@ -379,9 +443,9 @@ function widget:UnitTaken(unitID, unitDefID, oldTeamID, teamID)
         { "newTeamID", newTeamID },
         { "defID", unitDefID },
         { "defName", UNIT_DEF_NAMES[unitDefID] },
-        { "unit_x", x },
-        { "unit_y", y },
-        { "unit_z", z },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z },
     })
 end
 
