@@ -12,5 +12,8 @@ namespace gex.Models.Bar {
         [ColumnMapping("filename")]
         public string FileName { get; set; } = "";
 
+        [ColumnMapping("map_name")]
+        public string MapName { get; set; } = "";
+
     }
 }

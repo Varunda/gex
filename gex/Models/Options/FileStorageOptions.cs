@@ -22,5 +22,10 @@
         /// </summary>
         public string GameLogLocation { get; set; } = "";
 
+        /// <summary>
+        ///     where downloaded files from the BAR api go (such as map images)
+        /// </summary>
+        public string WebImageLocation { get; set; } = "";
+
     }
 }

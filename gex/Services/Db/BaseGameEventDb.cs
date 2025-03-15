@@ -80,7 +80,7 @@ namespace gex.Services.Db {
         public async Task<List<T>> GetByGameID(string gameID, CancellationToken cancel = default) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return (await conn.QueryAsync<T>(new CommandDefinition(
-                $"SELECT '{_ActionName}' \"Action\", * from {_TableName} WHERE game_id = @GameID",
+                $"SELECT '{_ActionName}' \"Action\", * from {_TableName} WHERE game_id = @GameID ORDER BY frame ASC",
                 new { GameID = gameID },
                 cancellationToken: cancel
             ))).ToList();

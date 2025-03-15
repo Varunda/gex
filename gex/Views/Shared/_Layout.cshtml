@@ -39,13 +39,9 @@
 </head>
 
 <body>
-    <div style="position: fixed; top: 0; right: 0; z-index: 1080;" id="toaster"></div>
+    <div id="toaster" class="toast-container position-fixed" style="top: 0; right: 0;"></div>
 
-    <script>
-        $(".toast").toast("show");
-    </script>
-
-    <div>
+    <div style="font-family: 'Atkinson Hyperlegible">
         <main role="main">
             @RenderBody()
         </main>

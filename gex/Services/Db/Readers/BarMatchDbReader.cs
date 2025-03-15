@@ -18,6 +18,7 @@ namespace gex.Services.Db.Readers {
             match.StartTime = reader.GetDateTime("start_time");
             match.DurationMs = reader.GetInt64("duration_ms");
             match.Map = reader.GetString("map");
+            match.MapName = reader.GetString("map_name");
 
             match.HostSettings = reader.GetJsonb("host_settings");
             match.GameSettings = reader.GetJsonb("game_settings");

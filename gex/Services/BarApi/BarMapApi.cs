@@ -24,9 +24,19 @@ namespace gex.Services.BarApi {
             _Logger = logger;
         }
 
+        /// <summary>
+        ///     load a <see cref="BarMap"/> from the BAR api
+        /// </summary>
+        /// <param name="filename">name of the map. this is normalized to replace spaces with underscores</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a <see cref="Result{T, E}"/> that indicates the success of loading a <see cref="BarMap"/>
+        ///     from the BAR api
+        /// </returns>
         public async Task<Result<BarMap, string>> GetByName(string filename, CancellationToken cancel) {
 
-            string url = BASE_URL + "/" + filename.Replace(" ", "_").ToLower();
+            string url = BASE_URL + "/" + filename;
+            _Logger.LogTrace($"attemping map load [filename={filename}] [url={url}]");
             HttpResponseMessage response = await _Http.GetAsync(url);
 
             if (response.IsSuccessStatusCode == false) {
@@ -46,17 +56,16 @@ namespace gex.Services.BarApi {
             map.FileName = json.GetRequiredString("fileName");
             map.Description = json.GetString("description", "");
             map.TidalStrength = json.GetProperty("tidalStrength").GetDouble();
-            map.MaxMetal = json.GetProperty("maxMetal").GetDouble();
+            map.MaxMetal = json.GetDouble("maxMetal", 0);
             map.ExtractorRadius = json.GetProperty("extractorRadius").GetDouble();
-            map.MinimumWind = json.GetProperty("minWind").GetDouble();
-            map.MaximumWind = json.GetProperty("maxWind").GetDouble();
+            map.MinimumWind = json.GetDouble("minWind", 0);
+            map.MaximumWind = json.GetDouble("maxWind", 0);
             map.Height = json.GetProperty("height").GetDouble();
             map.Width = json.GetProperty("width").GetDouble();
             map.Author = json.GetString("author", "");
 
             return map;
         }
-
 
     }
 }

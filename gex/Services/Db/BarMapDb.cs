@@ -19,6 +19,11 @@ namespace gex.Services.Db {
             _DbHelper = dbHelper;
         }
 
+        /// <summary>
+        ///     update/insert a <see cref="BarMap"/>
+        /// </summary>
+        /// <param name="map">parameters used to upsert</param>
+        /// <returns>a task for when the async operation is complete</returns>
         public async Task Upsert(BarMap map) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
@@ -62,6 +67,14 @@ namespace gex.Services.Db {
             await conn.CloseAsync();
         }
 
+        /// <summary>
+        ///     get a map based on ID
+        /// </summary>
+        /// <param name="mapID">ID of the map to get</param>
+        /// <returns>
+        ///     the <see cref="BarMap"/> with <see cref="BarMap.ID"/> of <paramref name="mapID"/>,
+        ///     or <c>null</c> if it does not exist
+        /// </returns>
         public async Task<BarMap?> GetByID(int mapID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryFirstOrDefaultAsync<BarMap>(
@@ -70,6 +83,15 @@ namespace gex.Services.Db {
             );
         }
 
+        /// <summary>
+        ///     load a map based on name. the name is normalized to replace spaces with undersocres,
+        ///     and put to lowercase
+        /// </summary>
+        /// <param name="mapName">name of the map</param>
+        /// <returns>
+        ///     the <see cref="BarMap"/> with <see cref="BarMap.FileName"/> of <paramref name="mapName"/>,
+        ///     or <c>null</c> if it does not exist
+        /// </returns>
         public async Task<BarMap?> GetByFileName(string mapName) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryFirstOrDefaultAsync<BarMap>(

@@ -39,39 +39,52 @@ namespace gex.Services.Hosted.PeriodicTasks {
         protected override async Task<string?> PerformTask(CancellationToken cancel) {
 
             Stopwatch timer = Stopwatch.StartNew();
-            _Logger.LogDebug($"getting recent matches");
-            Result<List<BarRecentReplay>, string> recentMatches = await _ReplayApi.GetRecent(cancel);
-            if (recentMatches.IsOk == false) {
-                return $"error getting recent matches: {recentMatches.Error}";
-            }
-
-            _Logger.LogInformation($"found recent matches [count={recentMatches.Value.Count}]");
-
-            if (recentMatches.Value.Count == 0) {
-                return "no matches to get!";
-            }
 
             int okCount = 0;
             int errorCount = 0;
             int alreadyCount = 0;
 
-            foreach (BarRecentReplay replay in recentMatches.Value) {
-                try {
-                    if (cancel.IsCancellationRequested) {
-                        break;
-                    }
+            int page = 1;
+            int limit = 50;
 
-                    ParseResult result = await ProcessRecentMatch(replay, cancel);
-                    if (result == ParseResult.OK) {
-                        ++okCount;
-                    } else if (result == ParseResult.ALREADY_EXISTS) {
-                        ++alreadyCount;
-                    } else if (result == ParseResult.ERROR) {
+            while (true) {
+                _Logger.LogDebug($"getting recent matches");
+                Result<List<BarRecentReplay>, string> recentMatches = await _ReplayApi.GetRecent(page, limit, cancel);
+                if (recentMatches.IsOk == false) {
+                    return $"error getting recent matches: {recentMatches.Error}";
+                }
+
+                _Logger.LogInformation($"found recent matches [count={recentMatches.Value.Count}]");
+
+                if (recentMatches.Value.Count == 0) {
+                    return "no matches to get!";
+                }
+
+                foreach (BarRecentReplay replay in recentMatches.Value) {
+                    try {
+                        if (cancel.IsCancellationRequested) {
+                            break;
+                        }
+
+                        ParseResult result = await ProcessRecentMatch(replay, cancel);
+                        if (result == ParseResult.OK) {
+                            ++okCount;
+                        } else if (result == ParseResult.ALREADY_EXISTS) {
+                            ++alreadyCount;
+                        } else if (result == ParseResult.ERROR) {
+                            ++errorCount;
+                        }
+                    } catch (Exception e) {
+                        _Logger.LogError(e, $"failed to process recent match [ID={replay.ID}]");
                         ++errorCount;
                     }
-                } catch (Exception e) {
-                    _Logger.LogError(e, $"failed to process recent match [ID={replay.ID}]");
-                    ++errorCount;
+                }
+
+                if (okCount == limit && page < 10) {
+                    _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}]");
+                    page += 1;
+                } else {
+                    break;
                 }
             }
 

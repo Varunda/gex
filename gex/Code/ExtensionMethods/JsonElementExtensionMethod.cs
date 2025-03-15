@@ -126,19 +126,6 @@ namespace gex.Code.ExtensionMethods {
             return d;
         }
 
-        /// <summary>
-        ///     Get the 'world_id' field from a JsonElement, or -1 if it isn't in the token
-        /// </summary>
-        /// <param name="token">Extension instance</param>
-        /// <returns>The Int16 in the field named 'world_id', or -1 if that field doesn't exist</returns>
-        public static short GetWorldID(this JsonElement token) {
-            return token.GetInt16("world_id", -1);
-        }
-
-        public static uint GetZoneID(this JsonElement token) {
-            return token.GetValue<uint?>("zone_id") ?? 0;
-        }
-
         public static ushort GetUInt16(this JsonElement token, string field) {
             return token.GetValue<ushort?>(field) ?? 0;
         }
@@ -155,8 +142,12 @@ namespace gex.Code.ExtensionMethods {
             return token.GetValue<decimal?>(name) ?? fallback;
         }
 
-        public static DateTime CensusTimestamp(this JsonElement token, string name) {
-            return DateTimeOffset.FromUnixTimeSeconds(token.GetValue<int?>(name) ?? throw new ArgumentNullException(nameof(name))).UtcDateTime;
+        public static double GetDouble(this JsonElement token, string name, double fallback) {
+            JsonElement elem = token.GetProperty(name);
+            if (elem.ValueKind == JsonValueKind.Undefined || elem.ValueKind == JsonValueKind.Null) {
+                return fallback;
+            }
+            return elem.GetDouble();
         }
 
     }

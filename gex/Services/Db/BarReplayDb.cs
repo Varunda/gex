@@ -31,20 +31,26 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_replay (
-                    id, filename
+                    id, filename, map_name
                 ) VALUES (
-                    @ID, @Filename
+                    @ID, @FileName, @MapName
                 );
             ");
 
             cmd.AddParameter("ID", replay.ID);
-            cmd.AddParameter("Filename", replay.FileName);
+            cmd.AddParameter("FileName", replay.FileName);
+            cmd.AddParameter("MapName", replay.MapName);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
         }
 
+        /// <summary>
+        ///     get a <see cref="BarReplay"/> by <see cref="BarReplay.ID"/>
+        /// </summary>
+        /// <param name="gameID"></param>
+        /// <returns></returns>
         public async Task<BarReplay?> GetByID(string gameID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryFirstOrDefaultAsync<BarReplay>(

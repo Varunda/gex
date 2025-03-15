@@ -94,7 +94,6 @@ namespace gex.Models {
         }
 
         public ApiResponseExecutor(ILoggerFactory logger, IHttpResponseStreamWriterFactory writerFactory) { 
-
             _Logger = logger.CreateLogger<ApiResponseExecutor>();
 
             _Writer = writerFactory.CreateWriter;

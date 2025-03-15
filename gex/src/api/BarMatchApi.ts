@@ -10,8 +10,8 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         return BarMatchApi.get().readSingle(`/api/match/${gameID}?includePlayers=true&includeAllyTeams=true&includeSpectators=true&includeChat=true`, BarMatch.parse);
     }
 
-    public static getRecent(offset: number = 0, limit: number = 0): Promise<Loading<BarMatch[]>> {
-        return BarMatchApi.get().readList(`/api/match/recent`, BarMatch.parse);
+    public static getRecent(offset: number = 0, limit: number = 24): Promise<Loading<BarMatch[]>> {
+        return BarMatchApi.get().readList(`/api/match/recent?offset=${offset}&limit=${limit}`, BarMatch.parse);
     }
 
 

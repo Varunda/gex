@@ -246,6 +246,12 @@ namespace gex {
                 );
 
                 endpoints.MapControllerRoute(
+                    name: "image-proxy",
+                    pattern: "/image-proxy/{action}/{*.}",
+                    defaults: new { controller = "GameImage" }
+                );
+
+                endpoints.MapControllerRoute(
                     name: "accountmanagement",
                     pattern: "/accountmanagement/{*.}",
                     defaults: new { controller = "Home", action = "AccountManagement" }

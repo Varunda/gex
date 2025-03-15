@@ -34,8 +34,8 @@ namespace gex.Services.BarApi {
             _Logger = logger;
         }
 
-        public async Task<Result<List<BarRecentReplay>, string>> GetRecent(CancellationToken cancel = default) {
-            HttpResponseMessage response = await _Http.GetAsync(BAR_API_URL + "/replays?page=1&limit=50&hasBots=false&endedNormally=true", cancel);
+        public async Task<Result<List<BarRecentReplay>, string>> GetRecent(int page = 1, int limit = 50, CancellationToken cancel = default) {
+            HttpResponseMessage response = await _Http.GetAsync(BAR_API_URL + $"/replays?page={page}&limit={limit}&hasBots=false&endedNormally=true", cancel);
 
             if (response.IsSuccessStatusCode == false) {
                 return $"failed to call bar API [status code={response.StatusCode}]";
@@ -85,6 +85,13 @@ namespace gex.Services.BarApi {
             BarReplay replay = new();
             replay.ID = json.GetRequiredString("id");
             replay.FileName = json.GetRequiredString("fileName");
+
+            JsonElement? childNull = json.GetChild("Map");
+            if (childNull != null) {
+                replay.MapName = childNull.Value.GetRequiredString("fileName");
+            } else {
+                _Logger.LogWarning($"missing Map from replay! [gameID={gameID}]");
+            }
 
             return replay;
         }

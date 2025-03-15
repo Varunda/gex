@@ -9,6 +9,7 @@ using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,6 +41,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayDownloadQueueEntry entry, CancellationToken cancel) {
             _Logger.LogInformation($"performing game replay download [gameID={entry.GameID}]");
+            Stopwatch timer = Stopwatch.StartNew();
 
             BarReplay? replay = await _ReplayDb.GetByID(entry.GameID);
             if (replay == null) {
@@ -70,13 +72,13 @@ namespace gex.Services.Hosted.QueueProcessor {
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplayDownloaded = DateTime.UtcNow;
+            processing.ReplayDownloadedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingDb.Upsert(processing);
 
             if (entry.ForceForward == true || processing.ReplayParsed == null) {
                 _Logger.LogDebug($"putting entry into parse queue [gameID={entry.GameID}]");
                 _ParseQueue.Queue(new GameReplayParseQueueEntry() {
                     GameID = entry.GameID,
-                    FileName = replay.FileName,
                     Force = entry.Force,
                     ForceForward = entry.ForceForward
                 });

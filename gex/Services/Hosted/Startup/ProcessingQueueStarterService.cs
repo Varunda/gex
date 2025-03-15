@@ -63,7 +63,7 @@ namespace gex.Services.Hosted.Startup {
                         _DownloadQueue.Queue(new GameReplayDownloadQueueEntry() { GameID = proc.GameID, Force = true });
                     } else {
                         _ParseQueue.Queue(new GameReplayParseQueueEntry() {
-                            GameID = proc.GameID, FileName = match.FileName, Force = true
+                            GameID = proc.GameID, Force = true
                         });
                     }
 

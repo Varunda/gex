@@ -145,6 +145,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ActionsParsed = DateTime.UtcNow;
+            processing.ActionsParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingDb.Upsert(processing);
 
             _Logger.LogInformation($"parsed action log [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");

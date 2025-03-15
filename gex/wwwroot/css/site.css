@@ -185,3 +185,8 @@
     animation: slide-right-out 1s forwards;
     z-index: 10;
 }
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    src: url('/font/AtkinsonHyperlegible-Regular.ttf');
+}

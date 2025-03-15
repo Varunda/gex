@@ -1,4 +1,5 @@
 ﻿using gex.Models;
+using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Options;
 using gex.Models.Queues;
@@ -21,10 +22,12 @@ namespace gex.Services.Hosted.QueueProcessor {
     public class GameReplayParseQueueProcessor : BaseQueueProcessor<GameReplayParseQueueEntry> {
 
         private readonly BarMatchDb _MatchDb;
+        private readonly BarReplayDb _ReplayDb;
         private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
         private readonly BarMatchSpectatorDb _MatchSpectatorDb;
         private readonly BarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMapRepository _BarMapRepository;
 
         private readonly BarMatchProcessingDb _ProcessingDb;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -37,7 +40,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             BarMatchDb matchDb, BarMatchAllyTeamDb matchAllyTeamDb,
             BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
-            BarMatchPlayerRepository playerRepository) :
+            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository, 
+            BarReplayDb replayDb) :
 
         base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -50,14 +54,18 @@ namespace gex.Services.Hosted.QueueProcessor {
             _MatchSpectatorDb = matchSpectatorDb;
             _MatchChatMessageDb = matchChatMessageDb;
             _PlayerRepository = playerRepository;
+            _BarMapRepository = barMapRepository;
+            _ReplayDb = replayDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
 
-            _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}] [filename={entry.FileName}]");
+            _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}]");
+            Stopwatch timer = Stopwatch.StartNew();
 
-            if (string.IsNullOrEmpty(entry.FileName)) {
-                _Logger.LogError($"cannot parse replay file, filename was not given [gameID={entry.GameID}] [filename={entry.FileName}]");
+            BarReplay? replay = await _ReplayDb.GetByID(entry.GameID);
+            if (replay == null) {
+                _Logger.LogError($"cannot parse replay file, replay is missing from DB [gameID={entry.GameID}]");
                 return false;
             }
 
@@ -73,17 +81,17 @@ namespace gex.Services.Hosted.QueueProcessor {
                 runHeadless |= players.Count == 2;
             } else {
                 if (entry.Force == true) {
-                    Stopwatch timer = Stopwatch.StartNew();
+                    Stopwatch delTimer = Stopwatch.StartNew();
                     _Logger.LogInformation($"deleting database data due to forced run [gameID={entry.GameID}]");
                     await _MatchAllyTeamDb.DeleteByGameID(entry.GameID);
                     await _PlayerRepository.DeleteByGameID(entry.GameID);
                     await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
                     await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
                     await _MatchDb.Delete(entry.GameID);
-                    _Logger.LogDebug($"deleting previous game data [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
+                    _Logger.LogDebug($"deleting previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
                 }
 
-                string replayPath = Path.Join(_Options.Value.ReplayLocation, entry.FileName);
+                string replayPath = Path.Join(_Options.Value.ReplayLocation, replay.FileName);
                 if (File.Exists(replayPath) == false) {
                     _Logger.LogError($"missing replay file [gameID={entry.GameID}] [path={replayPath}]");
                     return false;
@@ -92,7 +100,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogDebug($"opening game replay [gameID={entry.GameID}] [path={replayPath}]");
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
 
-                Result<BarMatch, string> match = await _Parser.Parse(entry.FileName, file, cancel);
+                Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, cancel);
                 long parseReplayMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 _Logger.LogDebug($"parsed replay file into match [ID={entry.GameID}]");
@@ -103,6 +111,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 }
 
                 BarMatch parsed = match.Value;
+                parsed.MapName = replay.MapName;
+
+                BarMap? map = await _BarMapRepository.GetByName(replay.MapName, cancel);
+                if (map == null) {
+                    _Logger.LogWarning($"missing bar map! [map={replay.MapName}] [gameID={parsed.ID}]");
+                }
 
                 foreach (BarMatchAllyTeam allyTeam in parsed.AllyTeams) {
                     await _MatchAllyTeamDb.Insert(allyTeam);
@@ -138,6 +152,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplayParsed = DateTime.UtcNow;
+            processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingDb.Upsert(processing);
 
             if (runHeadless && (entry.ForceForward == true || processing.ReplaySimulated == null)) {

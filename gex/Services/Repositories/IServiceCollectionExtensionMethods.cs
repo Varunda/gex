@@ -8,6 +8,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarReplayFileRepository>();
             services.AddSingleton<BarMatchRepository>();
             services.AddSingleton<BarMatchPlayerRepository>();
+            services.AddSingleton<BarMapRepository>();
         }
 
     }

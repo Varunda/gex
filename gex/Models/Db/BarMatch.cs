@@ -1,4 +1,5 @@
-﻿using System;
+﻿using gex.Models.Bar;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -15,6 +16,8 @@ namespace gex.Models.Db {
         public DateTime StartTime { get; set; }
 
         public string Map { get; set; } = "";
+
+        public string MapName { get; set; } = "";
 
         public string FileName { get; set; } = "";
 
@@ -37,6 +40,8 @@ namespace gex.Models.Db {
         public List<BarMatchSpectator> Spectators { get; set; } = [];
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
+
+        public BarMap? MapData { get; set; }
 
     }
 }

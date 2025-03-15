@@ -31,10 +31,10 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
-                    id, start_time, map, duration_ms, engine, game_version, file_name,
+                    id, start_time, map, duration_ms, engine, game_version, file_name, map_name,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
-                    @ID, @StartTime, @Map, @DurationMs, @Engine, @GameVersion, @FileName,
+                    @ID, @StartTime, @Map, @DurationMs, @Engine, @GameVersion, @FileName, @MapName,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -46,6 +46,7 @@ namespace gex.Services.Db {
             cmd.AddParameter("Engine", match.Engine);
             cmd.AddParameter("GameVersion", match.GameVersion);
             cmd.AddParameter("FileName", match.FileName);
+            cmd.AddParameter("MapName", match.MapName);
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
             cmd.AddParameter("MapSettings", match.MapSettings);

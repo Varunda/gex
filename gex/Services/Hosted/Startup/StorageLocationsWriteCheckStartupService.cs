@@ -29,6 +29,7 @@ namespace gex.Services.Hosted.Startup {
             await _TestFile(_Options.Value.TempWorkLocation, cancel);
             await _TestFile(_Options.Value.EngineLocation, cancel);
             await _TestFile(_Options.Value.GameLogLocation, cancel);
+            await _TestFile(_Options.Value.WebImageLocation, cancel);
 
             _Logger.LogInformation($"write test complete!");
         }

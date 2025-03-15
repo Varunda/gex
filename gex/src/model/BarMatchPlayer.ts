@@ -11,12 +11,14 @@ export class BarMatchPlayer {
     public skill: number = 0;
     public skillUncertainty: number = 0;
     public color: number = 0;
+    public hexColor: string = "";
     public handicap: number = 0;
 
     public static parse(elem: any): BarMatchPlayer {
         return {
             ...elem,
-            username: elem.name
+            username: elem.name,
+            hexColor: "#" + (elem.color as number).toString(16).padStart(6, "0")
         };
     }
 }

@@ -40,5 +40,29 @@ namespace gex.Models.Db {
         [ColumnMapping("actions_parsed")]
         public DateTime? ActionsParsed { get; set; }
 
+        /// <summary>
+        ///     how long it took the replay to be downloaded
+        /// </summary>
+        [ColumnMapping("fetch_ms")]
+        public int? ReplayDownloadedMs { get; set; }
+
+        /// <summary>
+        ///     how long it took the replay to be parsed
+        /// </summary>
+        [ColumnMapping("parse_ms")]
+        public int? ReplayParsedMs { get; set; }
+
+        /// <summary>
+        ///     how long it took to simulate the demofile locally
+        /// </summary>
+        [ColumnMapping("replay_ms")]
+        public int? ReplaySimulatedMs { get; set; }
+
+        /// <summary>
+        ///     how long it took to parse the action log from simulating the game locally
+        /// </summary>
+        [ColumnMapping("action_ms")]
+        public int? ActionsParsedMs { get; set; }
+
     }
 }

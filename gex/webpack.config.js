@@ -90,7 +90,8 @@ module.exports = {
         "signalR": "signalR",
         "file-saver": "saveAs",
         "chartjs-plugin-annotation": "chartjs-plugin-annotation",
-        "d3": "d3"
+        //"d3": "d3",
+        "bootstrap": "bootstrap"
     },
 
     resolve: {

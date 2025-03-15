@@ -30,14 +30,21 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_processing (
-                    game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed
+                    game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed,
+                    fetch_ms, parse_ms, replay_ms, action_ms
                 ) VALUES (
-                    @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed
+                    @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed,
+                    @FetchMs, @ParseMs, @ReplayMs, @ActionMs
                 ) ON CONFLICT (game_id) DO UPDATE 
                     SET demofile_fetched = @DemofileFetched,
                         demofile_parsed = @DemofileParsed,
                         headless_ran = @HeadlessRan,
-                        actions_parsed = @ActionsParsed;
+                        actions_parsed = @ActionsParsed,
+                        fetch_ms = @FetchMs,
+                        parse_ms = @ParseMs,
+                        replay_ms = @ReplayMs,
+                        action_ms = @ActionMs
+                ;
             ");
 
             cmd.AddParameter("GameID", proc.GameID);
@@ -45,6 +52,10 @@ namespace gex.Services.Db {
             cmd.AddParameter("DemofileParsed", proc.ReplayParsed);
             cmd.AddParameter("HeadlessRan", proc.ReplaySimulated);
             cmd.AddParameter("ActionsParsed", proc.ActionsParsed);
+            cmd.AddParameter("FetchMs", proc.ReplayDownloadedMs);
+            cmd.AddParameter("ParseMs", proc.ReplayParsedMs);
+            cmd.AddParameter("ReplayMs", proc.ReplaySimulatedMs);
+            cmd.AddParameter("ActionMs", proc.ActionsParsedMs);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();

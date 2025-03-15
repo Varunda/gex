@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Controllers.Api {
@@ -16,6 +17,7 @@ namespace gex.Controllers.Api {
 
         private readonly ILogger<BarMatchApiController> _Logger;
         private readonly BarMatchRepository _MatchRepository;
+        private readonly BarMapRepository _BarMapRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
@@ -24,10 +26,11 @@ namespace gex.Controllers.Api {
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
             BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
-            BarMatchPlayerRepository playerRepository) {
+            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
+            _BarMapRepository = barMapRepository;
             _AllyTeamDb = allyTeamDb;
             _ChatMessageDb = chatMessageDb;
             _SpectatorDb = spectatorDb;
@@ -54,6 +57,8 @@ namespace gex.Controllers.Api {
             if (match == null) {
                 return ApiNoContent<BarMatch>();
             }
+
+            match.MapData = await _BarMapRepository.GetByName(match.MapName, CancellationToken.None);
 
             if (includeAllyTeams == true) {
                 match.AllyTeams = await _AllyTeamDb.GetByGameID(gameID);
@@ -85,7 +90,7 @@ namespace gex.Controllers.Api {
         [HttpGet("recent")]
         public async Task<ApiResponse<List<BarMatch>>> GetRecent(
             [FromQuery] int offset = 0,
-            [FromQuery] int limit = 20
+            [FromQuery] int limit = 24
         ) {
 
             if (offset < 0) {

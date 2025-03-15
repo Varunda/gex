@@ -11,7 +11,7 @@ import { GameEventWindUpdate } from "./GameEventWindUpdate";
 export class GameOutput {
 
     public gameID: string = "";
-    public unitDefinitions: GameEventUnitDef[] = [];
+    public unitDefinitions: Map<number, GameEventUnitDef> = new Map(); //[] = [];
     public windUpdates: GameEventWindUpdate[] = [];
     public unitsCreated: GameEventUnitCreated[] = [];
     public unitsKilled: GameEventUnitKilled[] = [];
@@ -21,9 +21,16 @@ export class GameOutput {
     public teamStats: GameEventTeamsStats[] = [];
 
     public static parse(elem: any): GameOutput {
+
+        const unitDefs: GameEventUnitDef[] = elem.unitDefinitions.map((iter: any) => GameEventUnitDef.parse(iter));
+        const map: Map<number, GameEventUnitDef> = new Map();
+        for (const ud of unitDefs) {
+            map.set(ud.definitionID, ud);
+        }
+
         return {
             gameID: elem.gameID,
-            unitDefinitions: elem.unitDefinitions.map((iter: any) => GameEventUnitDef.parse(iter)),
+            unitDefinitions: map,
             windUpdates: elem.windUpdates.map((iter: any) => GameEventWindUpdate.parse(iter)),
             unitsCreated: elem.unitsCreated.map((iter: any) => GameEventUnitCreated.parse(iter)),
             unitsKilled: elem.unitsKilled.map((iter: any) => GameEventUnitKilled.parse(iter)),

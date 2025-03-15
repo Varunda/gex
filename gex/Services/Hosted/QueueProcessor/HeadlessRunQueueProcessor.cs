@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -41,6 +42,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             _Logger.LogInformation($"running game headless [gameID={entry.GameID}] [force={entry.Force}]");
 
+            Stopwatch timer = Stopwatch.StartNew();
             Result<GameOutput, string> output = await _HeadlessRunner.RunGame(entry.GameID, entry.Force, cancel);
 
             if (output.IsOk == false) {
@@ -52,6 +54,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplaySimulated = DateTime.UtcNow;
+            processing.ReplaySimulatedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingDb.Upsert(processing);
 
             if (entry.ForceForward == true || processing.ActionsParsed == null) {

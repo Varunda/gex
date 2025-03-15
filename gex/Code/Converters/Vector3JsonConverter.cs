@@ -7,6 +7,7 @@ namespace gex.Code.Converters {
 
     public class Vector3JsonConverter : JsonConverter<Vector3> {
 
+        // will need to do this if a vector3 is from json, so far it's only output so safe?
         public override Vector3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
             throw new NotImplementedException();
         }

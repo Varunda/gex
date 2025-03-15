@@ -1,3 +1,4 @@
+import { BarMap } from "./BarMap";
 import { BarMatchAllyTeam } from "./BarMatchAllyTeam";
 import { BarMatchChatMessage } from "./BarMatchChatMessage";
 import { BarMatchPlayer } from "./BarMatchPlayer";
@@ -9,6 +10,7 @@ export class BarMatch {
     public gameVersion: string = "";
     public startTime: Date = new Date();
     public map: string = "";
+    public mapName: string = "";
     public fileName: string = "";
     public durationMs: number = 0;
 
@@ -21,6 +23,8 @@ export class BarMatch {
     public players: BarMatchPlayer[] = [];
     public spectators: BarMatchSpectator[] = [];
     public chatMessages: BarMatchChatMessage[] = [];
+
+    public mapData: BarMap | null = null;
 
     public static parse(elem: any): BarMatch {
         return {
@@ -35,7 +39,9 @@ export class BarMatch {
             allyTeams: elem.allyTeams.map((iter: any) => BarMatchAllyTeam.parse(iter)),
             players: elem.players.map((iter: any) => BarMatchPlayer.parse(iter)),
             spectators: elem.spectators.map((iter: any) => BarMatchSpectator.parse(iter)),
-            chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter))
+            chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
+
+            mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData)
         }
     }
 
