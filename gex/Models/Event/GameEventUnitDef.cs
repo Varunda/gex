@@ -46,6 +46,14 @@ namespace gex.Models.Event {
         [ColumnMapping("speed")]
         public double Speed { get; set; }
 
+        [JsonActionLogPropertyName("sizeX")]
+        [ColumnMapping("size_x")]
+        public double SizeX { get; set; }
+
+        [JsonActionLogPropertyName("sizeZ")]
+        [ColumnMapping("size_z")]
+        public double SizeZ { get; set; }
+
         [JsonActionLogPropertyName("buildTime")]
         [ColumnMapping("build_time")]
         public double BuildTime { get; set; }
@@ -114,6 +122,10 @@ namespace gex.Models.Event {
         [ColumnMapping("attack_range")]
         public double AttackRange { get; set; }
 
+        [JsonActionLogPropertyName("radarDistance")]
+        [ColumnMapping("radar_distance")]
+        public double RadarDistance { get; set; }
+
         [JsonActionLogPropertyName("isCommander")]
         [ColumnMapping("is_commander")]
         public bool IsCommander { get; set; }
@@ -144,10 +156,13 @@ namespace gex.Models.Event {
             hash ^= GetStringHash(DefinitionName);
             hash ^= GetStringHash(Name);
             hash ^= GetStringHash(Tooltip);
+            hash ^= (int)(IsCommander ? 0xAAAAAAAA : 0x55555555);
             hash ^= GetDoubleHash(MetalCost);
             hash ^= GetDoubleHash(EnergyCost);
             hash ^= GetDoubleHash(Health);
             hash ^= GetDoubleHash(Speed);
+            hash ^= GetDoubleHash(SizeX);
+            hash ^= GetDoubleHash(SizeZ);
             hash ^= GetDoubleHash(BuildTime);
             hash ^= GetStringHash(UnitGroup);
             hash ^= GetDoubleHash(BuildPower);
@@ -157,6 +172,7 @@ namespace gex.Models.Event {
             hash ^= GetDoubleHash(MetalStorage);
             hash ^= GetDoubleHash(WindGenerator);
             hash ^= GetDoubleHash(TidalGenerator);
+            hash ^= (int)(IsReclaimer ? 0xAAAAAAAA : 0x55555555);
             hash ^= GetDoubleHash(EnergyProduction);
             hash ^= GetDoubleHash(EnergyUpkeep);
             hash ^= GetDoubleHash(EnergyStorage);
@@ -164,9 +180,8 @@ namespace gex.Models.Event {
             hash ^= GetDoubleHash(EnergyConversionEfficiency);
             hash ^= GetDoubleHash(SightDistance);
             hash ^= GetDoubleHash(AirSightDistance);
+            hash ^= GetDoubleHash(RadarDistance);
             hash ^= GetDoubleHash(AttackRange);
-            hash ^= (int)(IsCommander ? 0xAAAAAAAA : 0x55555555);
-            hash ^= (int)(IsReclaimer ? 0xAAAAAAAA : 0x55555555);
             hash ^= (int)(IsFactory ? 0xAAAAAAAA : 0x55555555);
             hash ^= GetIntHash(WeaponCount);
 

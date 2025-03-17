@@ -1,4 +1,5 @@
 ﻿using gex.Models;
+using gex.Models.Api;
 using gex.Models.Db;
 using gex.Services.Db;
 using gex.Services.Repositories;
@@ -22,11 +23,13 @@ namespace gex.Controllers.Api {
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMatchProcessingDb _ProcessingDb;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
             BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
-            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository) {
+            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
+            BarMatchProcessingDb processingDb) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -35,6 +38,7 @@ namespace gex.Controllers.Api {
             _ChatMessageDb = chatMessageDb;
             _SpectatorDb = spectatorDb;
             _PlayerRepository = playerRepository;
+            _ProcessingDb = processingDb;
         }
 
         /// <summary>
@@ -47,7 +51,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
-        public async Task<ApiResponse<BarMatch>> GetMatch(string gameID,
+        public async Task<ApiResponse<ApiMatch>> GetMatch(string gameID,
             [FromQuery] bool includeAllyTeams = false,
             [FromQuery] bool includePlayers = false,
             [FromQuery] bool includeChat = false,
@@ -55,10 +59,8 @@ namespace gex.Controllers.Api {
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID);
             if (match == null) {
-                return ApiNoContent<BarMatch>();
+                return ApiNoContent<ApiMatch>();
             }
-
-            match.MapData = await _BarMapRepository.GetByName(match.MapName, CancellationToken.None);
 
             if (includeAllyTeams == true) {
                 match.AllyTeams = await _AllyTeamDb.GetByGameID(gameID);
@@ -76,7 +78,11 @@ namespace gex.Controllers.Api {
                 match.Spectators = await _SpectatorDb.GetByGameID(gameID);
             }
 
-            return ApiOk(match);
+            ApiMatch ret = new(match);
+            ret.MapData = await _BarMapRepository.GetByName(match.MapName, CancellationToken.None);
+            ret.Processing = await _ProcessingDb.GetByGameID(gameID);
+
+            return ApiOk(ret);
         }
 
         /// <summary>
@@ -88,25 +94,28 @@ namespace gex.Controllers.Api {
         ///     the response will contain a list of <see cref="BarMatch"/> ordered by <see cref="BarMatch.StartTime"/>
         /// </response>
         [HttpGet("recent")]
-        public async Task<ApiResponse<List<BarMatch>>> GetRecent(
+        public async Task<ApiResponse<List<ApiMatch>>> GetRecent(
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24
         ) {
 
             if (offset < 0) {
-                return ApiBadRequest<List<BarMatch>>($"{nameof(offset)} cannot be less than 0 (is {offset})");
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(offset)} cannot be less than 0 (is {offset})");
             }
             if (limit <= 0 || limit > 100) {
-                return ApiBadRequest<List<BarMatch>>($"{nameof(limit)} must be between 0 and 100 (is {limit})");
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(limit)} must be between 0 and 100 (is {limit})");
             }
 
+            List<ApiMatch> ret = [];
             List<BarMatch> matches = await _MatchRepository.GetRecent(offset, limit);
             foreach (BarMatch m in matches) {
                 m.Players = await _PlayerRepository.GetByGameID(m.ID);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID);
+
+                ret.Add(new ApiMatch(m));
             }
 
-            return ApiOk(matches);
+            return ApiOk(ret);
         }
 
     }

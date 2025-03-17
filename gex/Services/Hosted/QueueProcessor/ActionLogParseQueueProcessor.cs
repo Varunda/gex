@@ -37,6 +37,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameEventTransportUnloadedDb _TransportUnloadedDb;
         private readonly GameEventArmyValueUpdateDb _ArmyValueUpdateDb;
         private readonly GameEventFactoryUnitCreatedDb _FactoryCreateDb;
+        private readonly GameEventTeamDiedDb _TeamDiedDb;
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -48,7 +49,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventUnitTakenDb unitTakenDb,
             GameEventUnitGivenDb unitGivenDb, GameEventTransportLoadedDb transportLoaded,
             GameEventTransportUnloadedDb transportUnloaded, GameEventArmyValueUpdateDb armyValueUpdateDb,
-            GameEventFactoryUnitCreatedDb factoryCreateDb)
+            GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb)
 
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -69,6 +70,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _TransportUnloadedDb = transportUnloaded;
             _ArmyValueUpdateDb = armyValueUpdateDb;
             _FactoryCreateDb = factoryCreateDb;
+            _TeamDiedDb = teamDiedDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -94,6 +96,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _ArmyValueUpdateDb.DeleteByGameID(entry.GameID, cancel);
                 await _CommanderPositionDb.DeleteByGameID(entry.GameID, cancel);
                 await _FactoryCreateDb.DeleteByGameID(entry.GameID, cancel);
+                await _TeamDiedDb.DeleteByGameID(entry.GameID, cancel);
                 await _TeamStatsDb.DeleteByGameID(entry.GameID, cancel);
                 await _TransportLoadedDb.DeleteByGameID(entry.GameID, cancel);
                 await _TransportUnloadedDb.DeleteByGameID(entry.GameID, cancel);
@@ -108,6 +111,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _ArmyValueUpdateDb.InsertMany(game.Value.ArmyValueUpdates, cancel);
             await _CommanderPositionDb.InsertMany(game.Value.CommanderPositionUpdates, cancel);
             await _FactoryCreateDb.InsertMany(game.Value.FactoryUnitCreated, cancel);
+            await _TeamDiedDb.InsertMany(game.Value.TeamDiedEvents, cancel);
             await _TeamStatsDb.InsertMany(game.Value.TeamStats, cancel);
             await _TransportLoadedDb.InsertMany(game.Value.TransportLoaded, cancel);
             await _TransportUnloadedDb.InsertMany(game.Value.TransportUnloaded, cancel);

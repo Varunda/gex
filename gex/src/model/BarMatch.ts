@@ -2,6 +2,7 @@ import { BarMap } from "./BarMap";
 import { BarMatchAllyTeam } from "./BarMatchAllyTeam";
 import { BarMatchChatMessage } from "./BarMatchChatMessage";
 import { BarMatchPlayer } from "./BarMatchPlayer";
+import { BarMatchProcessing } from "./BarMatchProcessing";
 import { BarMatchSpectator } from "./BarMatchSpectator";
 
 export class BarMatch {
@@ -25,6 +26,7 @@ export class BarMatch {
     public chatMessages: BarMatchChatMessage[] = [];
 
     public mapData: BarMap | null = null;
+    public processing: BarMatchProcessing | null = null;
 
     public static parse(elem: any): BarMatch {
         return {
@@ -41,7 +43,8 @@ export class BarMatch {
             spectators: elem.spectators.map((iter: any) => BarMatchSpectator.parse(iter)),
             chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
 
-            mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData)
+            mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
+            processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing)
         }
     }
 

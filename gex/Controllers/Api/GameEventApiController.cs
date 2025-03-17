@@ -29,6 +29,7 @@ namespace gex.Controllers.Api {
         private readonly GameEventUnitTakenDb _UnitTakenDb;
         private readonly GameEventTransportLoadedDb _TransportLoadedDb;
         private readonly GameEventTransportUnloadedDb _TransportUnloadedDb;
+        private readonly GameEventTeamDiedDb _TeamDiedDb;
 
         public GameEventApiController(ILogger<GameEventApiController> logger,
             GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
@@ -37,7 +38,8 @@ namespace gex.Controllers.Api {
             GameEventArmyValueUpdateDb armyUpdateDb, GameEventWindUpdateDb windUpdateDb,
             GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventFactoryUnitCreatedDb factoryUnitCreatedDb,
             GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
-            GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb) {
+            GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
+            GameEventTeamDiedDb teamDiedDb) {
 
             _Logger = logger;
 
@@ -55,6 +57,7 @@ namespace gex.Controllers.Api {
             _UnitTakenDb = unitTakenDb;
             _TransportLoadedDb = transportLoadedDb;
             _TransportUnloadedDb = transportUnloadedDb;
+            _TeamDiedDb = teamDiedDb;
         }
 
         /// <summary>
@@ -77,6 +80,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeUnitsTaken">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTransportLoads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTransportUnloads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+        /// <param name="includeTeamDiedEvents">if <see cref="GameOutput.TeamDiedEvents"/> will be populated, defaults to false</param>
         /// <response code="200">
         ///     the response will contain a <see cref="GameOutput"/>, that has the various fields
         ///     populated based on the parameters passed
@@ -98,7 +102,8 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeUnitsGiven = false,
             [FromQuery] bool includeUnitsTaken = false,
             [FromQuery] bool includeTransportLoads = false,
-            [FromQuery] bool includeTransportUnloads = false
+            [FromQuery] bool includeTransportUnloads = false,
+            [FromQuery] bool includeTeamDiedEvents = false
         ) {
 
             BarMatch? match = await _MatchRepository.GetByID(gameID);
@@ -151,6 +156,10 @@ namespace gex.Controllers.Api {
 
             if (includeTransportUnloads == true) {
                 output.TransportUnloaded = await _TransportUnloadedDb.GetByGameID(gameID);
+            }
+
+            if (includeTeamDiedEvents == true) {
+                output.TeamDiedEvents = await _TeamDiedDb.GetByGameID(gameID);
             }
 
             if (includeUnitDefs == true) {

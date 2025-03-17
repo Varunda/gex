@@ -11,7 +11,7 @@ export class GameOutputApi extends ApiWrapper<GameOutput> {
         return GameOutputApi.get().readSingle(`/api/game-event/${gameID}?includeTeamStats=true&includeUnitsKilled=true`
             + `&includeUnitsCreated=true&includeUnitDefs=true&includeArmyValueUpdates=true&includeWindUpdates=true`
             + `&includeCommanderPositionUpdates=true&includeFactoryUnitCreate=true&includeUnitsGiven=true&includeUnitsTaken=true`
-            + `&includeTransportLoads=true&includeTransportUnloads=true`, GameOutput.parse);
+            + `&includeTransportLoads=true&includeTransportUnloads=true&includeTeamDiedEvents=true`, GameOutput.parse);
 
     }
 

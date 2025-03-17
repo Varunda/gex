@@ -38,6 +38,8 @@ using System.Linq;
 using System.Collections.Generic;
 using Dapper.ColumnMapper;
 using Dapper;
+using System.Threading.RateLimiting;
+using System.Threading.Tasks;
 
 namespace gex {
 
@@ -155,6 +157,72 @@ namespace gex {
                 builder.AllowAnyHeader();
             }));
 
+            services.AddRateLimiter(opt => {
+
+                // two rate limits exist,
+                // one prevents one client from making a bunch of requests at once,
+                // the other limits how many api requests per second a client can make
+                opt.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+
+                    // only allow 10 concurrent request at once
+                    PartitionedRateLimiter.Create<HttpContext, IPAddress>(context => {
+                        // non-api endpoints have 0 rate limits
+                        if (!context.Request.Path.StartsWithSegments("/api")) {
+                            return RateLimitPartition.GetNoLimiter(IPAddress.None);
+                        }
+
+                        IPAddress addr = context.Connection.RemoteIpAddress ?? throw new Exception($"missing ip addr");
+
+                        return RateLimitPartition.GetConcurrencyLimiter(addr, _ => {
+                            return new ConcurrencyLimiterOptions() {
+                                PermitLimit = 10,
+                                QueueLimit = 10
+                            };
+                        });
+                    }),
+
+                    // 
+                    PartitionedRateLimiter.Create<HttpContext, IPAddress>(context => {
+                        // non-api endpoints have 0 rate limits
+                        if (!context.Request.Path.StartsWithSegments("/api")) {
+                            return RateLimitPartition.GetNoLimiter(IPAddress.None);
+                        }
+
+                        IPAddress addr = context.Connection.RemoteIpAddress ?? throw new Exception($"missing ip addr");
+
+                        return RateLimitPartition.GetTokenBucketLimiter(addr, _ => {
+                            return new TokenBucketRateLimiterOptions() {
+                                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                                TokenLimit = 300,
+                                AutoReplenishment = true,
+                                TokensPerPeriod = 60
+                            };
+                        });
+                    })
+                );
+
+                opt.OnRejected = (context, cancel) => {
+                    ILogger? logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?
+                        .CreateLogger("watchtower.Startup.Ratelimiter");
+
+                    logger?.LogInformation($"rate limit hit [ip={context.HttpContext.Connection.RemoteIpAddress}] [url='{context.HttpContext.Request.Path}'] "
+                        + $"[referrer='{context.HttpContext.Request.Headers.Referer}']");
+
+                    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter.Name, out object? retryAfter)) {
+                        if (retryAfter is TimeSpan ts) {
+                            context.HttpContext.Response.Headers.RetryAfter = $"{ts.TotalSeconds}";
+                        }
+                    }
+
+                    context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    // not setting this throws an XML parse error in firefox
+                    context.HttpContext.Response.ContentType = "application/json";
+                    context.HttpContext.Response.WriteAsync("{ \"error\": \"too many requests!\" }", cancel);
+
+                    return ValueTask.CompletedTask;
+                };
+            });
+
             services.Configure<DiscordOptions>(Configuration.GetSection("Discord"));
             services.Configure<InstanceOptions>(Configuration.GetSection("Instance"));
             services.Configure<HttpOptions>(Configuration.GetSection("Http"));
@@ -217,6 +285,7 @@ namespace gex {
 
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseRateLimiter();
 
             app.UseSwagger(doc => { });
             app.UseSwaggerUI(doc => {
@@ -225,6 +294,7 @@ namespace gex {
                 doc.DocumentTitle = "API documentation";
             });
 
+            app.UseResponseCaching();
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -266,6 +336,12 @@ namespace gex {
                     name: "match",
                     pattern: "/match/{*.}",
                     defaults: new { controller = "Home", action = "Match" }
+                );
+
+                endpoints.MapControllerRoute(
+                    name: "download matcth",
+                    pattern: "/downloadmatch/{gameID}",
+                    defaults: new { controller = "Home", action = "DownloadMatch" }
                 );
 
                 endpoints.MapSwagger();

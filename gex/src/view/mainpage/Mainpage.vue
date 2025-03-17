@@ -198,7 +198,7 @@
             },
 
             getMapThumbnail: function(map: string): string {
-                return `/image-proxy/MapBackground?mapName=${map}&size=texture-thumb`;
+                return `/image-proxy/MapBackground?mapName=${map.replace(/ /g, "%20")}&size=texture-thumb`;
             },
 
             isFFA: function(match: BarMatch): boolean {

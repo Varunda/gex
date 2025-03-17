@@ -1,6 +1,7 @@
 import { GameEventArmyValueUpdate } from "./GameEventArmyValueUpdate";
 import { GameEventCommanderPositionUpdate } from "./GameEventCommanderPositionUpdate";
 import { GameEventFactoryUnitCreated } from "./GameEventFactoryUnitCreated";
+import { GameEventTeamDied } from "./GameEventTeamDied";
 import { GameEventTeamsStats } from "./GameEventTeamStats";
 import { GameEventUnitCreated } from "./GameEventUnitCreated";
 import { GameEventUnitDef } from "./GameEventUnitDef";
@@ -19,6 +20,7 @@ export class GameOutput {
     public commanderPositionUpdates: GameEventCommanderPositionUpdate[] = [];
     public armyValueUpdates: GameEventArmyValueUpdate[] = [];
     public teamStats: GameEventTeamsStats[] = [];
+    public teamDiedEvents: GameEventTeamDied[] = [];
 
     public static parse(elem: any): GameOutput {
 
@@ -37,7 +39,8 @@ export class GameOutput {
             factoryUnitCreated: elem.factoryUnitCreated.map((iter: any) => GameEventFactoryUnitCreated.parse(iter)),
             commanderPositionUpdates: elem.commanderPositionUpdates.map((iter: any) => GameEventCommanderPositionUpdate.parse(iter)),
             armyValueUpdates: elem.armyValueUpdates.map((iter: any) => GameEventArmyValueUpdate.parse(iter)),
-            teamStats: elem.teamStats.map((iter: any) => GameEventTeamsStats.parse(iter))
+            teamStats: elem.teamStats.map((iter: any) => GameEventTeamsStats.parse(iter)),
+            teamDiedEvents: elem.teamDiedEvents.map((iter: any) => GameEventTeamDied.parse(iter))
         };
     }
 

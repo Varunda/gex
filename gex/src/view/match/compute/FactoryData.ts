@@ -12,17 +12,23 @@ export class FactoryDataUnit {
 export class FactoryData {
     public factoryID: number = 0;
     public factoryDefinitionID: number = 0;
+    public factoryDefinitionName: string = "";
     public name: string = "";
     public teamID: number = 0;
     public position: { x: number, z: number } = { x: 0, z: 0 };
+    public size: { x: number, z: number}  = { x: 0, z: 0 };
     public units: FactoryDataUnit[] = [];
     public totalMade: number = 0;
+
+    public createdAt: number = 0;
+    public destroyedAt: number | null = null;
 }
 
 export class PlayerFactories {
     public name: string = "";
     public teamID: number = 0;
     public color: string = "";
+    public colorInt: number = 0;
     public factories: FactoryData[] = [];
 
     public static compute(match: BarMatch, output: GameOutput): PlayerFactories[] {
@@ -43,14 +49,24 @@ export class PlayerFactories {
             map.set(created.unitID, {
                 factoryID: created.unitID,
                 factoryDefinitionID: created.definitionID,
+                factoryDefinitionName: unitDef.definitionName,
                 name: unitDef.name,
                 teamID: created.teamID,
-                position: {
-                    x: created.unitX, z: created.unitZ
-                },
+                position: { x: created.unitX, z: created.unitZ },
+                size: { x: unitDef.sizeX * 2, z: unitDef.sizeZ * 2 },
                 units: [],
-                totalMade: 0
+                totalMade: 0,
+                createdAt: created.frame,
+                destroyedAt: null
             });
+        }
+
+        for (const killed of output.unitsKilled) {
+            if (map.has(killed.unitID) == false) {
+                continue;
+            }
+
+            map.get(killed.unitID)!.destroyedAt = killed.frame;
         }
 
         for (const fac of output.factoryUnitCreated) {
@@ -89,6 +105,7 @@ export class PlayerFactories {
             iter.teamID = player.teamID;
             iter.name = player.username;
             iter.color = player.hexColor;
+            iter.colorInt = player.color;
             iter.factories = facs.filter(iter => iter.teamID == player.teamID);
 
             pf.push(iter);

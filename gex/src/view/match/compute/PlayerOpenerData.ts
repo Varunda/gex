@@ -23,6 +23,10 @@ export class PlayerOpener {
         for (const ev of output.unitsCreated) {
             const teamID: number = ev.teamID;
 
+            if (match.players.find(iter => iter.teamID == teamID) == undefined) {
+                continue;
+            }
+
             const entry: PlayerOpener = map.get(teamID) ?? {
                 teamID: teamID,
                 buildings: [],
@@ -38,6 +42,10 @@ export class PlayerOpener {
 
             if (def.speed == 0) {
                 entry.buildings.push(def);
+            }
+
+            if (map.has(teamID) == false) {
+                console.log(`PlayerOpenerData> new team ${teamID} from ${JSON.stringify(ev)}`);
             }
 
             map.set(teamID, entry);

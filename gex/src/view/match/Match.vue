@@ -23,15 +23,44 @@
                     {{ match.data.allyTeams.map(iter => iter.playerCount).join(" v ") }}
                 </h2>
 
-                <div id="d3_canvas" style="overflow: hidden;">
-                    <svg id="map-svg" :viewBox="viewboxStr"> </svg>
+                <div v-if="match.data.processing">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
+                            <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
+                            <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
+                            <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>
+                    <a :href="'/downloadmatch/' + gameID" download="download">
+                        Download replay
+                    </a>
+                </h4>
+
+                <h4>
+                    View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
+                </h4>
+
+                <div class="d-flex justify-content-center">
+                    <div class="flex-grow-0"></div>
+                    <div id="d3_canvas" style="overflow: hidden; position: sticky;" class="d-inline-block">
+                        <svg id="map-svg" :viewBox="viewboxStr"></svg>
+                    </div>
+                    <div class="flex-grow-0"></div>
                 </div>
 
                 <img id="map-dims" :src="mapUrl" style="display: none;">
 
                 <div v-if="output.state == 'loaded'">
                     <match-opener :openers="computedData.opener" class="my-3"></match-opener>
+                    <team-stats-chart :stats="output.data.teamStats" class="my-3"></team-stats-chart>
                     <match-factories :data="computedData.factories" class="my-3"></match-factories>
+                    <match-unit-stats :unit-stats="computedData.unitStats" :match="match.data" class="my-3"></match-unit-stats>
+                    <match-wind-graph :updates="output.data.windUpdates" :map="match.data.mapData"></match-wind-graph>
+                    <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-3"></unit-def-view>
                 </div>
 
             </div>
@@ -44,9 +73,17 @@
                 unchecked state of match: {{ match.state }}
             </div>
         </div>
+
     </div>
     
 </template>
+
+<style scoped>
+    text {
+        font-family: "Atkinson Hyperlegible";
+    }
+
+</style>
 
 <script lang="ts">
     import Vue from "vue";
@@ -65,6 +102,10 @@
 
     import { MatchOpener } from "./components/MatchOpener.vue";
     import MatchFactories from "./components/MatchFactories.vue";
+    import UnitDefView from "./components/UnitDefView.vue";
+    import MatchWindGraph from "./components/MatchWindGraph.vue";
+    import MatchUnitStats from "./components/MatchUnitStats.vue";
+    import TeamStatsChart from "./components/TeamStatsChart.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -73,10 +114,34 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMap } from "model/BarMap";
     import { GameEventUnitDef } from "model/GameEventUnitDef";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import { CommanderData } from "./compute/ComputeCommanderData";
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { FactoryData, PlayerFactories } from "./compute/FactoryData";
+    import { UnitStats } from "./compute/UnitStatData";
+
+    export const ProcessingStep = Vue.extend({
+        props: {
+            step: { type: String }, 
+            when: { },
+            duration: { }
+        },
+
+        template: `
+            <tr>
+                <td>{{step}}</td>
+                <td>
+                    <span v-if="when != null">
+                        on {{ when | moment("YYYY-MM-DD hh:mm:ssA") }} (took {{ duration / 1000 | mduration }})
+                    </span>
+                    <span v-else>
+                        --
+                    </span>
+                </td>
+            </tr>
+        `
+    });
 
     export const Match = Vue.extend({
         props: {
@@ -92,20 +157,23 @@
 
                 loadingSteps: 3 as number,
 
-                svg: null as d3.Selection<any> | null,
-                root: null as d3.Selection<any> | null,
+                svg: null as d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null,
+                root: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                tooltip: null as any | null,
                 zoom: {} as any,
-                //svg: null as SVGElement | null,
 
                 mapW: 0 as number,
                 mapH: 0 as number,
                 imgW: 0 as number,
                 imgH: 0 as number,
 
+                unitIdToDefId: new Map as Map<number, number>,
+
                 computedData: {
                     commander: [] as CommanderData[],
                     opener: [] as PlayerOpener[],
-                    factories: [] as PlayerFactories[]
+                    factories: [] as PlayerFactories[],
+                    unitStats: [] as UnitStats[]
                 }
             };
         },
@@ -168,7 +236,7 @@
                             .scaleExtent([1, 10])
                             .translateExtent([[0, 0], [this.imgW, this.imgH]])
                             .on("zoom", (ev: any) => {
-                                console.log(ev.transform);
+                                //console.log(ev.transform);
                                 this.root!.attr("transform", ev.transform);
                             }
                         );
@@ -181,11 +249,19 @@
                             .style("fill", "transparent");
 
                         this.root.append("image")
-                            .attr("widht", this.imgW).attr("height", this.imgH)
+                            .attr("width", this.imgW).attr("height", this.imgH)
                             .attr("href", this.mapUrl);
 
-                        //this.svg.setAttribute("height", `${this.imgH}`);
-                        //this.svg.setAttribute("width", `${this.imgW}`);
+                        this.tooltip = d3.select("#d3_canvas")
+                            .append("div")
+                            .style("opacity", 0)
+                            .attr("class", "tooltip")
+                            .style("position", "absolute")
+                            .style("background-color", "var(--bs-body-bg)")
+                            .style("border", "solid")
+                            .style("border-width", "2px")
+                            .style("border-radius", "5px")
+                            .style("padding", "5px");
 
                         this.decLoadingStepsAndPossiblyStart();
                     });
@@ -208,13 +284,21 @@
                 }
 
                 console.log(`add data loaded, starting processing`);
+
+                for (const ev of this.output.data.unitsCreated) {
+                    this.unitIdToDefId.set(ev.unitID, ev.definitionID);
+                }
+
                 this.computedData.commander = CommanderData.compute(this.output.data);
                 this.computedData.opener = PlayerOpener.compute(this.match.data, this.output.data);
                 this.computedData.factories = PlayerFactories.compute(this.match.data, this.output.data);
+                this.computedData.unitStats = UnitStats.compute(this.output.data, this.match.data);
 
                 this.addCommanderPositionUpdates();
                 this.addFactoryPositions();
                 this.addPlayerStartingPositions();
+                this.addRadars();
+                this.addStaticDefense();
             },
 
             loadOutput: async function(): Promise<void> {
@@ -241,38 +325,16 @@
                         .attr("cy", `${player.startingPosition.z / this.mapH * 100}%`)
                         .attr("r", "10px")
                         .style("fill", player.hexColor);
-                    /*
-                    this.svg.appendChild(
-                        this.createCircle(player.startingPosition.x / this.mapW * 100, player.startingPosition.z / this.mapW * 100, 10, player.hexColor, {
-                            click: () => {
-                                console.log(`clicked on starting position for player ${player.username}`);
-                            },
-                            mouseenter: () => {
-                                console.log(`mouse enter starting position for player ${player.username}`);
-                            }
-                        }
-                    ));
-                    */
 
-                    /*
                     this.root.append("text")
                         .attr("x", (this.toImgX(player.startingPosition.x)) + 16)
                         .attr("y", this.toImgZ(player.startingPosition.z))
                         .style("fill", player.hexColor)
-                        .style("font-size", "18px")
+                        .style("font-size", "1.3rem")
                         .style("paint-order", "stroke")
                         .style("stroke", "black")
-                        .style("stroke-width", "10x")
+                        .style("stroke-width", "2px")
                         .text(player.username);
-                        */
-
-                    const text: SVGTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    text.setAttributeNS(null, "x", "" + (this.toImgX(player.startingPosition.x) + 16));
-                    text.setAttributeNS(null, "y", "" + this.toImgZ(player.startingPosition.z));
-                    text.setAttributeNS(null, "style", `fill: ${player.hexColor}; font-size: 18px; paint-order: stroke; stroke: black; stroke-width: 1px;`);
-                    text.innerHTML = player.username;
-
-                    //this.svg.appendChild(text);
                 }
             },
 
@@ -289,8 +351,9 @@
                         continue;
                     }
 
-                    const g: SVGGElement = this.createGroup(`commander-updates-${update.teamID}`);
-                    g.classList.add("commander-updates");
+                    const g = this.root.append("g")
+                        .attr("id", `commander-updates-${update.teamID}`)
+                        .classed("commander-updates", true)
 
                     const color: string = "#" + (this.match.data.players.find(iter => iter.teamID == update.teamID)?.color.toString(16).padStart(6, "0") ?? `ffffff`);
                     let path: string = ``;
@@ -303,17 +366,18 @@
                             path += `L ${this.toImgX(iter.x)}, ${this.toImgZ(iter.z)}`;
                         }
 
-                        g.appendChild(this.createCircle(iter.x / this.mapW * 100, iter.z / this.mapH * 100, 2, color));
+                        g.append("circle")
+                            .attr("cx", this.toImgX(iter.x))
+                            .attr("cy", this.toImgX(iter.z))
+                            .attr("r", `2px`)
+                            .style("fill", color);
                     }
 
-                    const pathElem: SVGPathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    pathElem.setAttributeNS(null, "d", path);
-                    pathElem.setAttributeNS(null, "style", `fill: transparent; stroke: ${color}; stroke-width: 1px`);
-                    g.appendChild(pathElem);
-
-                    //this.svg.append("g");
-
-                    //this.svg.appendChild(g);
+                    g.append("path")
+                        .attr("d", path)
+                        .style("fill", "transparent")
+                        .style("stroke", color)
+                        .style("stroke-width", "1px");
                 }
             },
 
@@ -327,82 +391,262 @@
 
                 for (const player of this.computedData.factories) {
                     for (const fac of player.factories) {
-                        this.root.append("rect")
-                            .attr("x", this.toImgX(fac.position.x))
-                            .attr("y", this.toImgZ(fac.position.z))
-                            .attr("width", 16).attr("height", 16)
-                            .style("fill", player.color);
-                        //this.svg.appendChild(this.createSquare(fac.position.x / this.mapW * 100, fac.position.z / this.mapH * 100, 16, player.color));
+                        const facGroup = this.root.append("g")
+                            .attr("x", this.toImgX(fac.position.x - fac.size.x))
+                            .attr("y", this.toImgZ(fac.position.z - fac.size.z))
+                            .attr("width", fac.size.x).attr("height", fac.size.z)
+                            .attr("data-id", fac.factoryID)
+                            .on("mouseenter", (ev: any) => {
+                                const factoryID: number = Number.parseInt(ev.target.dataset.id);
+
+                                let factory: FactoryData | null = null;
+                                for (const fac of this.computedData.factories) {
+                                    for (const iter of fac.factories) {
+                                        if (iter.factoryID == factoryID) {
+                                            factory = iter;
+                                            break;
+                                        }
+                                    }
+                                    if (factory != null) { break; }
+                                }
+
+                                if (factory == null) {
+                                    console.warn(`Match> failed to find factory ${factoryID}`);
+                                    return;
+                                }
+
+                                this.showTooltip(`Factory: ${factory.name}<br>`
+                                    + `Created at: ${Math.floor(factory.createdAt / 30)}s<br>`
+                                    + ((factory.destroyedAt != null) ? `Destroyed at: ${Math.floor(factory.destroyedAt! / 30)}s<br>` : ``)
+                                    + `<table class="table table-sm mb-0"><thead><tr><th colspan="2" class="text-center">Units created</th></tr>`
+                                    + `<tbody>${factory.units.map(iter => `<tr><td>${iter.name}</td><td>${iter.count}</td></tr>`).join(" ")}</tbody>`
+                                    + `</table>`
+                                );
+                            }).on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            }).on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
+
+                        facGroup.append("rect")
+                            .attr("x", this.toImgX(fac.position.x - fac.size.x))
+                            .attr("y", this.toImgZ(fac.position.z - fac.size.z))
+                            .attr("width", fac.size.x).attr("height", fac.size.z)
+                            .style("fill", player.color)
+                            .style("stroke-width", "2px")
+                            .style("stroke", "black")
+                            .style("paint-order", "stroke");
+
+                        facGroup.append("image")
+                            .attr("x", this.toImgX(fac.position.x - fac.size.x))
+                            .attr("y", this.toImgZ(fac.position.z - fac.size.z))
+                            .attr("width", fac.size.x).attr("height", fac.size.z)
+                            .attr("href", `/image-proxy/UnitIcon?defName=${fac.factoryDefinitionName}&color=${player.colorInt}`);
                     }
+                }
+            },
+
+            showTooltip: function(html: string): void {
+                if (this.tooltip == null) {
+                    console.warn(`tooltip is null`);
+                    return;
+                }
+
+                this.tooltip.style("opacity", 1);
+                this.tooltip.html(html);
+            },
+
+            hideTooltip: function(): void {
+                this.tooltip?.style("opacity", 0).style("left", 0).style("top", 0);
+            },
+
+            moveTooltip: function(ev: any) {
+                if (this.tooltip == null) {
+                    return;
+                }
+
+                this.tooltip.style("left", null).style("right", null).style("top", null).style("bottom", null);
+
+                const pos = d3.pointer(ev, this.root?.node());
+                if (pos[0] <= this.imgW / 2) {
+                    this.tooltip.style("left", `${pos[0]}px`);
+                } else {
+                    this.tooltip.style("right", `${this.imgW - pos[0]}px`);
+                }
+
+                if (pos[1] <= this.imgH / 2) {
+                    this.tooltip.style("top", `${pos[1]}px`);
+                } else {
+                    this.tooltip.style("bottom", `${this.imgH - pos[1]}px`);
+                }
+            },
+
+            addRadars: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add radars: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add radars: root is null`); }
+                if (this.output.state != "loaded") { return console.warn(`cannot add radars: output is not loaded (is ${this.output.state})`); }
+                if (this.match.state != "loaded") { return console.warn(`cannot add radars: match is not loaded (is ${this.match.state})`); }
+
+                for (const ev of this.output.data.unitsCreated) {
+
+                    const unitDef: GameEventUnitDef | undefined = this.output.data.unitDefinitions.get(ev.definitionID);
+                    if (unitDef == undefined) {
+                        console.warn(`Match> missing unit definition [defID=${ev.definitionID}]`);
+                        continue;
+                    }
+
+                    if (unitDef.unitGroup != "util" || unitDef.speed != 0 || unitDef.weaponCount != 0) {
+                        continue;
+                    }
+
+                    const player: BarMatchPlayer | undefined = this.match.data.players.find(iter => iter.teamID == ev.teamID);
+                    if (player == undefined) {
+                        console.warn(`Match> missing player ${ev.teamID} from unit created ${ev.unitID}`);
+                        continue;
+                    }
+
+                    //const x: number = this.toImgX(ev.unitX - unitDef.sizeX * 2);
+                    //const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
+
+                    this.createHoverRange(`radar-range-${ev.unitID}`, ev.unitID, "#00FF0044", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
+                        unitDef.radarDistance, unitDef.sizeX * 2, unitDef.sizeZ * 2, player.hexColor, player.color, unitDef.definitionName);
+                }
+
+            },
+
+            addStaticDefense: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add static defense: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add static defense: root is null`); }
+                if (this.output.state != "loaded") { return console.warn(`cannot add static defense: output is not loaded (is ${this.output.state})`); }
+                if (this.match.state != "loaded") { return console.warn(`cannot add static defense: match is not loaded (is ${this.match.state})`); }
+
+                for (const ev of this.output.data.unitsCreated) {
+                    const unitDef: GameEventUnitDef | undefined = this.output.data.unitDefinitions.get(ev.definitionID);
+                    if (unitDef == undefined) {
+                        console.warn(`Match> missing unit definition [defID=${ev.definitionID}]`);
+                        continue;
+                    }
+
+                    if (unitDef.unitGroup != "weapon" || unitDef.speed != 0 || unitDef.weaponCount == 0) {
+                        continue;
+                    }
+
+                    const player: BarMatchPlayer | undefined = this.match.data.players.find(iter => iter.teamID == ev.teamID);
+                    if (player == undefined) {
+                        console.warn(`Match> missing player ${ev.teamID} from unit created ${ev.unitID}`);
+                        continue;
+                    }
+
+                    const x: number = this.toImgX(ev.unitX - unitDef.sizeX * 2);
+                    const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
+
+                    const g = this.createHoverRange(`static-defense-${ev.unitID}`, ev.unitID, "#FF000022", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
+                        unitDef.attackRange, unitDef.sizeX * 2, unitDef.sizeZ * 2, player.hexColor, player.color, unitDef.definitionName, {
+                            mouseenter: (ev: any) => {
+                                const unitID: number = Number.parseInt(ev.target.dataset.unitId);
+                                console.log(`moused over static defense ${unitID}`);
+
+                                if (this.output.state != "loaded") {
+                                    return console.warn(`Match> cannot show static defense ${unitID} tooltip: output.state is not loaded`);
+                                }
+
+                                const defID: number | undefined = this.unitIdToDefId.get(unitID);
+                                if (defID == undefined) {
+                                    return console.warn(`Match> cannot show static defense ${unitID} tooltip: failed to find defID for ${unitID}`);
+                                }
+
+                                const unitDef: GameEventUnitDef | undefined = this.output.data.unitDefinitions.get(defID);
+                                if (unitDef == undefined) {
+                                    return console.warn(`Match> cannot show static defense ${unitID} tooltip: failed to find unit def ${defID}`);
+                                }
+
+                                let count: number = 0;
+                                for (const ev of this.output.data.unitsKilled) {
+                                    if (ev.attackerID == unitID) {
+                                        ++count;
+                                    }
+                                }
+
+                                this.showTooltip(`${unitDef.name}<br>`
+                                    + `Killed ${count} units`
+                                );
+                            },
+                            mousemove: (ev: any) => {
+                                this.moveTooltip(ev);
+                            },
+                            mouseleave: (ev: any) => {
+                                this.hideTooltip();
+                            }
+                        }
+                    );
                 }
             },
 
             toImgX(x: number): number { return x / this.mapW * this.imgW; },
             toImgZ(z: number): number { return z / this.mapH * this.imgH; },
 
-            createGroup(id: string): SVGGElement {
-                const g: SVGGElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                g.id = id;
+            createHoverRange: function(
+                elemID: string, unitID: number,
+                fillColor: string, x: number, z: number, r: number, sx: number, sz: number,
+                unitColor: string, playerColor: number, defName: string,
+                callbacks?: { 
+                    mouseenter?: (ev: any) => void,
+                    mousemove?: (ev: any) => void,
+                    mouseleave?: (ev: any) => void
+                },
+            ): d3.Selection<SVGGElement, unknown, HTMLElement, unknown> {
 
-                return g;
-            },
+                if (this.root == null) { throw `missing root!`; }
 
-            createSquare(x: number, y: number, length: number, color: string, events?: {
-                click?: () => void,
-                mouseenter?: () => void,
-                mouseleave?: () => void,
-            }): SVGRectElement {
+                const tx: number = this.toImgX(x);
+                const tz: number = this.toImgZ(z);
 
-                const rect: SVGRectElement = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                rect.setAttributeNS(null, "x", `${x}%`);
-                rect.setAttributeNS(null, "y", `${y}%`);
-                rect.setAttributeNS(null, "width", `${length}px`);
-                rect.setAttributeNS(null, "height", `${length}px`);
-                rect.setAttributeNS(null, "style", `fill: ${color};`);
+                this.root.append("circle")
+                    .attr("id", elemID)
+                    .attr("pointer-events", "none")
+                    .attr("cx", tx).attr("cy", tz)
+                    .attr("r", Math.max(this.toImgX(r), this.toImgZ(r)))
+                    .style("fill", fillColor)
+                    .style("stroke", "black")
+                    .style("stroke-width", "2px")
+                    .style("opacity", 0);
 
-                if (events?.click) {
-                    rect.addEventListener("click", events.click);
-                }
-                if (events?.mouseenter) {
-                    rect.addEventListener("mouseenter", events.mouseenter);
-                }
-                if (events?.mouseleave) {
-                    rect.addEventListener("mouseleave", events.mouseleave);
-                }
+                const facGroup = this.root.append("g")
+                    .attr("x", tx).attr("y", tz)
+                    .attr("width", sx).attr("height", sz)
+                    .attr("data-unit-id", unitID)
+                    .on("mouseenter", (ev: any) => {
+                        this.root!.select("#" + elemID).style("opacity", 1);
+                        if (callbacks?.mouseenter) {
+                            callbacks.mouseenter(ev);
+                        }
+                    })
+                    .on("mousemove", (ev: any) => {
+                        if (callbacks?.mousemove) {
+                            callbacks.mousemove(ev);
+                        }
+                    })
+                    .on("mouseleave", (ev: any) => {
+                        this.root!.select("#" + elemID).style("opacity", 0);
+                        if (callbacks?.mouseleave) {
+                            callbacks.mouseleave(ev);
+                        }
+                    });
 
-                return rect;
-            },
+                facGroup.append("rect")
+                    .attr("x", tx) .attr("y", tz)
+                    .attr("width", sx).attr("height", sz)
+                    .style("fill", "#" + unitColor)
+                    .style("stroke-width", "2px")
+                    .style("stroke", "black")
+                    .style("paint-order", "stroke");
 
-            /**
-             * helper method to make an SVG circle element
-             * @param x relative (percent) X position
-             * @param y relative (percent) Y position
-             * @param radius radius in abolsute units
-             * @param color color in hex, include the leading # if needed
-             */
-            createCircle(x: number, y: number, radius: number, color: string, events?: {
-                click?: () => void,
-                mouseenter?: () => void,
-                mouseleave?: () => void,
-            }): SVGCircleElement {
+                facGroup.append("image")
+                    .attr("x", tx).attr("y", tz)
+                    .attr("width", sx).attr("height", sz)
+                    .attr("href", `/image-proxy/UnitIcon?defName=${defName}&color=${playerColor}`);
 
-                const dot: SVGCircleElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                dot.setAttributeNS(null, "cx", `${x}%`);
-                dot.setAttributeNS(null, "cy", `${y}%`);
-                dot.setAttributeNS(null, "r", `${radius}px`);
-                dot.setAttributeNS(null, "style", `fill: ${color};`);
-
-                if (events?.click) {
-                    dot.addEventListener("click", events.click);
-                }
-                if (events?.mouseenter) {
-                    dot.addEventListener("mouseenter", events.mouseenter);
-                }
-                if (events?.mouseleave) {
-                    dot.addEventListener("mouseleave", events.mouseleave);
-                }
-
-                return dot;
+                return facGroup;
             }
 
         },
@@ -433,7 +677,8 @@
 
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
-            MatchOpener, MatchFactories
+            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart,
+            ProcessingStep
         }
     });
     export default Match;

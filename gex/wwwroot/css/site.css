@@ -85,7 +85,7 @@
 }
 
 .wt-header {
-    background-color: var(--secondary);
+    background-color: var(--bs-secondary);
     padding: 0.25rem 0.5rem;
     border-top: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;

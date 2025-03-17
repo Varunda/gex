@@ -29,20 +29,20 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO unit_def_set_entry (
-                    hash, definition_id, definition_name, name, tooltip,
+                    hash, definition_id, definition_name, name, tooltip, size_x, size_z,
                     metal_cost, energy_cost, health, speed, build_time, unit_group, build_power,
                     metal_make, is_metal_extractor, extracts_metal, metal_storage,
                     wind_generator, tidal_generator, energy_production, energy_upkeep, energy_storage,
                     energy_conversion_capacity, energy_conversion_efficiency,
-                    sight_distance, air_sight_distance, attack_range,
+                    sight_distance, air_sight_distance, attack_range, radar_distance,
                     is_commander, is_reclaimer, is_factory, weapon_count
                 ) VALUES (
-                    @Hash, @DefinitionID, @DefinitionName, @Name, @Tooltip,
+                    @Hash, @DefinitionID, @DefinitionName, @Name, @Tooltip, @SizeX, @SizeZ,
                     @MetalCost, @EnergyCost, @Health, @Speed, @BuildTime, @UnitGroup, @BuildPower,
                     @MetalMake, @IsMetalExtractor, @ExtractsMetal, @MetalStorage,
                     @WindGenerator, @TidalGenerator, @EnergyProduction, @EnergyUpkeep, @EnergyStorage,
                     @EnergyConversionCapacity, @EnergyConversionEfficiency,
-                    @SightDistance, @AirSightDistance, @AttackRange,
+                    @SightDistance, @AirSightDistance, @AttackRange, @RadarDistance,
                     @IsCommander, @IsReclaimer, @IsFactory, @WeaponCount
                 );
             ");
@@ -56,6 +56,8 @@ namespace gex.Services.Db {
             cmd.AddParameter("EnergyCost", ev.EnergyCost);
             cmd.AddParameter("Health", ev.Health);
             cmd.AddParameter("Speed", ev.Speed);
+            cmd.AddParameter("SizeX", ev.SizeX);
+            cmd.AddParameter("SizeZ", ev.SizeZ);
             cmd.AddParameter("BuildTime", ev.BuildTime);
             cmd.AddParameter("UnitGroup", ev.UnitGroup);
             cmd.AddParameter("BuildPower", ev.BuildPower);
@@ -73,6 +75,7 @@ namespace gex.Services.Db {
             cmd.AddParameter("SightDistance", ev.SightDistance);
             cmd.AddParameter("AirSightDistance", ev.AirSightDistance);
             cmd.AddParameter("AttackRange", ev.AttackRange);
+            cmd.AddParameter("RadarDistance", ev.RadarDistance);
             cmd.AddParameter("IsCommander", ev.IsCommander);
             cmd.AddParameter("IsReclaimer", ev.IsReclaimer);
             cmd.AddParameter("IsFactory", ev.IsFactory);

@@ -31,6 +31,7 @@ namespace gex.Services.Db {
             services.AddSingleton<GameEventUnitTakenDb>();
             services.AddSingleton<GameEventTransportLoadedDb>();
             services.AddSingleton<GameEventTransportUnloadedDb>();
+            services.AddSingleton<GameEventTeamDiedDb>();
 
             // other
             services.AddSingleton<BarMapDb>();

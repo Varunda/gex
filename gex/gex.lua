@@ -124,6 +124,8 @@ function widget:Initialize()
             { "buildTime", v.buildTime },
             { "unitGroup", v.customParams.unitgroup or "" },
             { "buildPower", v.buildSpeed },
+            { "sizeX", v.xsize },
+            { "sizeZ", v.zsize },
 
             -- eco info
             { "metalMake", v.metalMake },
@@ -143,6 +145,7 @@ function widget:Initialize()
             -- combat stuff
             { "sightDistance", v.sightDistance },
             { "airSightDistance", v.airSightDistance },
+            { "radarDistance", v.radarDistance },
             { "attackRange", v.maxWeaponRange },
             { "isCommander", v.customParams.iscommander ~= nil },
             { "isReclaimer", v.isBuilder and not v.isFactory },
@@ -198,7 +201,7 @@ function widget:GameFrame(n)
         end
     end
 
-    if (frame % 300 == 0) then
+    if (frame % 450 == 0) then
         local teamList = Spring.GetTeamList()
         for _,teamID in ipairs(teamList) do
             if (teamID ~= Spring.GetGaiaTeamID()) then
@@ -278,6 +281,7 @@ function widget:UnitCreated(unitID, unitDefID, teamID)
     end
 
     local x, y, z = Spring.GetUnitPosition(unitID)
+    local yaw = Spring.GetUnitHeading(unitID, true) -- unit: radians
 
     writeJson("unit_created", {
         { "unitID", unitID },
@@ -287,6 +291,7 @@ function widget:UnitCreated(unitID, unitDefID, teamID)
         { "unit_x", x },
         { "unit_y", y },
         { "unit_z", z },
+        { "yaw", yaw }, -- this matters for non-square units that will be displayed on map
     })
 end
 

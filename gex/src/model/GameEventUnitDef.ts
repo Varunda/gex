@@ -8,6 +8,8 @@ export class GameEventUnitDef {
     public energyCost: number = 0;
     public health: number = 0;
     public speed: number = 0;
+    public sizeX: number = 0;
+    public sizeZ: number = 0;
     public buildTime: number = 0;
     public unitGroup: string = "";
     public buildPower: number = 0;
@@ -24,6 +26,7 @@ export class GameEventUnitDef {
     public energyConversionEfficiency: number = 0;
     public sightDistance: number = 0;
     public airSightDistance: number = 0;
+    public radarDistance: number = 0;
     public attackRange: number = 0;
     public isCommander: boolean = false;
     public isReclaimer: boolean = false;
