@@ -180,8 +180,33 @@ end
 
 local STAT_DELTA = 0
 
+local UNIT_RESOURCE_PRODUCTION = {}
+
 function widget:GameFrame(n)
     frame = n
+
+    local unitIDs = Spring.GetAllUnits()
+    for _,unitID in pairs(unitIDs) do
+        if (Spring.GetUnitTeam(unitID) ~= Spring.GetGaiaTeamID()) then
+            local metalMake, metalUse, energyMake, energyUse = Spring.GetUnitResources(unitID)
+            if (((metalMake or 0) > 0) or ((metalUse or 0) > 0) or ((energyMake or 0) > 0) or ((energyUse or 0) > 0)) then
+                if (UNIT_RESOURCE_PRODUCTION[unitID] == nil) then
+                    UNIT_RESOURCE_PRODUCTION[unitID] = {
+                        metalMake = 0,
+                        metalUse = 0,
+                        energyMake = 0,
+                        energyUse = 0
+                    }
+                    Spring.Echo("new resource using unit found", unitID)
+                end
+
+                UNIT_RESOURCE_PRODUCTION[unitID].metalMake = UNIT_RESOURCE_PRODUCTION[unitID].metalMake + (metalMake / 30)
+                UNIT_RESOURCE_PRODUCTION[unitID].metalUse = UNIT_RESOURCE_PRODUCTION[unitID].metalUse + (metalUse / 30)
+                UNIT_RESOURCE_PRODUCTION[unitID].energyMake = UNIT_RESOURCE_PRODUCTION[unitID].energyMake + (energyMake / 30)
+                UNIT_RESOURCE_PRODUCTION[unitID].energyUse = UNIT_RESOURCE_PRODUCTION[unitID].energyUse + (energyUse / 30)
+            end
+        end
+    end
 
     if (frame % 150 == 0) then
         local _, _, _, actual_thing_i_care_about, _, _, _ = Spring.GetWind()
@@ -245,6 +270,21 @@ function widget:GameOver(winningAllyTeams)
 
     writeJson("end", data)
 
+    for unitID,v in pairs(UNIT_RESOURCE_PRODUCTION) do
+        -- HACK: for some reason, the UnitKilled callin setting nil does not work, and they are still iterated thru
+        if (Spring.GetUnitTeam(unitID) ~= nil) then
+			writeJson("unit_resources", {
+				{ "unitID", unitID },
+                { "defID", Spring.GetUnitDefID(unitID) },
+				{ "teamID", Spring.GetUnitTeam(unitID) },
+				{ "metalMake", v.metalMake },
+				{ "metalUse", v.metalUse },
+				{ "energyMake", v.energyMake },
+				{ "energyUse", v.energyUse }
+			})
+        end
+    end
+
     local teamList = Spring.GetTeamList()
     for _,teamID in ipairs(teamList) do
         if (teamID ~= Spring.GetGaiaTeamID()) then
@@ -270,7 +310,6 @@ function widget:GameOver(winningAllyTeams)
 
     Spring.Echo("[Gex] game over, force quitting")
     Spring.SendCommands("quitforce")
-
 end
 
 function widget:UnitCreated(unitID, unitDefID, teamID)
@@ -323,6 +362,20 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
         { "attacker_y", ay },
         { "attacker_z", az }
     })
+
+    if (UNIT_RESOURCE_PRODUCTION[unitID] ~= nil) then
+        local v = UNIT_RESOURCE_PRODUCTION[unitID]
+        writeJson("unit_resources", {
+            { "unitID", unitID },
+            { "defID", unitDefID },
+            { "teamID", teamID },
+            { "metalMake", v.metalMake },
+            { "metalUse", v.metalUse },
+            { "energyMake", v.energyMake },
+            { "energyUse", v.energyUse }
+        })
+        UNIT_RESOURCE_PRODUCTION[unitID] = nil
+    end
 end
 
 function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTeam)

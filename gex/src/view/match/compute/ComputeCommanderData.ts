@@ -5,8 +5,9 @@ export class CommanderData {
     public unitID: number = 0;
     public positions: { x: number, z: number, frame: number }[] = [];
     public teamID: number = 0;
+    public name: string = "";
  
-    public static compute(output: GameOutput): CommanderData[] {
+    public static compute(output: GameOutput, match: BarMatch): CommanderData[] {
 
         const map: Map<number, CommanderData> = new Map();
 
@@ -14,7 +15,8 @@ export class CommanderData {
             const entry: CommanderData = map.get(update.unitID) ?? {
                 unitID: update.unitID,
                 positions: [],
-                teamID: 0
+                teamID: 0,
+                name: ""
             };
 
             entry.positions.push({ x: update.unitX, z: update.unitZ, frame: update.frame });
@@ -33,6 +35,11 @@ export class CommanderData {
                 console.log(`ComputeCommanderData> found all commanders being created!`);
                 break;
             }
+        }
+
+        const arr: CommanderData[] = Array.from(map.values());
+        for (const i of arr) {
+            i.name = match.players.find(iter => iter.teamID == i.teamID)?.username ?? `<missing ${i.teamID}>`;
         }
 
         return Array.from(map.values());

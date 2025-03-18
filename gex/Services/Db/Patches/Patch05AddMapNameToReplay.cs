@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch05AddMapNameToReplay : IDbPatch {
         public int MinVersion => 5;
         public string Name => "add map_name to bar_repaly";

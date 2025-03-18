@@ -99,6 +99,25 @@ namespace gex.Services.Db {
             return matches;
         }
 
+        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+                SELECT *
+                    FROM bar_match
+                    WHERE start_time > @Start
+                        AND start_time <= @End;
+            ");
+
+            cmd.AddParameter("Start", start);
+            cmd.AddParameter("End", end);
+            await cmd.PrepareAsync();
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
         public async Task Delete(string gameID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"

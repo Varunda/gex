@@ -40,7 +40,7 @@ namespace gex.Controllers {
         /// <param name="mapName">name of the map</param>
         /// <param name="size">size of the map, examples: texture-mq, texture-hq, texture-thumb</param>
         /// <returns></returns>
-        [ResponseCache(Duration = 60 * 60 * 24)] // 24 hours
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["mapName", "size" ] )] // 24 hours
         public async Task<IActionResult> MapBackground([FromQuery] string mapName, [FromQuery] string size) {
 
             mapName = mapName.Replace(" ", "%20");
@@ -60,7 +60,7 @@ namespace gex.Controllers {
                 _Logger.LogDebug($"missing map background for given size, downloading [mapName={mapName}] [size={size}] [url={url}]");
 
                 HttpResponseMessage response = await _Http.GetAsync(url);
-                if (response.StatusCode != System.Net.HttpStatusCode.OK) {
+                if (response.StatusCode != HttpStatusCode.OK) {
                     return StatusCode((int)response.StatusCode);
                 }
 
@@ -71,7 +71,7 @@ namespace gex.Controllers {
             return File(image, "image/jpg", false);
         }
 
-        [ResponseCache(Duration = 60 * 60 * 24)] // 24 hours
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName", "color"] )] // 24 hours
         public async Task<IActionResult> UnitIcon([FromQuery] string defName, [FromQuery] int? color) {
 
             string iconDir = Path.Join(_Options.Value.WebImageLocation, "icons");

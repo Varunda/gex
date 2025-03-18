@@ -13,16 +13,27 @@ namespace gex.Code.Commands {
         private readonly ILogger<ProcessCommand> _Logger;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _Queue;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
+        private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
 
         public ProcessCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<ProcessCommand>>();
             _Queue = services.GetRequiredService<BaseQueue<GameReplayDownloadQueueEntry>>();
             _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
+            _HeadlessRunQueue = services.GetRequiredService<BaseQueue<HeadlessRunQueueEntry>>();
         }
 
         public void ForceRun(string gameID) {
             _Logger.LogInformation($"forcing a reprocess of game [gameID={gameID}]");
             _Queue.Queue(new GameReplayDownloadQueueEntry() {
+                GameID = gameID,
+                Force = true,
+                ForceForward = true
+            });
+        }
+
+        public void Headless(string gameID) {
+            _Logger.LogInformation($"forcing game to be ran headlessly [gameID={gameID}]");
+            _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() {
                 GameID = gameID,
                 Force = true,
                 ForceForward = true

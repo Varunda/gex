@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch03AddBarMap : IDbPatch {
 
         public int MinVersion => 3;

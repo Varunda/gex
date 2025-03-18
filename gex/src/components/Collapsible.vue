@@ -50,18 +50,15 @@
                 document.getElementById(this.elementID)?.addEventListener("show.bs.collapse", () => {
                     this.direction = true;
                     this.startAnimation();
-                    console.log(`showing`);
                 });
 
                 document.getElementById(this.elementID)?.addEventListener("hide.bs.collapse", () => {
                     this.direction= false;
                     this.startAnimation();
-                    console.log(`hiding`);
                 });
             },
 
             startAnimation: function(): void {
-                console.log(`animation`);
                 if (this.icon == null) {
                     return console.warn(`Cannot animate on ${this.elementID}, icon is null`);
                 }

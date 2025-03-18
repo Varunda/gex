@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch04AddTimingsToProcessing : IDbPatch {
 
         public int MinVersion => 4;

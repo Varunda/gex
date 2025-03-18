@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch06AddSizeToUnitDef : IDbPatch {
 
         public int MinVersion => 6;

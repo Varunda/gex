@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch08AddRadarDistance : IDbPatch {
 
         public int MinVersion => 8;

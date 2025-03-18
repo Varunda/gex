@@ -30,6 +30,7 @@ namespace gex.Controllers.Api {
         private readonly GameEventTransportLoadedDb _TransportLoadedDb;
         private readonly GameEventTransportUnloadedDb _TransportUnloadedDb;
         private readonly GameEventTeamDiedDb _TeamDiedDb;
+        private readonly GameEventUnitResourcesDb _UnitResourcesDb;
 
         public GameEventApiController(ILogger<GameEventApiController> logger,
             GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
@@ -39,7 +40,7 @@ namespace gex.Controllers.Api {
             GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventFactoryUnitCreatedDb factoryUnitCreatedDb,
             GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
             GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
-            GameEventTeamDiedDb teamDiedDb) {
+            GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb) {
 
             _Logger = logger;
 
@@ -58,6 +59,7 @@ namespace gex.Controllers.Api {
             _TransportLoadedDb = transportLoadedDb;
             _TransportUnloadedDb = transportUnloadedDb;
             _TeamDiedDb = teamDiedDb;
+            _UnitResourcesDb = unitResourcesDb;
         }
 
         /// <summary>
@@ -103,7 +105,8 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeUnitsTaken = false,
             [FromQuery] bool includeTransportLoads = false,
             [FromQuery] bool includeTransportUnloads = false,
-            [FromQuery] bool includeTeamDiedEvents = false
+            [FromQuery] bool includeTeamDiedEvents = false,
+            [FromQuery] bool includeUnitResources = false
         ) {
 
             BarMatch? match = await _MatchRepository.GetByID(gameID);
@@ -160,6 +163,10 @@ namespace gex.Controllers.Api {
 
             if (includeTeamDiedEvents == true) {
                 output.TeamDiedEvents = await _TeamDiedDb.GetByGameID(gameID);
+            }
+
+            if (includeUnitResources == true) {
+                output.UnitResources = await _UnitResourcesDb.GetByGameID(gameID);
             }
 
             if (includeUnitDefs == true) {

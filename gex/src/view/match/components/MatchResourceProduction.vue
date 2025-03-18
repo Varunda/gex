@@ -1,8 +1,7 @@
 
 <template>
     <div>
-
-        <h2 class="wt-header bg-success">Unit stats</h2>
+        <h2 class="wt-header bg-primary">Unit resource production</h2>
 
         <div class="d-flex flex-wrap mb-3">
             <button v-for="player in match.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
@@ -23,7 +22,7 @@
             </span>
         </h4>
 
-        <a-table :entries="data" display-type="table" :show-filters="true" default-sort-field="produced" default-sort-order="desc">
+        <a-table :entries="entries" default-sort-field="count" default-sort-order="desc">
             <a-col sort-field="name">
                 <a-header>
                     <b>Unit</b>
@@ -32,83 +31,64 @@
                 <a-body v-slot="entry">
                     <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
                     {{ entry.name }}
-                    <info-hover :text="entry.definition.tooltip"></info-hover>
                 </a-body>
             </a-col>
 
-            <a-col>
+            <a-col sort-field="count">
                 <a-header>
-                    <b>Type</b>
+                    <b>Count</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.definition.category }}
+                    {{ entry.count }}
                 </a-body>
             </a-col>
 
-            <a-col sort-field="produced">
+            <a-col sort-field="metalMade">
                 <a-header>
-                    <b>Produced</b>
-                    <info-hover text="How many of this unit were produced"></info-hover>
+                    <b>Metal made</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.produced }}
+                    <span :class="{ 'text-muted': entry.metalMade == 0 }">
+                        {{ entry.metalMade | compact }}
+                    </span>
                 </a-body>
             </a-col>
 
-            <a-col sort-field="kills">
+            <a-col sort-field="metalUsed">
                 <a-header>
-                    <b>Kills</b>
-                    <info-hover text="How many kills these units got"></info-hover>
+                    <b>Metal used</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.kills }}
+                    <span :class="{ 'text-muted': entry.metalUsed == 0 }">
+                        {{ entry.metalUsed | compact }}
+                    </span>
                 </a-body>
             </a-col>
 
-            <a-col sort-field="lost">
+            <a-col sort-field="energyMade">
                 <a-header>
-                    <b>Lost</b>
-                    <info-hover text="How many of this unit were lost"></info-hover>
+                    <b>Energy made</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.lost }}
+                    <span :class="{ 'text-muted': entry.energyMade == 0 }">
+                        {{ entry.energyMade | compact }}
+                    </span>
                 </a-body>
             </a-col>
 
-            <a-col sort-field="metalKilled">
+            <a-col sort-field="energyUsed">
                 <a-header>
-                    <b>Metal killed</b>
-                    <info-hover text="The total metal cost of units killed by this type of unit"></info-hover>
+                    <b>Energy used</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.metalKilled }}
-                </a-body>
-            </a-col>
-
-            <a-col sort-field="energyKilled">
-                <a-header>
-                    <b>Energy killed</b>
-                    <info-hover text="The total energy cost of units killed by this type of unit"></info-hover>
-                </a-header>
-
-                <a-body v-slot="entry">
-                    {{ entry.energyKilled }}
-                </a-body>
-            </a-col>
-
-            <a-col>
-                <a-header>
-                    <b>Metal efficiency</b>
-                    <info-hover text="Total metal worth of units killed by this type of unit"></info-hover>
-                </a-header>
-
-                <a-body v-slot="entry">
-                    {{ entry.metalKilled / Math.max(1, entry.produced * entry.definition.metalCost) * 100 | locale(2) }}%
+                    <span :class="{ 'text-muted': entry.energyUsed == 0 }">
+                        {{ entry.energyUsed | compact }}
+                    </span>
                 </a-body>
             </a-col>
 
@@ -119,20 +99,23 @@
 <script lang="ts">
     import Vue, { PropType } from "vue";
     import { Loading, Loadable } from "Loading";
+
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol, ARank, ATableType } from "components/ATable";
     import Collapsible from "components/Collapsible.vue";
     import InfoHover from "components/InfoHover.vue";
 
-    import { UnitStats } from "../compute/UnitStatData";
+    import { ResourceProductionData, ResourceProductionEntry } from "../compute/ResourceProductionData";
+
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import "filters/LocaleFilter";
+    import "filters/CompactFilter";
 
-    export const MatchUnitStats = Vue.extend({
+    export const MatchResourceProduction = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
-            UnitStats: { type: Array as PropType<UnitStats[]>, required: true }
+            data: { type: Array as PropType<ResourceProductionData[]>, required: true }
         },
 
         data: function() {
@@ -146,8 +129,8 @@
         },
 
         computed: {
-            data: function(): Loading<UnitStats[]> {
-                return Loadable.loaded(this.UnitStats.filter(iter => iter.teamID == this.selectedTeam));
+            entries: function(): Loading<ResourceProductionEntry[]> {
+                return Loadable.loaded(this.data.find(iter => iter.teamID == this.selectedTeam)?.units ?? []);
             },
 
             selectedPlayer: function(): BarMatchPlayer | null {
@@ -161,5 +144,6 @@
         }
 
     });
-    export default MatchUnitStats;
+    export default MatchResourceProduction;
+
 </script>

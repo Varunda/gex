@@ -50,6 +50,8 @@ namespace gex.Models.Event {
 
         public const string TRANSPORT_UNLOADED = "transport_unloaded";
 
+        public const string UNIT_RESOURCES = "unit_resources";
+
         public const string END = "end";
 
         public const string SHUTDOWN = "shutdown";

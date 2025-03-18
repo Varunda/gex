@@ -4,16 +4,17 @@ using System.Threading.Tasks;
 namespace gex.Services.Db.Patches {
 
     [Patch]
-    public class Patch07AddRotationToUnitCreated : IDbPatch {
+    public class Patch11AddUnitsReceivedToTeamStats : IDbPatch {
 
-        public int MinVersion => 7;
-
-        public string Name => "add rotation to unit created";
+        public int MinVersion => 11;
+        public string Name => "add units_received to game_event_team_stats";
 
         public async Task Execute(IDbHelper helper) {
+
             using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await helper.Command(conn, @"
-                ALTER TABLE game_event_unit_created ADD COLUMN IF NOT EXISTS rotation double precision NOT NULL DEFAULT 0;
+                ALTER TABLE game_event_team_stats
+                    ADD COLUMN IF NOT EXISTS units_received int NOT NULL DEFAULT 0;
             ");
 
             await cmd.ExecuteNonQueryAsync();

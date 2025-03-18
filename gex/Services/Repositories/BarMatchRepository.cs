@@ -44,6 +44,10 @@ namespace gex.Services.Repositories {
             return await _MatchDb.GetRecent(offset, limit);
         }
 
+        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end) {
+            return await _MatchDb.GetByTimePeriod(start, end);
+        }
+
         public Task Insert(BarMatch match, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY_ID, match.ID);
             _Cache.Remove(cacheKey);

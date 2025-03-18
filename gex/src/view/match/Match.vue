@@ -44,6 +44,23 @@
                     View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
                 </h4>
 
+                <div class="d-flex justify-content-center mb-2">
+                    <toggle-button v-model="map.commanderPositions">
+                        Commander positions
+                    </toggle-button>
+
+                    <toggle-button v-model="map.factories">
+                        Factories
+                    </toggle-button>
+
+                    <toggle-button v-model="map.radars">
+                        Radars
+                    </toggle-button>
+
+                    <toggle-button v-model="map.staticDefense">
+                        Static defense
+                    </toggle-button>
+                </div>
                 <div class="d-flex justify-content-center">
                     <div class="flex-grow-0"></div>
                     <div id="d3_canvas" style="overflow: hidden; position: sticky;" class="d-inline-block">
@@ -56,8 +73,11 @@
 
                 <div v-if="output.state == 'loaded'">
                     <match-opener :openers="computedData.opener" class="my-3"></match-opener>
-                    <team-stats-chart :stats="output.data.teamStats" class="my-3"></team-stats-chart>
+                    <team-stats-chart :stats="output.data.teamStats" :match="match.data" class="my-3"></team-stats-chart>
+                    <!--
                     <match-factories :data="computedData.factories" class="my-3"></match-factories>
+                    -->
+                    <match-resource-production :match="match.data" :data="computedData.unitResources" class="my-3"></match-resource-production>
                     <match-unit-stats :unit-stats="computedData.unitStats" :match="match.data" class="my-3"></match-unit-stats>
                     <match-wind-graph :updates="output.data.windUpdates" :map="match.data.mapData"></match-wind-graph>
                     <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-3"></unit-def-view>
@@ -106,6 +126,7 @@
     import MatchWindGraph from "./components/MatchWindGraph.vue";
     import MatchUnitStats from "./components/MatchUnitStats.vue";
     import TeamStatsChart from "./components/TeamStatsChart.vue";
+    import MatchResourceProduction from "./components/MatchResourceProduction.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -120,6 +141,7 @@
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { FactoryData, PlayerFactories } from "./compute/FactoryData";
     import { UnitStats } from "./compute/UnitStatData";
+    import { ResourceProductionData } from "./compute/ResourceProductionData";
 
     export const ProcessingStep = Vue.extend({
         props: {
@@ -173,7 +195,15 @@
                     commander: [] as CommanderData[],
                     opener: [] as PlayerOpener[],
                     factories: [] as PlayerFactories[],
-                    unitStats: [] as UnitStats[]
+                    unitStats: [] as UnitStats[],
+                    unitResources: [] as ResourceProductionData[]
+                },
+
+                map: {
+                    commanderPositions: true as boolean,
+                    radars: true as boolean,
+                    staticDefense: true as boolean,
+                    factories: true as boolean,
                 }
             };
         },
@@ -256,6 +286,7 @@
                             .append("div")
                             .style("opacity", 0)
                             .attr("class", "tooltip")
+                            .style("pointer-events", "none")
                             .style("position", "absolute")
                             .style("background-color", "var(--bs-body-bg)")
                             .style("border", "solid")
@@ -289,10 +320,11 @@
                     this.unitIdToDefId.set(ev.unitID, ev.definitionID);
                 }
 
-                this.computedData.commander = CommanderData.compute(this.output.data);
+                this.computedData.commander = CommanderData.compute(this.output.data, this.match.data);
                 this.computedData.opener = PlayerOpener.compute(this.match.data, this.output.data);
                 this.computedData.factories = PlayerFactories.compute(this.match.data, this.output.data);
                 this.computedData.unitStats = UnitStats.compute(this.output.data, this.match.data);
+                this.computedData.unitResources = ResourceProductionData.compute(this.match.data, this.output.data);
 
                 this.addCommanderPositionUpdates();
                 this.addFactoryPositions();
@@ -369,12 +401,22 @@
                         g.append("circle")
                             .attr("cx", this.toImgX(iter.x))
                             .attr("cy", this.toImgX(iter.z))
-                            .attr("r", `2px`)
-                            .style("fill", color);
+                            .attr("r", `3px`)
+                            .style("fill", color)
+                            .on("mouseenter", (ev: any) => {
+                                this.showTooltip(`${update.name}'s commander was here at ${iter.frame / 30}s`);
+                            })
+                            .on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            })
+                            .on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
                     }
 
                     g.append("path")
                         .attr("d", path)
+                        .style("pointer-events", "none")
                         .style("fill", "transparent")
                         .style("stroke", color)
                         .style("stroke-width", "1px");
@@ -394,6 +436,7 @@
                         const facGroup = this.root.append("g")
                             .attr("x", this.toImgX(fac.position.x - fac.size.x))
                             .attr("y", this.toImgZ(fac.position.z - fac.size.z))
+                            .classed("map-factory", true)
                             .attr("width", fac.size.x).attr("height", fac.size.z)
                             .attr("data-id", fac.factoryID)
                             .on("mouseenter", (ev: any) => {
@@ -508,7 +551,7 @@
                     //const x: number = this.toImgX(ev.unitX - unitDef.sizeX * 2);
                     //const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
 
-                    this.createHoverRange(`radar-range-${ev.unitID}`, ev.unitID, "#00FF0044", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
+                    this.createHoverRange(`radar-range-${ev.unitID}`, ev.unitID, "map-radar", "#00FF0044", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
                         unitDef.radarDistance, unitDef.sizeX * 2, unitDef.sizeZ * 2, player.hexColor, player.color, unitDef.definitionName);
                 }
 
@@ -540,7 +583,7 @@
                     const x: number = this.toImgX(ev.unitX - unitDef.sizeX * 2);
                     const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
 
-                    const g = this.createHoverRange(`static-defense-${ev.unitID}`, ev.unitID, "#FF000022", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
+                    const g = this.createHoverRange(`static-defense-${ev.unitID}`, ev.unitID, "map-static-defense", "#FF000022", ev.unitX - unitDef.sizeX * 2, ev.unitZ - unitDef.sizeZ * 2,
                         unitDef.attackRange, unitDef.sizeX * 2, unitDef.sizeZ * 2, player.hexColor, player.color, unitDef.definitionName, {
                             mouseenter: (ev: any) => {
                                 const unitID: number = Number.parseInt(ev.target.dataset.unitId);
@@ -586,7 +629,7 @@
             toImgZ(z: number): number { return z / this.mapH * this.imgH; },
 
             createHoverRange: function(
-                elemID: string, unitID: number,
+                elemID: string, unitID: number, className: string,
                 fillColor: string, x: number, z: number, r: number, sx: number, sz: number,
                 unitColor: string, playerColor: number, defName: string,
                 callbacks?: { 
@@ -615,6 +658,7 @@
                     .attr("x", tx).attr("y", tz)
                     .attr("width", sx).attr("height", sz)
                     .attr("data-unit-id", unitID)
+                    .classed(className, true)
                     .on("mouseenter", (ev: any) => {
                         this.root!.select("#" + elemID).style("opacity", 1);
                         if (callbacks?.mouseenter) {
@@ -675,9 +719,60 @@
             }
         },
 
+        watch: {
+            "map.commanderPositions": function(): void {
+                if (this.map.commanderPositions == false) {
+                    this.root?.selectAll(".commander-updates")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".commander-updates")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.staticDefense": function(): void {
+                if (this.map.staticDefense == false) {
+                    this.root?.selectAll(".map-static-defense")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-static-defense")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+            
+            "map.radars": function(): void {
+                if (this.map.radars == false) {
+                    this.root?.selectAll(".map-radar")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-radar")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.factories": function(): void {
+                if (this.map.factories == false) {
+                    this.root?.selectAll(".map-factory")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-factory")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            }
+
+        },
+
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
-            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart,
+            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
             ProcessingStep
         }
     });

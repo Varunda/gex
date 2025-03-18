@@ -71,6 +71,10 @@ namespace gex.Models.Event {
         [ColumnMapping("units_sent")]
         public int UnitsSent { get; set; }
 
+        [JsonActionLogPropertyName("unitsReceived")]
+        [ColumnMapping("units_received")]
+        public int UnitsReceived { get; set; }
+
         [JsonActionLogPropertyName("unitsCaptured")]
         [ColumnMapping("units_captured")]
         public decimal UnitsCaptured { get; set; }

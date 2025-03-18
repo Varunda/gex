@@ -155,6 +155,12 @@ namespace gex.Services.BarApi {
                         ev = e;
                     }
 
+                    else if (action == GameActionType.UNIT_RESOURCES) {
+                        GameEventUnitResources e = Serialize<GameEventUnitResources>(json);
+                        output.UnitResources.Add(e);
+                        ev = e;
+                    }
+
                     else if (action == GameActionType.END) {
                         continue;
                     }

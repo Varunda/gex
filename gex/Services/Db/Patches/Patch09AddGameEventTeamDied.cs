@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch09AddGameEventTeamDied : IDbPatch {
         public int MinVersion => 9;
         public string Name => "add game_event_team_died";
@@ -23,8 +24,9 @@ namespace gex.Services.Db.Patches {
                 CREATE INDEX IF NOT EXISTS idx_team_died_game_id ON game_event_team_died (game_id);
             ");
 
-            throw new System.NotImplementedException();
-
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
         }
+
     }
 }

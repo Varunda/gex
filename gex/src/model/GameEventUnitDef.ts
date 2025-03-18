@@ -33,9 +33,37 @@ export class GameEventUnitDef {
     public isFactory: boolean = false;
     public weaponCount: number = 0;
 
+    public category: string = "";
+
     public static parse(elem: any): GameEventUnitDef {
-        return {
+        const ret: GameEventUnitDef = {
             ...elem
         };
+
+        ret.category = `unknown ${ret.unitGroup}`;
+
+        if (ret.unitGroup == "util" && ret.radarDistance > 0) {
+            ret.category = "radar";
+        } else if (ret.isCommander == true) {
+            ret.category = "commander";
+        } else if (ret.isFactory == true) {
+            ret.category = "factory";
+        } else if (ret.weaponCount > 0 && ret.speed > 0) {
+            ret.category = "attack";
+        } else if (ret.weaponCount > 0 && ret.speed == 0) {
+            ret.category = "defense";
+        } else if (ret.unitGroup == "metal" || ret.unitGroup == "energy") {
+            ret.category = "eco";
+        } else if ((ret.unitGroup == "builder" || ret.unitGroup == "buildert2") && ret.speed > 0) {
+            ret.category = "con";
+        } else if (ret.unitGroup == "builder" && ret.speed == 0) {
+            ret.category = "nano";
+        } else if (ret.unitGroup == "util") {
+            ret.category = "util";
+        } else if (ret.weaponCount == 0 && ret.speed > 0) {
+            ret.category = "trans";
+        }
+
+        return ret;
     }
 }

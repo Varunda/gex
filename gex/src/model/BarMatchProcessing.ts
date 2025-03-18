@@ -16,7 +16,7 @@ export class BarMatchProcessing {
             replayDownloaded: (elem.replayDownloaded == null) ? null : new Date(elem.replayDownloaded),
             replayParsed: (elem.replayParsed == null) ? null : new Date(elem.replayParsed),
             replaySimulated: (elem.replaySimulated == null) ? null : new Date(elem.replaySimulated),
-            actionsParsed: (elem.replayDownloaded == null) ? null : new Date(elem.actionsParsed),
+            actionsParsed: (elem.actionsParsed == null) ? null : new Date(elem.actionsParsed),
             replayDownloadedMs: elem.replayDownloadedMs,
             replayParsedMs: elem.replayParsedMs,
             replaySimulatedMs: elem.replaySimulatedMs,

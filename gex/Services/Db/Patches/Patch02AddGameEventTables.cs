@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+    [Patch]
     public class Patch02AddGameEventTables : IDbPatch {
         public int MinVersion => 2;
         public string Name => "add game events tables";
@@ -119,6 +120,7 @@ namespace gex.Services.Db.Patches {
 					damage_dealt double precision NOT NULL,
 					damage_received double precision NOT NULL,
 
+                    units_received int NOT NULL,
 					units_produced int NOT NULL,
 					units_killed int NOT NULL,
 					units_sent int NOT NULL,

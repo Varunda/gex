@@ -21,13 +21,13 @@ namespace gex.Services.Db {
                     metal_produced, metal_used, metal_excess, metal_sent, metal_received,
                     energy_produced, energy_used, energy_excess, energy_sent, energy_received,
                     damage_dealt, damage_received,
-                    units_produced, units_killed, units_sent, units_captured, units_out_captured
+                    units_received, units_produced, units_killed, units_sent, units_captured, units_out_captured
                 ) VALUES (
                     @GameID, @Frame, @TeamID,
                     @MetalProduced, @MetalUsed, @MetalExcess, @MetalSent, @MetalReceived,
                     @EnergyProduced, @EnergyUsed, @EnergyExcess, @EnergySent, @EnergyReceived,
                     @DamageDealt, @DamageReceived,
-                    @UnitsProduced, @UnitsKilled, @UnitsSent, @UnitsCaptured, @UnitsOutCaptured
+                    @UnitsReceived, @UnitsProduced, @UnitsKilled, @UnitsSent, @UnitsCaptured, @UnitsOutCaptured
                 );
             ";
 
@@ -46,6 +46,7 @@ namespace gex.Services.Db {
             cmd.AddParameter("EnergyReceived", ev.EnergyReceived);
             cmd.AddParameter("DamageDealt", ev.DamageDealt);
             cmd.AddParameter("DamageReceived", ev.DamageReceived);
+            cmd.AddParameter("UnitsReceived", ev.UnitsReceived);
             cmd.AddParameter("UnitsProduced", ev.UnitsProduced);
             cmd.AddParameter("UnitsKilled", ev.UnitsKilled);
             cmd.AddParameter("UnitsSent", ev.UnitsSent);
