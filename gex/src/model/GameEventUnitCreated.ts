@@ -9,6 +9,7 @@ export class GameEventUnitCreated {
     public unitX: number = 0;
     public unitY: number = 0;
     public unitZ: number = 0;
+    public rotation: number = 0; // unit: radians
 
     public static parse(elem: any): GameEventUnitCreated {
         return {

@@ -52,7 +52,7 @@ namespace gex.Services.Db {
         public async Task<List<BarMatchChatMessage>> GetByGameID(string gameID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return (await conn.QueryAsync<BarMatchChatMessage>(
-                "SELECT * FROM bar_match_chat_message WHERE game_id = @GameID",
+                "SELECT * FROM bar_match_chat_message WHERE game_id = @GameID ORDER BY game_timestamp ASC",
                 new { GameID = gameID }
             )).ToList();
         }

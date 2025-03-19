@@ -13,49 +13,67 @@
                 Loading...
             </div>
 
-            <div v-else-if="recent.state == 'loaded'" class="d-flex flex-wrap justify-content-center">
-                <div v-for="match in recent.data" :key="match.id" style="width: 18rem; height: 18rem;" class="me-3 mb-3">
-                    <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                        <h5 class="tile-title">{{ match.map }}</h5>
-                        <h5 class="tile-versus">
-                            <span v-if="isFFA(match)">
-                                {{ match.allyTeams.length }}-way FFA
-                            </span>
-                            <span v-else>
-                                {{ match.allyTeams.map(iter => iter.playerCount).join(" v ") }}
-                            </span>
-                        </h5>
+            <div v-else-if="recent.state == 'loaded'">
+                <div class="d-flex flex-wrap justify-content-center">
+                    <div v-for="match in recent.data" :key="match.id" style="width: 18rem; height: 18rem;" class="me-3 mb-3">
+                        <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
+                            <h5 class="tile-title">{{ match.map }}</h5>
+                            <h5 class="tile-versus">
+                                <span v-if="isFFA(match)">
+                                    {{ match.allyTeams.length }}-way FFA
+                                </span>
+                                <span v-else>
+                                    {{ match.allyTeams.map(iter => iter.playerCount).join(" v ") }}
+                                </span>
+                            </h5>
 
-                        <div class="d-grid text-center p-2 tile-teams">
-                            <template v-if="isFFA(match) == false">
-                                <div style="grid-column: 1; grid-row: 1; text-align: end;" class="tile-team-title">
-                                    Team 1
-                                    <span class="dot blue">&nbsp;</span>
+                            <div class="d-grid text-center p-2 tile-teams">
+                                <template v-if="isFFA(match) == false">
+                                    <div style="grid-column: 1; grid-row: 1; text-align: end;" class="tile-team-title">
+                                        Team 1
+                                        <span class="dot blue">&nbsp;</span>
+                                    </div>
+
+                                    <div style="grid-column: 2; grid-row: 1; text-align: start" class="tile-team-title">
+                                        <span class="dot red">&nbsp;</span>
+                                        Team 2
+                                    </div>
+                                </template>
+
+                                <template v-for="allyTeam in match.allyTeams">
+                                    <div v-for="(player, index) in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
+                                        :style=" {
+                                            'grid-column': ((allyTeam.allyTeamID + 1) % 2) + 1,
+                                            'grid-row': index + (Math.floor((allyTeam.allyTeamID + 0) / 2)) + 2,
+                                            'text-align': (((allyTeam.allyTeamID) % 2 == 0) ? 'start' : 'end'),
+                                            'text-shadow': '1px 1px 1px #000000'
+                                        }">
+
+                                        {{ player.username }}
+                                    </div>
+                                </template>
+
+                                <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500'}">
+                                    {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
                                 </div>
-
-                                <div style="grid-column: 2; grid-row: 1; text-align: start" class="tile-team-title">
-                                    <span class="dot red">&nbsp;</span>
-                                    Team 2
-                                </div>
-                            </template>
-
-                            <template v-for="allyTeam in match.allyTeams">
-                                <div v-for="(player, index) in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
-                                    :style=" {
-                                        'grid-column': ((allyTeam.allyTeamID + 1) % 2) + 1,
-                                        'grid-row': index + (Math.floor((allyTeam.allyTeamID + 0) / 2)) + 2,
-                                        'text-align': (((allyTeam.allyTeamID) % 2 == 0) ? 'start' : 'end'),
-                                        'text-shadow': '1px 1px 1px #000000'
-                                    }">
-
-                                    {{ player.username }}
-                                </div>
-                            </template>
-
-                            <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500'}">
-                                {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
                             </div>
-                        </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="d-flex">
+                    <a v-if="offset > 24" href="/" class="btn btn-primary me-2">
+                        First
+                    </a>
+
+                    <a :href="'/?offset=' + (offset - 24)" v-if="offset >= 24" class="btn btn-primary">
+                        Newer
+                    </a>
+
+                    <div class="flex-grow-1"></div>
+
+                    <a :href="'/?offset=' + (offset + 24)" class="btn btn-primary">
+                        Older
                     </a>
                 </div>
             </div>
@@ -178,15 +196,23 @@
         },
 
         created: function(): void {
-            document.title = "Gex";
+            document.title = "Gex / Recent matches";
         },
 
         beforeMount: function(): void {
+
+            const search: URLSearchParams = new URLSearchParams(location.search);
+            if (search.has("offset")) {
+                this.offset = Number.parseInt(search.get("offset")!);
+            }
+
             this.loadRecent();
         },
 
         data: function() {
             return {
+                offset: 0 as number,
+                limit: 24 as number,
                 recent: Loadable.idle() as Loading<BarMatch[]>
             }
         },
@@ -194,7 +220,7 @@
         methods: {
             loadRecent: async function(): Promise<void> {
                 this.recent = Loadable.loading();
-                this.recent = await BarMatchApi.getRecent();
+                this.recent = await BarMatchApi.getRecent(this.offset);
             },
 
             getMapThumbnail: function(map: string): string {

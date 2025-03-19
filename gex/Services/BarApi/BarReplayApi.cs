@@ -34,6 +34,13 @@ namespace gex.Services.BarApi {
             _Logger = logger;
         }
 
+        /// <summary>
+        ///     get recent <see cref="BarRecentReplay"/>s
+        /// </summary>
+        /// <param name="page">page to get</param>
+        /// <param name="limit">limit</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         public async Task<Result<List<BarRecentReplay>, string>> GetRecent(int page = 1, int limit = 50, CancellationToken cancel = default) {
             HttpResponseMessage response = await _Http.GetAsync(BAR_API_URL + $"/replays?page={page}&limit={limit}&hasBots=false&endedNormally=true", cancel);
 

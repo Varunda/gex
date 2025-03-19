@@ -15,7 +15,7 @@ export class FactoryData {
     public factoryDefinitionName: string = "";
     public name: string = "";
     public teamID: number = 0;
-    public position: { x: number, z: number } = { x: 0, z: 0 };
+    public position: { x: number, z: number, rotation: number } = { x: 0, z: 0, rotation: 0 };
     public size: { x: number, z: number}  = { x: 0, z: 0 };
     public units: FactoryDataUnit[] = [];
     public totalMade: number = 0;
@@ -52,8 +52,8 @@ export class PlayerFactories {
                 factoryDefinitionName: unitDef.definitionName,
                 name: unitDef.name,
                 teamID: created.teamID,
-                position: { x: created.unitX, z: created.unitZ },
-                size: { x: unitDef.sizeX * 2, z: unitDef.sizeZ * 2 },
+                position: { x: created.unitX, z: created.unitZ, rotation: created.rotation },
+                size: { x: unitDef.sizeX, z: unitDef.sizeZ },
                 units: [],
                 totalMade: 0,
                 createdAt: created.frame,

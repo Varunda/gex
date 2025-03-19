@@ -190,3 +190,12 @@
     font-family: "Atkinson Hyperlegible";
     src: url('/font/AtkinsonHyperlegible-Regular.ttf');
 }
+
+@font-face {
+    font-family: "Atkinson Hyperlegible Mono";
+    src: url("/font/AtkinsonHyperlegibleMono-Regular.ttf");
+}
+
+.font-monospace {
+    font-family: "Atkinson Hyperlegible Mono" !important;
+}

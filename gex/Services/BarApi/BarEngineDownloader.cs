@@ -1,6 +1,7 @@
 ﻿using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -20,7 +21,7 @@ namespace gex.Services.BarApi {
 
         private const string BASE_URL = "https://github.com/beyond-all-reason/spring/releases/download";
 
-        private const string VERSION_PATH = "{0}/spring_bar_.rel2501.{0}_windows-64-minimal-portable.7z"; // {0} => version
+        private const string VERSION_PATH = "{0}/spring_bar_.rel2501.{0}_{1}-64-minimal-portable.7z"; // {0} => version, {1} => windows/linux
 
         static BarEngineDownloader() {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
@@ -33,7 +34,6 @@ namespace gex.Services.BarApi {
             _Options = options;
             _PathUtil = pathUtil;
         }
-
 
         public bool HasEngine(string version) {
             string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
@@ -58,7 +58,8 @@ namespace gex.Services.BarApi {
             Directory.CreateDirectory(path);
 
             Stopwatch timer = Stopwatch.StartNew();
-            string versionPath = string.Format(VERSION_PATH, version);
+            string versionPath = string.Format(VERSION_PATH, version, OperatingSystem.IsWindows() ? "windows" : "linux");
+            _Logger.LogTrace($"getting version [versionPath={versionPath}]");
             HttpResponseMessage response = await _Http.GetAsync(BASE_URL + "/" + versionPath);
 
             if (response.IsSuccessStatusCode == false) {
@@ -71,7 +72,7 @@ namespace gex.Services.BarApi {
                 await response.Content.CopyToAsync(output, cancel);
             }
 
-            string? sevenzipApp = _PathUtil.FindExecutable("7z") ?? throw new System.Exception($"failed to find 7z in PATH");
+            string sevenzipApp = _PathUtil.FindExecutable("7z") ?? throw new System.Exception($"failed to find 7z in PATH");
 
             using Process sevenZipProc = new();
             sevenZipProc.StartInfo.FileName = sevenzipApp;
