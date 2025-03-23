@@ -4,7 +4,7 @@ using gex.Models.Event;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
-using gex.Services.Db;
+using gex.Services.Db.Match;
 using gex.Services.Queues;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,6 +32,8 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         : base("headless_run_queue_processor", factory, queue, serviceHealthMonitor) {
 
+            _ThreadCount = 1;
+
             _HeadlessRunner = headlessRunner;
             _Options = options;
             _ProcessingDb = processingDb;
@@ -50,7 +52,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return true;
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID)
+            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplaySimulated = DateTime.UtcNow;

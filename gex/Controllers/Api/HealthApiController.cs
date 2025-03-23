@@ -29,11 +29,14 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
+        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
         public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
             DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
-            BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue) {
+            BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
+            BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) {
 
             _Logger = logger;
             _Cache = cache;
@@ -44,6 +47,8 @@ namespace gex.Controllers.Api {
             _DownloadQueue = downloadQueue;
             _ParseQueue = parseQueue;
             _ActionLogQueue = actionLogQueue;
+            _MapStatUpdateQueue = mapStatUpdateQueue;
+            _FactionStatUpdateQueue = factionStatUpdateQueue;
         }
 
         /// <summary>
@@ -68,6 +73,8 @@ namespace gex.Controllers.Api {
                     _MakeCount("replay_parse_queue", _ParseQueue),
                     _MakeCount("headless_run_queue", _HeadlessRunQueue),
                     _MakeCount("action_log_queue", _ActionLogQueue),
+                    _MakeCount("user_map_stat_update_queue", _MapStatUpdateQueue),
+                    _MakeCount("user_faction_stat_update_queue", _FactionStatUpdateQueue),
                 };
 
                 foreach (string service in _ServiceHealthMonitor.GetServices()) {

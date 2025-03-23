@@ -11,6 +11,7 @@ using gex.Services.Repositories;
 using gex.Models.Db;
 using System.Threading.Tasks;
 using System.Net.Mime;
+using System.Threading;
 
 namespace gex.Controllers {
 
@@ -59,13 +60,17 @@ namespace gex.Controllers {
             return View();
         }
 
+        public new IActionResult User(int userID) {
+            return View();
+        }
+
         /// <summary>
         ///     action to download a replay file
         /// </summary>
         /// <param name="gameID">ID of the game to get the replay file of</param>
         /// <returns></returns>
         public async Task<IActionResult> DownloadMatch(string gameID) {
-            BarMatch? match = await _MatchRepository.GetByID(gameID);
+            BarMatch? match = await _MatchRepository.GetByID(gameID, CancellationToken.None);
             if (match == null) {
                 return NotFound();
             }

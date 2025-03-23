@@ -21,8 +21,8 @@ namespace gex.Services.Db.Readers {
                 Y = reader.GetFloat("starting_position_y"),
                 Z = reader.GetFloat("starting_position_z"),
             };
-            player.Skill = reader.GetDecimal("skill");
-            player.SkillUncertainty = reader.GetDecimal("skill_uncertainty");
+            player.Skill = reader.GetDouble("skill");
+            player.SkillUncertainty = reader.GetDouble("skill_uncertainty");
             player.Color = reader.GetInt32("color");
             player.Handicap = reader.GetDecimal("handicap");
 

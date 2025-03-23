@@ -1,5 +1,5 @@
 ﻿using gex.Models.Db;
-using gex.Services.Db;
+using gex.Services.Db.Match;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
@@ -26,11 +26,11 @@ namespace gex.Services.Repositories {
             _Cache = cache;
         }
 
-        public async Task<BarMatch?> GetByID(string gameID) {
+        public async Task<BarMatch?> GetByID(string gameID, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY_ID, gameID);
 
             if (_Cache.TryGetValue(cacheKey, out BarMatch? match) == false) {
-                match = await _MatchDb.GetByID(gameID);
+                match = await _MatchDb.GetByID(gameID, cancel);
 
                 _Cache.Set(cacheKey, match, new MemoryCacheEntryOptions() {
                     SlidingExpiration = TimeSpan.FromMinutes(5)
@@ -40,18 +40,28 @@ namespace gex.Services.Repositories {
             return match;
         }
 
-        public async Task<List<BarMatch>> GetRecent(int offset, int limit) {
-            return await _MatchDb.GetRecent(offset, limit);
+        public async Task<List<BarMatch>> GetRecent(int offset, int limit, CancellationToken cancel) {
+            return await _MatchDb.GetRecent(offset, limit, cancel);
         }
 
-        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end) {
-            return await _MatchDb.GetByTimePeriod(start, end);
+        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end, CancellationToken cancel) {
+            return await _MatchDb.GetByTimePeriod(start, end, cancel);
+        }
+
+        public async Task<List<BarMatch>> GetByUserID(long userID, CancellationToken cancel) {
+            return await _MatchDb.GetByUserID(userID, cancel);
         }
 
         public Task Insert(BarMatch match, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY_ID, match.ID);
             _Cache.Remove(cacheKey);
             return _MatchDb.Insert(match, cancel);
+        }
+
+        public Task Delete(string gameID) {
+            string cacheKey = string.Format(CACHE_KEY_ID, gameID);
+            _Cache.Remove(cacheKey);
+            return _MatchDb.Delete(gameID);
         }
 
     }

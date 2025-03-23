@@ -1,6 +1,6 @@
 ﻿using gex.Models.Db;
 using gex.Models.Queues;
-using gex.Services.Db;
+using gex.Services.Db.Match;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +16,7 @@ namespace gex.Services.Hosted.Startup {
         private readonly ILogger<ProcessingQueueStarterService> _Logger;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchPlayerRepository _PlayerRepository;
 
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
@@ -25,7 +26,8 @@ namespace gex.Services.Hosted.Startup {
         public ProcessingQueueStarterService(ILogger<ProcessingQueueStarterService> logger,
             BarMatchProcessingDb processingDb, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, BarMatchRepository matchRepository) {
+            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, BarMatchRepository matchRepository,
+            BarMatchPlayerRepository playerRepository) {
 
             _Logger = logger;
             _ProcessingDb = processingDb;
@@ -34,6 +36,7 @@ namespace gex.Services.Hosted.Startup {
             _HeadlessRunQueue = headlessRunQueue;
             _ActionLogParseQueue = actionLogParseQueue;
             _MatchRepository = matchRepository;
+            _PlayerRepository = playerRepository;
         }
 
         public Task StartAsync(CancellationToken cancellationToken) {
@@ -57,7 +60,7 @@ namespace gex.Services.Hosted.Startup {
                 if (proc.ReplayDownloaded == null) {
                     _DownloadQueue.Queue(new GameReplayDownloadQueueEntry() { GameID = proc.GameID, Force = true });
                 } else if (proc.ReplayParsed == null) {
-                    BarMatch? match = await _MatchRepository.GetByID(proc.GameID);
+                    BarMatch? match = await _MatchRepository.GetByID(proc.GameID, cancel);
                     if (match == null) {
                         _Logger.LogInformation($"game is not in the database, cannot get filename, need to download [gameID={proc.GameID}]");
                         _DownloadQueue.Queue(new GameReplayDownloadQueueEntry() { GameID = proc.GameID, Force = true });
@@ -68,7 +71,12 @@ namespace gex.Services.Hosted.Startup {
                     }
 
                 } else if (proc.ReplaySimulated == null) {
-                    _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() { GameID = proc.GameID, Force = true });
+                    List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(proc.GameID, cancel);
+                    if (players.Count == 2) {
+                        _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() { GameID = proc.GameID, Force = true });
+                    } else {
+                        _Logger.LogWarning($"why is this game in here? [gameID={proc.GameID}]");
+                    }
                 } else if (proc.ReplaySimulated != null && proc.ActionsParsed == null) {
                     _ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() { GameID = proc.GameID, Force = true });
                 } else {

@@ -10,8 +10,16 @@
                 Starting box
             </toggle-button>
 
+            <toggle-button v-model="map.deathHeatmap">
+                Unit death heatmap
+            </toggle-button>
+
             <toggle-button v-model="map.commanderPositions">
                 Commander positions
+            </toggle-button>
+
+            <toggle-button v-model="map.commanderHeatmap">
+                Commander heatmap
             </toggle-button>
 
             <toggle-button v-model="map.factories">
@@ -24,6 +32,10 @@
 
             <toggle-button v-model="map.staticDefense">
                 Static defense
+            </toggle-button>
+
+            <toggle-button v-model="map.buildingHeatmap">
+                Building heatmap
             </toggle-button>
         </div>
         <div class="d-flex justify-content-center">
@@ -39,12 +51,39 @@
     </div>
 </template>
 
+<style scoped>
+
+    .rotate-90 {
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: rotate(90deg);
+    }
+
+    .rotate-180 {
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: rotate(90deg);
+    }
+
+    .rotate-270 {
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: rotate(90deg);
+    }
+
+</style>
+
 <script lang="ts">
     import Vue, { PropType } from "vue";
 
     import * as d3 from "d3";
     import * as d3s from "d3-scale";
     import * as d3z from "d3-zoom";
+    import "d3-contour";
+    import "d3-color";
+
+    import TimeUtils from "util/Time";
+    import ColorUtils, { RGB } from "util/Color";
 
     import ToggleButton from "components/ToggleButton";
     import InfoHover from "components/InfoHover.vue";
@@ -87,8 +126,11 @@
                 unitIdToDefId: new Map as Map<number, number>,
 
                 map: {
-                    startingBox: true as boolean,
+                    startingBox: false as boolean,
                     commanderPositions: true as boolean,
+                    commanderHeatmap: false as boolean,
+                    deathHeatmap: true as boolean,
+                    buildingHeatmap: false as boolean,
                     radars: true as boolean,
                     staticDefense: true as boolean,
                     factories: true as boolean,
@@ -136,7 +178,6 @@
                         .scaleExtent([1, 10])
                         .translateExtent([[0, 0], [this.imgW, this.imgH]])
                         .on("zoom", (ev: any) => {
-                            //console.log(ev.transform);
                             this.root!.attr("transform", ev.transform);
                         }
                     );
@@ -144,11 +185,13 @@
                     this.svg.call(this.zoom);
 
                     this.root.append("rect")
+                        .classed("map-no-remove", true)
                         .attr("x", 0).attr("y", 0)
                         .attr("width", this.imgW).attr("height", this.imgH)
                         .style("fill", "transparent");
 
                     this.root.append("image")
+                        .classed("map-no-remove", true)
                         .attr("width", this.imgW).attr("height", this.imgH)
                         .attr("href", this.mapUrl);
 
@@ -171,12 +214,7 @@
                     this.computedData.commander = CommanderData.compute(this.output, this.match);
                     this.computedData.factories = PlayerFactories.compute(this.match, this.output);
 
-                    this.addStartingBoxes();
-                    this.addCommanderPositionUpdates();
-                    this.addFactoryPositions();
-                    this.addPlayerStartingPositions();
-                    this.addRadars();
-                    this.addStaticDefense();
+                    this.drawMap();
                 });
             });
         },
@@ -217,6 +255,23 @@
                 }
             },
 
+            drawMap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot draw map: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot draw map: root is null`); }
+
+                this.root.selectAll("*:not(.map-no-remove)").remove();
+
+                this.addStartingBoxes();
+                this.addUnitDeathHeatmap();
+                this.addCommanderHeatmap();
+                this.addCommanderPositionUpdates();
+                this.addBuildingHeatmap();
+                this.addFactoryPositions();
+                this.addPlayerStartingPositions();
+                this.addRadars();
+                this.addStaticDefense();
+            },
+
             addPlayerStartingPositions: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add start pos: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add start pos: root is null`); }
@@ -229,7 +284,10 @@
                         .attr("cy", `${player.startingPosition.z / this.mapH * 100}%`)
                         .attr("r", "10px")
                         .style("pointer-events", "none")
-                        .style("fill", player.hexColor);
+                        .style("fill", player.hexColor)
+                        .style("stroke", "#000000")
+                        .style("stroke-width", "1px")
+                        .style("paint-order", "fill stroke");
 
                     this.root.append("text")
                         .attr("x", (this.toImgX(player.startingPosition.x)) + 16)
@@ -258,6 +316,7 @@
                         .attr("width", `${(allyTeam.startBox.right - allyTeam.startBox.left) * 100}%`)
                         .attr("height", `${(allyTeam.startBox.bottom - allyTeam.startBox.top) * 100}%`)
                         .classed("map-starting-box", true)
+                        .style("opacity", this.map.startingBox == true ? "1" : "0")
                         .attr("id", `map-starting-box-${allyTeam.allyTeamID}`)
                         .style("fill", (firstPlayer?.hexColor ?? "#333333") + "33");
                 }
@@ -276,6 +335,7 @@
 
                     const g = this.root.append("g")
                         .attr("id", `commander-updates-${update.teamID}`)
+                        .style("opacity", this.map.commanderPositions == true ? "1" : "0")
                         .classed("commander-updates", true)
 
                     const color: string = "#" + (this.match.players.find(iter => iter.teamID == update.teamID)?.color.toString(16).padStart(6, "0") ?? `ffffff`);
@@ -294,8 +354,11 @@
                             .attr("cy", this.toImgX(iter.z))
                             .attr("r", `3px`)
                             .style("fill", color)
+                            .style("stroke", "#000000")
+                            .style("stroke-width", "1px")
+                            .style("paint-order", "fill stroke")
                             .on("mouseenter", (ev: any) => {
-                                this.showTooltip(`${update.name}'s commander was here at ${iter.frame / 30}s`);
+                                this.showTooltip(`${update.name}'s commander was here at ${TimeUtils.duration(iter.frame / 30)}`);
                             })
                             .on("mousemove", (ev: any) => {
                                 this.moveTooltip(ev);
@@ -311,6 +374,175 @@
                         .style("fill", "transparent")
                         .style("stroke", color)
                         .style("stroke-width", "1px");
+                }
+            },
+
+            /*
+            addUnitDeathHeatmap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add death heatmap: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add death heatmap: root is null`); }
+
+                this.root.selectAll(".map-unit-death-heatmap").remove();
+
+                // only include unit deaths from before a team is killed
+                // otherwise the heatmap is just the units at the end blowing up lol
+                const teamDiedAt: Map<number, number> = new Map(this.output.teamDiedEvents.map(iter => {
+                    return [iter.teamID, iter.frame];
+                }));
+
+                const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => {
+                    return iter.frame < (teamDiedAt.get(iter.teamID) ?? Number.MAX_VALUE);
+                }).map(iter => {
+                    return [iter.killedX, iter.killedZ];
+                });
+
+                const heatmap = d3.contourDensity()
+                    .x((d) => this.toImgX(d[0]))
+                    .y((d) => this.toImgZ(d[1]))
+                    .size([this.imgW, this.imgH])
+                    .bandwidth(20)(deathLocations);
+
+                const max: number = Math.max(...heatmap.map(iter => iter.value));
+
+                const g1: RGB = { red: 255, green: 255, blue: 0 };
+                const g2: RGB = { red: 255, green: 0, blue: 0 };
+
+                this.root.append("g")
+                    .selectAll("path")
+                    .data(heatmap)
+                    .enter()
+                    .append("path")
+                        .classed("map-unit-death-heatmap", true)
+                        .attr("d", d3.geoPath())
+                        .attr("fill", (d) => {
+                            return ColorUtils.rgbaToString(ColorUtils.colorGradient(d.value / max, g1, g2), 0.1);
+                        });
+
+            },
+            */
+
+            addUnitDeathHeatmap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add death heatmap: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add death heatmap: root is null`); }
+
+                // only include unit deaths from before a team is killed
+                // otherwise the heatmap is just the units at the end blowing up lol
+                const teamDiedAt: Map<number, number> = new Map(this.output.teamDiedEvents.map(iter => {
+                    return [iter.teamID, iter.frame];
+                }));
+
+                for (const player of this.match.players) {
+                    const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => iter.teamID == player.teamID).filter(iter => {
+                        return iter.frame < (teamDiedAt.get(iter.teamID) ?? Number.MAX_VALUE);
+                    }).map(iter => {
+                        return [iter.killedX, iter.killedZ];
+                    });
+
+                    const heatmap = d3.contourDensity()
+                        .x((d) => this.toImgX(d[0]))
+                        .y((d) => this.toImgZ(d[1]))
+                        .size([this.imgW, this.imgH])
+                        .bandwidth(20)(deathLocations);
+
+                    const max: number = Math.max(...heatmap.map(iter => iter.value));
+
+                    const lerp = d3.interpolate(0, 30);
+
+                    this.root.append("g")
+                        .attr("id", `map-unit-death-heatmap-${player.teamID}`)
+                        .selectAll("path")
+                        .data(heatmap)
+                        .enter()
+                        .append("path")
+                            .classed("map-unit-death-heatmap", true)
+                            .style("opacity", this.map.deathHeatmap == true ? "1" : "0")
+                            .attr("d", d3.geoPath())
+                            .attr("fill", (d) => {
+                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                            });
+                }
+            },
+
+            addCommanderHeatmap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add com heatmap: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add com heatmap: root is null`); }
+
+                for (const player of this.match.players) {
+                    const playerCom = this.computedData.commander.find(iter => iter.teamID == player.teamID);
+                    if (!playerCom) {
+                        continue;
+                    }
+
+                    const locs: [number, number][] = playerCom.positions.map(iter => {
+                        return [iter.x, iter.z];
+                    });
+
+                    const heatmap = d3.contourDensity()
+                        .x((d) => this.toImgX(d[0]))
+                        .y((d) => this.toImgZ(d[1]))
+                        .size([this.imgW, this.imgH])
+                        .bandwidth(20)(locs);
+
+                    const max: number = Math.max(...heatmap.map(iter => iter.value));
+
+                    const lerp = d3.interpolate(0, 30);
+
+                    this.root.append("g")
+                        .attr("id", `map-commander-position-heatmap-${player.teamID}`)
+                        .selectAll("path")
+                        .data(heatmap)
+                        .enter()
+                        .append("path")
+                            .classed("map-commander-position-heatmap", true)
+                            .style("opacity", this.map.commanderHeatmap == true ? "1" : "0")
+                            .attr("d", d3.geoPath())
+                            .attr("fill", (d) => {
+                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                            });
+                }
+            },
+
+            addBuildingHeatmap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add building heatmap: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add building heatmap: root is null`); }
+
+                const buildingUnitDefIds: Set<number> = new Set();
+                for (const unitDef of this.output.unitDefinitions) {
+                    if (unitDef[1].speed == 0) {
+                        buildingUnitDefIds.add(unitDef[0]);
+                    }
+                }
+
+                for (const player of this.match.players) {
+
+                    const locs: [number, number][] = this.output.unitsCreated.filter(iter => {
+                        return iter.teamID == player.teamID && buildingUnitDefIds.has(iter.definitionID);
+                    }).map(iter => {
+                        return [iter.unitX, iter.unitZ];
+                    });
+
+                    const heatmap = d3.contourDensity()
+                        .x((d) => this.toImgX(d[0]))
+                        .y((d) => this.toImgZ(d[1]))
+                        .size([this.imgW, this.imgH])
+                        .bandwidth(30)(locs);
+
+                    const max: number = Math.max(...heatmap.map(iter => iter.value));
+
+                    const lerp = d3.interpolateBasisClosed([5, 10, 30, 40]);
+
+                    this.root.append("g")
+                        .attr("id", `map-building-heatmap-${player.teamID}`)
+                        .selectAll("path")
+                        .data(heatmap)
+                        .enter()
+                        .append("path")
+                            .classed("map-building-heatmap", true)
+                            .style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
+                            .attr("d", d3.geoPath())
+                            .attr("fill", (d) => {
+                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                            });
                 }
             },
 
@@ -348,8 +580,8 @@
                                 }
 
                                 this.showTooltip(`Factory: ${factory.name}<br>`
-                                    + `Created at: ${Math.floor(factory.createdAt / 30)}s<br>`
-                                    + ((factory.destroyedAt != null) ? `Destroyed at: ${Math.floor(factory.destroyedAt! / 30)}s<br>` : ``)
+                                    + `Created at: ${TimeUtils.duration(factory.createdAt / 30)}<br>`
+                                    + ((factory.destroyedAt != null) ? `Destroyed at: ${TimeUtils.duration(factory.destroyedAt! / 30)}<br>` : ``)
                                     + `<table class="table table-sm mb-0"><thead><tr><th colspan="2" class="text-center">Units created</th></tr>`
                                     + `<tbody>${factory.units.map(iter => `<tr><td>${iter.name}</td><td>${iter.count}</td></tr>`).join(" ")}</tbody>`
                                     + `</table>`
@@ -365,6 +597,8 @@
                             .attr("y", this.toImgZ(fac.position.z - fac.size.z))
                             .attr("width", fac.size.x).attr("height", fac.size.z)
                             .style("fill", player.color)
+                            .style("transform-box", "fill-box").style("transform-origin", "center")
+                            .style("transform", `rotate(${fac.position.rotation / Math.PI * 180}deg)`)
                             .style("stroke-width", "2px")
                             .style("stroke", "black")
                             .style("paint-order", "stroke");
@@ -373,6 +607,8 @@
                             .attr("x", this.toImgX(fac.position.x - fac.size.x))
                             .attr("y", this.toImgZ(fac.position.z - fac.size.z))
                             .attr("width", fac.size.x).attr("height", fac.size.z)
+                            .style("transform-box", "fill-box").style("transform-origin", "center")
+                            .style("transform", `rotate(${fac.position.rotation / Math.PI * 180}deg)`)
                             .attr("href", `/image-proxy/UnitIcon?defName=${fac.factoryDefinitionName}&color=${player.colorInt}`);
                     }
                 }
@@ -610,7 +846,44 @@
                         .style("opacity", "1")
                         .style("pointer-events", "auto");
                 }
-            }
+            },
+            // .classed("map-unit-death-heatmap")
+
+            "map.deathHeatmap": function(): void {
+                if (this.map.deathHeatmap == false) {
+                    this.root?.selectAll(".map-unit-death-heatmap")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-unit-death-heatmap")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.commanderHeatmap": function(): void {
+                if (this.map.commanderHeatmap == false) {
+                    this.root?.selectAll(".map-commander-position-heatmap")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-commander-position-heatmap")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.buildingHeatmap": function(): void {
+                if (this.map.buildingHeatmap == false) {
+                    this.root?.selectAll(".map-building-heatmap")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-building-heatmap")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
 
         },
 

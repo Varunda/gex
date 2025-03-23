@@ -1,3 +1,6 @@
+using gex.Services.Db.Event;
+using gex.Services.Db.Match;
+using gex.Services.Db.UserStats;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Db {
@@ -36,6 +39,12 @@ namespace gex.Services.Db {
 
             // other
             services.AddSingleton<BarMapDb>();
+
+            // user stats
+            services.AddSingleton<BarUserDb>();
+            services.AddSingleton<BarUserSkillDb>();
+            services.AddSingleton<BarUserMapStatsDb>();
+            services.AddSingleton<BarUserFactionStatsDb>();
         }
 
     }

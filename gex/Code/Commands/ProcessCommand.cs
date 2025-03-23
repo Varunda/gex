@@ -12,14 +12,16 @@ namespace gex.Code.Commands {
 
         private readonly ILogger<ProcessCommand> _Logger;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _Queue;
-        private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
+        private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
+        private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
 
         public ProcessCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<ProcessCommand>>();
             _Queue = services.GetRequiredService<BaseQueue<GameReplayDownloadQueueEntry>>();
-            _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
+            _ParseQueue = services.GetRequiredService<BaseQueue<GameReplayParseQueueEntry>>();
             _HeadlessRunQueue = services.GetRequiredService<BaseQueue<HeadlessRunQueueEntry>>();
+            _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
         }
 
         public void ForceRun(string gameID) {
@@ -28,6 +30,15 @@ namespace gex.Code.Commands {
                 GameID = gameID,
                 Force = true,
                 ForceForward = true
+            });
+        }
+
+        public void Parse(string gameID) {
+            _Logger.LogInformation($"forcing demofile parse of game [gameID={gameID}]");
+            _ParseQueue.Queue(new GameReplayParseQueueEntry() {
+                GameID = gameID,
+                Force = true,
+                ForceForward = false
             });
         }
 

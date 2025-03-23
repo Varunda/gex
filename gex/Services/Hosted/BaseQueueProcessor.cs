@@ -24,6 +24,8 @@ namespace gex.Services.Hosted {
         private DateTime? _LastInformedOfDisabled = null;
         private Stopwatch _RunTimer = Stopwatch.StartNew();
 
+        protected int _ThreadCount = 1;
+
         public BaseQueueProcessor(string serviceName, ILoggerFactory factory,
             BaseQueue<T> queue, ServiceHealthMonitor serviceHealthMonitor) {
 
@@ -36,8 +38,20 @@ namespace gex.Services.Hosted {
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-            _Logger.LogInformation($"started, [Service name={_ServiceName}]");
+            _Logger.LogInformation($"started, [Service name={_ServiceName}] [thread count={_ThreadCount}]");
 
+            Task[] threads = new Task[_ThreadCount];
+            for (int i = 0; i < _ThreadCount; ++i) {
+                Task t = Task.Run(async () => {
+                    await ThreadMain(stoppingToken);
+                }, stoppingToken);
+
+                threads[i] = t;
+            }
+
+            await Task.WhenAll(threads);
+
+            /*
             while (stoppingToken.IsCancellationRequested == false) {
                 try {
 
@@ -71,8 +85,45 @@ namespace gex.Services.Hosted {
                     _Logger.LogInformation($"stop requested!");
                 }
             }
+            */
 
             _Logger.LogInformation($"stopping");
+        }
+
+        protected async Task ThreadMain(CancellationToken cancel) {
+            while (cancel.IsCancellationRequested == false) {
+                try {
+
+                    // check if this queue processor is disabled
+                    ServiceHealthEntry healthEntry = _ServiceHealthMonitor.GetOrCreate(_ServiceName);
+                    if (healthEntry.Enabled == false) {
+                        if (_LastInformedOfDisabled == null || (DateTime.UtcNow - _LastInformedOfDisabled) > TimeSpan.FromMinutes(5)) {
+                            _Logger.LogInformation($"reminder: service {_ServiceName} is disabled (5m cooldown)");
+                            _LastInformedOfDisabled = DateTime.UtcNow;
+                        }
+
+                        await Task.Delay(1000, cancel);
+                        continue;
+                    }
+
+                    T queueEntry = await _Queue.Dequeue(cancel);
+
+                    _RunTimer.Restart();
+                    bool toRecord = await _ProcessQueueEntry(queueEntry, cancel);
+                    long timeToProcess = _RunTimer.ElapsedMilliseconds;
+
+                    if (toRecord == true) {
+                        _Queue.AddProcessTime(timeToProcess);
+                    }
+
+                    _ServiceHealthMonitor.Set(_ServiceName, healthEntry);
+
+                } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
+                    _Logger.LogError(ex, $"error in queue processor {_ServiceName}");
+                } catch (Exception) when (cancel.IsCancellationRequested == true) {
+                    _Logger.LogInformation($"stop requested!");
+                }
+            }
         }
 
         /// <summary>

@@ -155,6 +155,7 @@ namespace gex.Services.Demofile {
                         if (iter.Value.GetRequiredString("spectator") == "1") {
                             BarMatchSpectator spec = new();
                             spec.GameID = match.ID;
+                            spec.PlayerID = int.Parse(iter.Name.Split("player")[1]);
                             spec.UserID = iter.Value.GetRequiredInt64("accountid");
                             spec.Name = iter.Value.GetRequiredString("name");
 
@@ -167,8 +168,8 @@ namespace gex.Services.Demofile {
                             player.PlayerID = int.Parse(iter.Name.Split("player")[1]);
                             player.UserID = iter.Value.GetRequiredInt64("accountid");
                             player.Name = iter.Value.GetRequiredString("name");
-                            player.SkillUncertainty = iter.Value.GetDecimal("skilluncertainty", 0m);
-                            player.Skill = decimal.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
+                            player.SkillUncertainty = double.Parse(iter.Value.GetProperty("skilluncertainty").GetString()!);
+                            player.Skill = double.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
 
                             players[player.TeamID] = player;
                         }
@@ -197,6 +198,8 @@ namespace gex.Services.Demofile {
             if (header.PacketOffset != reader.Index) {
                 return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
             }
+
+            Dictionary<int, string> unitDefDict = [];
 
             byte[] winningAllyTeams = [];
 
@@ -266,6 +269,53 @@ namespace gex.Services.Demofile {
                             if (player != null) {
                                 player.Color = (r << 16) | (g << 8) | b;
                             }
+                        }
+                    } else if (msg.StartsWith("changeStartUnit")) {
+                        int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
+                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
+
+                        string? defName = unitDefDict.GetValueOrDefault(unitDefID);
+                        if (defName == null) {
+                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
+                        } else {
+                            BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
+                            if (player != null) {
+                                if (defName == "armcom") {
+                                    player.Faction = "Armada";
+                                } else if (defName == "corcom") {
+                                    player.Faction = "Cortex";
+                                } else if (defName == "legcom") {
+                                    player.Faction = "Legion";
+                                } else if (defName == "dummycom") {
+                                    player.Faction = "Random";
+                                } else {
+                                    _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+                                }
+                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
+                            }
+                        }
+
+                    } else if (msg.StartsWith("unitdefs:")) {
+                        Span<byte> input = bytes.AsSpan("unitdefs:".Length);
+                        using MemoryStream stream = new(input.ToArray());
+                        using ZLibStream zlib = new(stream, CompressionMode.Decompress);
+                        using MemoryStream output = new();
+                        zlib.CopyTo(output);
+                        byte[] unitDefs = output.ToArray();
+
+                        JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
+
+                        int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
+                        foreach (JsonElement iter in json.EnumerateArray()) {
+                            string defName = iter.GetString()!;
+                            if (unitDefDict.ContainsKey(index)) {
+                                if (unitDefDict[index] != defName) {
+                                    _Logger.LogWarning($"inconsistent def names! [id={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+                                }
+                            } else {
+                                unitDefDict.Add(index, iter.GetString()!);
+                            }
+                            index += 1;
                         }
                     }
                 } else if (packet.PacketType == BarPacketType.GAME_OVER) {
@@ -351,6 +401,21 @@ namespace gex.Services.Demofile {
                     allyTeam.Won = true;
                 }
                 allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
+            }
+
+            int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();
+            int allyTeamCount = match.AllyTeams.Count;
+
+            if (allyTeamCount == 2 && largestAllyTeam == 1) {
+                match.Gamemode = BarGamemode.DUEL;
+            } else if (allyTeamCount == 2 && largestAllyTeam <= 4) {
+                match.Gamemode = BarGamemode.SMALL_TEAM;
+            } else if (allyTeamCount == 2 && largestAllyTeam <= 8) {
+                match.Gamemode = BarGamemode.LARGE_TEAM;
+            } else if (allyTeamCount > 2) {
+                match.Gamemode = BarGamemode.FFA;
+            } else {
+                _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
             }
 
             return match;

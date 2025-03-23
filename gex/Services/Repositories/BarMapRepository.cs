@@ -31,6 +31,10 @@ namespace gex.Services.Repositories {
         }
 
         public async Task<BarMap?> GetByName(string filename, CancellationToken cancel) {
+            if (string.IsNullOrEmpty(filename)) {
+                return null;
+            }
+
             string cacheKey = string.Format(CACHE_KEY_NAME, filename);
             if (_Cache.TryGetValue(cacheKey, out BarMap? map) == false) {
                 _Logger.LogTrace($"loading bar map from DB [filename={filename}]");

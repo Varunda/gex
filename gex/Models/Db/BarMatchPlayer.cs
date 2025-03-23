@@ -48,12 +48,12 @@ namespace gex.Models.Db {
         /// <summary>
         ///     skill value at the time of this match
         /// </summary>
-        public decimal Skill { get; set; }
+        public double Skill { get; set; }
 
         /// <summary>
         ///     uncertainty in the skill at the time of the match
         /// </summary>
-        public decimal SkillUncertainty { get; set; }
+        public double SkillUncertainty { get; set; }
 
         /// <summary>
         ///     32 bit representation of the color, (r &lt;&lt; 16) | (g &lt;&lt; 8) | (b &lt;&lt; 0)

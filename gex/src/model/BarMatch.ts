@@ -15,10 +15,10 @@ export class BarMatch {
     public fileName: string = "";
     public durationMs: number = 0;
 
-    public hostSettings: object = {};
-    public gameSettings: object = {};
-    public mapSettings: object = {};
-    public spadsSettings: object = {};
+    public hostSettings: any = {};
+    public gameSettings: any = {};
+    public mapSettings: any = {};
+    public spadsSettings: any = {};
 
     public allyTeams: BarMatchAllyTeam[] = [];
     public players: BarMatchPlayer[] = [];
@@ -38,8 +38,8 @@ export class BarMatch {
             mapSettings: elem.mapSettings,
             spadsSettings: elem.spadsSettings,
 
-            allyTeams: elem.allyTeams.map((iter: any) => BarMatchAllyTeam.parse(iter)),
-            players: elem.players.map((iter: any) => BarMatchPlayer.parse(iter)),
+            allyTeams: (elem.allyTeams.map((iter: any) => BarMatchAllyTeam.parse(iter)) as BarMatchAllyTeam[]).sort((a, b) => a.allyTeamID - b.allyTeamID),
+            players: (elem.players.map((iter: any) => BarMatchPlayer.parse(iter)) as BarMatchPlayer[]).sort((a, b) => a.playerID - b.playerID),
             spectators: elem.spectators.map((iter: any) => BarMatchSpectator.parse(iter)),
             chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
 

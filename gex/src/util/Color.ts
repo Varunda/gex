@@ -146,6 +146,10 @@ export default class ColorUtils {
         return `rgb(${rgb.red}, ${rgb.green}, ${rgb.blue})`;
     }
 
+    public static rgbaToString(rgb: RGB, t: number): string {
+        return `rgba(${rgb.red}, ${rgb.green}, ${rgb.blue}, ${t})`;
+    }
+
     /**
      * Get a random RGB color
      */

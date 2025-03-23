@@ -23,6 +23,8 @@ namespace gex.Services.BarApi {
         private readonly PrDownloaderService _PrDownloader;
         private readonly BarEngineDownloader _EngineDownloader;
 
+        private static int _PortOffset = 0;
+
         public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
             PrDownloaderService prDownloader, BarEngineDownloader engineDownloader) {
@@ -38,7 +40,7 @@ namespace gex.Services.BarApi {
 
             _Logger.LogDebug($"starting BAR headless instance [gameID={gameID}] [cwd={Environment.CurrentDirectory}]");
 
-            BarMatch? match = await _MatchRepository.GetByID(gameID);
+            BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return $"cannot find game with ID '{gameID}'";
             }
@@ -67,8 +69,10 @@ namespace gex.Services.BarApi {
                 await _EngineDownloader.DownloadEngine(match.Engine, cancel);
             }
 
+            string enginePath = GetEnginePath(match.Engine);
+
             // ensure the widget (what the fuck is a wupget) is in the right place
-            string widgetsDirectory = Path.Join(_Options.Value.EngineLocation, match.Engine, "LuaUI", "Widgets");
+            string widgetsDirectory = Path.Join(enginePath, "LuaUI", "Widgets");
             if (Directory.Exists(widgetsDirectory) == false) {
                 Directory.CreateDirectory(widgetsDirectory);
             }
@@ -80,7 +84,9 @@ namespace gex.Services.BarApi {
             File.Copy("./gex.lua", widgetsDirectory + Path.DirectorySeparatorChar + "gex.lua");
 
             // ensure the widget is enabled for the first time run
-            string luaUiConfigDirectory = Path.Join(_Options.Value.EngineLocation, match.Engine, "data", "LuaUI", "Config");
+            string dataDir = Path.Join(enginePath, $"data-{gameID}");
+            string luaUiConfigDirectory = Path.Join(dataDir, "LuaUI", "Config");
+            _Logger.LogDebug($"ensuring data dir contains LuaUI config that enables gex [gameID={gameID}] [luaUi={luaUiConfigDirectory}]");
             if (Directory.Exists(luaUiConfigDirectory) == false) {
                 Directory.CreateDirectory(luaUiConfigDirectory);
             }
@@ -103,26 +109,31 @@ namespace gex.Services.BarApi {
             }
 
             // setup script file to be ran
-            string scriptsFile = Path.Join(_Options.Value.EngineLocation, match.Engine, "_script.txt");
+            string scriptsFile = Path.Join(enginePath, $"_script-{gameID}.txt");
             if (File.Exists(scriptsFile) == true) {
                 File.Delete(scriptsFile);
             }
 
-            await File.WriteAllTextAsync(scriptsFile, $"[game] {{\ndemofile={demofileLocation};\n}}", cancel);
+            int port = 50000 + (_PortOffset++ % 1000);
+
+            await File.WriteAllTextAsync(scriptsFile, $"[game] {{\ndemofile={demofileLocation};HostPort={port};\n}}", cancel);
 
             // actually run the process now that everything is setup
-            string barExecutable = Path.Join(_Options.Value.EngineLocation, match.Engine);
-
-            using Process bar = new Process();
-            bar.StartInfo.FileName = Path.Join(_Options.Value.EngineLocation, match.Engine, "spring-headless");
+            using Process bar = new();
+            bar.StartInfo.FileName = Path.Join(enginePath, "spring-headless");
             if (OperatingSystem.IsWindows()) { bar.StartInfo.FileName += ".exe"; }
-            bar.StartInfo.WorkingDirectory = barExecutable;
-            bar.StartInfo.Arguments = $"--write-dir \"{barExecutable + "/data"}\" _script.txt";
+            bar.StartInfo.WorkingDirectory = enginePath;
+            bar.StartInfo.Arguments = $"--write-dir \"{dataDir}\" \"{scriptsFile}\"";
             bar.StartInfo.UseShellExecute = false;
             bar.StartInfo.RedirectStandardOutput = true;
             bar.StartInfo.RedirectStandardError = true;
 
-            _Logger.LogDebug($"starting bar executable [gameID={gameID}] [cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}]");
+            cancel.Register(() => {
+                _Logger.LogInformation($"killing BAR instance due to cancellation [gameID={gameID}]");
+                bar.Kill();
+            });
+
+            _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] [cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}]");
 
             Stopwatch timer = Stopwatch.StartNew();
 
@@ -163,6 +174,12 @@ namespace gex.Services.BarApi {
             // game successfully ran, good job gex!
             _Logger.LogInformation($"BAR match ran locally [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms]");
 
+            try {
+                File.Delete(scriptsFile);
+            } catch (Exception ex) {
+                _Logger.LogWarning($"failed to delete script [gameID={gameID}] [path={scriptsFile}] [ex={ex.Message}]");
+            }
+
             // copy logs to folder
             if (Directory.Exists(gameLogLocation) == false) {
                 Directory.CreateDirectory(gameLogLocation);
@@ -173,14 +190,34 @@ namespace gex.Services.BarApi {
             await File.WriteAllTextAsync(stdoutLogs, output.ToString(), cancel);
             await File.WriteAllTextAsync(stderrLogs, error.ToString(), cancel);
 
-            string actionLogLocation = Path.Join(_Options.Value.EngineLocation, match.Engine, "data", "actions.json");
+            string actionLogLocation = Path.Join(dataDir, "actions.json");
             if (File.Exists(actionLogLocation) == false) {
-                return $"failed to find action log after game ran!";
+                return $"failed to find action log after game ran! {actionLogLocation} was missing";
             }
 
             File.Copy(actionLogLocation, gameLogLocation + Path.DirectorySeparatorChar + "actions.json");
+            _Logger.LogDebug($"game ran and output copied, deleting data dir [gameID={gameID}] [dataDir={dataDir}]");
+            try {
+                Directory.Delete(dataDir, true);
+            } catch (Exception ex) {
+                _Logger.LogWarning($"failed to delete data dir after run! [gameID={gameID}] [dataDir={dataDir}] [ex={ex.Message}]");
+            }
 
             return new GameOutput() { GameID = gameID };
+        }
+
+        private string GetEnginePath(string version) {
+            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
+
+            if (OperatingSystem.IsWindows() == true) {
+                path += "-win";
+            } else if (OperatingSystem.IsLinux() == true) {
+                path += "-linux";
+            } else {
+                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
+            }
+
+            return path;
         }
 
     }

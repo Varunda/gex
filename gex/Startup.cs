@@ -203,7 +203,7 @@ namespace gex {
 
                 opt.OnRejected = (context, cancel) => {
                     ILogger? logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?
-                        .CreateLogger("watchtower.Startup.Ratelimiter");
+                        .CreateLogger("gex.Startup.Ratelimiter");
 
                     logger?.LogInformation($"rate limit hit [ip={context.HttpContext.Connection.RemoteIpAddress}] [url='{context.HttpContext.Request.Path}'] "
                         + $"[referrer='{context.HttpContext.Request.Headers.Referer}']");
@@ -336,6 +336,12 @@ namespace gex {
                     name: "match",
                     pattern: "/match/{*.}",
                     defaults: new { controller = "Home", action = "Match" }
+                );
+
+                endpoints.MapControllerRoute(
+                    name: "user",
+                    pattern: "/user/{*.}",
+                    defaults: new { controller = "Home", action = "User" }
                 );
 
                 endpoints.MapControllerRoute(

@@ -31,7 +31,7 @@ namespace gex.Services.BarApi {
         ///     a boolean value indicating if the game version has already been downloaded for the specified engine
         /// </returns>
         public bool HasGameVersion(string engine, string version) {
-            string gameVersionOutput = Path.Join(_Options.Value.EngineLocation, engine, "games", version, "done.txt");
+            string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version, "done.txt");
             return File.Exists(gameVersionOutput);
         }
 
@@ -48,7 +48,7 @@ namespace gex.Services.BarApi {
                 return;
             }
 
-            string gameVersionOutput = Path.Join(_Options.Value.EngineLocation, engine, "games", version);
+            string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version);
 
             if (Directory.Exists(gameVersionOutput) == true) {
                 _Logger.LogInformation($"incomplete game version downloaded found [engine={engine}] [version={version}] [path={gameVersionOutput}]");
@@ -85,7 +85,8 @@ namespace gex.Services.BarApi {
         /// </returns>
         public bool HasMap(string engine, string map) {
             string mapName = (map + ".sd7").Replace(" ", "_").ToLower();
-            string path = Path.Join(_Options.Value.EngineLocation, engine, "maps", "maps", mapName);
+            // yes, double maps is correct, it's what pr-downloaded just down i guess, zany
+            string path = Path.Join(GetEnginePath(engine), "maps", "maps", mapName);
             return File.Exists(path);
         }
 
@@ -96,16 +97,16 @@ namespace gex.Services.BarApi {
         /// <param name="mapName">name of the map to get</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
-        public async Task GetMap(string engine, string mapName, CancellationToken cancel) {
+        public Task GetMap(string engine, string mapName, CancellationToken cancel) {
 
             if (HasMap(engine, mapName) == true) {
                 _Logger.LogDebug($"map already downloaded [engine={engine}] [map={mapName}]");
-                return;
+                return Task.CompletedTask;
             }
 
             // pr-downloader.exe --filesystem-writepath "./maps" --download-map "All That Glitters v2.2"
 
-            string mapOutput = Path.Join(_Options.Value.EngineLocation, engine, "maps");
+            string mapOutput = Path.Join(GetEnginePath(engine), "maps");
 
             ProcessStartInfo startInfo = GetForEngine(engine, $"--filesystem-writepath \"{mapOutput}\" --download-map \"{mapName}\"");
             _Logger.LogDebug($"getting map [version={mapName}] [engine={engine}] [args={startInfo.Arguments}]");
@@ -118,11 +119,12 @@ namespace gex.Services.BarApi {
             }
 
             _Logger.LogInformation($"map fetched [map={mapName}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms]");
+            return Task.CompletedTask;
         }
 
         private ProcessStartInfo GetForEngine(string engine, string arguments) {
 
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + engine + Path.DirectorySeparatorChar + "pr-downloader";
+            string path = Path.Join(GetEnginePath(engine), "pr-downloader");
             if (OperatingSystem.IsWindows()) { path += ".exe"; }
 
             if (File.Exists(path) == false) {
@@ -131,7 +133,7 @@ namespace gex.Services.BarApi {
 
             ProcessStartInfo startInfo = new();
             startInfo.FileName = path;
-            startInfo.WorkingDirectory = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + engine;
+            startInfo.WorkingDirectory = GetEnginePath(engine);
             startInfo.EnvironmentVariables.Add("PRD_RAPID_USE_STREAMER", "false");
             startInfo.EnvironmentVariables.Add("PRD_HTTP_SEARCH_URL", "https://files-cdn.beyondallreason.dev/find");
             startInfo.EnvironmentVariables.Add("PRD_RAPID_REPO_MASTER", "https://repos-cdn.beyondallreason.dev/repos.gz");
@@ -140,6 +142,20 @@ namespace gex.Services.BarApi {
             startInfo.RedirectStandardOutput = true;
 
             return startInfo;
+        }
+
+        private string GetEnginePath(string version) {
+            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
+
+            if (OperatingSystem.IsWindows() == true) {
+                path += "-win";
+            } else if (OperatingSystem.IsLinux() == true) {
+                path += "-linux";
+            } else {
+                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
+            }
+
+            return path;
         }
 
     }

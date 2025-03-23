@@ -14,5 +14,9 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         return BarMatchApi.get().readList(`/api/match/recent?offset=${offset}&limit=${limit}`, BarMatch.parse);
     }
 
+    public static getByUserID(userID: number): Promise<Loading<BarMatch[]>> {
+        return BarMatchApi.get().readList(`/api/match/user/${userID}`, BarMatch.parse);
+    }
+
 
 }

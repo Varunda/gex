@@ -5,6 +5,7 @@ using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
+using gex.Services.Db.Match;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -68,7 +69,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 }
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID)
+            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplayDownloaded = DateTime.UtcNow;

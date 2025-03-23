@@ -197,7 +197,6 @@ function widget:GameFrame(n)
                         energyMake = 0,
                         energyUse = 0
                     }
-                    Spring.Echo("new resource using unit found", unitID)
                 end
 
                 UNIT_RESOURCE_PRODUCTION[unitID].metalMake = UNIT_RESOURCE_PRODUCTION[unitID].metalMake + (metalMake / 30)
@@ -271,7 +270,8 @@ function widget:GameOver(winningAllyTeams)
     writeJson("end", data)
 
     for unitID,v in pairs(UNIT_RESOURCE_PRODUCTION) do
-        -- HACK: for some reason, the UnitKilled callin setting nil does not work, and they are still iterated thru
+        -- HACK: for some reason, the UnitKilled callin setting nil does not work,
+        -- and they are still iterated thru in this loop. but, GetUnitTeam will return nil for these units
         if (Spring.GetUnitTeam(unitID) ~= nil) then
 			writeJson("unit_resources", {
 				{ "unitID", unitID },

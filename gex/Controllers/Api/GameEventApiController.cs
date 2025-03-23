@@ -2,10 +2,12 @@
 using gex.Models.Db;
 using gex.Models.Event;
 using gex.Services.Db;
+using gex.Services.Db.Event;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Controllers.Api {
@@ -63,7 +65,8 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///     get events of a <see cref="BarMatch"/>
+        ///     get events of a <see cref="BarMatch"/>. by default, this will return NO events, and query parameters
+        ///     must be set to tell Gex what to include
         /// </summary>
         /// <remarks>
         ///     each part of <see cref="GameOutput"/> that is wanted must be declared so. this is so future events being added
@@ -83,6 +86,8 @@ namespace gex.Controllers.Api {
         /// <param name="includeTransportLoads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTransportUnloads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTeamDiedEvents">if <see cref="GameOutput.TeamDiedEvents"/> will be populated, defaults to false</param>
+        /// <param name="includeUnitResources">if <see cref="GameOutput.UnitResources"/> will be populated, defaults to false</param>
+        /// <param name="cancel">cancel token</param>
         /// <response code="200">
         ///     the response will contain a <see cref="GameOutput"/>, that has the various fields
         ///     populated based on the parameters passed
@@ -106,10 +111,11 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeTransportLoads = false,
             [FromQuery] bool includeTransportUnloads = false,
             [FromQuery] bool includeTeamDiedEvents = false,
-            [FromQuery] bool includeUnitResources = false
+            [FromQuery] bool includeUnitResources = false,
+            CancellationToken cancel = default
         ) {
 
-            BarMatch? match = await _MatchRepository.GetByID(gameID);
+            BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return ApiNoContent<GameOutput>();
             }

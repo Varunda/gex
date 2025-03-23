@@ -39,6 +39,27 @@
                     </table>
                 </div>
 
+
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Engine</td>
+                            <td>{{ match.data.engine }}</td>
+                        </tr>
+                        <tr>
+                            <td>Game version</td>
+                            <td>{{ match.data.gameVersion }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex" style="gap: 0.5rem;">
+                    <match-option name="Game settings" :options="match.data.gameSettings"></match-option>
+                    <match-option name="Map settings" :options="match.data.mapSettings"></match-option>
+                    <match-option name="Lobby settings" :options="match.data.spadsSettings"></match-option>
+                    <match-option name="Host settings" :options="match.data.hostSettings"></match-option>
+                </div>
+
                 <h4>
                     <a :href="'/downloadmatch/' + gameID" download="download">
                         Download replay
@@ -106,6 +127,7 @@
     import ApiError from "components/ApiError";
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
+    import Collapsible from "components/Collapsible.vue";
 
     import { MatchOpener } from "./components/MatchOpener.vue";
     import MatchFactories from "./components/MatchFactories.vue";
@@ -117,6 +139,7 @@
     import MatchTeams from "./components/MatchTeams.vue";
     import MatchMap from "./components/MatchMap.vue";
     import MatchChat from "./components/MatchChat.vue";
+    import MatchOption from "./components/MatchOption.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -261,8 +284,8 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat,
-            ProcessingStep
+            MatchTeams, MatchMap, MatchChat, MatchOption,
+            ProcessingStep, Collapsible
         }
     });
     export default Match;

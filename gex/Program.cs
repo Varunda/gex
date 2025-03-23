@@ -69,7 +69,7 @@ namespace gex {
                     Stopwatch timer = Stopwatch.StartNew();
 
                     _Host = CreateHostBuilder(args).Build();
-                    logger = _Host.Services.GetService(typeof(ILogger<Program>)) as ILogger<Program>;
+                    logger = _Host.Services.GetRequiredService<ILogger<Program>>();
                     MapDapperTypes(logger);
 
                     hostBuilt = true;

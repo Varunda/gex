@@ -1,9 +1,10 @@
 ﻿using gex.Models.Db;
-using gex.Services.Db;
+using gex.Services.Db.Match;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Services.Repositories {
@@ -24,11 +25,11 @@ namespace gex.Services.Repositories {
             _Cache = cache;
         }
 
-        public async Task<List<BarMatchPlayer>> GetByGameID(string gameID) {
+        public async Task<List<BarMatchPlayer>> GetByGameID(string gameID, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY_ID, gameID);
 
             if (_Cache.TryGetValue(cacheKey, out List<BarMatchPlayer>? players) == false || players == null) {
-                players = await _Db.GetByGameID(gameID);
+                players = await _Db.GetByGameID(gameID, cancel);
 
                 _Cache.Set(cacheKey, players, new MemoryCacheEntryOptions() {
                     SlidingExpiration = TimeSpan.FromMinutes(5)

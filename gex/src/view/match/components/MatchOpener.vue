@@ -14,6 +14,7 @@
 
             <div>
                 <span v-for="(b, index) in player.buildings" :key="index" class="units">
+                    <img :src="'/image-proxy/UnitIcon?defName=' + b.definitionName" height="16" class="ms-1">
                     <strong v-if="b.isFactory">
                         {{ b.name }}
                     </strong>

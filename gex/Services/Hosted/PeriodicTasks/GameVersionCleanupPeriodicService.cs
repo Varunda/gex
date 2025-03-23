@@ -23,7 +23,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
 
         protected override async Task<string?> PerformTask(CancellationToken cancel) {
 
-            List<BarMatch> match = await _MatchRepository.GetByTimePeriod(DateTime.UtcNow - TimeSpan.FromDays(1), DateTime.UtcNow);
+            List<BarMatch> match = await _MatchRepository.GetByTimePeriod(DateTime.UtcNow - TimeSpan.FromDays(1), DateTime.UtcNow, cancel);
 
             HashSet<string> gameVersion = new HashSet<string>(match.Select(iter => iter.GameVersion).Distinct());
 

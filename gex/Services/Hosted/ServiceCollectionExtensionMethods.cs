@@ -18,6 +18,8 @@ namespace gex.Services.Hosted {
             services.AddHostedService<GameReplayParseQueueProcessor>();
             services.AddHostedService<HeadlessRunQueueProcessor>();
             services.AddHostedService<ActionLogParseQueueProcessor>();
+            services.AddHostedService<UserMapStatUpdateQueueProcessor>();
+            services.AddHostedService<UserFactionStatUpdateQueueProcessor>();
         }
 
         public static void AddPeriodicServices(this IServiceCollection services) {

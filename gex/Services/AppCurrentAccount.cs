@@ -46,21 +46,21 @@ namespace gex.Services {
             return account;
         }
 
-        public async Task<ulong?> GetDiscordID() {
+        public Task<ulong?> GetDiscordID() {
             if (_Context.HttpContext == null) {
                 _Logger.LogWarning($"_Context.HttpContext is null, cannot get claims");
-                return null;
+                return Task.FromResult((ulong?)null);
             }
 
             HttpContext httpContext = _Context.HttpContext;
 
             if (httpContext.User.Identity == null) {
                 _Logger.LogWarning($"httpContext.User.Identity is null");
-                return null;
+                return Task.FromResult((ulong?)null);
             }
 
             if (httpContext.User.Identity.IsAuthenticated == false) {
-                return null;
+                return Task.FromResult((ulong?)null);
             } else if (httpContext.User is ClaimsPrincipal claims) {
                 /*
                 string s = "";
@@ -72,7 +72,7 @@ namespace gex.Services {
 
                 Claim? idClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
                 if (idClaim == null || string.IsNullOrEmpty(idClaim.Value)) {
-                    return null;
+                    return Task.FromResult((ulong?)null);
                 }
 
                 string id = idClaim.Value;
@@ -81,12 +81,12 @@ namespace gex.Services {
                     throw new InvalidCastException($"failed to convert {id} to a valid ulong");
                 }
 
-                return discordID;
+                return Task.FromResult((ulong?)discordID);
             } else {
                 _Logger.LogWarning($"Unchecked stat of httpContext.User");
             }
 
-            return null;
+            return Task.FromResult((ulong?)null);
         }
 
         /// <summary>

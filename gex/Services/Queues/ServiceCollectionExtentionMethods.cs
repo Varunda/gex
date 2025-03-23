@@ -15,6 +15,8 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<GameReplayParseQueueEntry>, GameReplayParseQueue>();
             services.AddSingleton<BaseQueue<HeadlessRunQueueEntry>, HeadlessRunQueue>();
             services.AddSingleton<BaseQueue<ActionLogParseQueueEntry>, ActionLogParseQueue>();
+            services.AddSingleton<BaseQueue<UserMapStatUpdateQueueEntry>, UserMapStatUpdateQueue>();
+            services.AddSingleton<BaseQueue<UserFactionStatUpdateQueueEntry>, UserFactionStatUpdateQueue>();
         }
 
     }

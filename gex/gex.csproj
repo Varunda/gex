@@ -53,6 +53,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.0" />
     <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.2.24" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />

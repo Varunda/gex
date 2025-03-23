@@ -1,4 +1,5 @@
-﻿using gex.Models.Bar;
+﻿using gex.Code.Constants;
+using gex.Models.Bar;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -22,6 +23,8 @@ namespace gex.Models.Db {
         public string FileName { get; set; } = "";
 
         public long DurationMs { get; set; }
+
+        public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
 
         public JsonElement HostSettings { get; set; } = default;
 

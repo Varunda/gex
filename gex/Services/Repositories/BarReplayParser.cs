@@ -145,8 +145,8 @@ namespace gex.Services.Repositories {
                     | colorElem.GetProperty("b").GetByte() << 0;
 
                 string skillStr = iter.GetRequiredString("skill");
-                player.Skill = decimal.Parse(skillStr.Replace("[", "").Replace("]", ""));
-                player.SkillUncertainty = iter.GetProperty("skillUncertainty").GetDecimal();
+                player.Skill = double.Parse(skillStr.Replace("[", "").Replace("]", ""));
+                player.SkillUncertainty = iter.GetProperty("skillUncertainty").GetDouble();
 
                 match.Players.Add(player);
             }

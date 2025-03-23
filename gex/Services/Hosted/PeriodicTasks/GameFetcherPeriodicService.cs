@@ -4,6 +4,7 @@ using gex.Models.Db;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
+using gex.Services.Db.Match;
 using gex.Services.Demofile;
 using gex.Services.Queues;
 using gex.Services.Repositories;
@@ -19,18 +20,19 @@ namespace gex.Services.Hosted.PeriodicTasks {
     public class GameFetcherPeriodicService : AppBackgroundPeriodicService {
 
         private readonly BarReplayApi _ReplayApi;
-        private readonly BarMatchDb _MatchDb;
+        private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchProcessingDb _ProcessingDb;
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
 
         public GameFetcherPeriodicService(ILoggerFactory loggerFactory, ServiceHealthMonitor healthMon,
-            BarReplayApi replayApi, BarMatchDb matchDb, BarReplayDb replayDb,
-            BaseQueue<GameReplayDownloadQueueEntry> downloadQueue, BarMatchProcessingDb processingDb)
+            BarReplayApi replayApi, BarMatchRepository matchRepo,
+            BarReplayDb replayDb, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
+            BarMatchProcessingDb processingDb)
         : base("GameFetcherPeriodicService", TimeSpan.FromMinutes(5), loggerFactory, healthMon) {
 
             _ReplayApi = replayApi;
-            _MatchDb = matchDb;
+            _MatchRepository = matchRepo;
             _ReplayDb = replayDb;
             _DownloadQueue = downloadQueue;
             _ProcessingDb = processingDb;
@@ -99,12 +101,12 @@ namespace gex.Services.Hosted.PeriodicTasks {
             _Logger.LogDebug($"loading replay [ID={replay.ID}]");
             Stopwatch timer = Stopwatch.StartNew();
 
-            BarMatch? existingMatch = await _MatchDb.GetByID(replay.ID);
+            BarMatch? existingMatch = await _MatchRepository.GetByID(replay.ID, cancel);
             if (existingMatch != null) {
                 _Logger.LogTrace($"match already stored in db [ID={replay.ID}]");
                 return ParseResult.ALREADY_EXISTS;
             }
-            BarMatchProcessing? existingProcessing = await _ProcessingDb.GetByGameID(replay.ID);
+            BarMatchProcessing? existingProcessing = await _ProcessingDb.GetByGameID(replay.ID, cancel);
             if (existingProcessing != null) {
                 _Logger.LogTrace($"match already being processed (but not in DB yet!) [ID={replay.ID}]");
                 return ParseResult.ALREADY_EXISTS;

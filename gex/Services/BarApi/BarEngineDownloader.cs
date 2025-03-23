@@ -36,7 +36,7 @@ namespace gex.Services.BarApi {
         }
 
         public bool HasEngine(string version) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
+            string path = GetEnginePath(version);
             return Directory.Exists(path);
         }
 
@@ -48,8 +48,7 @@ namespace gex.Services.BarApi {
         /// <returns></returns>
         /// <exception cref="System.Exception"></exception>
         public async Task DownloadEngine(string version, CancellationToken cancel) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
-
+            string path = GetEnginePath(version);
             if (Directory.Exists(path)) {
                 _Logger.LogInformation($"engine version already downloaded [version={version}]");
                 return;
@@ -86,6 +85,20 @@ namespace gex.Services.BarApi {
             await sevenZipProc.WaitForExitAsync(cancel);
 
             _Logger.LogDebug($"downloaded engine [version={version}] [timer={timer.ElapsedMilliseconds}ms]");
+        }
+
+        private string GetEnginePath(string version) {
+            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
+
+            if (OperatingSystem.IsWindows() == true) {
+                path += "-win";
+            } else if (OperatingSystem.IsLinux() == true) {
+                path += "-linux";
+            } else {
+                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
+            }
+
+            return path;
         }
 
     }
