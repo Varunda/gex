@@ -5,32 +5,34 @@
             <gex-menu class="flex-grow-1"></gex-menu>
         </div>
 
-        <div v-if="user.state == 'idle'"></div>
+        <div class="container">
+            <div v-if="user.state == 'idle'"></div>
 
-        <div v-else-if="user.state == 'loading'">
-            Loading...
-        </div>
+            <div v-else-if="user.state == 'loading'">
+                Loading...
+            </div>
 
-        <div v-else-if="user.state == 'loaded'">
-            <user-info :user="user.data"></user-info>
-        </div>
+            <div v-else-if="user.state == 'loaded'">
+                <user-info :user="user.data"></user-info>
+            </div>
 
-        <div v-if="matches.state == 'idle'"></div>
-        
-        <div v-else-if="matches.state == 'loading'">
-            Loading...
-        </div>
+            <div v-if="matches.state == 'idle'"></div>
+            
+            <div v-else-if="matches.state == 'loading'">
+                Loading...
+            </div>
 
-        <div v-else-if="matches.state == 'loaded'">
-            <user-matches :data="matches.data"></user-matches>
-        </div>
+            <div v-else-if="matches.state == 'loaded'">
+                <user-matches :data="matches.data"></user-matches>
+            </div>
 
-        <div v-else-if="matches.state == 'error'">
-            <api-error :error="matches.problem"></api-error>
-        </div>
+            <div v-else-if="matches.state == 'error'">
+                <api-error :error="matches.problem"></api-error>
+            </div>
 
-        <div v-else>
-            unchecked state of matches: {{ matches.state }}
+            <div v-else>
+                unchecked state of matches: {{ matches.state }}
+            </div>
         </div>
     </div>
 </template>

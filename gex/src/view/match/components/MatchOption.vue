@@ -1,6 +1,6 @@
 
 <template>
-    <collapsible :header-text="name" size-class="h6" :show="false" class="flex-grow-1">
+    <collapsible :header-text="name" size-class="h6" :show="false" class="flex-grow-1" bg-color="bg-dark">
         <div style="max-height: 400px; overflow-y: auto">
             <table class="table table-sm">
                 <tbody>
@@ -21,7 +21,6 @@
             </table>
         </div>
     </collapsible>
-
 </template>
 
 <script lang="ts">

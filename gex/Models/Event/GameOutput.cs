@@ -22,7 +22,7 @@ namespace gex.Models.Event {
 
         public List<GameEventCommanderPositionUpdate> CommanderPositionUpdates { get; set; } = [];
 
-        public List<GameEventArmyValueUpdate> ArmyValueUpdates { get; set; } = [];
+        public List<GameEventExtraStatUpdate> ExtraStats { get; set; } = [];
 
         public List<GameEventUnitTransportLoaded> TransportLoaded { get; set; } = [];
 
@@ -31,6 +31,8 @@ namespace gex.Models.Event {
         public List<GameEventTeamDied> TeamDiedEvents { get; set; } = [];
 
         public List<GameEventUnitResources> UnitResources { get; set; } = [];
+
+        public List<GameEventUnitDamage> UnitDamage { get; set; } = [];
 
         public List<GameEventTeamStats> TeamStats { get; set; } = [];
 

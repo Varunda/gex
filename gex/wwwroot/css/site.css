@@ -199,3 +199,7 @@
 .font-monospace {
     font-family: "Atkinson Hyperlegible Mono" !important;
 }
+
+.text-outline {
+    text-shadow: 1px 1px 1px #000000;
+}

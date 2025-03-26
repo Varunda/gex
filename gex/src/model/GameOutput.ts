@@ -1,9 +1,10 @@
-import { GameEventArmyValueUpdate } from "./GameEventArmyValueUpdate";
+import { GameEventExtraStatsUpdate } from "./GameEventArmyValueUpdate";
 import { GameEventCommanderPositionUpdate } from "./GameEventCommanderPositionUpdate";
 import { GameEventFactoryUnitCreated } from "./GameEventFactoryUnitCreated";
 import { GameEventTeamDied } from "./GameEventTeamDied";
 import { GameEventTeamsStats } from "./GameEventTeamStats";
 import { GameEventUnitCreated } from "./GameEventUnitCreated";
+import { GameEventUnitDamage } from "./GameEventUnitDamage";
 import { GameEventUnitDef } from "./GameEventUnitDef";
 import { GameEventUnitKilled } from "./GameEventUnitKilled";
 import { GameEventUnitResources } from "./GameEventUnitResources";
@@ -18,10 +19,11 @@ export class GameOutput {
     public unitsKilled: GameEventUnitKilled[] = [];
     public factoryUnitCreated: GameEventFactoryUnitCreated[] = [];
     public commanderPositionUpdates: GameEventCommanderPositionUpdate[] = [];
-    public armyValueUpdates: GameEventArmyValueUpdate[] = [];
+    public extraStats: GameEventExtraStatsUpdate[] = [];
     public teamStats: GameEventTeamsStats[] = [];
     public teamDiedEvents: GameEventTeamDied[] = [];
     public unitResources: GameEventUnitResources[] = [];
+    public unitDamage: GameEventUnitDamage[] = [];
 
     public static parse(elem: any): GameOutput {
 
@@ -39,10 +41,11 @@ export class GameOutput {
             unitsKilled: elem.unitsKilled.map((iter: any) => GameEventUnitKilled.parse(iter)),
             factoryUnitCreated: elem.factoryUnitCreated.map((iter: any) => GameEventFactoryUnitCreated.parse(iter)),
             commanderPositionUpdates: elem.commanderPositionUpdates.map((iter: any) => GameEventCommanderPositionUpdate.parse(iter)),
-            armyValueUpdates: elem.armyValueUpdates.map((iter: any) => GameEventArmyValueUpdate.parse(iter)),
+            extraStats: elem.extraStats.map((iter: any) => GameEventExtraStatsUpdate.parse(iter)),
             teamStats: elem.teamStats.map((iter: any) => GameEventTeamsStats.parse(iter)),
             teamDiedEvents: elem.teamDiedEvents.map((iter: any) => GameEventTeamDied.parse(iter)),
-            unitResources: elem.unitResources.map((iter: any) => GameEventUnitResources.parse(iter))
+            unitResources: elem.unitResources.map((iter: any) => GameEventUnitResources.parse(iter)),
+            unitDamage: elem.unitDamage.map((iter: any) => GameEventUnitDamage.parse(iter))
         };
     }
 

@@ -261,9 +261,11 @@ namespace gex.Services.Demofile {
 
                         foreach (JsonElement iter in colors.EnumerateArray()) {
                             int teamID = iter.GetProperty("teamID").GetInt32();
-                            byte r = iter.GetProperty("r").GetByte();
-                            byte g = iter.GetProperty("g").GetByte();
-                            byte b = iter.GetProperty("b").GetByte();
+
+                            // TODO: why can these values go can over 255 and below 0 
+                            byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
+                            byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
+                            byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
 
                             BarMatchPlayer? player = players.GetValueOrDefault(teamID);
                             if (player != null) {

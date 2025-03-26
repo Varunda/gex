@@ -40,7 +40,7 @@ namespace gex.Models.Event {
 
         public const string UNIT_TAKEN = "unit_taken";
 
-        public const string ARMY_VALUE_UPDATE = "army_value_update";
+        public const string EXTRA_STATS = "extra_stat_update";
 
         public const string FACTORY_UNIT_CREATE = "factory_unit_created";
 
@@ -51,6 +51,8 @@ namespace gex.Models.Event {
         public const string TRANSPORT_UNLOADED = "transport_unloaded";
 
         public const string UNIT_RESOURCES = "unit_resources";
+
+        public const string UNIT_DAMAGE = "unit_damage";
 
         public const string END = "end";
 

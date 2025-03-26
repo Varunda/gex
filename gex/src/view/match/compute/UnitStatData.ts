@@ -1,8 +1,6 @@
 import { BarMatch } from "model/BarMatch";
 import { GameEventUnitDef } from "model/GameEventUnitDef";
 import { GameOutput } from "model/GameOutput";
-import { unitOfTime } from "moment";
-
 
 export class UnitStats {
     public defID: number = 0;
@@ -14,10 +12,20 @@ export class UnitStats {
 
     public produced: number = 0;
     public kills: number = 0;
+    public mobileKills: number = 0;
+    public staticKills: number = 0;
     public lost: number = 0;
+
+    public damageDealt: number = 0;
+    public damageTaken: number = 0;
+
     public metalKilled: number = 0;
     public energyKilled: number = 0;
     public buildPowerKilled: number = 0;
+
+    public damageRatio: number = 0;
+    public metalRatio: number = 0;
+    public energyRatio: number = 0;
 
     public static compute(output: GameOutput, match: BarMatch): UnitStats[] {
         const map: Map<string, UnitStats> = new Map();
@@ -44,11 +52,20 @@ export class UnitStats {
 
                 produced: 0,
                 kills: 0,
+                mobileKills: 0,
+                staticKills: 0,
                 lost: 0,
+
+                damageDealt: 0,
+                damageTaken: 0,
 
                 metalKilled: 0,
                 energyKilled: 0,
-                buildPowerKilled: 0
+                buildPowerKilled: 0,
+
+                damageRatio: 0,
+                metalRatio: 0,
+                energyRatio: 0
             };
 
             map.set(key, stats);
@@ -79,13 +96,39 @@ export class UnitStats {
                     attacker.metalKilled += unitDef.metalCost;
                     attacker.energyKilled += unitDef.energyCost;
                     attacker.buildPowerKilled += unitDef.buildPower;
+
+                    if (unitDef.speed == 0 && unitDef.weaponCount > 0) {
+                        attacker.staticKills += 1;
+                    } else if (unitDef.speed > 0 && unitDef.weaponCount > 0) {
+                        attacker.mobileKills += 1;
+                    }
                 } else {
                     console.log(`UnitStatData> missing unit def ${ev.definitionID}!`);
                 }
             }
         }
 
-        return Array.from(map.values());
+        for (const ev of output.unitDamage) {
+            const lastFrame: number | undefined = lastFrameBeforeKilled.get(ev.teamID);
+            if (lastFrame != undefined && ev.frame > lastFrame) {
+                continue;
+            }
+
+            const stats: UnitStats = getUnitStats(ev.definitionID, 0, ev.teamID);
+
+            stats.damageDealt += ev.damageDealt;
+            stats.damageTaken += ev.damageTaken;
+        }
+
+        const arr: UnitStats[] = Array.from(map.values());
+
+        for (const elem of arr) {
+            elem.damageRatio = elem.damageDealt / Math.max(1, elem.damageTaken);
+            elem.metalRatio = elem.metalKilled / (elem.produced * (elem.definition?.metalCost ?? 1));
+            elem.energyRatio = elem.energyKilled / (elem.produced * (elem.definition?.energyCost ?? 1));
+        }
+
+        return arr;
     }
 
 }

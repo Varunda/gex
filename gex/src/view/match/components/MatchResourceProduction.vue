@@ -22,11 +22,19 @@
             </span>
         </h4>
 
-        <a-table :entries="entries" default-sort-field="count" default-sort-order="desc">
+        <a-table :entries="entries"
+            :show-footer="true" :show-filters="true"
+            default-sort-field="count" default-sort-order="desc"
+            :page-sizes="[ 5, 10, 25, 50, 100 ]" :default-page-size="5">
+
             <a-col sort-field="name">
                 <a-header>
                     <b>Unit</b>
                 </a-header>
+
+                <a-filter field="name" type="string" method="input"
+                    :conditions="[ 'contains', 'equals' ]">
+                </a-filter>
 
                 <a-body v-slot="entry">
                     <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
@@ -36,12 +44,16 @@
 
             <a-col sort-field="count">
                 <a-header>
-                    <b>Count</b>
+                    <b>Produced</b>
                 </a-header>
 
                 <a-body v-slot="entry">
                     {{ entry.count }}
                 </a-body>
+
+                <a-footer>
+                    <b>Total</b>
+                </a-footer>
             </a-col>
 
             <a-col sort-field="metalMade">
@@ -54,6 +66,10 @@
                         {{ entry.metalMade | compact }}
                     </span>
                 </a-body>
+
+                <a-footer>
+                    <b>{{ sumMetalMade | compact }}</b>
+                </a-footer>
             </a-col>
 
             <a-col sort-field="metalUsed">
@@ -66,6 +82,10 @@
                         {{ entry.metalUsed | compact }}
                     </span>
                 </a-body>
+
+                <a-footer>
+                    <b>{{ sumMetalUsed | compact }}</b>
+                </a-footer>
             </a-col>
 
             <a-col sort-field="energyMade">
@@ -78,6 +98,10 @@
                         {{ entry.energyMade | compact }}
                     </span>
                 </a-body>
+
+                <a-footer>
+                    <b>{{ sumEnergyMade | compact }}</b>
+                </a-footer>
             </a-col>
 
             <a-col sort-field="energyUsed">
@@ -90,6 +114,10 @@
                         {{ entry.energyUsed | compact }}
                     </span>
                 </a-body>
+
+                <a-footer>
+                    <b>{{ sumEnergyUsed | compact }}</b>
+                </a-footer>
             </a-col>
 
         </a-table>
@@ -135,7 +163,27 @@
 
             selectedPlayer: function(): BarMatchPlayer | null {
                 return this.match.players.find(iter => iter.teamID == this.selectedTeam) || null;
-            }
+            },
+
+            sumMetalMade: function(): number {
+                if (this.entries.state != "loaded") {throw `what 3245712`;}
+                return this.entries.data.reduce((acc, val) => acc += val.metalMade, 0);
+            },
+
+            sumMetalUsed: function(): number {
+                if (this.entries.state != "loaded") {throw `what 324572`;}
+                return this.entries.data.reduce((acc, val) => acc += val.metalUsed, 0);
+            },
+
+            sumEnergyMade: function(): number {
+                if (this.entries.state != "loaded") {throw `what 324571`;}
+                return this.entries.data.reduce((acc, val) => acc += val.energyMade, 0);
+            },
+
+            sumEnergyUsed: function(): number {
+                if (this.entries.state != "loaded") {throw `what 324712`;}
+                return this.entries.data.reduce((acc, val) => acc += val.energyUsed, 0);
+            },
         },
 
         components: {

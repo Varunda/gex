@@ -70,6 +70,7 @@ namespace gex.Services.Db.Implementations {
         /// </remarks>
         /// <param name="connection">Connection to create the command on</param>
         /// <param name="text">Command text</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>
         ///     A new <see cref="NpgsqlCommand"/> ready to be used
         /// </returns>

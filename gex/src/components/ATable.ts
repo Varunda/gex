@@ -88,6 +88,9 @@ export const ATable = Vue.extend({
         // Will data be split up into many pages?
         paginate: { type: Boolean, required: false, default: true },
 
+        // if pagination isn't needed (only 4 entries, but page size is 50 for example), will the paginate controls be hidden?
+        HidePaginate: { type: Boolean, required: false, default: false },
+
         // How much padding will each row get
         RowPadding: { type: String, required: false, default: "normal" }, // "compact" | "normal" | "expanded"
 
@@ -172,6 +175,8 @@ export const ATable = Vue.extend({
                 const colClass: string = (column.componentOptions!.propsData as any).ColClass;
                 const sortField: string | undefined = (column.componentOptions.propsData as any).SortField;
 
+                console.log(`header ${colClass} ${sortField}`);
+
                 const options: VNodeData = {};
                 options.staticClass = colClass;
 
@@ -190,8 +195,10 @@ export const ATable = Vue.extend({
 
                 // A child <a-header> exists, use those options given
                 if (headerNodes.length == 1) {
+                    const headerNode = headerNodes[0];
                     header.children = headerNodes[0].componentOptions?.children ?? [];
                     header.empty = false;
+                    header.colClass = (headerNode.componentOptions?.propsData as any).ColClass;
 
                     // Sort by the first field set
                     if (sortField != undefined && this.sorting.field == "") {
@@ -341,6 +348,8 @@ export const ATable = Vue.extend({
         let rows: VNode[] = [];
 
         try {
+            const tbody: VNode[] = [];
+
             if (this.ShowHeader == true) {
                 rows.push(this.renderHeader(createElement));
             }
@@ -352,7 +361,7 @@ export const ATable = Vue.extend({
             if (this.entries.state == "idle") {
 
             } else if (this.entries.state == "loading") {
-                rows.push(createElement("tr", [
+                tbody.push(createElement("tr", [
                     createElement("td", {
                         attrs: {
                             "colspan": `${this.nodes.columns.length}`
@@ -371,17 +380,25 @@ export const ATable = Vue.extend({
             } else if (this.entries.state == "loaded") {
                 if (this.entries.data.length == 0) {
                     console.log(`<a-table> 0 entries, showing no data row`);
-                    rows.push(this.renderNoDataRow(createElement));
+                    tbody.push(this.renderNoDataRow(createElement));
                 } else {
                     if (this.ShowTopPages == true && this.paging.size > 10 && this.paginate == true) {
-                        rows.push(this.renderPages(createElement));
+                        tbody.push(this.renderPages(createElement));
                     }
 
+                    tbody.push(
+                        ...this.displayedEntries.map((iter, index) => {
+                            return this.renderDataRow(createElement, iter, index);
+                        })
+                    )
+
+                    /*
                     rows.push(createElement("tbody", {},
                         this.displayedEntries.map((iter, index) => {
                             return this.renderDataRow(createElement, iter, index);
                         }))
                     );
+                    */
                 }
 
                 this.$emit("rerender", Loadable.loaded(this.displayedEntries));
@@ -389,7 +406,7 @@ export const ATable = Vue.extend({
 
                 const err: ProblemDetails = this.entries.problem;
 
-                rows.push(createElement("tr",
+                tbody.push(createElement("tr",
                     {
                         staticClass: "table-danger"
                     },
@@ -407,7 +424,7 @@ export const ATable = Vue.extend({
 
                 this.$emit("rerender", Loadable.error(this.entries.problem));
             } else {
-                rows.push(createElement("tr",
+                tbody.push(createElement("tr",
                     {
                         staticClass: "table-danger"
                     },
@@ -424,10 +441,12 @@ export const ATable = Vue.extend({
             }
 
             if (this.ShowFooter == true) {
-                rows.push(this.renderFooter(createElement));
+                tbody.push(this.renderFooter(createElement));
             }
 
-            if (this.paginate == true) {
+            rows.push(createElement("tbody", tbody));
+
+            if (this.paginate == true && (this.HidePaginate == false || (this.HidePaginate == true && this.pageCount > 1))) {
                 rows.push(this.renderPages(createElement));
             }
         } catch (err) {
@@ -436,11 +455,15 @@ export const ATable = Vue.extend({
                     staticClass: "table-danger"
                 },
                 [
-                    createElement("td", {
-                        attrs: {
-                            "colspan": `${this.nodes.columns.length}`
-                        }
-                    },
+                    createElement("td", 
+                        {
+                            attrs: {
+                                "colspan": `${this.nodes.columns.length}`,
+                            },
+                            staticStyle: {
+                                "color": "var(--bs-danger)"
+                            }
+                        },
                         [
                             `Error occured while rendering <a-table>`,
                             createElement("br"),
@@ -553,6 +576,9 @@ export const ATable = Vue.extend({
             for (const header of this.nodes.headers) {
                 const options: VNodeData = {};
                 options.staticClass = header.colClass;
+                options.attrs = {
+                    "scope": "col"
+                };
 
                 if (header.field != undefined) {
                     options.on = {
@@ -561,7 +587,9 @@ export const ATable = Vue.extend({
                 }
 
                 if (header.empty == false) {
-					options.staticClass = "table-secondary";
+                    if (!options.staticClass) {
+                        options.staticClass = "table-secondary";
+                    }
 
                     headers.push(createElement("td", options, [
                         header.children,
@@ -1068,7 +1096,7 @@ export const ATable = Vue.extend({
                         },
                         // There is no click listener because Bootstrap creates it when we have the data-toggle
                         attrs: {
-                            "data-toggle": "dropdown"
+                            "data-bs-toggle": "dropdown"
                         }
                     },
                     [
@@ -1479,6 +1507,10 @@ const ACol = Vue.extend({
 });
 
 const AHeader = Vue.extend({
+    props: {
+        ColClass: { type: String, required: false, default: "table-secondary" },
+        BackgroundColor: { type: String, required: false, default: "table-secondary" }
+    },
     template: `<div></div>`
 });
 

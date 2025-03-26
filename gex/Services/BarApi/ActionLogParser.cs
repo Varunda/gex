@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -45,6 +46,8 @@ namespace gex.Services.BarApi {
             output.GameID = gameID;
 
             bool errored = false;
+
+            Dictionary<string, int> unknownCount = [];
 
             foreach (string line in lines) {
                 cancel.ThrowIfCancellationRequested();
@@ -131,9 +134,9 @@ namespace gex.Services.BarApi {
                         ev = e;
                     }
 
-                    else if (action == GameActionType.ARMY_VALUE_UPDATE) {
-                        GameEventArmyValueUpdate e = Serialize<GameEventArmyValueUpdate>(json)!;
-                        output.ArmyValueUpdates.Add(e);
+                    else if (action == GameActionType.EXTRA_STATS) {
+                        GameEventExtraStatUpdate e = Serialize<GameEventExtraStatUpdate>(json)!;
+                        output.ExtraStats.Add(e);
                         ev = e;
                     }
 
@@ -161,6 +164,12 @@ namespace gex.Services.BarApi {
                         ev = e;
                     }
 
+                    else if (action == GameActionType.UNIT_DAMAGE) {
+                        GameEventUnitDamage e = Serialize<GameEventUnitDamage>(json);
+                        output.UnitDamage.Add(e);
+                        ev = e;
+                    }
+
                     else if (action == GameActionType.END) {
                         continue;
                     }
@@ -170,7 +179,11 @@ namespace gex.Services.BarApi {
                     }
                     
                     else {
-                        _Logger.LogWarning($"unknown action [action={action}] [file={file}]");
+                        if (unknownCount.ContainsKey(action) == false) {
+                            _Logger.LogWarning($"unknown action [action={action}] [json={json}] [file={file}]");
+                            unknownCount.Add(action, 0);
+                        }
+                        unknownCount[action] = unknownCount[action] + 1;
                         continue;
                     }
 
@@ -182,6 +195,10 @@ namespace gex.Services.BarApi {
                     _Logger.LogError(ex, $"failed to process line: {json}");
                     errored = true;
                 }
+            }
+
+            foreach (KeyValuePair<string, int> entry in unknownCount) {
+                _Logger.LogWarning($"unknown action [action={entry.Key}] [count={entry.Value}] [file={file}]");
             }
 
             if (errored == true) {

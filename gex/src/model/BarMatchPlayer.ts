@@ -1,3 +1,4 @@
+import { Lut } from "util/Lut";
 
 export class BarMatchPlayer {
     public gameID: string = "";
@@ -17,8 +18,9 @@ export class BarMatchPlayer {
     public static parse(elem: any): BarMatchPlayer {
         return {
             ...elem,
+            color: Lut.lut(elem.color),
             username: elem.name,
-            hexColor: "#" + (elem.color as number).toString(16).padStart(6, "0")
+            hexColor: "#" + (Lut.lut(elem.color) as number).toString(16).padStart(6, "0")
         };
     }
 }

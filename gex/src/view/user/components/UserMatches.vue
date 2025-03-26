@@ -23,8 +23,8 @@
                     <b>Map</b>
                 </a-header>
 
-                <a-filter field="map" type="string" method="dropdown"
-                    :conditions="[ 'equals' ]">
+                <a-filter field="map" type="string" method="input"
+                    :conditions="[ 'contains', 'equals' ]">
                 </a-filter>
 
                 <a-body v-slot="entry">
@@ -44,6 +44,16 @@
                     <span v-else>
                         {{ entry.allyTeams.map(iter => iter.playerCount).join(" v ") }}
                     </span>
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
+                    <b>Gamemode</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    {{ entry.gamemode | gamemode }}
                 </a-body>
             </a-col>
 
@@ -82,6 +92,8 @@
     import ToggleButton from "components/ToggleButton";
 
     import { BarMatch } from "model/BarMatch";
+
+    import "filters/BarGamemodeFilter";
 
     export const UserMatches = Vue.extend({
         props: {

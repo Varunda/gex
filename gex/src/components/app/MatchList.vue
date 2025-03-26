@@ -153,7 +153,7 @@
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
-import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+    import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
     export const MatchList = Vue.extend({
         props: {
@@ -167,7 +167,6 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
         },
 
         methods: {
-
             getMapThumbnail: function(map: string): string {
                 return `/image-proxy/MapBackground?mapName=${map.replace(/ /g, "%20")}&size=texture-thumb`;
             },
@@ -191,12 +190,9 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
             getMatchStyle: function(match: BarMatch) {
                 return {
                     "background-image": `url(${this.getMapThumbnail(match.mapName)})`
-                };
+                }
             }
-
         }
-
     });
     export default MatchList;
-
 </script>

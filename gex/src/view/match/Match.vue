@@ -13,45 +13,46 @@
             </div>
 
             <div v-else-if="match.state == 'loaded'">
-                <h1>{{ match.data.map }}</h1>
 
-                <h2>played on {{ match.data.startTime | moment }}</h2>
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h1>{{ match.data.map }} ({{ match.data.gamemode | gamemode }})</h1>
 
-                <h2>took {{  match.data.durationMs / 1000 | mduration }}</h2>
+                        <h2>played on {{ match.data.startTime | moment }}</h2>
 
-                <h2>
-                    <span v-if="isFFA">
-                        {{ match.data.allyTeams.length }}-way FFA
-                    </span>
-                    <span v-else>
-                        {{ match.data.allyTeams.map(iter => iter.playerCount).join(" v ") }}
-                    </span>
-                </h2>
+                        <h2>took {{  match.data.durationMs / 1000 | mduration }}</h2>
 
-                <div v-if="match.data.processing">
-                    <table class="table table-sm">
-                        <tbody>
-                            <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
-                            <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
-                            <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
-                            <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
-                        </tbody>
-                    </table>
+                        <h2>
+                            <span v-if="isFFA">
+                                {{ match.data.allyTeams.length }}-way FFA
+                            </span>
+                            <span v-else>
+                                {{ match.data.allyTeams.map(iter => iter.playerCount).join(" v ") }}
+                            </span>
+                        </h2>
+                    </div>
+
+                    <div v-if="match.data.processing" class="flex-grow-0">
+                        <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
+                            <tbody>
+                                <template v-if="match.data.processing">
+                                    <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
+                                    <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
+                                    <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
+                                    <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                                </template>
+                                <tr>
+                                    <td class="text-muted">Engine</td>
+                                    <td class="text-muted">{{ match.data.engine }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Game version</td>
+                                    <td class="text-muted">{{ match.data.gameVersion }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-
-
-                <table class="table table-sm">
-                    <tbody>
-                        <tr>
-                            <td>Engine</td>
-                            <td>{{ match.data.engine }}</td>
-                        </tr>
-                        <tr>
-                            <td>Game version</td>
-                            <td>{{ match.data.gameVersion }}</td>
-                        </tr>
-                    </tbody>
-                </table>
 
                 <div class="d-flex" style="gap: 0.5rem;">
                     <match-option name="Game settings" :options="match.data.gameSettings"></match-option>
@@ -77,23 +78,61 @@
                 <div v-if="output.state == 'loaded'">
                     <match-map :match="match.data" :output="output.data" class="my-3"></match-map>
 
-                    <match-chat :match="match.data"></match-chat>
-
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
-                        <match-opener :openers="computedData.opener" class="my-3"></match-opener>
-                        <team-stats-chart :stats="output.data.teamStats" :match="match.data" class="my-3"></team-stats-chart>
-                        <!--
-                        <match-factories :data="computedData.factories" class="my-3"></match-factories>
-                        -->
-                        <match-resource-production :match="match.data" :data="computedData.unitResources" class="my-3"></match-resource-production>
-                        <match-unit-stats :unit-stats="computedData.unitStats" :match="match.data" class="my-3"></match-unit-stats>
-                        <match-wind-graph :updates="output.data.windUpdates" :map="match.data.mapData"></match-wind-graph>
-                        <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-3"></unit-def-view>
+
+                        <team-stats-chart :stats="output.data.teamStats" :match="match.data" class="my-4"></team-stats-chart>
+
+                        <hr class="border">
+
+                        <match-opener :openers="computedData.opener" class="my-4"></match-opener>
+
+                        <hr class="border">
+
+                        <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded">
+                            <h4 v-if="selectedPlayer" class="text-center">
+                                Viewing unit stats for
+                                <span :style="{ 'color': selectedPlayer.hexColor }">
+                                    {{ selectedPlayer.username }}
+                                </span>
+                            </h4>
+
+                            <div class="d-flex flex-wrap mb-3">
+                                <button v-for="player in match.data.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
+                                        'background-color': (selectedTeam == player.teamID) ? player.hexColor : 'var(--bs-secondary)',
+                                        'color': (selectedTeam == player.teamID) ? 'white' : player.hexColor
+                                    }" @click="selectedTeam = player.teamID">
+
+                                    <span style="text-shadow: 1px 1px 1px black">
+                                        {{ player.username }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr class="border">
+
+                        <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :selected-team="selectedTeam" class="my-4"></match-combat-stats>
+                        <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats" :unit-resources="computedData.unitResources" :selected-team="selectedTeam" class="my-4"></match-eco-stats>
+
+                        <hr class="border">
+
+                        <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
                     </div>
 
                     <div v-else class="text-center alert alert-warning mt-4">
                         This game has not been ran locally, and in-depth stats are not available
                     </div>
+
+                    <match-chat :match="match.data"></match-chat>
+
+                    <small class="text-muted">
+                        {{ 
+                            output.data.extraStats.length + output.data.commanderPositionUpdates.length + output.data.factoryUnitCreated.length + output.data.teamDiedEvents.length
+                            + output.data.teamStats.length + output.data.unitDefinitions.size + output.data.unitResources.length + output.data.unitsCreated.length
+                            + output.data.unitsKilled.length + output.data.windUpdates.length
+                        }}
+                        events
+                    </small>
                 </div>
             </div>
 
@@ -140,16 +179,21 @@
     import MatchMap from "./components/MatchMap.vue";
     import MatchChat from "./components/MatchChat.vue";
     import MatchOption from "./components/MatchOption.vue";
+    import MatchCombatStats from "./components/MatchCombatStats.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
 
     import { GameOutput } from "model/GameOutput";
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { UnitStats } from "./compute/UnitStatData";
     import { ResourceProductionData } from "./compute/ResourceProductionData";
+
+    import "filters/BarGamemodeFilter";
+import MatchEcoStats from "./components/MatchEcoStats.vue";
 
     export const ProcessingStep = Vue.extend({
         props: {
@@ -160,8 +204,8 @@
 
         template: `
             <tr>
-                <td>{{step}}</td>
-                <td>
+                <td class="text-muted">{{step}}</td>
+                <td class="text-muted">
                     <span v-if="when != null">
                         on {{ when | moment("YYYY-MM-DD hh:mm:ssA") }} (took {{ duration / 1000 | mduration }})
                     </span>
@@ -188,6 +232,8 @@
                 loadingSteps: 2 as number,
 
                 unitIdToDefId: new Map as Map<number, number>,
+
+                selectedTeam: 0 as number,
 
                 computedData: {
                     opener: [] as PlayerOpener[],
@@ -259,7 +305,6 @@
         },
 
         computed: {
-
             unitTweaks: function(): string {
                 if (this.match.state != "loaded") {
                     return "";
@@ -275,6 +320,13 @@
                 return this.match.data.allyTeams.length > 2 && Math.max(...this.match.data.allyTeams.map(iter => iter.playerCount)) == 1;
             },
 
+            selectedPlayer: function(): BarMatchPlayer | null {
+                if (this.match.state != "loaded") {
+                    return null;
+                }
+
+                return this.match.data.players.find(iter => iter.teamID == this.selectedTeam) || null;
+            }
         },
 
         watch: {
@@ -284,7 +336,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat, MatchOption,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats,
             ProcessingStep, Collapsible
         }
     });

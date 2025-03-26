@@ -2,7 +2,7 @@
 <template>
     <div>
 
-        <h2 class="wt-header bg-success">Unit stats</h2>
+        <h2 class="wt-header bg-primary">Unit stats</h2>
 
         <div class="d-flex flex-wrap mb-3">
             <button v-for="player in match.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
@@ -26,7 +26,7 @@
         <a-table :entries="data" display-type="table" :show-filters="true" default-sort-field="produced" default-sort-order="desc">
             <a-col sort-field="name">
                 <a-header>
-                    <b>Unit</b>
+                    <h5><b>Units</b></h5>
                 </a-header>
 
                 <a-body v-slot="entry">
@@ -64,7 +64,9 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.kills }}
+                    <span :class="{ 'text-muted': entry.kills == 0 }">
+                        {{ entry.kills }}
+                    </span>
                 </a-body>
             </a-col>
 
@@ -75,7 +77,33 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.lost }}
+                    <span :class="{ 'text-muted': entry.lost == 0 }">
+                        {{ entry.lost }}
+                    </span>
+                </a-body>
+            </a-col>
+
+            <a-col sort-field="damageDealt">
+                <a-header>
+                    <b>Damage dealt</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <span :class="{ 'text-muted': entry.damageDealt == 0 }">
+                        {{ entry.damageDealt | compact }}
+                    </span>
+                </a-body>
+            </a-col>
+
+            <a-col sort-field="damageDealt">
+                <a-header>
+                    <b>Damage taken</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <span :class="{ 'text-muted': entry.damageTaken == 0 }">
+                        {{ entry.damageTaken | compact }}
+                    </span>
                 </a-body>
             </a-col>
 
@@ -86,7 +114,9 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.metalKilled }}
+                    <span :class="{ 'text-muted': entry.metalKilled == 0 }">
+                        {{ entry.metalKilled }}
+                    </span>
                 </a-body>
             </a-col>
 
@@ -97,18 +127,20 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.energyKilled }}
+                    <span :class="{ 'text-muted': entry.energyKilled == 0 }">
+                        {{ entry.energyKilled }}
+                    </span>
                 </a-body>
             </a-col>
 
-            <a-col>
+            <a-col sort-field="metalRatio">
                 <a-header>
                     <b>Metal efficiency</b>
                     <info-hover text="Total metal worth of units killed by this type of unit"></info-hover>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.metalKilled / Math.max(1, entry.produced * entry.definition.metalCost) * 100 | locale(2) }}%
+                    {{ entry.metalRatio * 100 | locale(2) }}%
                 </a-body>
             </a-col>
 
@@ -128,6 +160,7 @@
     import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import "filters/LocaleFilter";
+    import "filters/CompactFilter";
 
     export const MatchUnitStats = Vue.extend({
         props: {

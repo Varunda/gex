@@ -1,25 +1,29 @@
 
 <template>
     <div>
-        <h2 class="wt-header">
-            Wind over time
-        </h2>
+        <div class="d-flex" style="justify-content: space-between; align-items: center;">
+            <h2>
+                <b>Wind speed</b>
+            </h2>
 
-        <div>
-            Min wind: {{  map.minimumWind }}
-        </div>
-        <div>
-            Max wind: {{  map.maximumWind }}
-        </div>
-        <div>
-            Average wind: {{ avg | locale(2) }}
-        </div>
-        <div>
-            Time at minimum wind: {{ timeAtMin / 30 | mduration }}
-        </div>
+            <div>
+                <div>
+                    Min wind: {{ map.minimumWind }}
+                    <span class="text-muted">
+                        (for {{ timeAtMin / 30 | mduration }})
+                    </span>
+                </div>
+                <div>
+                    Max wind: {{ map.maximumWind }}
+                    <span class="text-muted">
+                        (for {{ timeAtMax / 30 | mduration }})
+                    </span>
+                </div>
+            </div>
 
-        <div>
-            Time at maximum wind: {{  timeAtMax / 30 | mduration }}
+            <div>
+                Average wind: {{ avg | locale(2) }}
+            </div>
         </div>
 
         <div style="height: 200px">
@@ -104,7 +108,6 @@
                         labels: this.updates.map(iter => `${TimeUtils.duration(iter.frame / 30)}`),
                         datasets: [
                             {
-                                label: "Wind speed",
                                 data: this.updates.map(iter => { return { x: iter.frame, y: iter.value}}),
                                 fill: true,
                                 backgroundColor: "#FFFFFFAA"
@@ -114,7 +117,6 @@
                     options: {
                         scales: {
                             x: {
-                                reverse: false,
                                 ticks: {
                                     color: "#fff",
                                 },
@@ -139,6 +141,7 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
+                                display: false,
                                 labels: {
                                     color: "#fff",
                                 }

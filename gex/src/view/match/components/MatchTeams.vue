@@ -18,7 +18,7 @@
                     :style="getPlayerStyle(allyTeam, player, index)" class="player-name">
 
                     <a :href="'/user/' + player.userID" style="text-decoration: none;">
-                        <span style="text-shadow: 1px 1px 1px #000000;">
+                        <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
                             <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
                             <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
                             <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
@@ -33,7 +33,7 @@
                 <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-os' + player.teamID"
                     :style="getPlayerOsStyle(allyTeam, player, index)" class="player-os">
 
-                     [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
+                    [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
                 </div>
             </template>
         </div>
@@ -54,10 +54,9 @@
 <style scoped>
 
     .ally-team-header {
-        justify-self: stretch;
         text-align: center;
         border-radius: 0.5rem;
-        padding: 0.25rem;
+        padding: 0.25rem 2rem;
         -webkit-text-stroke: #000 3px;
         paint-order: stroke fill;
     }

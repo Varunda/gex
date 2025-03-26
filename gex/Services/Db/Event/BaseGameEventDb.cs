@@ -92,6 +92,7 @@ namespace gex.Services.Db.Event {
         ///     delete the events of <typeparamref name="T"/> from the DB for a specific game ID
         /// </summary>
         /// <param name="gameID">ID of the game to delete the events of</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation is complete</returns>
         public async Task DeleteByGameID(string gameID, CancellationToken cancel = default) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);

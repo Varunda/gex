@@ -2,10 +2,10 @@
 <template>
     <div>
 
-        <h1 class="wt-header bg-secondary">
+        <h2 class="wt-header bg-primary">
             Openers
             <info-hover text="Buildings the first 8 buildings made in the first 90 seconds"></info-hover>
-        </h1>
+        </h2>
 
         <div v-for="player in openers" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
             <h3 :style="{ 'color': player.color }">
@@ -54,7 +54,7 @@
         methods: {
             playerStyle: function(color: string): object {
                 return {
-                    "background-color": color + "22",
+                    //"background-color": color + "22",
                     "border": `${color} solid 1px`,
                     "border-radius": "0.25rem"
                 };

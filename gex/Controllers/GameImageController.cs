@@ -1,12 +1,17 @@
 ﻿using gex.Models.Options;
+using ImageMagick;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pfim;
 using SkiaSharp;
+using System;
 using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -19,6 +24,10 @@ namespace gex.Controllers {
 
         private readonly ILogger<GameImageController> _Logger;
         private readonly IOptions<FileStorageOptions> _Options;
+        private readonly IMemoryCache _Cache;
+
+        private const string CACHE_KEY_PIC_MISSING = "Gex.ImageProxy.Pic.{0}"; // {0} => defName
+
         private static readonly HttpClient _Http = new HttpClient();
 
         private const string BASE_URL = "https://api.bar-rts.com";
@@ -28,10 +37,11 @@ namespace gex.Controllers {
         }
 
         public GameImageController(ILogger<GameImageController> logger,
-            IOptions<FileStorageOptions> options) {
+            IOptions<FileStorageOptions> options, IMemoryCache cache) {
 
             _Logger = logger;
             _Options = options;
+            _Cache = cache;
         }
 
         /// <summary>
@@ -178,6 +188,49 @@ namespace gex.Controllers {
             return File(image, "image/png", false);
         }
 
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName"] )] // 24 hours
+        public async Task<IActionResult> UnitPic([FromQuery] string defName) {
+
+            string cacheKey = string.Format(CACHE_KEY_PIC_MISSING, defName);
+            if (_Cache.TryGetValue(cacheKey, out bool value) == true) {
+                return StatusCode(404);
+            }
+
+            string picDir = Path.Join(_Options.Value.WebImageLocation, "pics");
+            Directory.CreateDirectory(picDir);
+
+            string storedName = defName;
+
+            string picPath = Path.Join(picDir, storedName + ".jpg");
+
+            if (System.IO.File.Exists(picPath) == false) {
+                string url = $"https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/unitpics/{defName}.dds";
+                _Logger.LogDebug($"missing pic, downloading from GitHub [defName={defName}]");
+
+                HttpResponseMessage response = await _Http.GetAsync(url);
+                if (response.StatusCode == HttpStatusCode.NotFound) {
+                    _Logger.LogInformation($"unic picture does not exist, caching 404 [defName={defName}]");
+                    _Cache.Set(cacheKey, true, new MemoryCacheEntryOptions() {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8)
+                    });
+                    return StatusCode(404);
+                }
+
+                if (response.StatusCode != HttpStatusCode.OK) {
+                    return StatusCode(500, $"expected 200 OK from {url}, got {response.StatusCode} instead");
+                }
+
+                using MagickImage mImage = new(response.Content.ReadAsStream());
+                mImage.Strip();
+                mImage.Format = MagickFormat.Jpg;
+
+                using FileStream outputJpg = System.IO.File.OpenWrite(picPath);
+                await mImage.WriteAsync(outputJpg);
+            }
+
+            FileStream image = System.IO.File.OpenRead(picPath);
+            return File(image, "image/jpg", false);
+        }
 
     }
 }

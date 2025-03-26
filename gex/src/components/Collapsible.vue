@@ -1,6 +1,6 @@
 ﻿<template>
     <div>
-        <div class="wt-header d-flex" :class="SizeClass" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
+        <div class="wt-header d-flex" :class="classes" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
             <span :id="'icon-' + elementID" class="fas fa-caret-down"></span>
             {{HeaderText}}
 
@@ -20,7 +20,8 @@
         props: {
             HeaderText: { type: String, required: true },
             show: { type: Boolean, required: false, default: true },
-            SizeClass: { type: String, required: false, default: "h2" }
+            SizeClass: { type: String, required: false, default: "h2" },
+            BgColor: { type: String, required: false, default: "bg-secondary" }
         },
 
         data: function() {
@@ -95,6 +96,12 @@
         computed: {
             elementID: function(): string {
                 return `collapsible-${this.id}`;
+            },
+
+            classes: function(): string[] {
+                return [
+                    this.SizeClass, this.BgColor, this.BgColor == "bg-light" ? "text-dark" : "text-light"
+                ];
             }
         }
     });

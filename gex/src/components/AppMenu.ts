@@ -14,7 +14,8 @@ export const GexMenu = Vue.extend({
                             pages
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/">Homepage</a></li>
+                            <li><a class="dropdown-item" href="/">Recent games</a></li>
+                            <li><a class="dropdown-item" href="/legal">Legal</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -24,7 +25,7 @@ export const GexMenu = Vue.extend({
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                         hi
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-right">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="/settings">settings</a></li>
                             <li><a class="dropdown-item" href="/posts">logout</a></li>
                         </ul>

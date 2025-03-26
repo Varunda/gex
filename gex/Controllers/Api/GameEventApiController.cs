@@ -23,7 +23,7 @@ namespace gex.Controllers.Api {
         private readonly GameEventUnitKilledDb _UnitKilledDb;
         private readonly UnitSetToGameIdDb _GameToHashDb;
         private readonly GameEventUnitDefDb _UnitDefDb;
-        private readonly GameEventArmyValueUpdateDb _ArmyUpdateDb;
+        private readonly GameEventExtraStatsDb _ExtraStatsDb;
         private readonly GameEventWindUpdateDb _WindUpdateDb;
         private readonly GameEventCommanderPositionUpdateDb _CommanderPositionDb;
         private readonly GameEventFactoryUnitCreatedDb _FactoryUnitCreatedDb;
@@ -33,16 +33,17 @@ namespace gex.Controllers.Api {
         private readonly GameEventTransportUnloadedDb _TransportUnloadedDb;
         private readonly GameEventTeamDiedDb _TeamDiedDb;
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
+        private readonly GameEventUnitDamageDb _UnitDamageDb;
 
         public GameEventApiController(ILogger<GameEventApiController> logger,
             GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
             GameEventUnitKilledDb unitKilledDb, BarMatchRepository matchRepository,
             GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb gameToHashDb,
-            GameEventArmyValueUpdateDb armyUpdateDb, GameEventWindUpdateDb windUpdateDb,
+            GameEventExtraStatsDb armyUpdateDb, GameEventWindUpdateDb windUpdateDb,
             GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventFactoryUnitCreatedDb factoryUnitCreatedDb,
             GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
             GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
-            GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb) {
+            GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb) {
 
             _Logger = logger;
 
@@ -52,7 +53,7 @@ namespace gex.Controllers.Api {
             _UnitKilledDb = unitKilledDb;
             _UnitDefDb = unitDefDb;
             _GameToHashDb = gameToHashDb;
-            _ArmyUpdateDb = armyUpdateDb;
+            _ExtraStatsDb = armyUpdateDb;
             _WindUpdateDb = windUpdateDb;
             _CommanderPositionDb = commanderPositionDb;
             _FactoryUnitCreatedDb = factoryUnitCreatedDb;
@@ -62,6 +63,7 @@ namespace gex.Controllers.Api {
             _TransportUnloadedDb = transportUnloadedDb;
             _TeamDiedDb = teamDiedDb;
             _UnitResourcesDb = unitResourcesDb;
+            _UnitDamageDb = unitDamageDb;
         }
 
         /// <summary>
@@ -77,7 +79,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeUnitsCreated">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTeamStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeUnitDefs">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeArmyValueUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+        /// <param name="includeExtraStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeWindUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeCommanderPositionUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeFactoryUnitCreate">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
@@ -87,6 +89,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeTransportUnloads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
         /// <param name="includeTeamDiedEvents">if <see cref="GameOutput.TeamDiedEvents"/> will be populated, defaults to false</param>
         /// <param name="includeUnitResources">if <see cref="GameOutput.UnitResources"/> will be populated, defaults to false</param>
+        /// <param name="includeUnitDamage">if <see cref="GameOutput.UnitDamage"/> will be populated, defaults to false</param>
         /// <param name="cancel">cancel token</param>
         /// <response code="200">
         ///     the response will contain a <see cref="GameOutput"/>, that has the various fields
@@ -102,7 +105,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeUnitsCreated = false,
             [FromQuery] bool includeTeamStats = false,
             [FromQuery] bool includeUnitDefs = false,
-            [FromQuery] bool includeArmyValueUpdates = false,
+            [FromQuery] bool includeExtraStats = false,
             [FromQuery] bool includeWindUpdates = false,
             [FromQuery] bool includeCommanderPositionUpdates = false,
             [FromQuery] bool includeFactoryUnitCreate = false,
@@ -112,6 +115,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeTransportUnloads = false,
             [FromQuery] bool includeTeamDiedEvents = false,
             [FromQuery] bool includeUnitResources = false,
+            [FromQuery] bool includeUnitDamage = false,
             CancellationToken cancel = default
         ) {
 
@@ -124,55 +128,59 @@ namespace gex.Controllers.Api {
             output.GameID = gameID;
 
             if (includeTeamStats == true) {
-                output.TeamStats = await _TeamStatsDb.GetByGameID(gameID);
+                output.TeamStats = await _TeamStatsDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitsKilled == true) {
-                output.UnitsKilled = await _UnitKilledDb.GetByGameID(gameID);
+                output.UnitsKilled = await _UnitKilledDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitsCreated == true) {
-                output.UnitsCreated = await _UnitCreatedDb.GetByGameID(gameID);
+                output.UnitsCreated = await _UnitCreatedDb.GetByGameID(gameID, cancel);
             }
 
-            if (includeArmyValueUpdates == true) {
-                output.ArmyValueUpdates = await _ArmyUpdateDb.GetByGameID(gameID);
+            if (includeExtraStats == true) {
+                output.ExtraStats = await _ExtraStatsDb.GetByGameID(gameID, cancel);
             }
 
             if (includeWindUpdates == true) {
-                output.WindUpdates = await _WindUpdateDb.GetByGameID(gameID);
+                output.WindUpdates = await _WindUpdateDb.GetByGameID(gameID, cancel);
             }
 
             if (includeCommanderPositionUpdates == true) {
-                output.CommanderPositionUpdates = await _CommanderPositionDb.GetByGameID(gameID);
+                output.CommanderPositionUpdates = await _CommanderPositionDb.GetByGameID(gameID, cancel);
             }
 
             if (includeFactoryUnitCreate == true) {
-                output.FactoryUnitCreated = await _FactoryUnitCreatedDb.GetByGameID(gameID);
+                output.FactoryUnitCreated = await _FactoryUnitCreatedDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitsGiven == true) {
-                output.UnitsGiven = await _UnitGivenDb.GetByGameID(gameID);
+                output.UnitsGiven = await _UnitGivenDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitsTaken == true) {
-                output.UnitsTaken = await _UnitTakenDb.GetByGameID(gameID);
+                output.UnitsTaken = await _UnitTakenDb.GetByGameID(gameID, cancel);
             }
 
             if (includeTransportLoads == true) {
-                output.TransportLoaded = await _TransportLoadedDb.GetByGameID(gameID);
+                output.TransportLoaded = await _TransportLoadedDb.GetByGameID(gameID, cancel);
             }
 
             if (includeTransportUnloads == true) {
-                output.TransportUnloaded = await _TransportUnloadedDb.GetByGameID(gameID);
+                output.TransportUnloaded = await _TransportUnloadedDb.GetByGameID(gameID, cancel);
             }
 
             if (includeTeamDiedEvents == true) {
-                output.TeamDiedEvents = await _TeamDiedDb.GetByGameID(gameID);
+                output.TeamDiedEvents = await _TeamDiedDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitResources == true) {
-                output.UnitResources = await _UnitResourcesDb.GetByGameID(gameID);
+                output.UnitResources = await _UnitResourcesDb.GetByGameID(gameID, cancel);
+            }
+
+            if (includeUnitDamage == true) {
+                output.UnitDamage = await _UnitDamageDb.GetByGameID(gameID, cancel);
             }
 
             if (includeUnitDefs == true) {

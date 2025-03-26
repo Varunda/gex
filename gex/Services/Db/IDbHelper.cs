@@ -24,6 +24,7 @@ namespace gex.Services.Db {
         /// </summary>
         /// <param name="connection">Connection the command will be executed on</param>
         /// <param name="text">Text of the command</param>
+        /// <param name="cancel">cancellation token</param>
         Task<NpgsqlCommand> Command(NpgsqlConnection connection, string text, CancellationToken cancel = default);
 
     }
@@ -65,6 +66,25 @@ namespace gex.Services.Db {
 
             cmd.AddParameter("TableName", tableName);
             cmd.AddParameter("IndexName", indexName);
+
+            using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+            bool hasIndex = await reader.ReadAsync();
+            await conn.CloseAsync();
+
+            return hasIndex;
+        }
+
+        public static async Task<bool> HasColumn(this IDbHelper instance, string tableName, string column) {
+            using NpgsqlConnection conn = instance.Connection();
+            using NpgsqlCommand cmd = await instance.Command(conn, @"
+                SELECT *
+                FROM information_schema.columns
+                WHERE table_name = @TableName AND column_name = @Column;
+            ");
+
+            cmd.AddParameter("TableName", tableName);
+            cmd.AddParameter("Column", column);
 
             using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
 

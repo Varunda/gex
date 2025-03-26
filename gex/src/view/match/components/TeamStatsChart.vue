@@ -1,21 +1,46 @@
 
 <template>
     <div>
-        <h2 class="wt-header bg-info">
-            Player stats
-        </h2>
+        <collapsible header-text="Player stats" bg-color="bg-light">
+            <div class="d-flex flex-row">
 
-        <div class="d-flex flex-row">
-            <div class="btn-group btn-group-vertical flex-grow-0" style="text-wrap: nowrap;">
-                <button v-for="stat in statNames" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-secondary' ]">
-                    {{ stat[1] }}
-                </button>
-            </div>
+                <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
+                    <div class="d-flex flex-column" style="gap: 0.5rem">
+                        <button class="btn rounded mb-2" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                            Show per sec
+                        </button>
 
-            <div style="height: 600px" class="flex-grow-1">
-                <canvas id="team-stats-chart" height="600"></canvas>
+                        <div v-for="(group, index) in statGroups" :key="index">
+                            <div class="btn-group btn-group-vertical w-100">
+                                <button v-for="stat in group" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                                    {{ stat[1] }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--
+                <div class="btn-group btn-group-vertical flex-grow-0 me-2" style="text-wrap: nowrap;">
+                    <button class="btn rounded mb-2" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                        Show per sec
+                    </button>
+
+                    <button v-for="stat in statNames" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                        {{ stat[1] }}
+                    </button>
+                </div>
+                -->
+
+                <div style="height: 600px" class="flex-grow-1">
+                    <canvas id="team-stats-chart" height="600"></canvas>
+                </div>
+
+                <div class="d-flex align-items-center">
+                    <ul id="team-stat-legend" class="ps-0"></ul>
+                </div>
             </div>
-        </div>
+        </collapsible>
     </div>
 </template>
 
@@ -26,34 +51,157 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
 
-    import Chart, { ChartDataset } from "chart.js/auto/auto.esm";
+    import Chart, { ChartDataset, Plugin } from "chart.js/auto/auto.esm";
 
     import TimeUtils from "util/Time";
     import TableUtils from "util/Table";
     import CompactUtils from "util/Compact";
+import Collapsible from "components/Collapsible.vue";
+
+    const getOrCreateLegendList = (chart: Chart, id: string) => {
+        const container = document.getElementById(id);
+        let list = container?.querySelector("ul");
+
+        if (!list) {
+            list = document.createElement("ul");
+            list.style.display = "flex";
+            list.style.flexDirection = "row";
+            list.style.margin = "0";
+            list.style.padding = "0";
+
+            container?.appendChild(list);
+        }
+
+        return container;
+    };
+
+    // https://github.com/chartjs/Chart.js/blob/master/docs/samples/legend/html.md
+    // HTML legend plugin that doesn't hide the player when hidden, and adds a check box to
+    // make it clear that this is clickable
+    const htmlLegendPlugin: Plugin = {
+        id: "html-legend",
+
+        afterUpdate(chart: Chart, args, options) {
+
+            const containerID: string | null | undefined = (options as any).containerID;
+            if (!containerID) {
+                throw `missing containerID (put it in options.plugins.'html-legend'.containerID)`;
+            }
+
+            const ul = getOrCreateLegendList(chart, containerID);
+            if (ul == null) {
+                throw `missing element with container ID ${containerID}`;
+            }
+
+            while (ul.firstChild) {
+                ul.firstChild.remove();
+            }
+
+            const items = chart.options.plugins?.legend?.labels?.generateLabels(chart) ?? [];
+
+            items.forEach((iter) => {
+
+                const li = document.createElement("li");
+                li.style.alignItems = "center";
+                li.style.cursor = "pointer";
+                li.style.display = "flex";
+                li.style.flexDirection = "row";
+                li.style.marginLeft = "0.25rem";
+
+                li.addEventListener("click", (ev) => {
+                    const { type } = chart.config;
+                    if (type == "pie" || type == "doughnut") {
+                        chart.toggleDataVisibility(iter.datasetIndex);
+                    } else {
+                        chart.setDatasetVisibility(iter.datasetIndex, !chart.isDatasetVisible(iter.datasetIndex));
+                    }
+                    chart.update();
+                });
+
+                const check = document.createElement("input");
+                check.type = "checkbox";
+                check.checked = !(iter.hidden ?? true);
+                check.classList.add("form-check-input", "mt-0");
+
+                // Color box
+                const boxSpan = document.createElement('span');
+                boxSpan.style.background = iter.fillStyle?.toString() ?? "";
+                boxSpan.style.borderColor = iter.strokeStyle?.toString() ?? "";
+                boxSpan.style.borderWidth = iter.lineWidth + "px";
+                boxSpan.style.display = 'inline-block';
+                boxSpan.style.flexShrink = "0";
+                boxSpan.style.height = "1em";
+                boxSpan.style.width = "1em";
+
+                // Text
+                const textContainer = document.createElement("p");
+                textContainer.style.color = iter.fontColor?.toString() ?? "";
+                textContainer.style.margin = "0";
+                textContainer.style.padding = "0";
+                textContainer.style.textDecoration = iter.hidden ? "line-through" : "";
+                textContainer.style.userSelect = "none";
+
+                const text = document.createTextNode(iter.text);
+                textContainer.appendChild(text);
+
+                li.appendChild(check);
+                li.appendChild(boxSpan);
+                li.appendChild(textContainer);
+                ul.appendChild(li);
+            });
+        }
+    };
 
     const STATS: [(keyof GameEventTeamsStats), string][] = [
+        ["unitsProduced", "Units created"],
+        ["unitsKilled", "Units killed"],
+
         ["damageDealt", "Damage dealt"],
         ["damageReceived", "Damage receieved"],
 
-        ["energyExcess", "Energy excess"],
-        ["energyProduced", "Energy produced"],
-        ["energyReceived", "Energy receieved"],
-        ["energySent", "Energy sent"],
-        ["energyUsed", "Energy used"],
-
-        ["metalExcess", "Metal excess"],
         ["metalProduced", "Metal produced"],
+        ["metalExcess", "Metal excess"],
         ["metalReceived", "Metal receieved"],
         ["metalSent", "Metal sent"],
-        ["metalUsed", "Metal used"],
+        //["metalUsed", "Metal used"],
 
-        ["unitsReceived", "Units received"],
+        ["energyProduced", "Energy produced"],
+        ["energyExcess", "Energy excess"],
+        ["energyReceived", "Energy receieved"],
+        ["energySent", "Energy sent"],
+        //["energyUsed", "Energy used"], // not useful? is always y=x
+
         ["unitsCaptures", "Units captured"],
-        ["unitsKilled", "Units killed"],
-        ["unitsOutCaptured", "Units out captured"],
-        ["unitsProduced", "Units produced"],
-        ["unitsSent", "Units sent"]
+        ["unitsSent", "Units sent"],
+        ["unitsReceived", "Units received"],
+        ["unitsOutCaptured", "Units out captured"]
+    ];
+
+    const STAT_GROUP: [(keyof GameEventTeamsStats), string][][] = [
+        [
+            ["unitsProduced", "Units created"],
+            ["unitsKilled", "Units killed"],
+            ["damageDealt", "Damage dealt"],
+            ["damageReceived", "Damage receieved"],
+        ],
+        [
+            ["metalProduced", "Metal produced"],
+            ["metalExcess", "Metal excess"],
+            ["metalReceived", "Metal receieved"],
+            ["metalSent", "Metal sent"],
+        ],
+        [
+            ["energyProduced", "Energy produced"],
+            ["energyExcess", "Energy excess"],
+            ["energyReceived", "Energy receieved"],
+            ["energySent", "Energy sent"],
+        ],
+        [
+            ["unitsCaptures", "Units captured"],
+            ["unitsSent", "Units sent"],
+            ["unitsReceived", "Units received"],
+            ["unitsOutCaptured", "Units out captured"]
+        ]
     ];
 
     export const TeamStatsChart = Vue.extend({
@@ -67,6 +215,8 @@
                 chart: null as Chart | null,
 
                 datasets: new Map() as Map<string, any>,
+
+                perSecond: false as boolean,
 
                 showedStat: "unitsProduced" as keyof GameEventTeamsStats
             }
@@ -111,7 +261,7 @@
                                     color: "#fff",
                                 },
                                 grid: {
-                                    color: "#888",
+                                    color: "#666",
                                     display: true,
                                 },
                             },
@@ -120,13 +270,16 @@
                                     color: "#fff"
                                 },
                                 grid: {
-                                    color: "#bbb"
+                                    color: "#666"
                                 }
                             }
                         },
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
+                            'html-legend': {
+                                containerID: "team-stat-legend"
+                            },
                             tooltip: {
                                 enabled: false,
                                 mode: "index",
@@ -135,6 +288,7 @@
                                 external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx, CompactUtils.compact)
                             },
                             legend: {
+                                display: false,
                                 labels: {
                                     color: "#fff",
                                     filter: (item) => item.hidden != true
@@ -147,6 +301,7 @@
                             intersect: false
                         }
                     },
+                    plugins: [ htmlLegendPlugin ]
                 });
             },
 
@@ -163,26 +318,39 @@
                 this.datasets.clear();
 
                 for (const stat of this.statNames) {
-                    const map: Map<number, number[]> = new Map();
+                    const map: Map<number, [number, number][]> = new Map();
                     for (const i of this.stats) {
                         const v: number | string = i[stat[0]];
                         if (typeof v == "string") {
                             throw `cannot create dataset on ${stat}, this is a string field!`;
                         }
-                        const a: number[] = map.get(i.teamID) ?? [];
-                        a.push(v);
+                        const a: [number, number][] = map.get(i.teamID) ?? [];
+                        a.push([v, i.frame]);
 
                         map.set(i.teamID, a);
                     }
 
                     for (const entry of map.entries()) {
                         const teamID: number = entry[0];
-                        const values: number[] = entry[1];
+                        let values: [number, number][] = entry[1];
+
+                        if (this.perSecond == true) {
+                            const diff: [number, number][] = [];
+                            let prev: [number, number] = [0, 0];
+                            for (let i = 0; i < values.length; ++i) {
+                                const d = values[i][0] - prev[0];
+                                const dt = Math.max(1, values[i][1] - prev[1]);
+
+                                diff.push([d / dt * 30, dt]); // 30 fps
+                                prev = values[i];
+                            }
+                            values = diff;
+                        }
 
                         const team: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
 
                         const ds: ChartDataset = {
-                            data: values,
+                            data: values.map(i => i[0]),
                             label: `${team?.username ?? `<missing ${teamID}>`}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
@@ -240,14 +408,24 @@
                 return STATS;
             },
 
+            statGroups: function() {
+                return STAT_GROUP;
+            },
+
             teamIds: function(): number[] {
                 return this.match.players.map(iter => iter.teamID);
             }
+        },
 
+        watch: {
+            perSecond: function(): void {
+                this.makeDatasets();
+                this.showDataset(this.showedStat);
+            }
         },
 
         components: {
-
+            Collapsible
         }
     });
     export default TeamStatsChart;

@@ -10,9 +10,24 @@
                 Starting box
             </toggle-button>
 
-            <toggle-button v-model="map.deathHeatmap">
-                Unit death heatmap
-            </toggle-button>
+            <div class="btn-group border border-light">
+                <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap">
+                    Unit death heatmap
+                </button>
+                <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]">
+                    <span class="visually-hidden">toggle dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li v-for="player in match.players" :key="player.teamID">
+                        <a class="dropdown-item" :style="{ 'color': player.hexColor, 'user-select': 'none' }" @click.stop>
+                            <input class="form-check-input" type="checkbox" :id="'unit-death-' + player.teamID">
+                            <label class="form-check-label w-100" :for="'unit-death-' + player.teamID">
+                                {{ player.username }}
+                            </label>
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
             <toggle-button v-model="map.commanderPositions">
                 Commander positions
@@ -38,9 +53,10 @@
                 Building heatmap
             </toggle-button>
         </div>
+
         <div class="d-flex justify-content-center">
             <div class="flex-grow-0"></div>
-            <div id="d3_canvas" style="overflow: hidden; position: sticky;" class="d-inline-block">
+            <div id="d3_canvas" style="overflow: hidden; position: sticky; background-color: #0a224255" class="d-inline-block">
                 <svg id="map-svg" :viewBox="viewboxStr"></svg>
             </div>
             <div class="flex-grow-0"></div>
@@ -184,16 +200,16 @@
 
                     this.svg.call(this.zoom);
 
-                    this.root.append("rect")
-                        .classed("map-no-remove", true)
-                        .attr("x", 0).attr("y", 0)
-                        .attr("width", this.imgW).attr("height", this.imgH)
-                        .style("fill", "transparent");
-
                     this.root.append("image")
                         .classed("map-no-remove", true)
                         .attr("width", this.imgW).attr("height", this.imgH)
                         .attr("href", this.mapUrl);
+
+                    this.root.append("rect")
+                        .classed("map-no-remove", true)
+                        .attr("x", 0).attr("y", 0)
+                        .attr("width", this.imgW).attr("height", this.imgH)
+                        .style("fill", "#0a224244");
 
                     this.tooltip = d3.select("#d3_canvas")
                         .append("div")
@@ -270,6 +286,14 @@
                 this.addPlayerStartingPositions();
                 this.addRadars();
                 this.addStaticDefense();
+
+                /*
+                this.root.append("rect")
+                    .classed("map-no-remove", true)
+                    .attr("x", 0).attr("y", 0)
+                    .attr("width", this.imgW).attr("height", this.imgH)
+                    .style("fill", "#0a224244");
+                    */
             },
 
             addPlayerStartingPositions: function(): void {

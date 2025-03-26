@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <h2 class="wt-header">
+        <h2 class="wt-header bg-primary">
             Chat
         </h2>
 

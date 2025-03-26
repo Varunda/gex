@@ -9,10 +9,10 @@ export class GameOutputApi extends ApiWrapper<GameOutput> {
 
     public static getEvents(gameID: string): Promise<Loading<GameOutput>> {
         return GameOutputApi.get().readSingle(`/api/game-event/${gameID}?includeTeamStats=true&includeUnitsKilled=true`
-            + `&includeUnitsCreated=true&includeUnitDefs=true&includeArmyValueUpdates=true&includeWindUpdates=true`
+            + `&includeUnitsCreated=true&includeUnitDefs=true&includeExtraStats=true&includeWindUpdates=true`
             + `&includeCommanderPositionUpdates=true&includeFactoryUnitCreate=true&includeUnitsGiven=true&includeUnitsTaken=true`
-            + `&includeTransportLoads=true&includeTransportUnloads=true&includeTeamDiedEvents=true&includeUnitResources=true`, GameOutput.parse);
-
+            + `&includeTransportLoads=true&includeTransportUnloads=true&includeTeamDiedEvents=true&includeUnitResources=true`
+            + `&includeUnitDamage=true`, GameOutput.parse);
     }
 
 

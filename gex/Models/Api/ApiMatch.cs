@@ -1,4 +1,5 @@
-﻿using gex.Models.Bar;
+﻿using gex.Code.Constants;
+using gex.Models.Bar;
 using gex.Models.Db;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,7 @@ namespace gex.Models.Api {
             MapName = match.MapName;
             FileName = match.FileName;
             DurationMs = match.DurationMs;
+            Gamemode = match.Gamemode;
             HostSettings = match.HostSettings;
             GameSettings = match.GameSettings;
             MapSettings = match.MapSettings;
@@ -48,6 +50,8 @@ namespace gex.Models.Api {
         public string FileName { get; set; } = "";
 
         public long DurationMs { get; set; }
+
+        public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
 
         public JsonElement HostSettings { get; set; } = default;
 

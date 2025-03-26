@@ -38,6 +38,8 @@
     <PackageReference Include="DSharpPlus.SlashCommands" Version="4.5.0" />
     <PackageReference Include="Emzi0767.Common" Version="2.12.1" />
     <PackageReference Include="Kuylar.DSharpPlus.ButtonCommands" Version="1.4.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.5.0" />
+    <PackageReference Include="Magick.NET.Core" Version="14.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.1" />
     <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.1">
@@ -52,6 +54,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.0" />
+    <PackageReference Include="Pfim" Version="0.11.3" />
     <PackageReference Include="SkiaSharp" Version="3.116.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.2.24" />
