@@ -11,6 +11,7 @@ export class UnitStats {
     public definition: GameEventUnitDef | undefined = undefined;
 
     public produced: number = 0;
+    public rank: number = 0;
     public kills: number = 0;
     public mobileKills: number = 0;
     public staticKills: number = 0;
@@ -51,6 +52,7 @@ export class UnitStats {
                 definition: unitDef,
 
                 produced: 0,
+                rank: 0,
                 kills: 0,
                 mobileKills: 0,
                 staticKills: 0,
@@ -123,6 +125,12 @@ export class UnitStats {
         const arr: UnitStats[] = Array.from(map.values());
 
         for (const elem of arr) {
+            if (elem.definition?.isCommander) {
+                elem.rank = 99999;
+            } else {
+                elem.rank = elem.produced;
+            }
+
             elem.damageRatio = elem.damageDealt / Math.max(1, elem.damageTaken);
             elem.metalRatio = elem.metalKilled / (elem.produced * (elem.definition?.metalCost ?? 1));
             elem.energyRatio = elem.energyKilled / (elem.produced * (elem.definition?.energyCost ?? 1));

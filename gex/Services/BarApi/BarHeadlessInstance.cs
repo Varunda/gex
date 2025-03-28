@@ -133,14 +133,17 @@ namespace gex.Services.BarApi {
                 bar.Kill();
             });
 
-            _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] [cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}]");
 
             Stopwatch timer = Stopwatch.StartNew();
 
             StringBuilder output = new StringBuilder();
             StringBuilder error = new StringBuilder();
 
-            TimeSpan processingTimeout = TimeSpan.FromMilliseconds(match.DurationMs);
+            // cap replay time to 10 minutes, unless execution was forced, in which case cap at the runtime of the match
+            TimeSpan processingTimeout = force == true ? TimeSpan.FromMilliseconds(match.DurationMs) : TimeSpan.FromMinutes(10);
+
+            _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] "
+                + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}]");
 
             using AutoResetEvent outputWaitHandle = new(false);
             using AutoResetEvent errorWaitHandle = new(false);
@@ -167,7 +170,7 @@ namespace gex.Services.BarApi {
             // doing it this way prevents hangs due to not reading stdout or stderr
             // https://stackoverflow.com/questions/139593/processstartinfo-hanging-on-waitforexit-why
             if (!(bar.WaitForExit(processingTimeout) && outputWaitHandle.WaitOne(processingTimeout) && errorWaitHandle.WaitOne(processingTimeout))) {
-                _Logger.LogWarning($"timeout!");
+                _Logger.LogWarning($"hit game processing timeout [gameID={gameID}] [timeout={processingTimeout}]");
                 return "took longer to process the game than the game ran, something went wrong!";
             }
 

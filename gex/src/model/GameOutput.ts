@@ -1,4 +1,4 @@
-import { GameEventExtraStatsUpdate } from "./GameEventArmyValueUpdate";
+import { GameEventExtraStatsUpdate } from "./GameEventExtraStatsUpdate";
 import { GameEventCommanderPositionUpdate } from "./GameEventCommanderPositionUpdate";
 import { GameEventFactoryUnitCreated } from "./GameEventFactoryUnitCreated";
 import { GameEventTeamDied } from "./GameEventTeamDied";

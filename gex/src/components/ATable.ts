@@ -175,8 +175,6 @@ export const ATable = Vue.extend({
                 const colClass: string = (column.componentOptions!.propsData as any).ColClass;
                 const sortField: string | undefined = (column.componentOptions.propsData as any).SortField;
 
-                console.log(`header ${colClass} ${sortField}`);
-
                 const options: VNodeData = {};
                 options.staticClass = colClass;
 

@@ -80,7 +80,7 @@
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
-                        <team-stats-chart :stats="output.data.teamStats" :match="match.data" class="my-4"></team-stats-chart>
+                        <team-stats-chart :stats="computedData.merged" :match="match.data" class="my-4"></team-stats-chart>
 
                         <hr class="border">
 
@@ -112,7 +112,9 @@
                         <hr class="border">
 
                         <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :selected-team="selectedTeam" class="my-4"></match-combat-stats>
-                        <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats" :unit-resources="computedData.unitResources" :selected-team="selectedTeam" class="my-4"></match-eco-stats>
+                        <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
+                            :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-team="selectedTeam" class="my-4">
+                        </match-eco-stats>
 
                         <hr class="border">
 
@@ -180,6 +182,7 @@
     import MatchChat from "./components/MatchChat.vue";
     import MatchOption from "./components/MatchOption.vue";
     import MatchCombatStats from "./components/MatchCombatStats.vue";
+    import MatchEcoStats from "./components/MatchEcoStats.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -191,9 +194,9 @@
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { UnitStats } from "./compute/UnitStatData";
     import { ResourceProductionData } from "./compute/ResourceProductionData";
+    import MergedStats from "./compute/MergedStats";
 
     import "filters/BarGamemodeFilter";
-import MatchEcoStats from "./components/MatchEcoStats.vue";
 
     export const ProcessingStep = Vue.extend({
         props: {
@@ -238,7 +241,8 @@ import MatchEcoStats from "./components/MatchEcoStats.vue";
                 computedData: {
                     opener: [] as PlayerOpener[],
                     unitStats: [] as UnitStats[],
-                    unitResources: [] as ResourceProductionData[]
+                    unitResources: [] as ResourceProductionData[],
+                    merged: [] as MergedStats[]
                 },
 
             };
@@ -290,6 +294,7 @@ import MatchEcoStats from "./components/MatchEcoStats.vue";
                 this.computedData.opener = PlayerOpener.compute(this.match.data, this.output.data);
                 this.computedData.unitStats = UnitStats.compute(this.output.data, this.match.data);
                 this.computedData.unitResources = ResourceProductionData.compute(this.match.data, this.output.data);
+                this.computedData.merged = MergedStats.compute(this.output.data);
             },
 
             loadOutput: async function(): Promise<void> {

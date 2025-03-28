@@ -93,6 +93,40 @@ local STAT_DELTA = 0
 local UNIT_RESOURCE_PRODUCTION = {}
 local UNIT_DAMAGE = {}
 
+local function SendExtraStats()
+	local teamList = Spring.GetTeamList()
+	for _,teamID in ipairs(teamList) do
+		if (teamID ~= Spring.GetGaiaTeamID()) then
+			local units = Spring.GetTeamUnits(teamID)
+			local total_metal_cost = 0
+			local total_bp = 0
+			local used_bp = 0
+
+			for k,v in pairs(units) do
+				local uid = Spring.GetUnitDefID(v)
+				total_metal_cost = total_metal_cost + (UNIT_DEF_METAL[uid] or 0)
+
+				if (UNIT_DEF_BUILD_POWER[uid] ~= nil) then
+					total_bp = total_bp + UNIT_DEF_BUILD_POWER[uid]
+
+					-- https://github.com/beyond-all-reason/spring/blob/c657b811f48920286243a9fc5bab29e8f3251469/rts/Sim/Units/CommandAI/Command.h#L50
+					local cmdID = Spring.GetUnitWorkerTask(v)
+					if (cmdID ~= nil) then
+						used_bp = used_bp + UNIT_DEF_BUILD_POWER[uid]
+					end
+				end
+			end
+
+			writeJson("extra_stat_update", {
+				{ "teamID", teamID },
+				{ "armyValue", total_metal_cost },
+				{ "buildPowerAvailable", total_bp },
+				{ "buildPowerUsed", used_bp }
+			})
+		end
+	end
+end
+
 function widget:GameFrame(n)
     frame = n
 
@@ -137,37 +171,7 @@ function widget:GameFrame(n)
     end
 
     if (frame % 450 == 0) then
-        local teamList = Spring.GetTeamList()
-        for _,teamID in ipairs(teamList) do
-            if (teamID ~= Spring.GetGaiaTeamID()) then
-                local units = Spring.GetTeamUnits(teamID)
-                local total_metal_cost = 0
-                local total_bp = 0
-                local used_bp = 0
-
-                for k,v in pairs(units) do
-                    local uid = Spring.GetUnitDefID(v)
-                    total_metal_cost = total_metal_cost + (UNIT_DEF_METAL[uid] or 0)
-
-                    if (UNIT_DEF_BUILD_POWER[uid] ~= nil) then
-                        total_bp = total_bp + UNIT_DEF_BUILD_POWER[uid]
-
-                        -- https://github.com/beyond-all-reason/spring/blob/c657b811f48920286243a9fc5bab29e8f3251469/rts/Sim/Units/CommandAI/Command.h#L50
-                        local cmdID = Spring.GetUnitWorkerTask(v)
-                        if (cmdID ~= nil) then
-                            used_bp = used_bp + UNIT_DEF_BUILD_POWER[uid]
-                        end
-                    end
-                end
-
-                writeJson("extra_stat_update", {
-                    { "teamID", teamID },
-                    { "armyValue", total_metal_cost },
-                    { "buildPowerAvailable", total_bp },
-                    { "buildPowerUsed", used_bp }
-                })
-            end
-        end
+        SendExtraStats()
     end
 end
 
@@ -245,6 +249,9 @@ function widget:GameOver(winningAllyTeams)
             end
         end
     end
+
+    -- also send on last frame to match partity with history stats (which includes last frame)
+	SendExtraStats()
 
     Spring.Echo("[Gex] game over, force quitting")
     Spring.SendCommands("quitforce")

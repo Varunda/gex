@@ -47,16 +47,19 @@
 <script lang="ts">
     import Vue, { PropType } from "vue";
 
+    import Collapsible from "components/Collapsible.vue";
+
     import { GameEventTeamsStats } from "model/GameEventTeamStats";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+
+    import MergedStats from "../compute/MergedStats";
 
     import Chart, { ChartDataset, Plugin } from "chart.js/auto/auto.esm";
 
     import TimeUtils from "util/Time";
     import TableUtils from "util/Table";
     import CompactUtils from "util/Compact";
-import Collapsible from "components/Collapsible.vue";
 
     const getOrCreateLegendList = (chart: Chart, id: string) => {
         const container = document.getElementById(id);
@@ -97,7 +100,7 @@ import Collapsible from "components/Collapsible.vue";
                 ul.firstChild.remove();
             }
 
-            const items = chart.options.plugins?.legend?.labels?.generateLabels(chart) ?? [];
+            const items = chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
 
             items.forEach((iter) => {
 
@@ -152,12 +155,18 @@ import Collapsible from "components/Collapsible.vue";
         }
     };
 
-    const STATS: [(keyof GameEventTeamsStats), string][] = [
+    type StatKey = keyof MergedStats;
+
+    const STATS: [StatKey, string][] = [
         ["unitsProduced", "Units created"],
         ["unitsKilled", "Units killed"],
 
         ["damageDealt", "Damage dealt"],
         ["damageReceived", "Damage receieved"],
+
+        ["armyValue", "Army value"],
+        ["buildPowerAvailable", "Build power total"],
+        ["buildPowerUsed", "Build power used"],
 
         ["metalProduced", "Metal produced"],
         ["metalExcess", "Metal excess"],
@@ -171,18 +180,23 @@ import Collapsible from "components/Collapsible.vue";
         ["energySent", "Energy sent"],
         //["energyUsed", "Energy used"], // not useful? is always y=x
 
-        ["unitsCaptures", "Units captured"],
+        ["unitsCaptured", "Units captured"],
         ["unitsSent", "Units sent"],
         ["unitsReceived", "Units received"],
         ["unitsOutCaptured", "Units out captured"]
     ];
 
-    const STAT_GROUP: [(keyof GameEventTeamsStats), string][][] = [
+    const STAT_GROUP: [StatKey, string][][] = [
         [
+            ["armyValue", "Army value"],
             ["unitsProduced", "Units created"],
             ["unitsKilled", "Units killed"],
             ["damageDealt", "Damage dealt"],
             ["damageReceived", "Damage receieved"],
+        ],
+        [
+            ["buildPowerAvailable", "Build power total"],
+            ["buildPowerUsed", "Build power used"],
         ],
         [
             ["metalProduced", "Metal produced"],
@@ -197,7 +211,7 @@ import Collapsible from "components/Collapsible.vue";
             ["energySent", "Energy sent"],
         ],
         [
-            ["unitsCaptures", "Units captured"],
+            ["unitsCaptured", "Units captured"],
             ["unitsSent", "Units sent"],
             ["unitsReceived", "Units received"],
             ["unitsOutCaptured", "Units out captured"]
@@ -206,8 +220,8 @@ import Collapsible from "components/Collapsible.vue";
 
     export const TeamStatsChart = Vue.extend({
         props: {
-            stats: { type: Array as PropType<GameEventTeamsStats[]>, required: true },
-            match: { type: Object as PropType<BarMatch>, required: true }
+            stats: { type: Array as PropType<MergedStats[]>, required: true },
+            match: { type: Object as PropType<BarMatch>, required: true },
         },
 
         data: function() {
@@ -218,7 +232,7 @@ import Collapsible from "components/Collapsible.vue";
 
                 perSecond: false as boolean,
 
-                showedStat: "unitsProduced" as keyof GameEventTeamsStats
+                showedStat: "armyValue" as StatKey
             }
         },
 
@@ -226,7 +240,7 @@ import Collapsible from "components/Collapsible.vue";
             this.$nextTick(() => {
                 this.makeChart();
                 this.makeDatasets();
-                this.showDataset("unitsProduced");
+                this.showDataset("armyValue");
             });
         },
 
@@ -285,7 +299,7 @@ import Collapsible from "components/Collapsible.vue";
                                 mode: "index",
                                 position: "nearest",
                                 intersect: false,
-                                external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx, CompactUtils.compact)
+                                external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx, TableUtils.defaultValueFormatter)
                             },
                             legend: {
                                 display: false,
@@ -336,7 +350,7 @@ import Collapsible from "components/Collapsible.vue";
 
                         if (this.perSecond == true) {
                             const diff: [number, number][] = [];
-                            let prev: [number, number] = [0, 0];
+                            let prev: [number, number] = values[0];
                             for (let i = 0; i < values.length; ++i) {
                                 const d = values[i][0] - prev[0];
                                 const dt = Math.max(1, values[i][1] - prev[1]);
@@ -349,13 +363,14 @@ import Collapsible from "components/Collapsible.vue";
 
                         const team: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
 
-                        const ds: ChartDataset = {
+                        const ds = {
                             data: values.map(i => i[0]),
                             label: `${team?.username ?? `<missing ${teamID}>`}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
                             fill: false,
                             hidden: true,
+                            lineTension: (this.perSecond == true) ? 0.5 : 0
                         };
 
                         //console.log(`created dataset ${teamID}-${stat[0]}`);
@@ -366,7 +381,7 @@ import Collapsible from "components/Collapsible.vue";
                 }
             },
 
-            showDataset: function(field: keyof GameEventTeamsStats): void {
+            showDataset: function(field: StatKey): void {
                 if (this.chart == null) {
                     console.log(`TeamStatsChart> chart is null, creating`);
                     this.makeChart();
@@ -404,7 +419,7 @@ import Collapsible from "components/Collapsible.vue";
         },
 
         computed: {
-            statNames: function(): [(keyof GameEventTeamsStats), string][] {
+            statNames: function(): [StatKey, string][] {
                 return STATS;
             },
 

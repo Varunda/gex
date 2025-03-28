@@ -58,7 +58,7 @@
             </div>
 
             <div class="mb-5">
-                <a-table :entries="dynamicUnits" display-type="table" default-sort-field="produced" default-sort-order="desc" :hide-paginate="true">
+                <a-table :entries="dynamicUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true">
                     <a-col sort-field="name">
                         <a-header>
                             <h5 class="mb-0 text-center" style="min-width: 12rem"><b>Units</b></h5>
@@ -71,7 +71,7 @@
                         </a-body>
                     </a-col>
 
-                    <a-col sort-field="produced">
+                    <a-col sort-field="rank">
                         <a-header>
                             <b>Produced</b>
                             <info-hover text="How many of this unit were produced"></info-hover>
@@ -162,7 +162,7 @@
                 </a-table>
             </div>
 
-            <a-table :entries="staticUnits" display-type="table" default-sort-field="produced" default-sort-order="desc" :hide-paginate="true">
+            <a-table :entries="staticUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true">
                 <a-col sort-field="name">
                     <a-header>
                         <h5 class="mb-0 text-center" style="min-width: 12rem">
@@ -177,7 +177,7 @@
                     </a-body>
                 </a-col>
 
-                <a-col sort-field="produced">
+                <a-col sort-field="rank">
                     <a-header>
                         <b>Produced</b>
                         <info-hover text="How many of this unit were produced"></info-hover>
@@ -492,7 +492,7 @@
 
             playerMostUsed: function(): UnitStats[] {
                 return [...this.playerStats].sort((a, b) => {
-                    return b.damageDealt - a.damageDealt;
+                    return b.metalKilled - a.metalKilled;
                 }).slice(0, 3);
             },
 

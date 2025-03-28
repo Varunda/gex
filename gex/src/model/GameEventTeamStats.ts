@@ -21,7 +21,7 @@ export class GameEventTeamsStats {
     public unitsKilled: number = 0;
     public unitsProduced: number = 0;
     public unitsSent: number = 0;
-    public unitsCaptures: number = 0;
+    public unitsCaptured: number = 0;
     public unitsOutCaptured: number = 0;
 
     public static parse(elem: any): GameEventTeamsStats {

@@ -1,5 +1,17 @@
 import TimeUtils from "util/Time";
+import CompactUtils from "./Compact";
+import LocaleUtil from "./Locale";
 export default class TableUtils {
+
+    public static defaultValueFormatter(v: number): string {
+        if (Math.abs(v) <= 1) {
+            return LocaleUtil.locale(v, 2);
+        } else if (Math.abs(v) < 100) {
+            return LocaleUtil.locale(v, 0);
+        }
+
+        return CompactUtils.compact(v);
+    }
 
     public static chart(elementName: string, context: any, valueFormatter: ((_: number) => string) | null) {
         // tooltip Element

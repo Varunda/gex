@@ -62,6 +62,8 @@ namespace gex.Services.Hosted.PeriodicTasks {
                     return "no matches to get!";
                 }
 
+                int iterCount = 0;
+
                 foreach (BarRecentReplay replay in recentMatches.Value) {
                     try {
                         if (cancel.IsCancellationRequested) {
@@ -70,6 +72,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
 
                         ParseResult result = await ProcessRecentMatch(replay, cancel);
                         if (result == ParseResult.OK) {
+                            ++iterCount;
                             ++okCount;
                         } else if (result == ParseResult.ALREADY_EXISTS) {
                             ++alreadyCount;
@@ -82,7 +85,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                     }
                 }
 
-                if (okCount == limit && page < 10) {
+                if (iterCount == limit && page < 10) {
                     _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}]");
                     page += 1;
                 } else {
