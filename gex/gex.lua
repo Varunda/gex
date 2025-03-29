@@ -93,17 +93,42 @@ local STAT_DELTA = 0
 local UNIT_RESOURCE_PRODUCTION = {}
 local UNIT_DAMAGE = {}
 
+local UNIT_TYPE_ARMY = {}
+local UNIT_TYPE_DEF = {}
+local UNIT_TYPE_UTIL = {}
+local UNIT_TYPE_ECO = {}
+
 local function SendExtraStats()
 	local teamList = Spring.GetTeamList()
 	for _,teamID in ipairs(teamList) do
 		if (teamID ~= Spring.GetGaiaTeamID()) then
 			local units = Spring.GetTeamUnits(teamID)
 			local total_metal_cost = 0
+
+            local armyValue = 0
+            local defValue = 0
+            local utilValue = 0
+            local ecoValue = 0
+            local otherValue = 0
+
 			local total_bp = 0
 			local used_bp = 0
 
 			for k,v in pairs(units) do
 				local uid = Spring.GetUnitDefID(v)
+
+                if (UNIT_TYPE_ARMY[uid] ~= nil) then
+                    armyValue = armyValue + UNIT_TYPE_ARMY[uid]
+                elseif (UNIT_TYPE_DEF[uid] ~= nil) then
+                    defValue = defValue + UNIT_TYPE_DEF[uid]
+                elseif (UNIT_TYPE_UTIL[uid] ~= nil) then
+                    utilValue = utilValue + UNIT_TYPE_UTIL[uid]
+                elseif (UNIT_TYPE_ECO[uid] ~= nil) then
+                    ecoValue = ecoValue + UNIT_TYPE_ECO[uid]
+                else
+                    otherValue = otherValue + (UNIT_DEF_METAL[uid] or 0)
+                end
+
 				total_metal_cost = total_metal_cost + (UNIT_DEF_METAL[uid] or 0)
 
 				if (UNIT_DEF_BUILD_POWER[uid] ~= nil) then
@@ -119,7 +144,12 @@ local function SendExtraStats()
 
 			writeJson("extra_stat_update", {
 				{ "teamID", teamID },
-				{ "armyValue", total_metal_cost },
+				{ "totalValue", total_metal_cost },
+                { "armyValue", armyValue },
+                { "defValue", defValue },
+                { "utilValue", utilValue },
+                { "ecoValue", ecoValue },
+                { "otherValue", otherValue },
 				{ "buildPowerAvailable", total_bp },
 				{ "buildPowerUsed", used_bp }
 			})
@@ -585,6 +615,16 @@ function widget:Initialize()
         UNIT_DEF_NAMES[k] = v["name"]
         UNIT_DEF_METAL[k] = v["metalCost"]
         UNIT_DEF_IS_COMMANDER[k] = v.customParams.iscommander ~= nil
+
+        if ((not v.customParams.iscommander) and (v.weapons and #v.weapons > 0) and (v.speed and v.speed > 0)) then
+            UNIT_TYPE_ARMY[k] = v.metalCost
+        elseif ((v.weapons and #v.weapons > 0) and (not v.speed or (v.speed == 0))) then
+            UNIT_TYPE_DEF[k] = v.metalCost
+        elseif (v.customParams.unitgroup == 'util') then
+            UNIT_TYPE_UTIL[k] = v.metalCost
+        elseif (v.customParams.unitgroup == 'metal' or v.customParams.unitgroup == 'energy') then
+            UNIT_TYPE_ECO[k] = v.metalCost
+        end
 
         if (v.buildSpeed > 0) then
 			UNIT_DEF_BUILD_POWER[k] = v.buildSpeed

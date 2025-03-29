@@ -17,16 +17,27 @@ namespace gex.Services.Db.Event {
         protected override void SetupInsert(GameEventExtraStatUpdate ev, NpgsqlCommand cmd) {
             cmd.CommandText = @"
                 INSERT INTO game_event_extra_stats (
-                    game_id, frame, team_id, army_value, build_power_available, build_power_used
+                    game_id, frame, team_id,
+                    total_value, army_value, defense_value, util_value, eco_value, other_value,
+                    build_power_available, build_power_used
                 ) VALUES (
-                    @GameID, @Frame, @TeamID, @ArmyValue, @BuildPowerAvailable, @BuildPowerUsed
+                    @GameID, @Frame, @TeamID,
+                    @TotalValue, @ArmyValue, @DefenseValue, @UtilValue, @EcoValue, @OtherValue,
+                    @BuildPowerAvailable, @BuildPowerUsed
                 );
             ";
 
             cmd.AddParameter("GameID", ev.GameID);
             cmd.AddParameter("Frame", ev.Frame);
             cmd.AddParameter("TeamID", ev.TeamID);
+
+            cmd.AddParameter("TotalValue", ev.TotalValue);
             cmd.AddParameter("ArmyValue", ev.ArmyValue);
+            cmd.AddParameter("DefenseValue", ev.DefenseValue);
+            cmd.AddParameter("UtilValue", ev.UtilValue);
+            cmd.AddParameter("EcoValue", ev.EcoValue);
+            cmd.AddParameter("OtherValue", ev.OtherValue);
+
             cmd.AddParameter("BuildPowerAvailable", ev.BuildPowerAvailable);
             cmd.AddParameter("BuildPowerUsed", ev.BuildPowerUsed);
         }

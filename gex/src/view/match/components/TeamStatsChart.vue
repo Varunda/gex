@@ -5,38 +5,36 @@
             <div class="d-flex flex-row">
 
                 <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
-                    <div class="d-flex flex-column" style="gap: 0.5rem">
-                        <button class="btn rounded mb-2" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
-                            Show per sec
-                        </button>
 
-                        <div v-for="(group, index) in statGroups" :key="index">
-                            <div class="btn-group btn-group-vertical w-100">
-                                <button v-for="stat in group" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
-                                    {{ stat[1] }}
+                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                        Show per sec
+                    </button>
+
+                    <div class="accordion accordion-flush" id="stat-accordion-parent">
+                        <div v-for="(group, index) of statGroups" class="accordion-item mb-2" :key="group.name">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button me-2" :class="{ 'collapsed': index != 0 }" type="button" data-bs-toggle="collapse" :data-bs-target="'#stats-group-' + group.id">
+                                    {{ group.name }}
                                 </button>
+                            </h2>
+
+                            <div :id="'stats-group-' + group.id" class="accordion-collapse collapse" :class="{ 'show': index == 0 }" data-bs-parent="#stat-accordion-parent">
+                                <div class="btn-group btn-group-vertical w-100">
+                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                                        {{ stat[1] }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!--
-                <div class="btn-group btn-group-vertical flex-grow-0 me-2" style="text-wrap: nowrap;">
-                    <button class="btn rounded mb-2" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
-                        Show per sec
-                    </button>
-
-                    <button v-for="stat in statNames" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
-                        {{ stat[1] }}
-                    </button>
-                </div>
-                -->
-
                 <div style="height: 600px" class="flex-grow-1">
+                    <h2>Viewing {{ showedStat }}</h2>
                     <canvas id="team-stats-chart" height="600"></canvas>
                 </div>
 
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center flex-grow-0">
                     <ul id="team-stat-legend" class="ps-0"></ul>
                 </div>
             </div>
@@ -164,9 +162,15 @@
         ["damageDealt", "Damage dealt"],
         ["damageReceived", "Damage receieved"],
 
+        ["totalValue", "Total value"],
+        ["defenseValue", "Defense value"],
+        ["ecoValue", "Eco value"],
+        ["utilValue", "Util value"],
+        ["otherValue", "Other value"],
         ["armyValue", "Army value"],
         ["buildPowerAvailable", "Build power total"],
         ["buildPowerUsed", "Build power used"],
+        ["buildPowerPercent", "Build power percent"],
 
         ["metalProduced", "Metal produced"],
         ["metalExcess", "Metal excess"],
@@ -186,36 +190,69 @@
         ["unitsOutCaptured", "Units out captured"]
     ];
 
-    const STAT_GROUP: [StatKey, string][][] = [
-        [
-            ["armyValue", "Army value"],
-            ["unitsProduced", "Units created"],
-            ["unitsKilled", "Units killed"],
-            ["damageDealt", "Damage dealt"],
-            ["damageReceived", "Damage receieved"],
-        ],
-        [
-            ["buildPowerAvailable", "Build power total"],
-            ["buildPowerUsed", "Build power used"],
-        ],
-        [
-            ["metalProduced", "Metal produced"],
-            ["metalExcess", "Metal excess"],
-            ["metalReceived", "Metal receieved"],
-            ["metalSent", "Metal sent"],
-        ],
-        [
-            ["energyProduced", "Energy produced"],
-            ["energyExcess", "Energy excess"],
-            ["energyReceived", "Energy receieved"],
-            ["energySent", "Energy sent"],
-        ],
-        [
-            ["unitsCaptured", "Units captured"],
-            ["unitsSent", "Units sent"],
-            ["unitsReceived", "Units received"],
-            ["unitsOutCaptured", "Units out captured"]
-        ]
+    type StatGroup = {
+        id: string;
+        name: string;
+        values: [StatKey, string][]
+    };
+
+    const STAT_GROUPS: StatGroup[] = [
+        {
+            id: "basic",
+            name: "Basic",
+            values: [
+                ["armyValue", "Army value"],
+                ["unitsProduced", "Units created"],
+                ["unitsKilled", "Units killed"],
+                ["damageDealt", "Damage dealt"],
+                ["damageReceived", "Damage receieved"],
+            ]
+        },
+        {
+            id: "unit-value",
+            name: "Unit value",
+            values: [
+                ["totalValue", "Total value"],
+                ["defenseValue", "Defense value"],
+                ["ecoValue", "Eco value"],
+                ["utilValue", "Util value"],
+                ["otherValue", "Other value"],
+            ]
+        },
+        {
+            id: "build-power",
+            name: "Build power",
+            values: [
+                ["buildPowerAvailable", "Build power total"],
+                ["buildPowerUsed", "Build power used"],
+                ["buildPowerPercent", "Build power usage"]
+            ]
+        },
+        {
+            id: "eco",
+            name: "Eco",
+            values: [
+                ["metalProduced", "Metal produced"],
+                ["metalExcess", "Metal excess"],
+                ["metalReceived", "Metal receieved"],
+                ["metalSent", "Metal sent"],
+                ["energyProduced", "Energy produced"],
+                ["energyExcess", "Energy excess"],
+                ["energyReceived", "Energy receieved"],
+                ["energySent", "Energy sent"],
+            ]
+        },
+        {
+            id: "unit",
+            name: "Unit",
+            values: [
+                ["unitsCaptured", "Units captured"],
+                ["unitsSent", "Units sent"],
+                ["unitsReceived", "Units received"],
+                ["unitsOutCaptured", "Units out captured"]
+            ]
+        }
+
     ];
 
     export const TeamStatsChart = Vue.extend({
@@ -424,7 +461,7 @@
             },
 
             statGroups: function() {
-                return STAT_GROUP;
+                return STAT_GROUPS;
             },
 
             teamIds: function(): number[] {

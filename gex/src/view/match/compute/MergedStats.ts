@@ -24,9 +24,15 @@ export default class MergedStats {
     public unitsSent: number = 0;
     public unitsCaptured: number = 0;
     public unitsOutCaptured: number = 0;
+    public totalValue: number = 0;
     public armyValue: number = 0;
+    public defenseValue: number = 0;
+    public utilValue: number = 0;
+    public ecoValue: number = 0;
+    public otherValue: number = 0;
     public buildPowerAvailable: number = 0;
     public buildPowerUsed: number = 0;
+    public buildPowerPercent: number = 0;
 
     public static compute(output: GameOutput): MergedStats[] {
 
@@ -49,16 +55,22 @@ export default class MergedStats {
 
             if (extra == undefined) {
                 extra = last.get(iter.teamID);
-                console.warn(`missing extra stats [key=${key}] [frame=${iter.frame}] [teamID=${iter.teamID}] [last?=${!!extra}]`);
+                console.warn(`MergedStats> missing extra stats [key=${key}] [frame=${iter.frame}] [teamID=${iter.teamID}] [last?=${!!extra}]`);
             } else {
                 last.set(iter.teamID, extra);
             }
 
             return {
                 ...iter,
+                totalValue: extra?.totalValue ?? 0,
                 armyValue: extra?.armyValue ?? 0,
+                ecoValue: extra?.ecoValue ?? 0,
+                defenseValue: extra?.defenseValue ?? 0,
+                utilValue: extra?.utilValue ?? 0,
+                otherValue: extra?.otherValue ?? 0,
                 buildPowerAvailable: extra?.buildPowerAvailable ?? 0,
-                buildPowerUsed: extra?.buildPowerUsed ?? 0
+                buildPowerUsed: extra?.buildPowerUsed ?? 0,
+                buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100
             };
         });
     }

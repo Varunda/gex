@@ -108,7 +108,7 @@
                         labels: this.updates.map(iter => `${TimeUtils.duration(iter.frame / 30)}`),
                         datasets: [
                             {
-                                data: this.updates.map(iter => { return { x: iter.frame, y: iter.value}}),
+                                data: this.updates.map(iter => { return { x: iter.frame, y: iter.value }}),
                                 fill: true,
                                 backgroundColor: "#FFFFFFAA"
                             }
