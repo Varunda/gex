@@ -10,6 +10,10 @@
                 Starting box
             </toggle-button>
 
+            <toggle-button v-model="map.startingPosition">
+                Starting positions
+            </toggle-button>
+
             <div class="btn-group border border-light">
                 <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap">
                     Unit death heatmap
@@ -30,11 +34,11 @@
             </div>
 
             <toggle-button v-model="map.commanderPositions">
-                Commander positions
+                Com positions
             </toggle-button>
 
             <toggle-button v-model="map.commanderHeatmap">
-                Commander heatmap
+                Com heatmap
             </toggle-button>
 
             <toggle-button v-model="map.factories">
@@ -143,6 +147,7 @@
 
                 map: {
                     startingBox: false as boolean,
+                    startingPosition: true as boolean,
                     commanderPositions: true as boolean,
                     commanderHeatmap: false as boolean,
                     deathHeatmap: true as boolean,
@@ -307,6 +312,7 @@
                         .attr("cx", `${player.startingPosition.x / this.mapW * 100}%`)
                         .attr("cy", `${player.startingPosition.z / this.mapH * 100}%`)
                         .attr("r", "10px")
+                        .classed("map-starting-position", true)
                         .style("pointer-events", "none")
                         .style("fill", player.hexColor)
                         .style("stroke", "#000000")
@@ -316,6 +322,7 @@
                     this.root.append("text")
                         .attr("x", (this.toImgX(player.startingPosition.x)) + 16)
                         .attr("y", this.toImgZ(player.startingPosition.z))
+                        .classed("map-starting-position", true)
                         .style("fill", player.hexColor)
                         .style("font-size", "1.3rem")
                         .style("paint-order", "stroke")
@@ -479,6 +486,7 @@
                         .enter()
                         .append("path")
                             .classed("map-unit-death-heatmap", true)
+                            .style("pointer-events", "none")
                             .style("opacity", this.map.deathHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
@@ -518,6 +526,7 @@
                         .enter()
                         .append("path")
                             .classed("map-commander-position-heatmap", true)
+                            .style("pointer-events", "none")
                             .style("opacity", this.map.commanderHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
@@ -562,6 +571,7 @@
                         .enter()
                         .append("path")
                             .classed("map-building-heatmap", true)
+                            .style("pointer-events", "none")
                             .style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
@@ -908,6 +918,18 @@
                         .style("pointer-events", "auto");
                 }
             },
+
+            "map.startingPosition": function(): void {
+                if (this.map.startingPosition == false) {
+                    this.root?.selectAll(".map-starting-position")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-starting-position")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            }
 
         },
 

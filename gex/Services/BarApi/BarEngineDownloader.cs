@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -21,7 +22,10 @@ namespace gex.Services.BarApi {
 
         private const string BASE_URL = "https://github.com/beyond-all-reason/spring/releases/download";
 
-        private const string VERSION_PATH = "{0}/spring_bar_.rel2501.{0}_{1}-64-minimal-portable.7z"; // {0} => version, {1} => windows/linux
+        private List<string> VERSION_PATH_TEMPLATES = [
+            "{0}/spring_bar_.rel2501.{0}_{1}-64-minimal-portable.7z", // {0} => version, {1} => windows/linux
+            "{0}/recoil_{0}_amd64-{1}.7z"
+        ];
 
         static BarEngineDownloader() {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
@@ -57,12 +61,23 @@ namespace gex.Services.BarApi {
             Directory.CreateDirectory(path);
 
             Stopwatch timer = Stopwatch.StartNew();
-            string versionPath = string.Format(VERSION_PATH, version, OperatingSystem.IsWindows() ? "windows" : "linux");
-            _Logger.LogTrace($"getting version [versionPath={versionPath}]");
-            HttpResponseMessage response = await _Http.GetAsync(BASE_URL + "/" + versionPath);
 
-            if (response.IsSuccessStatusCode == false) {
-                _Logger.LogError($"failed to download engine [version={version}] [status code={response.StatusCode}]");
+            HttpResponseMessage? response = null;
+            foreach (string template in VERSION_PATH_TEMPLATES) {
+                string versionPath = string.Format(template, version, OperatingSystem.IsWindows() ? "windows" : "linux");
+                _Logger.LogTrace($"trying to get engine version [template={template}] [versionPath={versionPath}]");
+                response = await _Http.GetAsync(BASE_URL + "/" + versionPath);
+
+                if (response.IsSuccessStatusCode == false) {
+                    _Logger.LogWarning($"failed to download engine [version={version}] [status code={response.StatusCode}]");
+                } else {
+                    _Logger.LogInformation($"successfully downloaded engine [version={version}] [url={versionPath}]");
+                    break;
+                }
+            }
+
+            if (response == null) {
+                _Logger.LogError($"failed to find engine version [version={version}]");
                 return;
             }
 

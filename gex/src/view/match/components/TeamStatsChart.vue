@@ -30,7 +30,7 @@
                 </div>
 
                 <div style="height: 600px" class="flex-grow-1">
-                    <h2>Viewing {{ showedStat }}</h2>
+                    <h2>Viewing {{ selectedStatName }}</h2>
                     <canvas id="team-stats-chart" height="600"></canvas>
                 </div>
 
@@ -53,11 +53,13 @@
 
     import MergedStats from "../compute/MergedStats";
 
-    import Chart, { ChartDataset, Plugin } from "chart.js/auto/auto.esm";
+    import Chart, { ChartDataset, LegendItem, Plugin } from "chart.js/auto/auto.esm";
 
     import TimeUtils from "util/Time";
     import TableUtils from "util/Table";
     import CompactUtils from "util/Compact";
+
+    import EventBus from "EventBus";
 
     const getOrCreateLegendList = (chart: Chart, id: string) => {
         const container = document.getElementById(id);
@@ -98,7 +100,7 @@
                 ul.firstChild.remove();
             }
 
-            const items = chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
+            const items: LegendItem[] = chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
 
             items.forEach((iter) => {
 
@@ -115,6 +117,18 @@
                         chart.toggleDataVisibility(iter.datasetIndex);
                     } else {
                         chart.setDatasetVisibility(iter.datasetIndex, !chart.isDatasetVisible(iter.datasetIndex));
+
+                        const datasetId: number = getDatasetIdFromLabel(iter.text);
+                        if (Number.isNaN(datasetId)) {
+                            console.warn(`TeamStatsChart> failed to convert dataset id string into a number! ${iter.text} => ${datasetId}`);
+                            return;
+                        }
+
+                        if (chart.isDatasetVisible(iter.datasetIndex)) {
+                            EventBus.$emit("enable-dataset-id", datasetId);
+                        } else {
+                            EventBus.$emit("disable-dataset-id", datasetId);
+                        }
                     }
                     chart.update();
                 });
@@ -142,7 +156,7 @@
                 textContainer.style.textDecoration = iter.hidden ? "line-through" : "";
                 textContainer.style.userSelect = "none";
 
-                const text = document.createTextNode(iter.text);
+                const text = document.createTextNode(iter.text.split("{")[0]);
                 textContainer.appendChild(text);
 
                 li.appendChild(check);
@@ -255,6 +269,49 @@
 
     ];
 
+    type StatSetEntry = {
+        id: string;
+        name: string;
+        values: number[];
+    }        
+
+    type StatSet = {
+        teamID: number | null;
+        name: string;
+
+        stats: StatSetEntry[];
+    }
+
+    type StatEntry = {
+        frame: number;
+        value: number;
+    }
+
+    /**
+     * takes the label of a dataset item, and gets the ID of the "team id" (which can also be the ally team ID)
+     * @param label label of the dataset from the chart
+     */
+    const getDatasetIdFromLabel = (label: string): number =>{
+        const reg: RegExpMatchArray | null = label.match(/\{#(-?\d+)\}/);
+        if (reg == null) {
+            console.warn(`TeamStatsChart> failed to find dataset id from label ${label}`);
+            return NaN;
+        }
+
+        if (reg.length != 2) {
+            console.warn(`TeamStatsChart> expected regex match to be 2 elements, got ${reg.length} instead! ${reg}`);
+            return NaN;
+        }
+
+        const datasetIdStr: string = reg.at(1)!;
+        return Number.parseInt(datasetIdStr);
+    }
+
+    // 2025-04-13 TODO: ok, how i handle the teams and ally teams is fucking awful
+    //      the "team id" for an ally team is just the negative +1 (because ally teams have a 0)
+    //      then in order to persist the changes in teams shown, the dataset id is hidden within the label,
+    //      but is displayed without the label
+
     export const TeamStatsChart = Vue.extend({
         props: {
             stats: { type: Array as PropType<MergedStats[]>, required: true },
@@ -267,6 +324,9 @@
 
                 datasets: new Map() as Map<string, any>,
 
+                shownStats: new Set() as Set<number>,
+                validDatasetIds: new Set() as Set<number>,
+
                 perSecond: false as boolean,
 
                 showedStat: "armyValue" as StatKey
@@ -274,7 +334,31 @@
         },
 
         mounted: function(): void {
+
+            EventBus.$on("enable-dataset-id", (datasetId: number) => {
+                console.log(`TeamStatsChart> enable-dataset-id ${datasetId}`);
+                this.shownStats.add(datasetId);
+            });
+
+            EventBus.$on("disable-dataset-id", (datasetId: any) => {
+                console.log(`TeamStatsChart> diable-dataset-id ${datasetId}`);
+                this.shownStats.delete(datasetId);
+            });
+
             this.$nextTick(() => {
+                // by default, if the game isn't a 1v1, only show the team aggregate stats
+                const largestTeam: number = Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
+                if (largestTeam == 1) {
+                    this.shownStats = new Set(this.teamIds);
+                    this.validDatasetIds = new Set(this.teamIds);
+                } else {
+                    this.shownStats = new Set(this.allyTeamIdsAsDatasetIds);
+                    this.validDatasetIds = new Set(this.teamIds);
+                    for (const iter of this.allyTeamIdsAsDatasetIds) {
+                        this.validDatasetIds.add(iter);
+                    }
+                }
+
                 this.makeChart();
                 this.makeDatasets();
                 this.showDataset("armyValue");
@@ -336,7 +420,12 @@
                                 mode: "index",
                                 position: "nearest",
                                 intersect: false,
-                                external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx, TableUtils.defaultValueFormatter)
+                                external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx,
+                                    TableUtils.defaultValueFormatter,
+                                    (label: string): string => {
+                                        return label.split("{")[0];
+                                    }
+                                )
                             },
                             legend: {
                                 display: false,
@@ -369,40 +458,67 @@
                 this.datasets.clear();
 
                 for (const stat of this.statNames) {
-                    const map: Map<number, [number, number][]> = new Map();
+                    const statName: keyof MergedStats = stat[0];
+
+                    const map: Map<number, StatEntry[]> = new Map();
                     for (const i of this.stats) {
-                        const v: number | string = i[stat[0]];
+                        const v: number | string = i[statName];
                         if (typeof v == "string") {
                             throw `cannot create dataset on ${stat}, this is a string field!`;
                         }
-                        const a: [number, number][] = map.get(i.teamID) ?? [];
-                        a.push([v, i.frame]);
+
+                        const a: StatEntry[] = map.get(i.teamID) ?? [];
+                        a.push({ frame: i.frame, value: v });
 
                         map.set(i.teamID, a);
+
+                        const allyTeamID: number | undefined = this.match.players.find(iter => iter.teamID == i.teamID)?.allyTeamID;
+                        if (allyTeamID == undefined) {
+                            console.warn(`TeamStatsChart> missing allyTeamID for player [teamID=${i.teamID}]`);
+                        } else {
+                            const datasetID: number = -1 * (allyTeamID + 1);
+                            //console.log(`TeamStatsChart> player ${i.teamID} is on ally team ${allyTeamID} (which is going to ${datasetID})`);
+                            const allyTeamStats: StatEntry[] = map.get(datasetID) ?? [];
+
+                            const frameStats: StatEntry | undefined = allyTeamStats.find(iter => iter.frame == i.frame);
+                            if (frameStats == undefined) {
+                                allyTeamStats.push({ frame: i.frame, value: v });
+                            } else {
+                                frameStats.value += v;
+                            }
+
+                            map.set(datasetID, allyTeamStats);
+                        }
                     }
 
                     for (const entry of map.entries()) {
                         const teamID: number = entry[0];
-                        let values: [number, number][] = entry[1];
+                        let values: StatEntry[] = entry[1];
 
                         if (this.perSecond == true) {
-                            const diff: [number, number][] = [];
-                            let prev: [number, number] = values[0];
+                            const diff: StatEntry[] = [];
+                            let prev: StatEntry = values[0];
                             for (let i = 0; i < values.length; ++i) {
-                                const d = values[i][0] - prev[0];
-                                const dt = Math.max(1, values[i][1] - prev[1]);
+                                const d = values[i].value - prev.value;
+                                const dt = Math.max(1, values[i].frame - prev.frame);
 
-                                diff.push([d / dt * 30, dt]); // 30 fps
+                                diff.push({ frame: dt, value: d / dt * 30 }); // 30 fps
                                 prev = values[i];
                             }
                             values = diff;
                         }
 
-                        const team: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
+                        const teamIdFromAlly: number = -1 * (teamID + 1);
+
+                        const team: BarMatchPlayer | undefined = (teamID >= 0) 
+                            ? this.match.players.find(iter => iter.teamID == teamID)
+                            : this.match.players.find(iter => iter.allyTeamID == teamIdFromAlly);
+
+                        //console.log(`TeamStatsChart> teamID ${teamID}, name ${team?.username}`);
 
                         const ds = {
-                            data: values.map(i => i[0]),
-                            label: `${team?.username ?? `<missing ${teamID}>`}`,
+                            data: values.map(i => i.value),
+                            label: (teamID >= 0 ? `${team?.username ?? `<missing ${teamID}>`}` : `Team ${teamIdFromAlly + 1}`) + `{#${teamID}}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
                             fill: false,
@@ -435,7 +551,7 @@
                 }
                 this.chart.data.datasets.length = 0;
 
-                const keys: Set<string> = new Set(this.teamIds.map(iter => `${iter}-${field}`));
+                const keys: Set<string> = new Set(Array.from(this.validDatasetIds.values()).map(iter => `${iter}-${field}`));
                 console.log("TeamStatsChart> keys to add:", keys);
 
                 for (const iter of this.datasets) {
@@ -443,12 +559,82 @@
                         continue;
                     }
 
-                    const dataset: ChartDataset = iter[1];
-                    if (dataset.hidden == true) {
-                        console.log(`TeamStatsChart> adding dataset ${iter[0]}`);
-                        dataset.hidden = false;
-                        this.chart.data.datasets.push(dataset);
+                    const keyParts: string[] = iter[0].split("-");
+                    const statName: string = keyParts[keyParts.length - 1];
+                    let datasetId: string = keyParts.slice(0, keyParts.length - 1).join("");
+
+                    if (keyParts.length == 3) {
+                        datasetId = "-" + datasetId;
                     }
+
+                    const did: number = Number.parseInt(datasetId);
+
+                    const dataset: ChartDataset = iter[1];
+                    console.log(`TeamStatsChart> adding dataset ${iter[0]} [datasetId=${datasetId}/${did}] [hidden=${!this.shownStats.has(did)}] [statName=${statName}]`);
+                    dataset.hidden = !this.shownStats.has(did);
+                    this.chart.data.datasets.push(dataset);
+
+                    this.chart.data.datasets.sort((a, b) => {
+                        // a=ally team, b=ally team => smaller ally team
+                        // a=ally team, b=team      => if b is in team a, then a>b, else b>a
+                        // a=team,      b=ally team => if a is in team b, then b>a, else a>b
+                        // a=team,      b=team      => if a and b are on the same team, sort by label, else smaller team
+
+                        const aId: number = getDatasetIdFromLabel(a.label ?? "");
+                        const bId: number = getDatasetIdFromLabel(b.label ?? "");
+
+                        let aAtId: number = -1 * (aId + 1);
+                        let bAtId: number = -1 * (bId + 1);
+
+                        const aIsAt: boolean = aId < 0;
+                        const bIsAt: boolean = bId < 0;
+
+                        let res = 0;
+
+                        if (aIsAt == true && bIsAt == true) {
+                            res = aAtId - bAtId;
+                        } else if (aIsAt == true && bIsAt == false) {
+                            const bTeam: number = this.match.players.find(iter => iter.teamID == bId)?.allyTeamID ?? NaN;
+                            bAtId = bTeam;
+
+                            if (bTeam == aAtId) {
+                                res = -1; // a is an ally team, and b is part of this team, so a is smaller
+                            } else {
+                                // a is an ally team, but b is not part of this team, so smaller team wins
+                                // if a is ally team 1, and b is on ally team 2, b goes after a (1)
+                                //res = bTeam - aAtId;
+                                res = aAtId - bTeam;
+                            }
+                        } else if (aIsAt == false && bIsAt == true) {
+                            const aTeam: number = this.match.players.find(iter => iter.teamID == aId)?.allyTeamID ?? NaN;
+                            aAtId = aTeam;
+
+                            if (aTeam == bAtId) {
+                                res = 1; // b is an ally team, and a is part of this team, so it comes after b
+                            } else {
+                                // b is an ally team, but a is not part of this team, so smaller team wins
+                                // if b is ally team 1, and a is on ally team 2, then b goes after a (1)
+                                res = aTeam - bAtId;
+                            }
+                        } else if (aIsAt == false && bIsAt == false) {
+                            const aTeam: number = this.match.players.find(iter => iter.teamID == aId)?.allyTeamID ?? NaN;
+                            const bTeam: number = this.match.players.find(iter => iter.teamID == bId)?.allyTeamID ?? NaN;
+                            aAtId = aTeam;
+                            bAtId = bTeam;
+
+                            if (aTeam == bTeam) {
+                                res = a.label?.localeCompare(b.label ?? "") ?? 0;
+                            } else {
+                                res = aTeam - bTeam;
+                            }
+                        } else {
+                            throw `logic error! team-stats-chart-dataset-sort`;
+                        }
+
+                        //console.log(`TeamStatsChart> a=${aId},${aIsAt},${aAtId} ||| b=${bId},${bIsAt},${bAtId} => ${res}`);
+
+                        return res;
+                    });
                 }
 
                 this.chart.update();
@@ -464,8 +650,21 @@
                 return STAT_GROUPS;
             },
 
+            selectedStatName: function(): string {
+                return (this.statNames.find(iter => iter[0] == this.showedStat) ?? ["", ""])[1];
+            },
+
             teamIds: function(): number[] {
-                return this.match.players.map(iter => iter.teamID);
+                //return [...this.match.players.map(iter => iter.teamID), ...this.match.allyTeams.map(iter => -1 * (iter.allyTeamID + 1))];
+                return [...this.match.players.map(iter => iter.teamID)];
+            },
+
+            allyTeamIdsAsDatasetIds: function(): number[] {
+                return [...this.match.allyTeams.map(iter => -1 * (iter.allyTeamID + 1))];
+            },
+
+            datasetIds: function(): number[] {
+                return [...this.teamIds, ...this.allyTeamIdsAsDatasetIds];
             }
         },
 

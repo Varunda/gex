@@ -22,21 +22,26 @@ namespace gex.Services.BarApi {
         private readonly BarMatchRepository _MatchRepository;
         private readonly PrDownloaderService _PrDownloader;
         private readonly BarEngineDownloader _EngineDownloader;
+        private readonly EnginePathUtil _EnginePathUtil;
 
         private static int _PortOffset = 0;
 
-        public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
-            IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
-            PrDownloaderService prDownloader, BarEngineDownloader engineDownloader) {
+		private static Regex FramePattern = new(@"^\[t=.*?\]\[f=\d*?\] \[Gex\] on frame (\d+?)$");
 
-            _Logger = logger;
-            _Options = options;
-            _MatchRepository = matchRepository;
-            _PrDownloader = prDownloader;
-            _EngineDownloader = engineDownloader;
-        }
+		public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
+			IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
+			PrDownloaderService prDownloader, BarEngineDownloader engineDownloader,
+            EnginePathUtil enginePathUtil) {
 
-        public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
+			_Logger = logger;
+			_Options = options;
+			_MatchRepository = matchRepository;
+			_PrDownloader = prDownloader;
+			_EngineDownloader = engineDownloader;
+			_EnginePathUtil = enginePathUtil;
+		}
+
+		public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
 
             _Logger.LogDebug($"starting BAR headless instance [gameID={gameID}] [cwd={Environment.CurrentDirectory}]");
 
@@ -45,7 +50,10 @@ namespace gex.Services.BarApi {
                 return $"cannot find game with ID '{gameID}'";
             }
 
-            string gameLogLocation = Path.Join(_Options.Value.GameLogLocation, gameID);
+            string gamePrefixLocation = Path.Join(_Options.Value.GameLogLocation, gameID.Substring(0, 2));
+            Directory.CreateDirectory(gamePrefixLocation);
+
+            string gameLogLocation = Path.Join(gamePrefixLocation, gameID);
             string gameActionLogPath = gameLogLocation + Path.DirectorySeparatorChar + "actions.json";
             if (File.Exists(gameActionLogPath) && force == false) {
                 _Logger.LogInformation($"game has already been ran locally (actions.json exists) [gameID={gameID}] [action log={gameActionLogPath}]");
@@ -69,7 +77,7 @@ namespace gex.Services.BarApi {
                 await _EngineDownloader.DownloadEngine(match.Engine, cancel);
             }
 
-            string enginePath = GetEnginePath(match.Engine);
+            string enginePath = _EnginePathUtil.Get(match.Engine);
 
             // ensure the widget (what the fuck is a wupget) is in the right place
             string widgetsDirectory = Path.Join(enginePath, "LuaUI", "Widgets");
@@ -96,11 +104,23 @@ namespace gex.Services.BarApi {
             }
             File.Copy("./BYAR.lua", luaUiConfig);
 
-            // ensure the game version is downloaded
-            if (_PrDownloader.HasGameVersion(match.Engine, match.GameVersion) == false) {
-                _Logger.LogDebug($"missing game version, downloading [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
-                await _PrDownloader.GetGameVersion(match.Engine, match.GameVersion, cancel);
-            }
+            int attempts = 3;
+
+            do {
+                // ensure the game version is downloaded
+                if (_PrDownloader.HasGameVersion(match.Engine, match.GameVersion) == false) {
+                    _Logger.LogDebug($"missing game version, downloading [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
+                    if ((await _PrDownloader.GetGameVersion(match.Engine, match.GameVersion, cancel)) == true) {
+                        _Logger.LogDebug($"successfully downloaded game version [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
+                        break;
+                    }
+                } else {
+                    _Logger.LogDebug($"game version present [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
+                    break;
+                }
+                _Logger.LogWarning($"failed to download game version, trying again [attempts={attempts}] [gameID={gameID}] [version={match.GameVersion}]");
+                --attempts;
+            } while (attempts > 0);
 
             // ensure map is downloaded
             if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
@@ -128,13 +148,14 @@ namespace gex.Services.BarApi {
             bar.StartInfo.RedirectStandardOutput = true;
             bar.StartInfo.RedirectStandardError = true;
 
-            cancel.Register(() => {
+            // this callback is Dispose-able, so even tho we don't use this, we still want to capture it for Disposale
+			using CancellationTokenRegistration cancelCallback = cancel.Register(() => {
                 _Logger.LogInformation($"killing BAR instance due to cancellation [gameID={gameID}]");
                 bar.Kill();
             });
 
-
             Stopwatch timer = Stopwatch.StartNew();
+            long playbackStartedMs = 0;
 
             StringBuilder output = new StringBuilder();
             StringBuilder error = new StringBuilder();
@@ -152,6 +173,38 @@ namespace gex.Services.BarApi {
                     outputWaitHandle.Set();
                 } else {
                     output.AppendLine(e.Data);
+
+					if (e.Data.Contains("Failed to load: gex.lua")) {
+						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
+						bar.Kill();
+					}
+
+                    Match m = FramePattern.Match(e.Data);
+					if (m.Success == false) {
+						return;
+					}
+
+					if (m.Groups.Count < 2) {
+						_Logger.LogWarning($"expected more groups [gameID={gameID}] [groups.Count={m.Groups.Count}]");
+						return;
+					}
+
+					string frameStr = m.Groups[1].Value;
+					if (long.TryParse(frameStr, out long frame) == false) {
+						_Logger.LogWarning($"failed to parse frame string into a long [gameID={gameID}] [frame={frameStr}]");
+						return;
+					}
+
+					if (frame == 0) {
+						_Logger.LogDebug($"game startup complete [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [engine={match.Engine}] [version={match.GameVersion}]");
+						playbackStartedMs = timer.ElapsedMilliseconds;
+					} else {
+						decimal fps = (decimal)frame / (timer.ElapsedMilliseconds - playbackStartedMs) * 1000m;
+						decimal speedup = (frame / 30m) / (timer.ElapsedMilliseconds - playbackStartedMs) * 1000m;
+						decimal eta = (match.DurationFrameCount - frame) / Math.Max(0.01m, fps);
+						_Logger.LogDebug($"game frame progressing [gameID={gameID}] [frame={frame}/{match.DurationFrameCount}] [eta={eta:F1}s] "
+							+ $"[timer={timer.ElapsedMilliseconds}ms] [speedup={speedup:F3}] [fps={fps:F3}]");
+					}
                 }
             };
             bar.ErrorDataReceived += (sender, e) => {
@@ -159,6 +212,11 @@ namespace gex.Services.BarApi {
                     errorWaitHandle.Set();
                 } else {
                     error.AppendLine(e.Data);
+
+					if (e.Data.Contains("Failed to load: gex.lua")) {
+						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
+						bar.Kill();
+					}
                 }
             };
 
@@ -175,7 +233,8 @@ namespace gex.Services.BarApi {
             }
 
             // game successfully ran, good job gex!
-            _Logger.LogInformation($"BAR match ran locally [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms]");
+            _Logger.LogInformation($"BAR match ran locally [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] "
+                + $"[startup={playbackStartedMs}ms] [replay={timer.ElapsedMilliseconds - playbackStartedMs}ms]");
 
             try {
                 File.Delete(scriptsFile);
@@ -207,20 +266,6 @@ namespace gex.Services.BarApi {
             }
 
             return new GameOutput() { GameID = gameID };
-        }
-
-        private string GetEnginePath(string version) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
-
-            if (OperatingSystem.IsWindows() == true) {
-                path += "-win";
-            } else if (OperatingSystem.IsLinux() == true) {
-                path += "-linux";
-            } else {
-                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
-            }
-
-            return path;
         }
 
     }

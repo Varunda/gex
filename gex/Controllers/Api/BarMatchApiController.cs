@@ -5,6 +5,7 @@ using gex.Services.Db.Match;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -23,13 +24,13 @@ namespace gex.Controllers.Api {
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
             BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-            BarMatchProcessingDb processingDb) {
+            BarMatchProcessingRepository processingRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -38,7 +39,7 @@ namespace gex.Controllers.Api {
             _ChatMessageDb = chatMessageDb;
             _SpectatorDb = spectatorDb;
             _PlayerRepository = playerRepository;
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
         }
 
         /// <summary>
@@ -82,7 +83,7 @@ namespace gex.Controllers.Api {
 
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByName(match.MapName, cancel);
-            ret.Processing = await _ProcessingDb.GetByGameID(gameID, cancel);
+            ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
 
             return ApiOk(ret);
         }
@@ -115,11 +116,94 @@ namespace gex.Controllers.Api {
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
 
-                ret.Add(new ApiMatch(m));
+				ApiMatch api = new(m);
+				api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+
+                ret.Add(api);
             }
 
             return ApiOk(ret);
         }
+
+		/// <summary>
+		///		perform a search across all matches
+		/// </summary>
+		/// <param name="engine"></param>
+		/// <param name="gameVersion"></param>
+		/// <param name="map"></param>
+		/// <param name="startTimeAfter"></param>
+		/// <param name="startTimeBefore"></param>
+		/// <param name="durationMinimum"></param>
+		/// <param name="durationMaximum"></param>
+		/// <param name="ranked"></param>
+		/// <param name="gamemode"></param>
+		/// <param name="processingDownloaded"></param>
+		/// <param name="processingParsed"></param>
+		/// <param name="processingReplayed"></param>
+		/// <param name="processingAction"></param>
+		/// <param name="offset"></param>
+		/// <param name="limit"></param>
+		/// <param name="cancel"></param>
+		/// <returns></returns>
+		[HttpGet("search")]
+		public async Task<ApiResponse<List<ApiMatch>>> Search(
+			[FromQuery] string? engine = null,
+			[FromQuery] string? gameVersion = null,
+			[FromQuery] string? map = null,
+			[FromQuery] DateTime? startTimeAfter = null,
+			[FromQuery] DateTime? startTimeBefore = null,
+			[FromQuery] long? durationMinimum = null,
+			[FromQuery] long? durationMaximum = null,
+			[FromQuery] bool? ranked = null,
+			[FromQuery] byte? gamemode = null,
+			[FromQuery] bool? processingDownloaded = null,
+			[FromQuery] bool? processingParsed = null,
+			[FromQuery] bool? processingReplayed = null,
+			[FromQuery] bool? processingAction = null,
+
+			[FromQuery] int offset = 0,
+			[FromQuery] int limit = 24,
+
+			CancellationToken cancel = default
+		) {
+
+            if (offset < 0) {
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(offset)} cannot be less than 0 (is {offset})");
+            }
+            if (limit <= 0 || limit > 100) {
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(limit)} must be between 0 and 100 (is {limit})");
+            }
+
+			BarMatchSearchParameters parms = new();
+			parms.EngineVersion = engine;
+			parms.GameVersion = gameVersion;
+			parms.Map = map;
+			parms.StartTimeAfter = startTimeAfter;
+			parms.StartTimeBefore = startTimeBefore;
+			parms.DurationMinimum = durationMinimum;
+			parms.DurationMaximum = durationMaximum;
+			parms.Ranked = ranked;
+			parms.Gamemode = gamemode;
+			parms.ProcessingDownloaded = processingDownloaded;
+			parms.ProcessingParsed = processingParsed;
+			parms.ProcessingReplayed = processingReplayed;
+			parms.ProcessingAction = processingAction;
+
+            List<ApiMatch> ret = [];
+            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, cancel);
+            foreach (BarMatch m in matches) {
+                m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
+                m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+
+				ApiMatch api = new(m);
+				api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+
+                ret.Add(api);
+            }
+
+            return ApiOk(ret);
+
+		}
 
         /// <summary>
         ///     get the <see cref="BarMatch"/>s that a user has played in (not spectated!)
@@ -142,8 +226,32 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
-
         }
+
+		/// <summary>
+		///		get a list of all <see cref="ApiMatch"/>s that are pending processing in some way
+		/// </summary>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns></returns>
+		[HttpGet("pending")]
+		public async Task<ApiResponse<List<ApiMatch>>> GetPending(CancellationToken cancel = default) {
+            List<BarMatchProcessing> processing = await _ProcessingRepository.GetPending(cancel);
+
+			List<ApiMatch> ret = [];
+			foreach (BarMatchProcessing proc in processing) {
+				BarMatch? match = await _MatchRepository.GetByID(proc.GameID, cancel);
+				if (match == null) {
+					continue;
+				}
+
+				ApiMatch api = new(match);
+				api.Processing = proc;
+
+				ret.Add(api);
+			}
+
+			return ApiOk(ret);
+		}
 
     }
 }

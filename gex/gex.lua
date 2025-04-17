@@ -1,4 +1,4 @@
-local headless = (Spring.GetConfigInt("Headless", 0) ~= 0)
+local headless = (Spring.GetConfigInt("Headless", 0) ~= 0) 
 Spring.Echo("[Gex] started gex!", headless)
 
 local UNIT_DEF_NAMES = {}
@@ -203,13 +203,10 @@ function widget:GameFrame(n)
     if (frame % 450 == 0) then
         SendExtraStats()
     end
-end
 
-function widget:GotChatMsg(msg, playerID)
-    writeJson("chat", {
-        { "playerID", playerID },
-        { "msg", msg }
-    })
+    if (frame % 600 == 0) then
+        Spring.Echo("[Gex] on frame " .. frame)
+    end
 end
 
 function widget:TeamDied(teamID)
@@ -219,6 +216,8 @@ function widget:TeamDied(teamID)
 end
 
 function widget:GameOver(winningAllyTeams)
+	Spring.Echo("[Gex] on frame " .. frame)
+
     local time = Spring.DiffTimers(Spring.GetTimer(), timer)
 
     local data = {
@@ -242,6 +241,7 @@ function widget:GameOver(winningAllyTeams)
 				{ "energyMake", v.energyMake },
 				{ "energyUse", v.energyUse }
 			})
+            UNIT_RESOURCE_PRODUCTION[unitID] = nil
         end
     end
 
@@ -254,6 +254,9 @@ function widget:GameOver(winningAllyTeams)
 				{ "dealt", v.dealt },
 				{ "taken", v.taken }
 			})
+            -- units can sometimes die after (or on the same frame?) the game ends,
+            --      which would end this again (on the same frame), which is duplicate info
+            UNIT_DAMAGE[unitID] = nil
         end
     end
 
@@ -281,7 +284,13 @@ function widget:GameOver(winningAllyTeams)
     end
 
     -- also send on last frame to match partity with history stats (which includes last frame)
-	SendExtraStats()
+    -- EXCEPT, every 450 frames, the extra stats are already sent as part of the frame, so DO not send,
+    --      as they have already been sent for this frame, and it would be duplicate data!
+    if (frame % 450 ~= 0) then
+		SendExtraStats()
+    else
+        Spring.Echo("[Gex] not sending extra stats on GameOver, frame is a multiple of 450")
+    end
 
     Spring.Echo("[Gex] game over, force quitting")
     Spring.SendCommands("quitforce")
@@ -541,7 +550,7 @@ function widget:Initialize()
 
     file = io.open("actions.json", "w")
     io.output(file)
-    io.write("{\"action\":\"init\",\"frame\":0}\n")
+    io.write("{\"action\":\"init\",\"frame\":0,\"version\":1}\n")
 
 	for k,v in pairs(UnitDefs) do
         -- all the number and string props (not tables or bools i guess?)

@@ -39,6 +39,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         protected override async Task<bool> _ProcessQueueEntry(UserMapStatUpdateQueueEntry entry, CancellationToken cancel) {
 
             Stopwatch timer = Stopwatch.StartNew();
+            _Logger.LogTrace($"updating user map stats [userID={entry.UserID}] [map={entry.Map}] [gamemode={entry.Gamemode}]");
 
             List<BarMatch> matches = await _MatchRepository.GetByUserID(entry.UserID, cancel);
             if (matches.Count == 0) {
@@ -93,7 +94,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             stats.LastUpdated = DateTime.UtcNow;
             await _MapStatsDb.Upsert(stats, cancel);
 
-            _Logger.LogInformation($"updating user map stats [userID={entry.UserID}] [map={entry.Map}] [timer={timer.ElapsedMilliseconds}ms]");
+            _Logger.LogTrace($"updated user map stats [userID={entry.UserID}] [map={entry.Map}] [gamemode={entry.Gamemode}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return true;
         }

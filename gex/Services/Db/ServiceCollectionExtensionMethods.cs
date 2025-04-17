@@ -38,14 +38,15 @@ namespace gex.Services.Db {
             services.AddSingleton<GameEventUnitResourcesDb>();
             services.AddSingleton<GameEventUnitDamageDb>();
 
-            // other
-            services.AddSingleton<BarMapDb>();
-
             // user stats
             services.AddSingleton<BarUserDb>();
             services.AddSingleton<BarUserSkillDb>();
             services.AddSingleton<BarUserMapStatsDb>();
             services.AddSingleton<BarUserFactionStatsDb>();
+
+            // other
+            services.AddSingleton<BarMapDb>();
+            services.AddSingleton<GameVersionUsageDb>();
         }
 
     }

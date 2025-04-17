@@ -6,6 +6,7 @@ using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db.Match;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,12 +23,12 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarHeadlessInstance _HeadlessRunner;
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
 
         public HeadlessRunQueueProcessor(ILoggerFactory factory, BaseQueue<HeadlessRunQueueEntry> queue,
             ServiceHealthMonitor serviceHealthMonitor, BarHeadlessInstance headlessRunner,
-            IOptions<FileStorageOptions> options, BarMatchProcessingDb processingDb,
+            IOptions<FileStorageOptions> options, BarMatchProcessingRepository processingRepository,
             BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue)
 
         : base("headless_run_queue_processor", factory, queue, serviceHealthMonitor) {
@@ -36,7 +37,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             _HeadlessRunner = headlessRunner;
             _Options = options;
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
             _ActionLogParseQueue = actionLogParseQueue;
         }
 
@@ -52,12 +53,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return true;
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
+            BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplaySimulated = DateTime.UtcNow;
             processing.ReplaySimulatedMs = (int)timer.ElapsedMilliseconds;
-            await _ProcessingDb.Upsert(processing);
+            await _ProcessingRepository.Upsert(processing);
 
             if (entry.ForceForward == true || processing.ActionsParsed == null) {
                 _Logger.LogDebug($"putting entry into action log parser [gameID={entry.GameID}]");

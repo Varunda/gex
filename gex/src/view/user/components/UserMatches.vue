@@ -52,6 +52,10 @@
                     <b>Gamemode</b>
                 </a-header>
 
+                <a-filter field="gamemode" type="number" method="dropdown" :source="source.gamemode"
+                    :conditions="[ 'equals' ]">
+                </a-filter>
+
                 <a-body v-slot="entry">
                     {{ entry.gamemode | gamemode }}
                 </a-body>
@@ -87,6 +91,8 @@
     import Vue, { PropType } from "vue";
     import { Loadable, Loading } from "Loading";
 
+    import { GamemodeUtil } from "util/Gamemode";
+
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
@@ -115,7 +121,21 @@
         computed: {
             matches: function(): Loading<BarMatch[]> {
                 return Loadable.loaded(this.data);
+            },
+
+            source: function() {
+                return {
+                    gamemode: [
+                        { key: "All", value: null },
+                        { key: "Duel", value: GamemodeUtil.DUEL },
+                        { key: "Small team", value: GamemodeUtil.SMALL_TEAM },
+                        { key: "Large team", value: GamemodeUtil.LARGE_TEAM },
+                        { key: "FFA", value: GamemodeUtil.FFA },
+                        { key: "Team FFA", value: GamemodeUtil.TEAM_FFA }
+                    ]
+                }
             }
+
 
         },
 

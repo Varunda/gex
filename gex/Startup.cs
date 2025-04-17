@@ -232,6 +232,7 @@ namespace gex {
 
             services.AddTransient<HttpUtilService>();
             services.AddSingleton<InstanceInfo>();
+			services.AddTransient<EnginePathUtil>();
 
             services.AddTransient<IActionResultExecutor<ApiResponse>, ApiResponseExecutor>();
             services.AddSingleton<IDbHelper, DbHelper>();

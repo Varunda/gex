@@ -11,5 +11,8 @@ export class BarUserApi extends ApiWrapper<BarUser> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true`, BarUser.parse);
     }
 
+    public static search(text: string, includeSkill: boolean = true): Promise<Loading<BarUser[]>> {
+        return BarUserApi.get().readList(`/api/user/search/${encodeURIComponent(text)}?includeSkill=${includeSkill}`, BarUser.parse);
+    }
 
 }

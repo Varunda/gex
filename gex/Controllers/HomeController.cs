@@ -68,6 +68,10 @@ namespace gex.Controllers {
             return View();
         }
 
+		public IActionResult Users() {
+			return View();
+		}
+
         /// <summary>
         ///     action to download a replay file
         /// </summary>

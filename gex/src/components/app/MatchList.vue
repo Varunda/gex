@@ -44,9 +44,27 @@
                         </div>
                     </div>
 
-                    <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500'}">
-                        {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
+                    <div class="tile-top-right">
+                        <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500'}">
+                            {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
+                        </div>
+
+                        <div class="tile-processing">
+                            <div v-if="match.processing != null">
+                                <span :class="[ match.processing.replayDownloaded != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
+                                <span :class="[ match.processing.replayParsed != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
+                                <span :class="[ match.processing.replaySimulated != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
+                                <span :class="[ match.processing.actionsParsed != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
+                            </div>
+                            <div v-else title="Gex does not what the state of processing is for this match">
+                                <span class="text-muted">&bull;</span>
+                                <span class="text-muted">&bull;</span>
+                                <span class="text-muted">&bull;</span>
+                                <span class="text-muted">&bull;</span>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </a>
         </div>
@@ -106,15 +124,22 @@
     }
 
     .tile-ranked {
+        padding: 0.2rem 0.5rem;
+        margin-top: 0;
+        border-start-end-radius: 0.75rem;
+    }
+
+    .tile-top-right {
         position: absolute;
         font-weight: bold;
         font-size: 1rem;
         top: 0;
         right: 0;
-        padding: 0.2rem 0.5rem;
-        margin-top: 0;
+    }
+
+    .tile-processing {
+        background-color: #000000AA;
         border-end-start-radius: 0.75rem;
-        border-start-end-radius: 0.75rem;
     }
 
     .tile-teams {

@@ -14,5 +14,7 @@ namespace gex.Code.Constants {
 
         public const byte FFA = 4;
 
+		public const byte TEAM_FFA = 5;
+
     }
 }

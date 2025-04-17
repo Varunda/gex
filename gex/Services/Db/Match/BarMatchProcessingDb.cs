@@ -86,10 +86,10 @@ namespace gex.Services.Db.Match {
         ///         <item><see cref="BarMatchProcessing.ActionsParsed"/> is null, and <see cref="BarMatchProcessing.ReplaySimulated"/> is not null</item>
         ///     </list>
         /// </remarks>
-        public async Task<List<BarMatchProcessing>> GetPending() {
+        public async Task<List<BarMatchProcessing>> GetPending(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-            return (await conn.QueryAsync<BarMatchProcessing>(
+            return (await conn.QueryAsync<BarMatchProcessing>(new CommandDefinition(
                 @"
                     SELECT
                         mp.* 
@@ -106,8 +106,9 @@ namespace gex.Services.Db.Match {
                         )
                         OR (mp.actions_parsed IS NULL AND mp.headless_ran IS NOT NULL)
                     ;
-                "
-            )).ToList();
+                ",
+                cancellationToken: cancel
+            ))).ToList();
         }
 
     }

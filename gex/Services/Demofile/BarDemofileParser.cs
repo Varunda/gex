@@ -153,13 +153,17 @@ namespace gex.Services.Demofile {
                     else if (iter.Name.StartsWith("player")) {
 
                         if (iter.Value.GetRequiredString("spectator") == "1") {
-                            BarMatchSpectator spec = new();
-                            spec.GameID = match.ID;
-                            spec.PlayerID = int.Parse(iter.Name.Split("player")[1]);
-                            spec.UserID = iter.Value.GetRequiredInt64("accountid");
-                            spec.Name = iter.Value.GetRequiredString("name");
+                            if (iter.Value.GetChild("accountid") == null) {
+                                _Logger.LogWarning($"missing accountid from {iter.Value}");
+                            } else {
+                                BarMatchSpectator spec = new();
+                                spec.GameID = match.ID;
+                                spec.PlayerID = int.Parse(iter.Name.Split("player")[1]);
+                                spec.UserID = iter.Value.GetRequiredInt64("accountid");
+                                spec.Name = iter.Value.GetRequiredString("name");
 
-                            match.Spectators.Add(spec);
+                                match.Spectators.Add(spec);
+                            }
                         } else {
                             int teamID = iter.Value.GetRequiredInt32("team");
                             BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
@@ -204,6 +208,8 @@ namespace gex.Services.Demofile {
             byte[] winningAllyTeams = [];
 
             int packetCount = 0;
+			int frameCount = 0;
+			int maxFrame = 0;
             while (reader.Index < header.StatOffset) {
                 DemofilePacket packet = new();
                 packet.GameTime = reader.ReadFloat32LE();
@@ -214,112 +220,120 @@ namespace gex.Services.Demofile {
                 packet.Data = packetData.ToArray();
                 ++packetCount;
 
-                if (packet.PacketType == BarPacketType.CHAT) {
-                    ByteArrayReader packetReader = new(packet.Data);
+				if (packet.PacketType == BarPacketType.CHAT) {
+					ByteArrayReader packetReader = new(packet.Data);
 
-                    BarMatchChatMessage msg = new();
-                    msg.Size = packetReader.ReadByte();
-                    msg.FromId = packetReader.ReadByte();
-                    msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
-                    msg.Message = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
-                    msg.GameID = match.ID;
-                    msg.GameTimestamp = packet.GameTime;
+					BarMatchChatMessage msg = new();
+					msg.Size = packetReader.ReadByte();
+					msg.FromId = packetReader.ReadByte();
+					msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
+					msg.Message = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+					msg.GameID = match.ID;
+					msg.GameTimestamp = packet.GameTime;
 
-                    match.ChatMessages.Add(msg);
-                } else if (packet.PacketType == BarPacketType.START_POS) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte playerID = packetReader.ReadByte();
-                    byte teamID = packetReader.ReadByte();
-                    byte readyState = packetReader.ReadByte();
-                    float x = packetReader.ReadFloat32LE();
-                    float y = packetReader.ReadFloat32LE();
-                    float z = packetReader.ReadFloat32LE();
+					match.ChatMessages.Add(msg);
+				} else if (packet.PacketType == BarPacketType.START_POS) {
+					ByteArrayReader packetReader = new(packet.Data);
+					byte playerID = packetReader.ReadByte();
+					byte teamID = packetReader.ReadByte();
+					byte readyState = packetReader.ReadByte();
+					float x = packetReader.ReadFloat32LE();
+					float y = packetReader.ReadFloat32LE();
+					float z = packetReader.ReadFloat32LE();
 
-                    BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-                    if (player == null) {
-                        _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
-                    } else {
-                        player.StartingPosition = new System.Numerics.Vector3() {
-                            X = x,
-                            Y = y,
-                            Z = z
-                        };
-                    }
+					BarMatchPlayer? player = players.GetValueOrDefault(teamID);
+					if (player == null) {
+						_Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
+					} else {
+						player.StartingPosition = new System.Numerics.Vector3() {
+							X = x,
+							Y = y,
+							Z = z
+						};
+					}
 
-                } else if (packet.PacketType == BarPacketType.LUA_MSG) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    short size = packetReader.ReadInt16LE();
-                    byte playerNum = packetReader.ReadByte();
-                    short script = packetReader.ReadInt16LE();
-                    byte mode = packetReader.ReadByte();
+				} else if (packet.PacketType == BarPacketType.LUA_MSG) {
+					ByteArrayReader packetReader = new(packet.Data);
+					short size = packetReader.ReadInt16LE();
+					byte playerNum = packetReader.ReadByte();
+					short script = packetReader.ReadInt16LE();
+					byte mode = packetReader.ReadByte();
 
-                    byte[] bytes = packetReader.ReadAll();
-                    string msg = Encoding.ASCII.GetString(bytes);
+					byte[] bytes = packetReader.ReadAll();
+					string msg = Encoding.ASCII.GetString(bytes);
 
-                    if (msg.StartsWith("AutoColors")) {
-                        JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg.Substring(10));
+					if (msg.StartsWith("AutoColors")) {
+						JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg.Substring(10));
 
-                        foreach (JsonElement iter in colors.EnumerateArray()) {
-                            int teamID = iter.GetProperty("teamID").GetInt32();
+						foreach (JsonElement iter in colors.EnumerateArray()) {
+							int teamID = iter.GetProperty("teamID").GetInt32();
 
-                            // TODO: why can these values go can over 255 and below 0 
-                            byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
-                            byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
-                            byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
+							// TODO: why can these values go can over 255 and below 0 
+							byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
+							byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
+							byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
 
-                            BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-                            if (player != null) {
-                                player.Color = (r << 16) | (g << 8) | b;
-                            }
-                        }
-                    } else if (msg.StartsWith("changeStartUnit")) {
-                        int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
-                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
+							BarMatchPlayer? player = players.GetValueOrDefault(teamID);
+							if (player != null) {
+								player.Color = (r << 16) | (g << 8) | b;
+							}
+						}
+					} else if (msg.StartsWith("changeStartUnit")) {
+						int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
+						_Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
 
-                        string? defName = unitDefDict.GetValueOrDefault(unitDefID);
-                        if (defName == null) {
-                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
-                        } else {
-                            BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
-                            if (player != null) {
-                                if (defName == "armcom") {
-                                    player.Faction = "Armada";
-                                } else if (defName == "corcom") {
-                                    player.Faction = "Cortex";
-                                } else if (defName == "legcom") {
-                                    player.Faction = "Legion";
-                                } else if (defName == "dummycom") {
-                                    player.Faction = "Random";
-                                } else {
-                                    _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
-                                }
-                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
-                            }
-                        }
+						string? defName = unitDefDict.GetValueOrDefault(unitDefID);
+						if (defName == null) {
+							_Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
+						} else {
+							BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
+							if (player != null) {
+								if (defName == "armcom") {
+									player.Faction = "Armada";
+								} else if (defName == "corcom") {
+									player.Faction = "Cortex";
+								} else if (defName == "legcom") {
+									player.Faction = "Legion";
+								} else if (defName == "dummycom") {
+									player.Faction = "Random";
+								} else {
+									_Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+								}
+								_Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
+							}
+						}
 
-                    } else if (msg.StartsWith("unitdefs:")) {
-                        Span<byte> input = bytes.AsSpan("unitdefs:".Length);
-                        using MemoryStream stream = new(input.ToArray());
-                        using ZLibStream zlib = new(stream, CompressionMode.Decompress);
-                        using MemoryStream output = new();
-                        zlib.CopyTo(output);
-                        byte[] unitDefs = output.ToArray();
+					} else if (msg.StartsWith("unitdefs:")) {
+						Span<byte> input = bytes.AsSpan("unitdefs:".Length);
+						using MemoryStream stream = new(input.ToArray());
+						using ZLibStream zlib = new(stream, CompressionMode.Decompress);
+						using MemoryStream output = new();
+						zlib.CopyTo(output);
+						byte[] unitDefs = output.ToArray();
 
-                        JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
+						JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
 
-                        int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
-                        foreach (JsonElement iter in json.EnumerateArray()) {
-                            string defName = iter.GetString()!;
-                            if (unitDefDict.ContainsKey(index)) {
-                                if (unitDefDict[index] != defName) {
-                                    _Logger.LogWarning($"inconsistent def names! [id={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
-                                }
-                            } else {
-                                unitDefDict.Add(index, iter.GetString()!);
-                            }
-                            index += 1;
-                        }
-                    }
+						int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
+						foreach (JsonElement iter in json.EnumerateArray()) {
+							string defName = iter.GetString()!;
+							if (unitDefDict.ContainsKey(index)) {
+								if (unitDefDict[index] != defName) {
+									_Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+								}
+							} else {
+								unitDefDict.Add(index, iter.GetString()!);
+							}
+							index += 1;
+						}
+					}
+				} else if (packet.PacketType == BarPacketType.KEYFRAME) {
+					ByteArrayReader packetReader = new(packet.Data);
+					int frame = packetReader.ReadInt32LE();
+
+					maxFrame = Math.Max(frameCount, frame);
+				} else if (packet.PacketType == BarPacketType.NEW_FRAME) {
+					// it seems like this isn't accurate
+					++frameCount;
                 } else if (packet.PacketType == BarPacketType.GAME_OVER) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte size = packetReader.ReadByte();
@@ -334,6 +348,9 @@ namespace gex.Services.Demofile {
             if (header.StatOffset != reader.Index) {
                 return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
             }
+
+			_Logger.LogDebug($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
+			match.DurationFrameCount = maxFrame;
 
             // player stat parsing
             DemofileStatistics playerStats = new();
@@ -414,11 +431,15 @@ namespace gex.Services.Demofile {
                 match.Gamemode = BarGamemode.SMALL_TEAM;
             } else if (allyTeamCount == 2 && largestAllyTeam <= 8) {
                 match.Gamemode = BarGamemode.LARGE_TEAM;
-            } else if (allyTeamCount > 2) {
+            } else if (allyTeamCount > 2 && largestAllyTeam == 1) {
                 match.Gamemode = BarGamemode.FFA;
+            } else if (allyTeamCount > 2 && largestAllyTeam >= 2) {
+                match.Gamemode = BarGamemode.TEAM_FFA;
             } else {
                 _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
             }
+
+            _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [gamemode={match.Gamemode}] [packets={packetCount}]");
 
             return match;
         }

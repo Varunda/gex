@@ -44,6 +44,10 @@ namespace gex.Services.Repositories {
             return await _MatchDb.GetRecent(offset, limit, cancel);
         }
 
+		public Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
+			return _MatchDb.Search(parms, offset, limit, cancel);
+		}
+
         public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end, CancellationToken cancel) {
             return await _MatchDb.GetByTimePeriod(start, end, cancel);
         }

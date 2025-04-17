@@ -33,9 +33,11 @@
                 <div>
                     <div>Most used factory</div>
 
-                    <img :src="'/image-proxy/UnitPic?defName=' + 'armaap'" height="128" width="128">
+                    <template v-if="highestProductionFactory != undefined">
+                        <img :src="'/image-proxy/UnitPic?defName=' + highestProductionFactory.factoryDefinitionName" height="128" width="128">
 
-                    <div>95 units made</div>
+                        <div>{{highestProductionFactory.totalMade}} units made</div>
+                    </template>
                 </div>
 
                 <div>
@@ -331,6 +333,7 @@
 
     import "filters/LocaleFilter";
     import "filters/CompactFilter";
+import { FactoryData, PlayerFactories } from "../compute/FactoryData";
 
     type ResourcesByUnitDef = {
         defID: number,
@@ -358,15 +361,24 @@
 
         data: function() {
             return {
-                interestingActions: [] as InterestingEvent[]
+                interestingActions: [] as InterestingEvent[],
+
+                factories: [] as PlayerFactories[]
             }
         },
 
         mounted: function(): void {
+            this.makeFactoryData();
             this.makeInterstingActions();
         },
 
         methods: {
+
+            makeFactoryData: function(): void {
+                this.factories = [];
+
+                this.factories = PlayerFactories.compute(this.match, this.output);
+            },
 
             makeInterstingActions: function(): void {
                 this.interestingActions = [];
@@ -534,6 +546,17 @@
                     };
                 }
                 return arr[0];
+            },
+
+            highestProductionFactory: function(): FactoryData | undefined {
+                const fac: PlayerFactories | undefined = this.factories.find(iter => iter.teamID == this.SelectedTeam);
+                if (fac == undefined || fac.factories.length == 0) {
+                    return undefined;
+                }
+
+                return [...fac.factories].sort((a, b) => {
+                    return b.totalMade - a.totalMade;
+                })[0];
             },
 
             buildPowerUsedAverage: function(): number {

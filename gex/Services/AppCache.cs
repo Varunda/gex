@@ -90,10 +90,12 @@ namespace gex.Services {
             string key = objKey.ToString()
                 ?? throw new ArgumentNullException($"{objKey} does not turn into a non-null string when calling .ToString()");
 
-            if (_Metadata.ContainsKey(key) == true) {
-                ++_Metadata[key].Uses;
-                _Metadata[key].LastAccessed = DateTime.UtcNow;
-            }
+			lock (_Metadata) {
+				if (_Metadata.ContainsKey(key) == true) {
+					++_Metadata[key].Uses;
+					_Metadata[key].LastAccessed = DateTime.UtcNow;
+				}
+			}
 
             return _BackingCache.TryGetValue(key, out value);
         }

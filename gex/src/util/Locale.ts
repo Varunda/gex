@@ -9,8 +9,9 @@ export default class LocaleUtil {
      * @param digits    How many digits in the decimal part to keep. 
      *                  By default, it will use 0 for integers and 2 for non-integers, but it can be changed
      */
-    public static locale(n: number, digits?: number): string {
+    public static locale(n: number, digits?: number, padding?: number): string {
         return n.toLocaleString(undefined, {
+            minimumIntegerDigits: (padding == undefined) ? 1 : padding,
             minimumFractionDigits: (digits != undefined) ? digits : ((Number.isInteger(n)) ? 0 : 2),
             maximumFractionDigits: (digits != undefined) ? digits : ((Number.isInteger(n)) ? 0 : 2)
         });

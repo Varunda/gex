@@ -1,4 +1,6 @@
-﻿namespace gex.Models.Event {
+﻿using gex.Code;
+
+namespace gex.Models.Event {
 
     public class GameEventStart : GameEvent {
 

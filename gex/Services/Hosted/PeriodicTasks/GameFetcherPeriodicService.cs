@@ -21,21 +21,21 @@ namespace gex.Services.Hosted.PeriodicTasks {
 
         private readonly BarReplayApi _ReplayApi;
         private readonly BarMatchRepository _MatchRepository;
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
 
         public GameFetcherPeriodicService(ILoggerFactory loggerFactory, ServiceHealthMonitor healthMon,
             BarReplayApi replayApi, BarMatchRepository matchRepo,
             BarReplayDb replayDb, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
-            BarMatchProcessingDb processingDb)
+            BarMatchProcessingRepository processingRepository)
         : base("GameFetcherPeriodicService", TimeSpan.FromMinutes(5), loggerFactory, healthMon) {
 
             _ReplayApi = replayApi;
             _MatchRepository = matchRepo;
             _ReplayDb = replayDb;
             _DownloadQueue = downloadQueue;
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
         }
 
         protected override async Task<string?> PerformTask(CancellationToken cancel) {
@@ -109,7 +109,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                 _Logger.LogTrace($"match already stored in db [ID={replay.ID}]");
                 return ParseResult.ALREADY_EXISTS;
             }
-            BarMatchProcessing? existingProcessing = await _ProcessingDb.GetByGameID(replay.ID, cancel);
+            BarMatchProcessing? existingProcessing = await _ProcessingRepository.GetByGameID(replay.ID, cancel);
             if (existingProcessing != null) {
                 _Logger.LogTrace($"match already being processed (but not in DB yet!) [ID={replay.ID}]");
                 return ParseResult.ALREADY_EXISTS;
@@ -133,7 +133,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
             BarMatchProcessing processing = new();
             processing.GameID = result.Value.ID;
 
-            await _ProcessingDb.Upsert(processing);
+            await _ProcessingRepository.Upsert(processing);
 
             _DownloadQueue.Queue(new GameReplayDownloadQueueEntry() {
                 GameID = result.Value.ID

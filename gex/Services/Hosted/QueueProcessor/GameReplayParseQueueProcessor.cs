@@ -33,8 +33,9 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarUserDb _UserDb;
         private readonly BarUserSkillDb _UserSkillDb;
+        private readonly GameVersionUsageDb _GameVersionUsageDb;
 
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarDemofileParser _Parser;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
@@ -42,37 +43,38 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
-        public GameReplayParseQueueProcessor(ILoggerFactory factory,
-            BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingDb processingDb, IOptions<FileStorageOptions> options,
-            BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
-            BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
-            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-            BarReplayDb replayDb, BarUserDb userDb,
-            BarUserSkillDb userSkillDb, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
-            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) :
+		public GameReplayParseQueueProcessor(ILoggerFactory factory,
+			BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
+			BarMatchProcessingRepository processingRepository, IOptions<FileStorageOptions> options,
+			BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
+			BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
+			BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
+			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
+			BarReplayDb replayDb, BarUserDb userDb,
+			BarUserSkillDb userSkillDb, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
+			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb) :
 
-        base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
+		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
-            _ProcessingDb = processingDb;
-            _Options = options;
-            _Parser = parser;
-            _HeadlessRunQueue = headlessRunQueue;
-            _MatchRepository = matchRepository;
-            _MatchAllyTeamDb = matchAllyTeamDb;
-            _MatchSpectatorDb = matchSpectatorDb;
-            _MatchChatMessageDb = matchChatMessageDb;
-            _PlayerRepository = playerRepository;
-            _BarMapRepository = barMapRepository;
-            _ReplayDb = replayDb;
-            _UserDb = userDb;
-            _UserSkillDb = userSkillDb;
-            _MapStatUpdateQueue = mapStatUpdateQueue;
-            _FactionStatUpdateQueue = factionStatUpdateQueue;
-        }
+			_ProcessingRepository = processingRepository;
+			_Options = options;
+			_Parser = parser;
+			_HeadlessRunQueue = headlessRunQueue;
+			_MatchRepository = matchRepository;
+			_MatchAllyTeamDb = matchAllyTeamDb;
+			_MatchSpectatorDb = matchSpectatorDb;
+			_MatchChatMessageDb = matchChatMessageDb;
+			_PlayerRepository = playerRepository;
+			_BarMapRepository = barMapRepository;
+			_ReplayDb = replayDb;
+			_UserDb = userDb;
+			_UserSkillDb = userSkillDb;
+			_MapStatUpdateQueue = mapStatUpdateQueue;
+			_FactionStatUpdateQueue = factionStatUpdateQueue;
+			_GameVersionUsageDb = gameVersionUsageDb;
+		}
 
-        protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
+		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
 
             _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}]");
             Stopwatch timer = Stopwatch.StartNew();
@@ -193,15 +195,21 @@ namespace gex.Services.Hosted.QueueProcessor {
                     }
                 }
 
+                await _GameVersionUsageDb.Upsert(new GameVersionUsage() {
+                    Engine = parsed.Engine,
+                    Version = parsed.GameVersion,
+                    LastUsed = parsed.StartTime
+                }, cancel);
+
                 runHeadless |= parsed.Players.Count == 2;
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
+            BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplayParsed = DateTime.UtcNow;
             processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
-            await _ProcessingDb.Upsert(processing);
+            await _ProcessingRepository.Upsert(processing);
 
             if (runHeadless && (entry.ForceForward == true || processing.ReplaySimulated == null)) {
                 _Logger.LogDebug($"putting entry into headless run queue [gameID={entry.GameID}]");

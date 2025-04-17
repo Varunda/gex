@@ -8,6 +8,7 @@ using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -21,7 +22,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
     public class ActionLogParseQueueProcessor : BaseQueueProcessor<ActionLogParseQueueEntry> {
 
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly IOptions<FileStorageOptions> _Options;
 
@@ -45,7 +46,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingDb processingDb, BaseQueue<GameReplayParseQueueEntry> parseQueue,
+            BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayParseQueueEntry> parseQueue,
             IOptions<FileStorageOptions> options, ActionLogParser actionLogParser,
             GameEventUnitCreatedDb unitCreatedDb, GameEventUnitKilledDb unitKilledDb,
             GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb unitHashDb,
@@ -58,7 +59,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
             _ParseQueue = parseQueue;
             _Options = options;
             _ActionLogParser = actionLogParser;
@@ -85,7 +86,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             Stopwatch timer = Stopwatch.StartNew();
             _Logger.LogInformation($"processing action log [gameID={entry.GameID}] [force={entry.Force}]");
 
-            string actionLogPath = Path.Join(_Options.Value.GameLogLocation, entry.GameID, "actions.json");
+            string actionLogPath = Path.Join(_Options.Value.GameLogLocation, entry.GameID.Substring(0, 2), entry.GameID, "actions.json");
             if (File.Exists(actionLogPath) == false) {
                 _Logger.LogError($"failed to find action log [gameID={entry.GameID}] [path={actionLogPath}]");
                 return false;
@@ -156,12 +157,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogWarning($"missing unit definitions for game! [gameID={entry.GameID}]");
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
+            BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ActionsParsed = DateTime.UtcNow;
             processing.ActionsParsedMs = (int)timer.ElapsedMilliseconds;
-            await _ProcessingDb.Upsert(processing);
+            await _ProcessingRepository.Upsert(processing);
 
             _Logger.LogInformation($"parsed action log [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
 

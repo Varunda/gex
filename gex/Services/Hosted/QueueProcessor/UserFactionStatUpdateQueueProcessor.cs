@@ -39,7 +39,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         protected override async Task<bool> _ProcessQueueEntry(UserFactionStatUpdateQueueEntry entry, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             string facName = BarFaction.GetName(entry.Faction);
-            _Logger.LogInformation($"updating user faction stats [userID={entry.UserID}] [faction={entry.Faction}/{facName}]");
+            _Logger.LogTrace($"updating user faction stats [userID={entry.UserID}] [faction={entry.Faction}/{facName}] [gamemode={entry.Gamemode}]");
 
             List<BarMatch> matches = await _MatchRepository.GetByUserID(entry.UserID, cancel);
             if (matches.Count == 0) {
@@ -95,7 +95,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             stats.LastUpdated = DateTime.UtcNow;
             await _FactionStatsDb.Upsert(stats, cancel);
 
-            _Logger.LogInformation($"updated user faction stats [userID={entry.UserID}] [faction={entry.Faction}/{facName}] [timer={timer.ElapsedMilliseconds}ms]");
+            _Logger.LogTrace($"updated user faction stats [userID={entry.UserID}] [faction={entry.Faction}/{facName}] "
+                + $"[gamemode={entry.Gamemode}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return true;
         }

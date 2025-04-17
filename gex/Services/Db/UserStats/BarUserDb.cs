@@ -3,6 +3,8 @@ using gex.Code.ExtensionMethods;
 using gex.Models.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -61,6 +63,21 @@ namespace gex.Services.Db.UserStats {
                 new { UserID = userID },
                 cancellationToken: cancel
             ));
+        }
+
+        /// <summary>
+        ///     search for user by name
+        /// </summary>
+        /// <param name="name">name to search for</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarUser>> SearchByName(string name, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return (await conn.QueryAsync<BarUser>(new CommandDefinition(
+                "SELECT * FROM bar_user WHERE lower(username) LIKE lower(@Search)",
+                new { Search = $"%{name}%" },
+                cancellationToken: cancel
+            ))).ToList();
         }
 
     }

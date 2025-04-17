@@ -9,26 +9,17 @@ export const GexMenu = Vue.extend({
                     Gex
                 </a>
                 <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            pages
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/">Recent games</a></li>
-                            <li><a class="dropdown-item" href="/legal">Legal</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Recent games</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/users">User search</a>
                     </li>
                 </ul>
 
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        hi
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/settings">settings</a></li>
-                            <li><a class="dropdown-item" href="/posts">logout</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/legal">Legal</a>
                     </li>
                 </ul>
 

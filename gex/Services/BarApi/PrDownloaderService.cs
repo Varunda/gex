@@ -1,4 +1,5 @@
 ﻿using gex.Code;
+using gex.Code.ExtensionMethods;
 using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -41,11 +42,13 @@ namespace gex.Services.BarApi {
         /// <param name="engine">engine that will store the game version</param>
         /// <param name="version">game version to be downloaded</param>
         /// <param name="cancel">cancellation token</param>
-        /// <returns></returns>
-        public async Task GetGameVersion(string engine, string version, CancellationToken cancel) {
+        /// <returns>
+        ///     if the download was successful or not
+        /// </returns>
+        public async Task<bool> GetGameVersion(string engine, string version, CancellationToken cancel) {
             if (HasGameVersion(engine, version) == true) {
                 _Logger.LogDebug($"game version already downloaded [engine={engine}] [version={version}]");
-                return;
+                return true;
             }
 
             string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version);
@@ -56,14 +59,20 @@ namespace gex.Services.BarApi {
             }
 
             // pr-downloader.exe --filesystem-writepath "data" --download-game "Beyond All Reason test-27562-33e445c"
-            using Process proc = new Process();
-            proc.StartInfo = GetForEngine(engine, $"--filesystem-writepath \"{gameVersionOutput}\" --download-game \"{version}\"");
-            _Logger.LogDebug($"getting game version [version={version}] [engine={engine}] [args={proc.StartInfo.Arguments}]");
+            ProcessStartInfo startInfo = GetForEngine(engine, $"--filesystem-writepath \"{gameVersionOutput}\" --download-game \"{version}\"");
+            _Logger.LogDebug($"getting game version [version={version}] [engine={engine}] [args={startInfo.Arguments}]");
 
             Stopwatch timer = Stopwatch.StartNew();
-            proc.Start();
-            string stdout = await proc.StandardOutput.ReadToEndAsync(cancel);
-            await proc.WaitForExitAsync(cancel);
+            ProcessWrapper proc = ProcessWrapper.Create(startInfo, TimeSpan.FromMinutes(5));
+            int exitCode = proc.ExitCode;
+
+            if (exitCode != 0) {
+                _Logger.LogError($"failed to download game version [version={version}] [engine={engine}]:\nstdout: {proc.StdOut}\nstderr: {proc.StdErr}");
+                return false;
+            }
+
+            // 2025-04-06 TODO: apparently something like this can be used to validate the download
+            //      pr-downloader.exe --filesystem-writepath "F:\Gex\Engines\2025.01.6-win\games\Beyond All Reason test-27756-37edc11" --rapid-validate 
 
             // to prevent partial downloads, a done file is created after the game version is downloaded
             // to mark a completed game version download. this file is what's checked for 
@@ -71,8 +80,8 @@ namespace gex.Services.BarApi {
             using FileStream done = File.OpenWrite(gameVersionOutput + Path.DirectorySeparatorChar + "done.txt");
             await done.WriteAsync(new byte[] { 0x00 }, cancel);
 
-            _Logger.LogInformation($"game version fetched [version={version}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms]");
-
+            _Logger.LogInformation($"game version fetched [version={version}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms] [exit code={exitCode}]");
+            return true;
         }
 
         /// <summary>
@@ -85,7 +94,7 @@ namespace gex.Services.BarApi {
         /// </returns>
         public bool HasMap(string engine, string map) {
             string mapName = (map + ".sd7").Replace(" ", "_").ToLower();
-            // yes, double maps is correct, it's what pr-downloaded just down i guess, zany
+            // yes, double maps is correct, it's what pr-downloaded just wants i guess, zany
             string path = Path.Join(GetEnginePath(engine), "maps", "maps", mapName);
             return File.Exists(path);
         }
@@ -113,12 +122,12 @@ namespace gex.Services.BarApi {
 
             Stopwatch timer = Stopwatch.StartNew();
             ProcessWrapper proc = ProcessWrapper.Create(startInfo, TimeSpan.FromMinutes(2));
+            int exitCode = proc.ExitCode;
 
             if (HasMap(engine, mapName) == false) {
                 throw new Exception($"expected map to exist [map={mapName}] [engine={engine}]");
             }
 
-            _Logger.LogInformation($"map fetched [map={mapName}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms]");
             return Task.CompletedTask;
         }
 
@@ -134,9 +143,9 @@ namespace gex.Services.BarApi {
             ProcessStartInfo startInfo = new();
             startInfo.FileName = path;
             startInfo.WorkingDirectory = GetEnginePath(engine);
-            startInfo.EnvironmentVariables.Add("PRD_RAPID_USE_STREAMER", "false");
-            startInfo.EnvironmentVariables.Add("PRD_HTTP_SEARCH_URL", "https://files-cdn.beyondallreason.dev/find");
-            startInfo.EnvironmentVariables.Add("PRD_RAPID_REPO_MASTER", "https://repos-cdn.beyondallreason.dev/repos.gz");
+			startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_USE_STREAMER", "false");
+            startInfo.EnvironmentVariables.AddOrUpdate("PRD_HTTP_SEARCH_URL", "https://files-cdn.beyondallreason.dev/find");
+            startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_REPO_MASTER", "https://repos-cdn.beyondallreason.dev/repos.gz");
             startInfo.Arguments = arguments;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;

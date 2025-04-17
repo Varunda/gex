@@ -49,10 +49,19 @@ namespace gex.Services.BarApi {
 
             Dictionary<string, int> unknownCount = [];
 
+			int lineNumber = 0;
             foreach (string line in lines) {
                 cancel.ThrowIfCancellationRequested();
+				++lineNumber;
 
-                JsonElement json = JsonSerializer.Deserialize<JsonElement>(line);
+				JsonElement json;
+				try {
+					json = JsonSerializer.Deserialize<JsonElement>(line);
+				} catch (Exception ex) {
+					_Logger.LogError(ex, $"failed to deserialize line [gameID={gameID}] [num={lineNumber}] [line={line}]");
+					errored = true;
+					continue;
+				}
 
                 string action = json.GetRequiredString("action");
                 int frame = json.GetProperty("frame").GetInt32();
@@ -61,6 +70,7 @@ namespace gex.Services.BarApi {
                     GameEvent ev;
 
                     if (action == GameActionType.INIT) {
+                        _Logger.LogDebug($"action log init [gameID={gameID}] [version={json}]");
                         continue;
                     }
 
@@ -88,7 +98,12 @@ namespace gex.Services.BarApi {
 
                     else if (action == GameActionType.TEAM_STATS) {
                         GameEventTeamStats e = Serialize<GameEventTeamStats>(json)!;
-                        output.TeamStats.Add(e);
+                        if (false && output.TeamStats.FirstOrDefault(iter => iter.Frame == e.Frame && iter.TeamID == e.TeamID) != null) {
+                            _Logger.LogWarning($"duplicate {nameof(GameEventTeamStats)} found [gameID={gameID}] [frame={e.Frame}] [teamID={e.TeamID}]");
+                        } else {
+                            output.TeamStats.Add(e);
+                        }
+
                         ev = e;
                     } 
 
@@ -192,7 +207,7 @@ namespace gex.Services.BarApi {
                     ev.Frame = frame;
 
                 } catch (Exception ex) {
-                    _Logger.LogError(ex, $"failed to process line: {json}");
+                    _Logger.LogError(ex, $"failed to process line [gameID={gameID}] [lin num={lineNumber}]: {json}");
                     errored = true;
                 }
             }

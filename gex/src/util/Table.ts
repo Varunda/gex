@@ -13,7 +13,17 @@ export default class TableUtils {
         return CompactUtils.compact(v);
     }
 
-    public static chart(elementName: string, context: any, valueFormatter: ((_: number) => string) | null) {
+    public static defaultLabelFormatter(label: string): string {
+        return label;
+    }
+
+    public static chart(elementName: string, context: any,
+        valueFormatter: ((_: number) => string) | null,
+        labelFormatter: ((_: string) => string) | null = null
+    ) {
+
+        labelFormatter ??= TableUtils.defaultLabelFormatter;
+
         // tooltip Element
         let tooltipEl: HTMLElement | null = document.getElementById(elementName);
 
@@ -81,7 +91,7 @@ export default class TableUtils {
                     innerHtml += `<tr style="color: var(--bs-dark); font-weight: 400">`;
                 }
 
-                innerHtml += `<td><span style="color: ${value.dataset.borderColor}">&#9632;</span>${value.dataset.label}&nbsp;</td>`;
+                innerHtml += `<td><span style="color: ${value.dataset.borderColor}">&#9632;</span>${labelFormatter(value.dataset.label)}&nbsp;</td>`;
                 innerHtml += `<td>${valueFormatter ? valueFormatter(value.parsed.y) : value.parsed.y}</td>`;
                 innerHtml += `</tr>`;
             });

@@ -17,6 +17,7 @@ namespace gex.Services.Db.Readers {
             match.FileName = reader.GetString("file_name");
             match.StartTime = reader.GetDateTime("start_time");
             match.DurationMs = reader.GetInt64("duration_ms");
+			match.DurationFrameCount = reader.GetInt64("duration_frame_count");
             match.Map = reader.GetString("map");
             match.MapName = reader.GetString("map_name");
             match.Gamemode = reader.GetByte("gamemode");

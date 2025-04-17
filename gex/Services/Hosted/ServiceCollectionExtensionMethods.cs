@@ -24,6 +24,7 @@ namespace gex.Services.Hosted {
 
         public static void AddPeriodicServices(this IServiceCollection services) {
             services.AddHostedService<GameFetcherPeriodicService>();
+            services.AddHostedService<GameVersionCleanupPeriodicService>();
         }
 
     }

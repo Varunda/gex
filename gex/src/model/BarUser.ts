@@ -6,6 +6,7 @@ import { BarUserSkill } from "./BarUserSkill";
 export class BarUser {
     public userID: number = 0;
     public username: string = "";
+    public lastUpdated: Date = new Date();
 
     public skill: BarUserSkill[] = [];
     public mapStats: BarUserMapStats[] = [];
@@ -15,6 +16,7 @@ export class BarUser {
         return {
             userID: elem.userID,
             username: elem.username,
+            lastUpdated: new Date(elem.lastUpdated),
 
             skill: elem.skill.map((iter: any) => BarUserSkill.parse(iter)),
             mapStats: elem.mapStats.map((iter: any) => BarUserMapStats.parse(iter)),

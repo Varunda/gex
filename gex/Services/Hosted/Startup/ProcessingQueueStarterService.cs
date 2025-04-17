@@ -15,7 +15,7 @@ namespace gex.Services.Hosted.Startup {
 
         private readonly ILogger<ProcessingQueueStarterService> _Logger;
         private readonly BarMatchRepository _MatchRepository;
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BarMatchPlayerRepository _PlayerRepository;
 
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
@@ -24,13 +24,13 @@ namespace gex.Services.Hosted.Startup {
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
 
         public ProcessingQueueStarterService(ILogger<ProcessingQueueStarterService> logger,
-            BarMatchProcessingDb processingDb, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
+            BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, BarMatchRepository matchRepository,
             BarMatchPlayerRepository playerRepository) {
 
             _Logger = logger;
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
             _DownloadQueue = downloadQueue;
             _ParseQueue = parseQueue;
             _HeadlessRunQueue = headlessRunQueue;
@@ -49,7 +49,7 @@ namespace gex.Services.Hosted.Startup {
 
             _Logger.LogInformation($"finding matches being processed and inserting into queues");
 
-            List<BarMatchProcessing> processing = await _ProcessingDb.GetPending();
+            List<BarMatchProcessing> processing = await _ProcessingRepository.GetPending(cancel);
             _Logger.LogDebug($"loaded matches to be further processed [count={processing.Count}]");
 
             foreach (BarMatchProcessing proc in processing) {

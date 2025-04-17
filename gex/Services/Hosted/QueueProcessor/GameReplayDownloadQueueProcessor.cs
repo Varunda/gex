@@ -7,6 +7,7 @@ using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -19,7 +20,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
     public class GameReplayDownloadQueueProcessor : BaseQueueProcessor<GameReplayDownloadQueueEntry> {
 
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BarReplayFileApi _ReplayFileApi;
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
@@ -27,13 +28,13 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         public GameReplayDownloadQueueProcessor(ILoggerFactory factory,
             BaseQueue<GameReplayDownloadQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingDb processingDb, BarReplayFileApi replayFileApi,
+            BarMatchProcessingRepository processingRepository, BarReplayFileApi replayFileApi,
             IOptions<FileStorageOptions> options, BarReplayDb replayDb,
             BaseQueue<GameReplayParseQueueEntry> parseQueue)
 
         : base("game_replay_download_queue", factory, queue, serviceHealthMonitor) {
 
-            _ProcessingDb = processingDb;
+            _ProcessingRepository = processingRepository;
             _ReplayFileApi = replayFileApi;
             _Options = options;
             _ReplayDb = replayDb;
@@ -69,12 +70,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 }
             }
 
-            BarMatchProcessing processing = await _ProcessingDb.GetByGameID(entry.GameID, cancel)
+            BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.ReplayDownloaded = DateTime.UtcNow;
             processing.ReplayDownloadedMs = (int)timer.ElapsedMilliseconds;
-            await _ProcessingDb.Upsert(processing);
+            await _ProcessingRepository.Upsert(processing);
 
             if (entry.ForceForward == true || processing.ReplayParsed == null) {
                 _Logger.LogDebug($"putting entry into parse queue [gameID={entry.GameID}]");

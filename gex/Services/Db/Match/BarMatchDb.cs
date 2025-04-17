@@ -23,6 +23,13 @@ namespace gex.Services.Db.Match {
             _Reader = reader;
         }
 
+		/// <summary>
+		///		insert a new <see cref="BarMatch"/>
+		/// </summary>
+		/// <param name="match">match to insert. <see cref="BarMatch.ID"/> must be populated</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentException"></exception>
         public async Task Insert(BarMatch match, CancellationToken cancel) {
             if (string.IsNullOrEmpty(match.ID)) {
                 throw new ArgumentException($"ID of match is empty!");
@@ -31,10 +38,12 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
-                    id, start_time, map, duration_ms, engine, game_version, file_name, map_name, gamemode,
+                    id, start_time, map, duration_ms, duration_frame_count,
+					engine, game_version, file_name, map_name, gamemode,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
-                    @ID, @StartTime, @Map, @DurationMs, @Engine, @GameVersion, @FileName, @MapName, @Gamemode,
+                    @ID, @StartTime, @Map, @DurationMs, @DurationFrameCount,
+					@Engine, @GameVersion, @FileName, @MapName, @Gamemode,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -43,6 +52,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("StartTime", match.StartTime);
             cmd.AddParameter("Map", match.Map);
             cmd.AddParameter("DurationMs", match.DurationMs);
+            cmd.AddParameter("DurationFrameCount", match.DurationFrameCount);
             cmd.AddParameter("Engine", match.Engine);
             cmd.AddParameter("GameVersion", match.GameVersion);
             cmd.AddParameter("FileName", match.FileName);
@@ -100,13 +110,122 @@ namespace gex.Services.Db.Match {
                     OFFSET {offset}
             ");
 
-            await cmd.PrepareAsync();
+            await cmd.PrepareAsync(cancel);
 
-            List<BarMatch> matches = await _Reader.ReadList(cmd);
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
             await conn.CloseAsync();
 
             return matches;
         }
+
+		/// <summary>
+		///		perform a search in the DB based on the parameters passed in <paramref name="parms"/>
+		/// </summary>
+		/// <param name="parms">parameters used to search</param>
+		/// <param name="offset">offset into the search</param>
+		/// <param name="limit">limit the returned results</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns>
+		///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
+		/// </returns>
+		public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+			using NpgsqlCommand cmd = await _DbHelper.Command(conn, "");
+
+			List<string> conditions = [];
+
+			bool joinProcessing = false;
+
+			if (parms.EngineVersion != null) {
+				conditions.Add("m.engine = @Engine");
+				cmd.AddParameter("Engine", parms.EngineVersion);
+			}
+
+			if (parms.GameVersion != null) {
+				conditions.Add("m.game_version = @GameVersion");
+				cmd.AddParameter("GameVersion", parms.GameVersion);
+			}
+
+			if (parms.Map != null) {
+				conditions.Add("m.map = @Map");
+				cmd.AddParameter("Map", parms.Map);
+			}
+
+			if (parms.StartTimeAfter != null) {
+				conditions.Add("m.start_time > @StartTime");
+				cmd.AddParameter("StartTime", parms.StartTimeAfter.Value);
+			}
+
+			if (parms.StartTimeBefore != null) {
+				conditions.Add("m.start_time <= @EndTime");
+				cmd.AddParameter("EndTime", parms.StartTimeBefore.Value);
+			}
+
+			if (parms.DurationMinimum != null) {
+				conditions.Add("m.duration_ms > @DurationMin");
+				cmd.AddParameter("DurationMin", parms.DurationMinimum.Value);
+			}
+
+			if (parms.DurationMaximum != null) {
+				conditions.Add("m.duration_ms <= @DurationMax");
+				cmd.AddParameter("DurationMax", parms.DurationMaximum.Value);
+			}
+
+			if (parms.Ranked != null) {
+				conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
+				cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
+			}
+
+			if (parms.Gamemode != null) {
+				conditions.Add("m.gamemode = @Gamemode");
+				cmd.AddParameter("Gamemode", parms.Gamemode.Value);
+			}
+
+			if (parms.ProcessingDownloaded != null) {
+				joinProcessing = true;
+				conditions.Add("p.demofile_fetched is "
+					+ ((parms.ProcessingDownloaded.Value == true) ? "not null" : "null"));
+			}
+
+			if (parms.ProcessingParsed != null) {
+				joinProcessing = true;
+				conditions.Add("p.demofile_parsed is "
+					+ ((parms.ProcessingParsed.Value == true) ? "not null" : "null"));
+			}
+
+			if (parms.ProcessingReplayed != null) {
+				joinProcessing = true;
+				conditions.Add("p.headless_ran is "
+					+ ((parms.ProcessingReplayed.Value == true) ? "not null" : "null"));
+			}
+
+			if (parms.ProcessingAction != null) {
+				joinProcessing = true;
+				conditions.Add("p.actions_parsed is "
+					+ ((parms.ProcessingAction.Value == true) ? "not null" : "null"));
+			}
+
+            cmd.CommandText = $@"
+                SELECT *
+                    FROM bar_match m
+						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
+					WHERE 1=1
+						AND {string.Join("\n AND ", conditions)}
+                    ORDER BY start_time DESC
+                    LIMIT {limit}
+                    OFFSET {offset}
+            ";
+
+			_Logger.LogDebug($"performing DB search: " + cmd.Print());
+
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+		}
 
         /// <summary>
         ///     get a list of <see cref="BarMatch"/>s that took place between a period of time
