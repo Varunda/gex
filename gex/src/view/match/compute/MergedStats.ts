@@ -52,6 +52,10 @@ export default class MergedStats {
         return output.teamStats.map((iter) => {
             const key = `${iter.teamID}-${iter.frame}`;
             let extra: GameEventExtraStatsUpdate | undefined = map.get(key);
+            if (extra == undefined) {
+                console.log(`MergedStats> trying previous frame for stats [key=${key}] [frame=${iter.frame}] [team=${iter.teamID}]`);
+                extra = map.get(`${iter.teamID}-${iter.frame - 1}`);
+            }
 
             if (extra == undefined) {
                 extra = last.get(iter.teamID);

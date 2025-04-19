@@ -89,7 +89,7 @@ namespace gex.Controllers {
         ///     get unit icons, optionally coloring them to match <paramref name="color"/>
         /// </summary>
         /// <param name="defName">definition name of the unit</param>
-        /// <param name="color"></param>
+        /// <param name="color">optional color to tint the icons with</param>
         /// <returns></returns>
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName", "color"] )] // 24 hours
         public async Task<IActionResult> UnitIcon([FromQuery] string defName, [FromQuery] int? color) {
@@ -209,7 +209,7 @@ namespace gex.Controllers {
 
                 HttpResponseMessage response = await _Http.GetAsync(url);
                 if (response.StatusCode == HttpStatusCode.NotFound) {
-                    _Logger.LogInformation($"unic picture does not exist, caching 404 [defName={defName}]");
+                    _Logger.LogInformation($"unit picture does not exist, caching 404 [defName={defName}]");
                     _Cache.Set(cacheKey, true, new MemoryCacheEntryOptions() {
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8)
                     });

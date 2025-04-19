@@ -176,6 +176,10 @@ namespace gex {
             return host;
         }
 
+		/// <summary>
+		///		automatically perform Dapper mapping using an attribute
+		/// </summary>
+		/// <param name="logger"></param>
         private static void MapDapperTypes(ILogger<Program> logger) {
 
             Type[] types = Assembly.GetExecutingAssembly().GetTypes()

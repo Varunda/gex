@@ -36,28 +36,39 @@
                 </tbody>
             </table>
 
-            <table class="table table-sm" v-if="debug">
-                <thead>
-                    <tr>
-                        <th v-for="key in Object.keys(UnitDefs[0])" :key="key">
-                            {{ key }}
-                        </th>
-                    </tr>
-                </thead>
+            <div v-if="debug" style="overflow-x: scroll;" >
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th v-for="(key, index) in Object.keys(UnitDefs[0])" :key="key" :class="{ 'sticky-column': index == 0 }">
+                                {{ key }}
+                            </th>
+                        </tr>
+                    </thead>
 
-                <tbody>
-                    <tr v-for="unitDef in shownUnits" :key="unitDef.definitionID">
-                        <td v-for="key in Object.keys(unitDef)" :key="unitDef + '-' + key">
-                            {{ unitDef[key] }}
-                        </td>
-                    </tr>
-                </tbody>
+                    <tbody>
+                        <tr v-for="unitDef in shownUnits" :key="unitDef.definitionID">
+                            <td v-for="(key, index) in Object.keys(unitDef)" :key="unitDef + '-' + key" :class="{ 'sticky-column': index == 0 }">
+                                {{ unitDef[key] }}
+                            </td>
+                        </tr>
+                    </tbody>
 
-            </table>
+                </table>
+            </div>
         </collapsible>
     </div>
     
 </template>
+
+<style scoped>
+    .sticky-column {
+        position: sticky;
+        width: 33ch;
+        left: 0;
+    }
+
+</style>
 
 <script lang="ts">
     import Vue, { PropType } from "vue";

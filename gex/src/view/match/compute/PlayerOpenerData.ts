@@ -3,12 +3,19 @@ import { BarMatchPlayer } from "model/BarMatchPlayer";
 import { GameEventUnitDef } from "model/GameEventUnitDef";
 import { GameOutput } from "model/GameOutput";
 
+export class OpenerEntry {
+    public defName: string = "";
+    public name: string = "";
+    public amount: number = 0;
+    public isFactory: boolean = false;
+}
+
 export class PlayerOpener {
 
     public teamID: number = 0;
     public playerName: string = "";
     public color: string = "";
-    public buildings: GameEventUnitDef[] = [];
+    public buildings: OpenerEntry[] = [];
 
     public static compute(match: BarMatch, output: GameOutput): PlayerOpener[] {
 
@@ -41,7 +48,17 @@ export class PlayerOpener {
             }
 
             if (def.speed == 0) {
-                entry.buildings.push(def);
+
+                if (entry.buildings.length > 0 && entry.buildings[entry.buildings.length - 1].defName == def.definitionName) {
+                    entry.buildings[entry.buildings.length - 1].amount += 1;
+                } else {
+                    entry.buildings.push({
+                        defName: def.definitionName,
+                        name: def.name,
+                        amount: 1,
+                        isFactory: def.isFactory
+                    });
+                }
             }
 
             if (map.has(teamID) == false) {

@@ -12,7 +12,7 @@ export class GameOutputApi extends ApiWrapper<GameOutput> {
             + `&includeUnitsCreated=true&includeUnitDefs=true&includeExtraStats=true&includeWindUpdates=true`
             + `&includeCommanderPositionUpdates=true&includeFactoryUnitCreate=true&includeUnitsGiven=true&includeUnitsTaken=true`
             + `&includeTransportLoads=true&includeTransportUnloads=true&includeTeamDiedEvents=true&includeUnitResources=true`
-            + `&includeUnitDamage=true`, GameOutput.parse);
+            + `&includeUnitDamage=true&includeUnitPosition=true`, GameOutput.parse);
     }
 
 

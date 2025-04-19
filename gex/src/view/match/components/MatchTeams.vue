@@ -1,53 +1,51 @@
 
 <template>
     <div>
-        <h2 class="wt-header bg-primary">
-            Teams
-        </h2>
+        <collapsible header-text="Teams" size-class="h1" bg-color="bg-light">
+            <div class="d-grid" :style="gridStyle">
+                <h4 v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="ally-team-header mb-0"
+                    :style="getTeamNameStyle(allyTeam)">
 
-        <div class="d-grid" :style="gridStyle">
+                    Team {{ allyTeam.allyTeamID + 1 }}
+                </h4>
 
-            <h4 v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="ally-team-header mb-0"
-                :style="getTeamNameStyle(allyTeam)">
+                <template v-for="allyTeam in match.allyTeams">
+                    <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
+                        :style="getPlayerStyle(allyTeam, player, index)" class="player-name">
 
-                Team {{ allyTeam.allyTeamID + 1 }}
-            </h4>
-
-            <template v-for="allyTeam in match.allyTeams">
-                <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
-                    :style="getPlayerStyle(allyTeam, player, index)" class="player-name">
-
-                    <a :href="'/user/' + player.userID" style="text-decoration: none;">
-                        <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
-                            <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
-                            <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
-                            <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
-                            <span v-else>
-                                ?
+                        <a :href="'/user/' + player.userID" style="text-decoration: none;">
+                            <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
+                                <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
+                                <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
+                                <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
+                                <span v-else>
+                                    ?
+                                </span>
+                                {{ player.username }}
                             </span>
-                            {{ player.username }}
-                        </span>
-                    </a>
+                        </a>
+                    </div>
+
+                    <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-os' + player.teamID"
+                        :style="getPlayerOsStyle(allyTeam, player, index)" class="player-os">
+
+                        [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
+                    </div>
+                </template>
+            </div>
+
+            <div v-if="match.spectators.length > 0">
+                <h5>
+                    Spectators ({{ match.spectators.length }})
+                </h5>
+
+                <div class="d-flex flex-wrap">
+                    <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
+                        {{ spec.username }}
+                    </span>
                 </div>
-
-                <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-os' + player.teamID"
-                    :style="getPlayerOsStyle(allyTeam, player, index)" class="player-os">
-
-                    [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
-                </div>
-            </template>
-        </div>
-
-        <h4>
-            Spectators ({{ match.spectators.length }})
-        </h4>
-
-        <div class="d-flex flex-wrap">
-            <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
-                {{ spec.username }}
-            </span>
-
-        </div>
+            </div>
+        </collapsible>
     </div>
 </template>
 
@@ -77,6 +75,8 @@
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
+
+    import Collapsible from "components/Collapsible.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
@@ -163,6 +163,7 @@
         },
 
         components: {
+            Collapsible
 
         }
     });

@@ -1,6 +1,7 @@
 
 
 export class GameEventUnitCreated {
+    public action: "unit_created" = "unit_created";
     public gameID: string = "";
     public frame: number = 0;
     public unitID: number = 0;

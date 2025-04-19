@@ -34,72 +34,76 @@ namespace gex.Controllers.Api {
         private readonly GameEventTeamDiedDb _TeamDiedDb;
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
         private readonly GameEventUnitDamageDb _UnitDamageDb;
+		private readonly GameEventUnitPositionDb _UnitPositionDb;
 
-        public GameEventApiController(ILogger<GameEventApiController> logger,
-            GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
-            GameEventUnitKilledDb unitKilledDb, BarMatchRepository matchRepository,
-            GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb gameToHashDb,
-            GameEventExtraStatsDb armyUpdateDb, GameEventWindUpdateDb windUpdateDb,
-            GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventFactoryUnitCreatedDb factoryUnitCreatedDb,
-            GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
-            GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
-            GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb) {
+		public GameEventApiController(ILogger<GameEventApiController> logger,
+			GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
+			GameEventUnitKilledDb unitKilledDb, BarMatchRepository matchRepository,
+			GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb gameToHashDb,
+			GameEventExtraStatsDb armyUpdateDb, GameEventWindUpdateDb windUpdateDb,
+			GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventFactoryUnitCreatedDb factoryUnitCreatedDb,
+			GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
+			GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
+			GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb,
+			GameEventUnitDamageDb unitDamageDb, GameEventUnitPositionDb unitPositionDb) {
 
-            _Logger = logger;
+			_Logger = logger;
 
-            _MatchRepository = matchRepository;
-            _TeamStatsDb = teamStatsDb;
-            _UnitCreatedDb = unitCreatedDb;
-            _UnitKilledDb = unitKilledDb;
-            _UnitDefDb = unitDefDb;
-            _GameToHashDb = gameToHashDb;
-            _ExtraStatsDb = armyUpdateDb;
-            _WindUpdateDb = windUpdateDb;
-            _CommanderPositionDb = commanderPositionDb;
-            _FactoryUnitCreatedDb = factoryUnitCreatedDb;
-            _UnitGivenDb = unitGivenDb;
-            _UnitTakenDb = unitTakenDb;
-            _TransportLoadedDb = transportLoadedDb;
-            _TransportUnloadedDb = transportUnloadedDb;
-            _TeamDiedDb = teamDiedDb;
-            _UnitResourcesDb = unitResourcesDb;
-            _UnitDamageDb = unitDamageDb;
-        }
+			_MatchRepository = matchRepository;
+			_TeamStatsDb = teamStatsDb;
+			_UnitCreatedDb = unitCreatedDb;
+			_UnitKilledDb = unitKilledDb;
+			_UnitDefDb = unitDefDb;
+			_GameToHashDb = gameToHashDb;
+			_ExtraStatsDb = armyUpdateDb;
+			_WindUpdateDb = windUpdateDb;
+			_CommanderPositionDb = commanderPositionDb;
+			_FactoryUnitCreatedDb = factoryUnitCreatedDb;
+			_UnitGivenDb = unitGivenDb;
+			_UnitTakenDb = unitTakenDb;
+			_TransportLoadedDb = transportLoadedDb;
+			_TransportUnloadedDb = transportUnloadedDb;
+			_TeamDiedDb = teamDiedDb;
+			_UnitResourcesDb = unitResourcesDb;
+			_UnitDamageDb = unitDamageDb;
+			_UnitPositionDb = unitPositionDb;
+		}
 
-        /// <summary>
-        ///     get events of a <see cref="BarMatch"/>. by default, this will return NO events, and query parameters
-        ///     must be set to tell Gex what to include
-        /// </summary>
-        /// <remarks>
-        ///     each part of <see cref="GameOutput"/> that is wanted must be declared so. this is so future events being added
-        ///     are not needlessly populated when that data is not used
-        /// </remarks>
-        /// <param name="gameID">ID of the <see cref="BarMatch"/> to get the game events of</param>
-        /// <param name="includeUnitsKilled">if <see cref="GameOutput.UnitsKilled"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitsCreated">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeTeamStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitDefs">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeExtraStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeWindUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeCommanderPositionUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeFactoryUnitCreate">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitsGiven">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitsTaken">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeTransportLoads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeTransportUnloads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
-        /// <param name="includeTeamDiedEvents">if <see cref="GameOutput.TeamDiedEvents"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitResources">if <see cref="GameOutput.UnitResources"/> will be populated, defaults to false</param>
-        /// <param name="includeUnitDamage">if <see cref="GameOutput.UnitDamage"/> will be populated, defaults to false</param>
-        /// <param name="cancel">cancel token</param>
-        /// <response code="200">
-        ///     the response will contain a <see cref="GameOutput"/>, that has the various fields
-        ///     populated based on the parameters passed
-        /// </response>
-        /// <response code="204">
-        ///     no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> exists.
-        ///     NOTE: this could mean that Gex has not processed the match yet, it might still exist
-        /// </response>
-        [HttpGet("{gameID}")]
+		/// <summary>
+		///     get events of a <see cref="BarMatch"/>. by default, this will return NO events, and query parameters
+		///     must be set to tell Gex what to include
+		/// </summary>
+		/// <remarks>
+		///     each part of <see cref="GameOutput"/> that is wanted must be declared so. this is so future events being added
+		///     are not needlessly populated when that data is not used
+		/// </remarks>
+		/// <param name="gameID">ID of the <see cref="BarMatch"/> to get the game events of</param>
+		/// <param name="includeUnitsKilled">if <see cref="GameOutput.UnitsKilled"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitsCreated">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeTeamStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitDefs">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeExtraStats">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeWindUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeCommanderPositionUpdates">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeFactoryUnitCreate">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitsGiven">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitsTaken">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeTransportLoads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeTransportUnloads">if <see cref="GameOutput.UnitsCreated"/> will be populated, defaults to false</param>
+		/// <param name="includeTeamDiedEvents">if <see cref="GameOutput.TeamDiedEvents"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitResources">if <see cref="GameOutput.UnitResources"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitDamage">if <see cref="GameOutput.UnitDamage"/> will be populated, defaults to false</param>
+		/// <param name="includeUnitPosition">if <see cref="GameOutput.UnitPosition"/> will be populated, defaults to false</param>
+		/// <param name="cancel">cancel token</param>
+		/// <response code="200">
+		///     the response will contain a <see cref="GameOutput"/>, that has the various fields
+		///     populated based on the parameters passed
+		/// </response>
+		/// <response code="204">
+		///     no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> exists.
+		///     NOTE: this could mean that Gex has not processed the match yet, it might still exist
+		/// </response>
+		[HttpGet("{gameID}")]
         public async Task<ApiResponse<GameOutput>> GetEvents(string gameID,
             [FromQuery] bool includeUnitsKilled = false,
             [FromQuery] bool includeUnitsCreated = false,
@@ -116,6 +120,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeTeamDiedEvents = false,
             [FromQuery] bool includeUnitResources = false,
             [FromQuery] bool includeUnitDamage = false,
+			[FromQuery] bool includeUnitPosition = false,
             CancellationToken cancel = default
         ) {
 
@@ -182,6 +187,10 @@ namespace gex.Controllers.Api {
             if (includeUnitDamage == true) {
                 output.UnitDamage = await _UnitDamageDb.GetByGameID(gameID, cancel);
             }
+
+			if (includeUnitPosition == true) {
+				output.UnitPosition = await _UnitPositionDb.GetByGameID(gameID, cancel);
+			}
 
             if (includeUnitDefs == true) {
                 GameIdToUnitDefHash? hash = await _GameToHashDb.GetByGameID(gameID);

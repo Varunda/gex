@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <collapsible header-text="Combat" bg-color="bg-light">
+        <collapsible header-text="Combat" bg-color="bg-light" size-class="h1">
 
             <div class="mb-5">
                 <h4>Most used</h4>
@@ -491,7 +491,9 @@
             },
 
             playerMostUsed: function(): UnitStats[] {
-                return [...this.playerStats].sort((a, b) => {
+                return [...this.playerStats].filter(iter => {
+                    return iter.definition && iter.definition?.weaponCount > 0;
+                }).sort((a, b) => {
                     return b.metalKilled - a.metalKilled;
                 }).slice(0, 3);
             },

@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <collapsible header-text="Player stats" bg-color="bg-light">
+        <collapsible header-text="Player stats" bg-color="bg-light" size-class="h1">
             <div class="d-flex flex-row">
 
                 <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
@@ -523,7 +523,7 @@
                             backgroundColor: team?.hexColor ?? "#333333",
                             fill: false,
                             hidden: true,
-                            lineTension: (this.perSecond == true) ? 0.5 : 0
+                            lineTension: (this.perSecond == true) ? 0.5 : 0.1
                         };
 
                         //console.log(`created dataset ${teamID}-${stat[0]}`);

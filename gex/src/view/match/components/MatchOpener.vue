@@ -1,30 +1,37 @@
 
 <template>
     <div>
+        <collapsible header-text="Openers" bg-color="bg-light" size-class="h1">
+            <template v-slot:header>
+                <info-hover text="Buildings the first 8 buildings made in the first 90 seconds"></info-hover>
+            </template>
 
-        <h2 class="wt-header bg-primary">
-            Openers
-            <info-hover text="Buildings the first 8 buildings made in the first 90 seconds"></info-hover>
-        </h2>
+            <template v-slot:default>
+                <div v-for="player in openers" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
+                    <h3 :style="{ 'color': player.color }">
+                        {{ player.playerName }}
+                    </h3>
 
-        <div v-for="player in openers" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
-            <h3 :style="{ 'color': player.color }">
-                {{ player.playerName }}
-            </h3>
+                    <div>
+                        <span v-for="(b, index) in player.buildings" :key="index" class="units">
+                            <span class="ms-1"></span>
 
-            <div>
-                <span v-for="(b, index) in player.buildings" :key="index" class="units">
-                    <img :src="'/image-proxy/UnitIcon?defName=' + b.definitionName" height="16" class="ms-1">
-                    <strong v-if="b.isFactory">
-                        {{ b.name }}
-                    </strong>
-                    <span v-else>
-                        {{ b.name }}
-                    </span>
-                </span>
-            </div>
+                            <span v-if="b.amount > 1">
+                                {{b.amount}}x
+                            </span>
 
-        </div>
+                            <img :src="'/image-proxy/UnitIcon?defName=' + b.defName" height="16">
+                            <strong v-if="b.isFactory">
+                                {{ b.name }}
+                            </strong>
+                            <span v-else>
+                                {{ b.name }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </template>
+        </collapsible>
     </div>
 </template>
 
@@ -37,6 +44,7 @@
 <script lang="ts">
     import Vue, { PropType } from "vue";
     import InfoHover from "components/InfoHover.vue";
+    import Collapsible from "components/Collapsible.vue";
 
     import { PlayerOpener } from "../compute/PlayerOpenerData";
 
@@ -62,7 +70,7 @@
         },
 
         components: {
-            InfoHover
+            InfoHover, Collapsible
         }
     });
     export default MatchOpener;

@@ -28,6 +28,8 @@ namespace gex.Services.BarApi {
 
 		private static Regex FramePattern = new(@"^\[t=.*?\]\[f=\d*?\] \[Gex\] on frame (\d+?)$");
 
+		private static Regex GexLoadErrorPattern = new(@"\[t=.+?\]\[f=-000001\] Failed to load: gex\.lua");
+
 		public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
 			IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
 			PrDownloaderService prDownloader, BarEngineDownloader engineDownloader,
@@ -166,6 +168,9 @@ namespace gex.Services.BarApi {
             _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] "
                 + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}]");
 
+			long previousTimerUpdate = 0;
+			long previousFrame = 0;
+
             using AutoResetEvent outputWaitHandle = new(false);
             using AutoResetEvent errorWaitHandle = new(false);
             bar.OutputDataReceived += (sender, e) => {
@@ -174,7 +179,9 @@ namespace gex.Services.BarApi {
                 } else {
                     output.AppendLine(e.Data);
 
-					if (e.Data.Contains("Failed to load: gex.lua")) {
+					// [t=00:00:46.459234][f=-000001] Failed to load: gex.lua
+					Match errorMatch = GexLoadErrorPattern.Match(e.Data);
+					if (errorMatch.Success == true) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
 						bar.Kill();
 					}
@@ -195,16 +202,22 @@ namespace gex.Services.BarApi {
 						return;
 					}
 
+					long replayTimer = timer.ElapsedMilliseconds - playbackStartedMs;
+					long deltaFrame = frame - previousFrame;
+					long deltaTimer = replayTimer - previousTimerUpdate;
+
 					if (frame == 0) {
 						_Logger.LogDebug($"game startup complete [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [engine={match.Engine}] [version={match.GameVersion}]");
 						playbackStartedMs = timer.ElapsedMilliseconds;
 					} else {
-						decimal fps = (decimal)frame / (timer.ElapsedMilliseconds - playbackStartedMs) * 1000m;
-						decimal speedup = (frame / 30m) / (timer.ElapsedMilliseconds - playbackStartedMs) * 1000m;
+						decimal fps = deltaFrame / (Math.Max(1, deltaTimer) / 1000m);
 						decimal eta = (match.DurationFrameCount - frame) / Math.Max(0.01m, fps);
-						_Logger.LogDebug($"game frame progressing [gameID={gameID}] [frame={frame}/{match.DurationFrameCount}] [eta={eta:F1}s] "
-							+ $"[timer={timer.ElapsedMilliseconds}ms] [speedup={speedup:F3}] [fps={fps:F3}]");
+						_Logger.LogDebug($"game frame update sent [gameID={gameID}] [frame={frame}/{match.DurationFrameCount}] [eta={eta:F1}s] "
+							+ $"[timer={timer.ElapsedMilliseconds}ms] [speedup={fps/30m:F3}] [fps={fps:F3}]");
 					}
+
+					previousTimerUpdate = timer.ElapsedMilliseconds - playbackStartedMs;
+					previousFrame = frame;
                 }
             };
             bar.ErrorDataReceived += (sender, e) => {

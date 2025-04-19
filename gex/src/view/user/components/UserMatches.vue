@@ -6,6 +6,7 @@
 
         <a-table :entries="matches"
             :show-filters="true"
+            :default-page-size="10"
             default-sort-field="startTime" default-sort-order="desc">
 
             <a-col sort-field="startTime">

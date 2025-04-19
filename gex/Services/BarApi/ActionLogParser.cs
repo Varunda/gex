@@ -185,6 +185,12 @@ namespace gex.Services.BarApi {
                         ev = e;
                     }
 
+					else if (action == GameActionType.UNIT_POSITION) {
+						GameEventUnitPosition e = Serialize<GameEventUnitPosition>(json);
+						output.UnitPosition.Add(e);
+						ev = e;
+					}
+
                     else if (action == GameActionType.END) {
                         continue;
                     }

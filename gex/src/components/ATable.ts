@@ -1036,7 +1036,7 @@ export const ATable = Vue.extend({
                         entries in ${this.pageCount} pages`),
 
                 // Page size selector
-                createElement("span", { staticClass: "float-right" }, [
+                createElement("span", { staticClass: "float-end" }, [
                     "Page size:",
 
                     // Input to select the page size

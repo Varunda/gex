@@ -157,6 +157,42 @@ local function SendExtraStats()
 	end
 end
 
+local UNIT_POSITION = {}
+
+local function SendUnitPositions()
+    local unitIDs = Spring.GetAllUnits()
+    for _,unitID in pairs(unitIDs) do
+        if (Spring.GetUnitTeam(unitID) ~= Spring.GetGaiaTeamID()) then
+			local x, y, z = Spring.GetUnitPosition(unitID)
+
+            if (UNIT_POSITION[unitID] ~= nil) then
+                local px = UNIT_POSITION[unitID].x
+                local py = UNIT_POSITION[unitID].y
+                local pz = UNIT_POSITION[unitID].z
+                if (px ~= x or py ~= y or pz ~= z) then
+                    writeJson("unit_position", {
+                        { "unitID", unitID },
+                        { "teamID", Spring.GetUnitTeam(unitID) },
+                        { "x", x },
+                        { "y", y }, 
+                        { "z", z }
+                    })
+                end
+            else
+				writeJson("unit_position", {
+					{ "unitID", unitID },
+					{ "teamID", Spring.GetUnitTeam(unitID) },
+					{ "x", x },
+					{ "y", y }, 
+					{ "z", z }
+				})
+            end
+
+            UNIT_POSITION[unitID] = { x = x, y = y, z = z }
+        end
+    end
+end
+
 function widget:GameFrame(n)
     frame = n
 
@@ -182,6 +218,7 @@ function widget:GameFrame(n)
         end
     end
 
+    -- every 15 seconds
     if (frame % 150 == 0) then
         local _, _, _, actual_thing_i_care_about, _, _, _ = Spring.GetWind()
 
@@ -200,10 +237,17 @@ function widget:GameFrame(n)
         end
     end
 
+    -- every 15 seconds
     if (frame % 450 == 0) then
         SendExtraStats()
     end
 
+    -- every 30 seconds
+    if (frame % 900 == 0) then
+        SendUnitPositions()
+    end
+
+    -- every 20 second
     if (frame % 600 == 0) then
         Spring.Echo("[Gex] on frame " .. frame)
     end
@@ -290,6 +334,10 @@ function widget:GameOver(winningAllyTeams)
 		SendExtraStats()
     else
         Spring.Echo("[Gex] not sending extra stats on GameOver, frame is a multiple of 450")
+    end
+
+    if (frame % 900 ~= 0) then
+        SendUnitPositions()
     end
 
     Spring.Echo("[Gex] game over, force quitting")

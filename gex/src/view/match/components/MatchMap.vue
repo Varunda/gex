@@ -15,10 +15,10 @@
             </toggle-button>
 
             <div class="btn-group border border-light">
-                <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap">
+                <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap" :disabled="!hasEvents">
                     Unit death heatmap
                 </button>
-                <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]">
+                <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" :disabled="!hasEvents">
                     <span class="visually-hidden">toggle dropdown</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -33,27 +33,27 @@
                 </ul>
             </div>
 
-            <toggle-button v-model="map.commanderPositions">
+            <toggle-button v-model="map.commanderPositions" :disabled="!hasEvents">
                 Com positions
             </toggle-button>
 
-            <toggle-button v-model="map.commanderHeatmap">
+            <toggle-button v-model="map.commanderHeatmap" :disabled="!hasEvents">
                 Com heatmap
             </toggle-button>
 
-            <toggle-button v-model="map.factories">
+            <toggle-button v-model="map.factories" :disabled="!hasEvents">
                 Factories
             </toggle-button>
 
-            <toggle-button v-model="map.radars">
+            <toggle-button v-model="map.radars" :disabled="!hasEvents">
                 Radars
             </toggle-button>
 
-            <toggle-button v-model="map.staticDefense">
+            <toggle-button v-model="map.staticDefense" :disabled="!hasEvents">
                 Static defense
             </toggle-button>
 
-            <toggle-button v-model="map.buildingHeatmap">
+            <toggle-button v-model="map.buildingHeatmap" :disabled="!hasEvents">
                 Building heatmap
             </toggle-button>
         </div>
@@ -66,12 +66,34 @@
             <div class="flex-grow-0"></div>
         </div>
 
+        <div v-if="isMapImageLoading == true" :style="loadingRectangleDimensions" class="text-center">
+            Loading map image...
+        </div>
+
         <img id="map-dims" :src="mapUrl" style="display: none;">
+
+        <div class="mt-2 mx-2">
+            <button v-if="playback.playing == false" class="btn btn-sm btn-primary" @click="startUnitPositionPlayback" :disabled="!hasEvents">
+                Play
+            </button>
+
+            <button v-else class="btn btn-sm btn-primary" @click="pauseUnitPositionPlayback" :disabled="!hasEvents">
+                Pause
+            </button>
+
+            <span>
+                Viewing units at {{ playback.frame / 30 | mduration }}
+            </span>
+
+            <div class="mt-1">
+                <input type="range" min="0" :max="unitPositionFrames[unitPositionFrames.length - 1]" step="900" class="form-range" v-model.number="playback.frame" :disabled="!hasEvents">
+            </div>
+        </div>
 
     </div>
 </template>
 
-<style scoped>
+<style>
 
     .rotate-90 {
         transform-box: fill-box;
@@ -91,6 +113,16 @@
         transform: rotate(90deg);
     }
 
+    .animate-move {
+        transition: all 900ms linear;
+    }
+
+    .unit-pos-hide {
+        fill-opacity: 0;
+        stroke-opacity: 0;
+        pointer-events: none;
+    }
+
 </style>
 
 <script lang="ts">
@@ -101,6 +133,8 @@
     import * as d3z from "d3-zoom";
     import "d3-contour";
     import "d3-color";
+
+    import "filters/MomentFilter";
 
     import TimeUtils from "util/Time";
     import ColorUtils, { RGB } from "util/Color";
@@ -117,12 +151,14 @@
 
     import { CommanderData } from "../compute/ComputeCommanderData";
     import { FactoryData, PlayerFactories } from "../compute/FactoryData";
+    import { UnitPositionFrame } from "../compute/UnitPositionFrame";
+
+    // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
     export const MatchMap = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
             output: { type: Object as PropType<GameOutput>, required: true }
-
         },
 
         data: function() {
@@ -133,17 +169,29 @@
                 tooltip: null as any | null,
                 zoom: {} as any,
 
+                transform: { k: 1 as number, x: 0 as number, y: 0 as number },
+
                 mapW: 0 as number,
                 mapH: 0 as number,
                 imgW: 0 as number,
                 imgH: 0 as number,
+                isMapImageLoading: false as boolean,
 
                 computedData: {
                     commander: [] as CommanderData[],
                     factories: [] as PlayerFactories[],
+                    position: [] as UnitPositionFrame[]
                 },
 
                 unitIdToDefId: new Map as Map<number, number>,
+
+                playback: {
+                    playing: false as boolean,
+                    intervalId: -1 as number,
+                    frameIndex: 0 as number,
+                    frame: 0 as number,
+                    shownUnits: new Set() as Set<number>
+                },
 
                 map: {
                     startingBox: false as boolean,
@@ -169,17 +217,24 @@
                 this.mapH = mapData.height * 512;
             }
 
+            this.isMapImageLoading = true;
+
+            // 1000 by 1000 square
+            // width = 1000
+            // height = 1000 / (width / height)
+
             this.$nextTick(() => {
                 const img: HTMLElement | null = document.getElementById("map-dims");
-                //this.svg = document.getElementById("map-svg") as SVGElement | null;
-                this.svg = d3.select("#map-svg");
 
                 if (img == null) {
                     console.error(`missing #map-dims!`);
                     return;
                 }
 
+                this.svg = d3.select("#map-svg");
+
                 img.addEventListener("load", (ev: Event) => {
+                    this.isMapImageLoading = false;
                     if (this.svg == null) {
                         console.error(`missing #map-svg`);
                         return;
@@ -200,6 +255,7 @@
                         .translateExtent([[0, 0], [this.imgW, this.imgH]])
                         .on("zoom", (ev: any) => {
                             this.root!.attr("transform", ev.transform);
+                            this.transform = ev.transform;
                         }
                     );
 
@@ -234,6 +290,7 @@
 
                     this.computedData.commander = CommanderData.compute(this.output, this.match);
                     this.computedData.factories = PlayerFactories.compute(this.match, this.output);
+                    this.computedData.position = UnitPositionFrame.compute(this.match, this.output);
 
                     this.drawMap();
                 });
@@ -263,16 +320,32 @@
                 this.tooltip.style("left", null).style("right", null).style("top", null).style("bottom", null);
 
                 const pos = d3.pointer(ev, this.root?.node());
+
+                const scale: number = this.transform.k;
+                const x: number = this.transform.x;
+                const y: number = this.transform.y;
+
+                const left: number = -x / scale;
+                const top: number = -y / scale;
+
+                const w: number = this.imgW / scale;
+                const h: number = this.imgH / scale;
+
+                // the tooltip isn't part of the svg, so we need to calculate it's position based on the pan/zoom of the svg
+                const posx: number = (pos[0] - left) / w * this.imgW;
+                const posy: number = (pos[1] - top) / h * this.imgH;
+
+                //console.log(`MatchMap> pos=${pos[0].toFixed(2)},${pos[1].toFixed(2)} => ${posx.toFixed(2)},${posy.toFixed(2)} (${left.toFixed(2)},${top.toFixed(2)}) [${w.toFixed(2)},${h.toFixed(2)}]@${scale.toFixed(2)}`);
                 if (pos[0] <= this.imgW / 2) {
-                    this.tooltip.style("left", `${pos[0]}px`);
+                    this.tooltip.style("left", `${posx}px`);
                 } else {
-                    this.tooltip.style("right", `${this.imgW - pos[0]}px`);
+                    this.tooltip.style("right", `${this.imgW - posx}px`);
                 }
 
                 if (pos[1] <= this.imgH / 2) {
-                    this.tooltip.style("top", `${pos[1]}px`);
+                    this.tooltip.style("top", `${posy}px`);
                 } else {
-                    this.tooltip.style("bottom", `${this.imgH - pos[1]}px`);
+                    this.tooltip.style("bottom", `${this.imgH - posy}px`);
                 }
             },
 
@@ -282,6 +355,7 @@
 
                 this.root.selectAll("*:not(.map-no-remove)").remove();
 
+                this.drawInitialUnitPositionFrame();
                 this.addStartingBoxes();
                 this.addUnitDeathHeatmap();
                 this.addCommanderHeatmap();
@@ -301,6 +375,191 @@
                     */
             },
 
+            /**
+             * start unit position playback, updating once per second
+             */
+            startUnitPositionPlayback: function(): void {
+
+                this.map.startingBox = false;
+                this.map.startingPosition = false;
+                this.map.commanderHeatmap = false;
+                this.map.buildingHeatmap = false;
+                this.map.commanderPositions = false;
+                this.map.deathHeatmap = false;
+                this.map.radars = false;
+                this.map.staticDefense = false;
+                this.map.factories = false;
+
+                this.playback.playing = true;
+                this.playback.intervalId = setInterval(() => {
+                    this.playback.frame = this.unitPositionFrames[this.playback.frameIndex];
+                    // changing the frame also calls this
+                    //this.renderUnitPositionFrame(this.playback.frame);
+
+                    ++this.playback.frameIndex;
+
+                    if (this.playback.frameIndex > this.unitPositionFrames.length - 1) {
+                        console.log(`MatchMap> playback complete`);
+                        this.stopUnitPositionPlayback();
+                        return;
+                    }
+                }, 1000 * 1) as unknown as number;
+            },
+
+            /**
+             * pause unit position playback
+             */
+            pauseUnitPositionPlayback: function(): void {
+                clearInterval(this.playback.intervalId);
+                this.playback.playing = false;
+            },
+
+            /**
+             * stop unit position playback, resetting it back to 0
+             */
+            stopUnitPositionPlayback: function(): void {
+                clearInterval(this.playback.intervalId);
+                this.playback.frameIndex = 0;
+                this.playback.frame = 0;
+                this.playback.playing = false;
+                this.drawInitialUnitPositionFrame();
+            },
+
+            /**
+             * draw all initial elements used to render the unit position over time map
+             */
+            drawInitialUnitPositionFrame: function(): void {
+                if (this.svg == null) { return console.warn(`cannot render frame: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot render frame: root is null`); }
+
+                //const unitPos: UnitPositionFrame[] = this.computedData.position.filter((v, i, a) => a.findIndex(iter => iter.unitID == v.unitID) == i);
+                const map: Map<number, UnitPositionFrame> = new Map();
+                for (const iter of this.computedData.position) {
+                    // only take the first position, so the first time a unit is drawn it doesn't jump around widly
+                    if (map.has(iter.unitID) == false) {
+                        map.set(iter.unitID, iter);
+                    }
+                }
+                const unitPos: UnitPositionFrame[] = Array.from(map.values());
+
+                if (unitPos.length == 0) {
+                    return console.warn(`MatchMap> cannot render initial unit position, no units available!`);
+                }
+
+                console.log(`MatchMap> rendering initial location of ${unitPos.length} units`);
+
+                this.root.selectAll(".map-unit-pos").remove();
+                this.root.select("#unit-pos-root").remove();
+
+                const g = this.root.append("g")
+                    .attr("id", "unit-pos-root");
+
+                for (const pos of unitPos) {
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == pos.teamID);
+
+                    const defId: number | undefined = this.unitIdToDefId.get(pos.unitID);
+
+                    if (defId == undefined) {
+                        console.warn(`MatchMap> missing unit def ID for unit ${pos.unitID}`);
+                        continue;
+                    }
+
+                    const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defId);
+
+                    if (unitDef == undefined) {
+                        console.warn(`MatchMap> missing unit def ${defId}`);
+                        continue;
+                    }
+
+                    // minimum 2 pixel size
+                    const sizePx = Math.max(2, Math.max(this.toImgX(unitDef.sizeX), this.toImgZ(unitDef.sizeZ)) * 4);
+
+                    if (unitDef.speed == 0) {
+                        g.append("rect")
+                            .attr("id", `map-unit-pos_${pos.unitID}`)
+                            .classed("map-unit-pos", true)
+                            .classed("animate-move", true)
+                            .classed("unit-pos-hide", true)
+                            .attr("x", this.toImgX(pos.x)).attr("y", this.toImgZ(pos.z))
+                            .attr("width", `${sizePx}px`).attr("height", `${sizePx}px`)
+                            .style("fill", player?.hexColor ?? `#333333`)
+                            .style("paint-order", "stroke")
+                            .style("stroke", "black").style("stroke-width", "2px")
+                            .on("mouseenter", (ev: any) => {
+                                this.showTooltip(`${unitDef?.name ?? `<missing def ${defId}>`}`);
+                            })
+                            .on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            })
+                            .on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
+                    } else {
+                        g.append("circle")
+                            .attr("id", `map-unit-pos_${pos.unitID}`)
+                            .classed("map-unit-pos", true)
+                            .classed("animate-move", true)
+                            .classed("unit-pos-hide", true)
+                            .attr("cx", this.toImgX(pos.x)).attr("cy", this.toImgZ(pos.z))
+                            .attr("r", `${sizePx}px`)
+                            .style("fill", player?.hexColor ?? `#333333`)
+                            .style("paint-order", "stroke")
+                            .style("stroke", "black").style("stroke-width", "2px")
+                            .on("mouseenter", (ev: any) => {
+                                this.showTooltip(`${unitDef?.name ?? `<missing def ${defId}>`}`);
+                            })
+                            .on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            })
+                            .on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
+                    }
+                }
+            },
+
+            /**
+             * render 1 frame of unit positions, which really just hides stuff dead, and shows stuff alive then moves them to the latest position
+             * @param frame frame to render
+             */
+            renderUnitPositionFrame: function(frame: number): void {
+                if (this.svg == null) { return console.warn(`cannot render frame: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot render frame: root is null`); }
+
+                console.log(`MatchMap> rendering unit pos frame [frame=${frame}]`);
+
+                //this.root.selectAll(".map-unit-pos").remove();
+
+                const unitPos: UnitPositionFrame[] = this.computedData.position.filter(iter => iter.frame == frame);
+                if (unitPos.length == 0) {
+                    return console.warn(`MatchMap> cannot render unit position on frame ${frame}, no positions available!`);
+                }
+
+                const map: Map<number, UnitPositionFrame> = new Map();
+                for (const iter of unitPos) {
+                    map.set(iter.unitID, iter);
+                }
+
+                for (const unitID of Array.from(this.unitIdToDefId.keys())) {
+                    const elem = this.root.select(`#map-unit-pos_${unitID}`);
+
+                    const entry: UnitPositionFrame | undefined = map.get(unitID);
+
+                    if (entry == undefined) {
+                        elem.classed("unit-pos-hide", true);
+                    } else {
+                        elem.classed("unit-pos-hide", false);
+                        //console.log(`MatchMap> showing unit ${unitID} ${elem}`);
+
+                        elem.attr("x", this.toImgX(entry.x)).attr("y", this.toImgZ(entry.z));
+                        elem.attr("cx", this.toImgX(entry.x)).attr("cy", this.toImgZ(entry.z))
+                    }
+                }
+            },
+
+            /**
+             * add a circle and text for each player's starting position
+             */
             addPlayerStartingPositions: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add start pos: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add start pos: root is null`); }
@@ -309,8 +568,8 @@
 
                 for (const player of this.match.players) {
                     this.root.append("circle")
-                        .attr("cx", `${player.startingPosition.x / this.mapW * 100}%`)
-                        .attr("cy", `${player.startingPosition.z / this.mapH * 100}%`)
+                        .attr("cx", `${player.startingPosition.x / this.mapW * this.imgW}px`)
+                        .attr("cy", `${player.startingPosition.z / this.mapH * this.imgH}px`)
                         .attr("r", "10px")
                         .classed("map-starting-position", true)
                         .style("pointer-events", "none")
@@ -319,20 +578,26 @@
                         .style("stroke-width", "1px")
                         .style("paint-order", "fill stroke");
 
+                    const rightSide: boolean = (player.startingPosition.x / this.mapW) > 0.5;
+                    const offset: number = rightSide ? -16 : 16;
+
                     this.root.append("text")
-                        .attr("x", (this.toImgX(player.startingPosition.x)) + 16)
+                        .attr("x", (this.toImgX(player.startingPosition.x)) + offset)
                         .attr("y", this.toImgZ(player.startingPosition.z))
                         .classed("map-starting-position", true)
                         .style("fill", player.hexColor)
+                        .style("text-anchor", rightSide ? "end" : "start")
                         .style("font-size", "1.3rem")
                         .style("paint-order", "stroke")
-                        .style("stroke", "black")
-                        .style("stroke-width", "2px")
+                        .style("stroke", "black").style("stroke-width", "2px")
                         .style("pointer-events", "none")
                         .text(player.username);
                 }
             },
 
+            /**
+             * add starting boxes to the map
+             */
             addStartingBoxes: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add starting box: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add starting box: root is null`); }
@@ -347,12 +612,16 @@
                         .attr("width", `${(allyTeam.startBox.right - allyTeam.startBox.left) * 100}%`)
                         .attr("height", `${(allyTeam.startBox.bottom - allyTeam.startBox.top) * 100}%`)
                         .classed("map-starting-box", true)
+                        .style("pointer-events", "none")
                         .style("opacity", this.map.startingBox == true ? "1" : "0")
                         .attr("id", `map-starting-box-${allyTeam.allyTeamID}`)
                         .style("fill", (firstPlayer?.hexColor ?? "#333333") + "33");
                 }
             },
 
+            /**
+             * add per-team paths that show the commanders position over time
+             */
             addCommanderPositionUpdates: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add com pos: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add com pos: root is null`); }
@@ -408,50 +677,9 @@
                 }
             },
 
-            /*
-            addUnitDeathHeatmap: function(): void {
-                if (this.svg == null) { return console.warn(`cannot add death heatmap: svg is null`); }
-                if (this.root == null) { return console.warn(`cannot add death heatmap: root is null`); }
-
-                this.root.selectAll(".map-unit-death-heatmap").remove();
-
-                // only include unit deaths from before a team is killed
-                // otherwise the heatmap is just the units at the end blowing up lol
-                const teamDiedAt: Map<number, number> = new Map(this.output.teamDiedEvents.map(iter => {
-                    return [iter.teamID, iter.frame];
-                }));
-
-                const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => {
-                    return iter.frame < (teamDiedAt.get(iter.teamID) ?? Number.MAX_VALUE);
-                }).map(iter => {
-                    return [iter.killedX, iter.killedZ];
-                });
-
-                const heatmap = d3.contourDensity()
-                    .x((d) => this.toImgX(d[0]))
-                    .y((d) => this.toImgZ(d[1]))
-                    .size([this.imgW, this.imgH])
-                    .bandwidth(20)(deathLocations);
-
-                const max: number = Math.max(...heatmap.map(iter => iter.value));
-
-                const g1: RGB = { red: 255, green: 255, blue: 0 };
-                const g2: RGB = { red: 255, green: 0, blue: 0 };
-
-                this.root.append("g")
-                    .selectAll("path")
-                    .data(heatmap)
-                    .enter()
-                    .append("path")
-                        .classed("map-unit-death-heatmap", true)
-                        .attr("d", d3.geoPath())
-                        .attr("fill", (d) => {
-                            return ColorUtils.rgbaToString(ColorUtils.colorGradient(d.value / max, g1, g2), 0.1);
-                        });
-
-            },
-            */
-
+            /**
+             * add per-team heat maps of where units die
+             */
             addUnitDeathHeatmap: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add death heatmap: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add death heatmap: root is null`); }
@@ -495,6 +723,9 @@
                 }
             },
 
+            /**
+             * add per-team heatmaps of the commanders position
+             */
             addCommanderHeatmap: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add com heatmap: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add com heatmap: root is null`); }
@@ -535,6 +766,9 @@
                 }
             },
 
+            /**
+             * add per-team heatmaps of where buildings were made
+             */
             addBuildingHeatmap: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add building heatmap: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add building heatmap: root is null`); }
@@ -580,6 +814,9 @@
                 }
             },
 
+            /**
+             * add factory positions and what they created
+             */
             addFactoryPositions: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add factories: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add factories: root is null`); }
@@ -648,6 +885,9 @@
                 }
             },
 
+            /**
+             * add radar markers, and range of radar
+             */
             addRadars: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add radars: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add radars: root is null`); }
@@ -679,6 +919,9 @@
 
             },
 
+            /**
+             * add static defense markers, along with range indicators and how many units killed
+             */
             addStaticDefense: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add static defense: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add static defense: root is null`); }
@@ -744,6 +987,22 @@
             toImgX(x: number): number { return x / this.mapW * this.imgW; },
             toImgZ(z: number): number { return z / this.mapH * this.imgH; },
 
+            /**
+             * this is too many arguments
+             * @param elemID 
+             * @param unitID 
+             * @param className 
+             * @param fillColor 
+             * @param x 
+             * @param z 
+             * @param r 
+             * @param sx 
+             * @param sz 
+             * @param unitColor 
+             * @param playerColor 
+             * @param defName 
+             * @param callbacks 
+             */
             createHoverRange: function(
                 elemID: string, unitID: number, className: string,
                 fillColor: string, x: number, z: number, r: number, sx: number, sz: number,
@@ -816,12 +1075,35 @@
                 return `/image-proxy/MapBackground?mapName=${this.match.mapName}&size=texture-mq`;
             },
 
+            hasEvents: function(): boolean {
+                return this.match.processing != null && this.match.processing.actionsParsed != null;
+            },
+
             viewboxStr: function(): string {
                 return `${0},${0},${this.imgW},${this.imgH}`;
+            },
+
+            unitPositionFrames: function(): number[] {
+                return this.output.unitPosition.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i);
+            },
+            
+            loadingRectangleDimensions: function() {
+                const mapRatio: number = (this.match.mapData == null) ? 1 : this.match.mapData.width / this.match.mapData.height;
+
+                return {
+                    "width": `1000px`,
+                    "height": `${1000 / mapRatio}px`
+                };
             }
+
         },
 
         watch: {
+
+            "playback.frame": function(): void {
+                this.renderUnitPositionFrame(this.playback.frame);
+            },
+
             "map.commanderPositions": function(): void {
                 if (this.map.commanderPositions == false) {
                     this.root?.selectAll(".commander-updates")

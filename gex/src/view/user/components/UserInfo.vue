@@ -3,7 +3,9 @@
     <div>
         <h2 class="wt-header">User info</h2>
 
-        {{ user.username }}
+        <h4>
+            {{ user.username }}
+        </h4>
 
         <div class="mb-3">
             <h4 class="wt-header mb-1">
@@ -33,7 +35,7 @@
                 Map stats are seperated into gamemode, so it is possible to have 1 map listed multiple times, each for a different gamemode
             </h6>
 
-            <a-table :entries="mapData" :show-filters="true" default-sort-field="playCount" default-sort-order="desc">
+            <a-table :entries="mapData" :show-filters="true" default-sort-field="playCount" default-sort-order="desc" :default-page-size="10">
                 <a-col>
                     <a-header>
                         <b>Map</b>

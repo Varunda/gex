@@ -1,5 +1,6 @@
 
 export class GameEventUnitKilled {
+    public action: "unit_killed" = "unit_killed";
     public gameID: string = "";
     public frame: number = 0;
     public unitID: number = 0;

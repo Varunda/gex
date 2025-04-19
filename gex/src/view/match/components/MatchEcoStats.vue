@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <collapsible header-text="Economy" bg-color="bg-light">
+        <collapsible header-text="Economy" bg-color="bg-light" size-class="h1">
             <div class="d-flex flex-wrap align-items-center mb-5" style="gap: 1rem; justify-content: space-evenly;">
 
                 <div>

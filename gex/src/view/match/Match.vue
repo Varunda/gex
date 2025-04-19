@@ -73,6 +73,10 @@
 
                 <hr class="border"/>
 
+                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-warning mt-4">
+                    This game has not been ran locally, and in-depth stats are not available
+                </div>
+
                 <match-teams :match="match.data" class="my-3"></match-teams>
 
                 <div v-if="output.state == 'loaded'">
@@ -87,6 +91,8 @@
                         <match-opener :openers="computedData.opener" class="my-4"></match-opener>
 
                         <hr class="border">
+
+                        <h1 class="wt-header bg-light text-dark">Unit stats</h1>
 
                         <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded">
                             <h4 v-if="selectedPlayer" class="text-center">
@@ -115,14 +121,6 @@
                         <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
                             :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-team="selectedTeam" class="my-4">
                         </match-eco-stats>
-
-                        <hr class="border">
-
-                        <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
-                    </div>
-
-                    <div v-else class="text-center alert alert-warning mt-4">
-                        This game has not been ran locally, and in-depth stats are not available
                     </div>
 
                     <match-chat :match="match.data"></match-chat>
@@ -131,10 +129,16 @@
                         {{ 
                             output.data.extraStats.length + output.data.commanderPositionUpdates.length + output.data.factoryUnitCreated.length + output.data.teamDiedEvents.length
                             + output.data.teamStats.length + output.data.unitDefinitions.size + output.data.unitResources.length + output.data.unitsCreated.length
-                            + output.data.unitsKilled.length + output.data.windUpdates.length
+                            + output.data.unitsKilled.length + output.data.windUpdates.length + output.data.unitDamage.length + output.data.unitPosition.length
                         }}
                         events
                     </small>
+
+                    <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
+                        <hr class="border">
+
+                        <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
+                    </div>
                 </div>
             </div>
 
@@ -266,6 +270,19 @@
                 if (this.match.state != "loaded") {
                     return;
                 }
+
+                let matchName: string = "";
+                if (this.match.data.players.length == 2) {
+                    matchName = `${this.match.data.players[0].username} v ${this.match.data.players[0].username}`;
+                } else {
+                    if (this.isFFA == true) {
+                        matchName = `${this.match.data.allyTeams.length}-way FFA`;
+                    } else {
+                        matchName = this.match.data.allyTeams.map(iter => iter.playerCount).join(" v ");
+                    }
+                }
+
+                document.title = `Gex / Match / ${matchName}`;
 
                 this.decLoadingStepsAndPossiblyStart();
             },

@@ -2,7 +2,7 @@
 <template>
     <div>
 
-        <h2 class="wt-header bg-primary">Unit stats</h2>
+        <h1 class="wt-header bg-light">Unit stats</h1>
 
         <div class="d-flex flex-wrap mb-3">
             <button v-for="player in match.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {

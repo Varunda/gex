@@ -4,11 +4,12 @@ export const ToggleButton = Vue.extend({
     props: {
         value: { type: Boolean, required: true },
         TrueColor: { type: String, default: "btn-success" },
-        FalseColor: { type: String, default: "" }
+        FalseColor: { type: String, default: "" },
+        disabled: { type: Boolean, default: false }
     },
 
     template: `
-        <button type="button" :class="cssClasses" :style="cssStyles" @click.stop="toggle($event)">
+        <button type="button" :class="cssClasses" :style="cssStyles" @click.stop="toggle($event)" :disabled="disabled">
             <slot></slot>
         </button>
     `,

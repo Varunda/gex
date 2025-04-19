@@ -75,7 +75,6 @@
 
         created: function(): void {
             this.userID = Number.parseInt(location.pathname.split("/")[2]);
-            document.title = "Gex / User / " + this.userID;
         },
 
         beforeMount: function(): void {
@@ -87,6 +86,14 @@
             loadUser: async function(): Promise<void> {
                 this.user = Loadable.loading();
                 this.user = await BarUserApi.getByUserID(this.userID);
+
+                if (this.user.state == "loaded") {
+                    document.title = `Gex / User / ${this.user.data.username}`;
+                    const url = new URL(location.href);
+                    url.searchParams.set("name", this.user.data.username);
+
+                    history.replaceState({ path: url.href }, "", `/user/${this.userID}/?${url.searchParams.toString()}`);
+                }
             },
 
             loadMatches: async function(): Promise<void> {
