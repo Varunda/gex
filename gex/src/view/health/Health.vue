@@ -135,7 +135,11 @@
 
                         <tbody>
                             <tr v-for="run in health.data.headlessRuns" :key="run.gameID">
-                                <td>{{ run.gameID }}</td>
+                                <td>
+                                    <a :href="'/match/' + run.gameID">
+                                        {{ run.gameID }}
+                                    </a>
+                                </td>
                                 <td>{{ run.simulating }}</td>
                                 <td>{{ run.frame }}</td>
                                 <td>{{ run.durationFrames}}</td>
