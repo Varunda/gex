@@ -227,6 +227,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
 				// if Gex has decided to not run the game, assign a priority so it might be processed later
 				if (runHeadless == false || (mapPrioMod != null && mapPrioMod.Change > 0)) {
+					runHeadless = false;
 					priority = (short) (10 + (mapPrioMod?.Change ?? 0)); // a bit of wiggle room for something idk
 
 					// de-prio low elo games
