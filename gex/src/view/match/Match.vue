@@ -345,6 +345,7 @@
 
         methods: {
             loadBoth: async function(): Promise<void> {
+                this.loadingSteps = 2;
                 await this.loadMatch();
 
                 if (this.match.state == "loaded" && this.match.data.processing != null && this.match.data.processing.actionsParsed != null) {
@@ -418,7 +419,7 @@
             decLoadingStepsAndPossiblyStart: function(): void {
                 --this.loadingSteps;
 
-                if (this.loadingSteps != 0) {
+                if (this.loadingSteps > 0) {
                     console.log(`have ${this.loadingSteps} until done loading all assets!`);
                     return;
                 }
