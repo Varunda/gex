@@ -137,7 +137,7 @@
 
                 <hr class="border"/>
 
-                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-warning mt-4">
+                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
                     This game has not been ran locally, and in-depth stats are not available
                 </div>
 
