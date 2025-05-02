@@ -99,10 +99,12 @@ export class UnitStats {
                     attacker.energyKilled += unitDef.energyCost;
                     attacker.buildPowerKilled += unitDef.buildPower;
 
-                    if (unitDef.speed == 0 && unitDef.weaponCount > 0) {
+                    if (unitDef.speed == 0) {
                         attacker.staticKills += 1;
-                    } else if (unitDef.speed > 0 && unitDef.weaponCount > 0) {
+                    } else if (unitDef.speed > 0) {
                         attacker.mobileKills += 1;
+                    } else {
+                        console.log(`UnitStatData> unitDef is not static mobile ${JSON.stringify(unitDef)}`);
                     }
                 } else {
                     console.log(`UnitStatData> missing unit def ${ev.definitionID}!`);

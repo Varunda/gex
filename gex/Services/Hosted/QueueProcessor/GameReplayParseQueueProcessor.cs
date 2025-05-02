@@ -216,7 +216,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
                 runHeadless |= parsed.Players.Count <= 6;
 
-				string why = "";
+				string why = "more than 6 players; ";
 				priority = -1;
 
 				MapPriorityMod? mapPrioMod = await _MapPriorityModDb.GetByName(parsed.MapName, cancel);

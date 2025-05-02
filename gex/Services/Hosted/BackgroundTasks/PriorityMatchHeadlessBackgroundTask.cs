@@ -51,6 +51,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
 					await Task.Delay(TimeSpan.FromSeconds(5), cancel);
 					continue;
 				}
+				_ServiceHealthMonitor.Set(SERVICE_NAME, healthEntry);
 
 				_Logger.LogDebug($"looking for a game to process based on priority");
 
@@ -82,6 +83,12 @@ namespace gex.Services.Hosted.BackgroundTasks {
 				_ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() {
 					GameID = nextPrio.GameID,
 				});
+
+				healthEntry.RunDuration = timer.ElapsedMilliseconds;
+				healthEntry.Message = $"locally ran game {nextPrio.GameID}";
+				healthEntry.LastRan = DateTime.UtcNow;
+				_ServiceHealthMonitor.Set(SERVICE_NAME, healthEntry);
+
 			}
 
 		}
