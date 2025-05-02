@@ -1,9 +1,11 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using Dapper;
+using gex.Code.ExtensionMethods;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,11 +41,11 @@ namespace gex.Services.Db.Match {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
                     id, start_time, map, duration_ms, duration_frame_count,
-					engine, game_version, file_name, map_name, gamemode,
+					engine, game_version, file_name, map_name, gamemode, player_count,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @Map, @DurationMs, @DurationFrameCount,
-					@Engine, @GameVersion, @FileName, @MapName, @Gamemode,
+					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -58,6 +60,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("FileName", match.FileName);
             cmd.AddParameter("MapName", match.MapName);
             cmd.AddParameter("Gamemode", match.Gamemode);
+			cmd.AddParameter("PlayerCount", match.PlayerCount);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
@@ -206,12 +209,22 @@ namespace gex.Services.Db.Match {
 					+ ((parms.ProcessingAction.Value == true) ? "not null" : "null"));
 			}
 
+			if (parms.PlayerCountMinimum != null) {
+				conditions.Add("m.player_count > @PlayerCountMin");
+				cmd.AddParameter("PlayerCountMin", parms.PlayerCountMinimum.Value);
+			}
+
+			if (parms.PlayerCountMaximum != null) {
+				conditions.Add("m.player_count <= @PlayerCountMax");
+				cmd.AddParameter("PlayerCountMax", parms.PlayerCountMaximum.Value);
+			}
+
             cmd.CommandText = $@"
                 SELECT *
                     FROM bar_match m
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
 					WHERE 1=1
-						AND {string.Join("\n AND ", conditions)}
+						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
                     ORDER BY start_time DESC
                     LIMIT {limit}
                     OFFSET {offset}
@@ -275,6 +288,38 @@ namespace gex.Services.Db.Match {
 
             return matches;
         }
+
+		/// <summary>
+		///		get all unique engine versions stored in the DB
+		/// </summary>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns>
+		///		a string of all unique values of <see cref="BarMatch.Engine"/> stored in the DB
+		/// </returns>
+		public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {
+			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+			return (await conn.QueryAsync<string>(new CommandDefinition(
+				"SELECT distinct(engine) FROM bar_match",
+				cancellationToken: cancel
+			))).ToList();
+		}
+
+		/// <summary>
+		///		get all unique <see cref="BarMatch.GameVersion"/>s stored in the DB
+		/// </summary>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns>
+		///		a list of all unique values of <see cref="BarMatch.GameVersion"/> stored in the DB
+		/// </returns>
+		public async Task<List<string>> GetUniqueGameVersions(CancellationToken cancel) {
+			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+			return (await conn.QueryAsync<string>(new CommandDefinition(
+				"SELECT distinct(game_version) FROM bar_match",
+				cancellationToken: cancel
+			))).ToList();
+		}
 
         /// <summary>
         ///     delete a <see cref="BarMatch"/> from the DB

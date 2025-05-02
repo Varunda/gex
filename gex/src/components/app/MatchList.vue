@@ -13,7 +13,7 @@
                     </span>
                 </h5>
 
-                <div class="d-flex text-center p-2 tile-teams flex-wrap">
+                <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
                     <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="tile-team">
                         <div v-if="isFFA(match) == false" class="tile-team-title"
                             :style="{
@@ -45,7 +45,7 @@
                     </div>
 
                     <div class="tile-top-right">
-                        <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500'}">
+                        <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500' }">
                             {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
                         </div>
 

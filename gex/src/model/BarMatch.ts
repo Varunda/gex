@@ -4,6 +4,7 @@ import { BarMatchChatMessage } from "./BarMatchChatMessage";
 import { BarMatchPlayer } from "./BarMatchPlayer";
 import { BarMatchProcessing } from "./BarMatchProcessing";
 import { BarMatchSpectator } from "./BarMatchSpectator";
+import { HeadlessRunStatus } from "./HeadlessRunStatus";
 
 export class BarMatch {
     public id: string = "";
@@ -27,6 +28,7 @@ export class BarMatch {
 
     public mapData: BarMap | null = null;
     public processing: BarMatchProcessing | null = null;
+    public headlessRunStatus: HeadlessRunStatus | null = null;
 
     public static parse(elem: any): BarMatch {
         return {
@@ -44,7 +46,8 @@ export class BarMatch {
             chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
 
             mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
-            processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing)
+            processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),
+            headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus)
         }
     }
 

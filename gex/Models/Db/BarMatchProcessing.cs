@@ -64,5 +64,12 @@ namespace gex.Models.Db {
         [ColumnMapping("action_ms")]
         public int? ActionsParsedMs { get; set; }
 
+		/// <summary>
+		///		represents how quickly Gex will prioritize processing this game. lower means higher priority.
+		///		a negative priority	means this game will be processed right away
+		/// </summary>
+		[ColumnMapping("priority")]
+		public short Priority { get; set; }
+
     }
 }

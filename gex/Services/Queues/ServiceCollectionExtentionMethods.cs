@@ -1,4 +1,5 @@
-﻿using gex.Models.Queues;
+﻿using gex.Models.Api;
+using gex.Models.Queues;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Queues {
@@ -17,6 +18,7 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<ActionLogParseQueueEntry>, ActionLogParseQueue>();
             services.AddSingleton<BaseQueue<UserMapStatUpdateQueueEntry>, UserMapStatUpdateQueue>();
             services.AddSingleton<BaseQueue<UserFactionStatUpdateQueueEntry>, UserFactionStatUpdateQueue>();
+			services.AddSingleton<BaseQueue<HeadlessRunStatus>, HeadlessRunStatusUpdateQueue>();
         }
 
     }

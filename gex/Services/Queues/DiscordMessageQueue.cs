@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using gex.Models.Discord;
+using gex.Services.Metrics;
 
 namespace gex.Services.Queues {
 
@@ -14,7 +15,7 @@ namespace gex.Services.Queues {
     /// </summary>
     public class DiscordMessageQueue : BaseQueue<AppDiscordMessage> {
 
-        public DiscordMessageQueue(ILoggerFactory factory) : base(factory) { }
+        public DiscordMessageQueue(ILoggerFactory factory, QueueMetric metrics) : base(factory, metrics) { }
 
         public new void Queue(AppDiscordMessage msg) {
             if ((msg.ChannelID == null || msg.ChannelID == 0)

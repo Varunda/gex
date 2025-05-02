@@ -39,6 +39,12 @@ namespace gex.Code {
                 if (ex is NpgsqlException && ex.InnerException is TimeoutException) {
                     dets.Title = $"internal server error: Database timeout";
                 }
+				if (ex is OperationCanceledException) {
+					logger.LogWarning($"request cancelled [url={dets.Type}]");
+					context.Response.StatusCode = 499; // 499 - Client closed request
+					await context.Response.WriteAsync("");
+					return;
+				}
 
                 dets.Status = 500;
                 dets.Detail = ex.ToString();

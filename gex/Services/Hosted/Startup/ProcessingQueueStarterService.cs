@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Hosted.Startup {
 
+	/// <summary>
+	///		startup service that gets all matches stored in the DB that still need further processing
+	/// </summary>
     public class ProcessingQueueStarterService : IHostedService {
 
         private readonly ILogger<ProcessingQueueStarterService> _Logger;

@@ -6,6 +6,70 @@
         </div>
 
         <div class="container">
+            <div v-if="queue.data.state == 'loaded'" class="mb-3">
+                <div v-if="queue.index > -1" class="alert alert-info">
+                    <h3 class="text-info text-center">
+                        This match is in queue to be ran locally
+                        <button title="Refresh" class="btn btn-link p-0" @click="loadQueuePosition" :class=" {'spin': queue.data.state != 'loaded'}">
+                            <span>&#x21bb;</span>
+                        </button>
+                    </h3>
+                    <div class="text-center d-block">
+                        This match is in position {{queue.index + 1}} of {{queue.data.data.length}}.
+                        <span v-if="queue.processingTime != null">
+                            Estimated time: {{(queue.processingTime * (queue.index + 1)) / 1000 | mduration}}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="showWaitForActions">
+                <h4 class="alert alert-warning text-center">
+                    Gex is currently parsing the output after running the game locally, please refresh in a minute!
+                </h4>
+            </div>
+
+            <div v-if="showClickToReload">
+                <h4 class="text-success text-center btn-link" @click="loadBoth">
+                    This match was ran locally! Click here to load the data
+                </h4>
+            </div>
+
+            <div v-if="replay.status != null && showHeadlessStatus" class="alert alert-info text-center">
+                <h3>This game is currently being locally replayed to collect stats</h3>
+
+                <h5>
+                    Estimated time left:
+                    <span v-if="replay.status.simulating == true">
+                        {{ (replay.status.durationFrames - replay.status.frame) / replay.status.fps | mduration }}
+                    </span>
+                    <span v-else>
+                        Game is booting up
+                    </span>
+                </h5>
+
+                <div class="mb-0">
+                    <div class="progress" style="height: 1rem;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                            :class="{
+                                'progress-bar-animated': replay.status.simulating
+                            }"
+                            :style="{
+                                'width': (replay.status.frame / replay.status.durationFrames * 100) + '%',
+                            }
+                        ">
+                        </div>
+                    </div>
+
+                    <span v-if="replay.status.simulating == true">
+                        On frame {{ replay.status.frame }} of {{ replay.status.durationFrames }}, running at {{ (replay.status.fps / 30) | locale(2) }}x speed
+                    </span>
+                    <span v-else>
+                        Game is currently booting up
+                    </span>
+                </div>
+            </div>
+
             <div v-if="match.state == 'idle'"> </div>
 
             <div v-else-if="match.state == 'loading'">
@@ -129,7 +193,7 @@
                         {{ 
                             output.data.extraStats.length + output.data.commanderPositionUpdates.length + output.data.factoryUnitCreated.length + output.data.teamDiedEvents.length
                             + output.data.teamStats.length + output.data.unitDefinitions.size + output.data.unitResources.length + output.data.unitsCreated.length
-                            + output.data.unitsKilled.length + output.data.windUpdates.length + output.data.unitDamage.length + output.data.unitPosition.length
+                            + output.data.unitsKilled.length + output.data.windUpdates.length + output.data.unitDamage.length + output.data.unitPosition.length | locale(0)
                         }}
                         events
                     </small>
@@ -159,10 +223,10 @@
     text {
         font-family: "Atkinson Hyperlegible";
     }
-
 </style>
 
 <script lang="ts">
+    import * as sR from "signalR";
     import Vue from "vue";
     import { Loading, Loadable } from "Loading"
 
@@ -190,10 +254,14 @@
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
+    import { QueueApi } from "api/QueueApi";
+    import { AppHealth, AppHealthApi, ServiceQueueCount } from "api/AppHealthApi";
 
     import { GameOutput } from "model/GameOutput";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { HeadlessRunStatus } from "model/HeadlessRunStatus";
+    import { HeadlessRunQueueEntry } from "model/queue/HeadlessRunQueueEntry";
 
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { UnitStats } from "./compute/UnitStatData";
@@ -249,6 +317,20 @@
                     merged: [] as MergedStats[]
                 },
 
+                queue: {
+                    data: Loadable.idle() as Loading<HeadlessRunQueueEntry[]>,
+                    index: 0 as number,
+                    processingTime: null as number | null,
+                    wasInQueue: false as boolean,
+                    intervalId: -1 as number
+                },
+
+                replay: {
+                    status: null as HeadlessRunStatus | null
+                },
+
+                connection: null as sR.HubConnection | null
+
             };
         },
 
@@ -258,22 +340,40 @@
         },
 
         beforeMount: function(): void {
-            this.loadMatch();
-            this.loadOutput();
+            this.loadBoth();
         },
 
         methods: {
+            loadBoth: async function(): Promise<void> {
+                await this.loadMatch();
+
+                if (this.match.state == "loaded" && this.match.data.processing != null && this.match.data.processing.actionsParsed != null) {
+                    this.loadOutput();
+                } else {
+                    this.output = Loadable.loaded(new GameOutput());
+                    this.decLoadingStepsAndPossiblyStart();
+                }
+
+                this.queue.wasInQueue = false;
+            },
+
             loadMatch: async function(): Promise<void> {
                 this.match = Loadable.loading();
                 this.match = await BarMatchApi.getByID(this.gameID);
 
                 if (this.match.state != "loaded") {
+                    console.error(`Match> unexpected state of loading match from api: ${this.match.state}`);
                     return;
+                }
+
+                this.replay.status = this.match.data.headlessRunStatus;
+                if (this.replay.status != null) {
+                    this.makeSignalRConnection();
                 }
 
                 let matchName: string = "";
                 if (this.match.data.players.length == 2) {
-                    matchName = `${this.match.data.players[0].username} v ${this.match.data.players[0].username}`;
+                    matchName = `${this.match.data.players[0].username} v ${this.match.data.players[1].username}`;
                 } else {
                     if (this.isFFA == true) {
                         matchName = `${this.match.data.allyTeams.length}-way FFA`;
@@ -283,6 +383,34 @@
                 }
 
                 document.title = `Gex / Match / ${matchName}`;
+
+                if (this.match.data.processing != null) {
+                    if (this.match.data.processing.replaySimulated == null) {
+                        console.log(`Match> doing first queue check`);
+                        // don't block further loading on the queue position
+                        this.loadQueuePosition().then(() => {
+                            console.log(`Match> loaded queue position, at ${this.queue.index}`);
+                            if (this.connection == null) {
+                                this.makeSignalRConnection();
+                            }
+
+                            if (this.queue.wasInQueue == true) {
+                                this.queue.intervalId = setInterval(async () => {
+                                    if (this.queue.wasInQueue == true) {
+                                        console.log(`Match> game is in update queue, updating queue position`);
+                                        await this.loadQueuePosition();
+                                        console.log(`Match> game is in position ${this.queue.index} (exiting on -1)`);
+
+                                        if (this.queue.index == -1) {
+                                            console.log(`Match> no longer in queue, stopping queue check`);
+                                            clearInterval(this.queue.intervalId);
+                                        }
+                                    }
+                                }, 6000) as unknown as number;
+                            }
+                        })
+                    }
+                }
 
                 this.decLoadingStepsAndPossiblyStart();
             },
@@ -324,6 +452,92 @@
 
                 this.decLoadingStepsAndPossiblyStart();
             },
+
+            loadQueuePosition: async function(): Promise<void> {
+                this.queue.data = await QueueApi.getHeadlessQueue();
+                if (this.queue.data.state != "loaded") {
+                    return;
+                }
+
+                this.queue.index = this.queue.data.data.findIndex((iter: HeadlessRunQueueEntry) => iter.gameID == this.gameID);
+                if (this.queue.index == -1) {
+                    this.queue.index = -1;
+                    this.queue.processingTime = null;
+                    return;
+                }
+
+                this.queue.wasInQueue = true;
+                console.log(this.replay.status);
+
+                const health: Loading<AppHealth> = await AppHealthApi.getHealth();
+                if (health.state == "loaded") {
+                    const queue: ServiceQueueCount | undefined = health.data.queues.find((iter) => iter.queueName == "headless_run_queue");
+                    if (queue == undefined) {
+                        this.queue.processingTime = null;
+                        return;
+                    }
+
+                    this.queue.processingTime = queue.median;
+                }
+            },
+
+            makeSignalRConnection: async function(): Promise<void> {
+                console.log(`Match> creating connecion to sR`);
+                if (this.connection != null) {
+                    console.log(`Match> closing previous sR connection`);
+                    await this.connection.stop();
+                    console.log(`Match> closed previous sR connection`);
+                }
+
+                this.connection = new sR.HubConnectionBuilder()
+                    .withUrl("/ws/headless-run")
+                    .withAutomaticReconnect([5000, 10000, 20000, 20000])
+                    .build();
+
+                this.connection.on("UpdateProgress", (data: any) => {
+                    // getting any updates on the progress means it's exited the queue, so the queue progress can be hidden
+                    this.queue.index = -1;
+                    //console.log(JSON.stringify(data));
+                    try {
+                        this.replay.status = HeadlessRunStatus.parse(data);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+
+                this.connection.on("Finish", () => {
+                    this.replay.status = null;
+                    this.queue.wasInQueue = true;
+                });
+
+                this.connection.onreconnected(() => {
+                    console.log(`Match> sR reconnected!`);
+                });
+
+                this.connection.onreconnecting((err?: Error) => {
+                    if (err) {
+                        console.error("onreconnecting:", err);
+                    } else {
+                        console.log(`Match> sR reconnect started`);
+                    }
+                });
+
+                this.connection.onclose((err?: Error) => {
+                    if (err) {
+                        console.error(`close:`, err);
+                    } else {
+                        console.log(`Match> sR connection closed`);
+                    }
+                });
+
+                try {
+                    await this.connection.start();
+                    await this.connection.invoke("SubscribeToMatch", this.gameID);
+                    console.log(`Match> successfully subscribed to updates [gameID=${this.gameID}]`);
+                } catch (err) {
+                    console.error("error during sR connection", err);
+                }
+            }
         },
 
         computed: {
@@ -348,7 +562,32 @@
                 }
 
                 return this.match.data.players.find(iter => iter.teamID == this.selectedTeam) || null;
+            },
+
+            showHeadlessStatus: function(): boolean {
+                return this.replay.status != null
+                    && (
+                        this.match.state != "loaded"
+                        || this.match.data.processing == null
+                        || this.match.data.processing.replaySimulated == null
+                        // if the timestamp of the latest update is BEFORE the end time of simulation
+                        || this.match.data.processing.replaySimulated.getTime() <= this.replay.status.timestamp.getTime()
+                    )
+            },
+
+            showWaitForActions: function(): boolean {
+                return this.match.state == "loaded"
+                    && this.match.data.processing != null
+                    && this.match.data.processing.replaySimulated != null
+                    && this.match.data.processing.actionsParsed == null;
+            },
+
+            showClickToReload: function(): boolean {
+                return this.queue.wasInQueue == true
+                    && this.queue.index == -1
+                    && this.replay.status == null;
             }
+
         },
 
         watch: {

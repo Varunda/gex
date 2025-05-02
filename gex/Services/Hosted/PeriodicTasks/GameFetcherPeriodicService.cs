@@ -5,7 +5,7 @@ using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Match;
-using gex.Services.Demofile;
+using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
@@ -85,7 +85,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                     }
                 }
 
-                if (iterCount == limit && page < 10) {
+                if (alreadyCount == 0 && page < 20) {
                     _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}]");
                     page += 1;
                 } else {

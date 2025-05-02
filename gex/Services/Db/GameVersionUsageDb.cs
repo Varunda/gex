@@ -36,6 +36,9 @@ namespace gex.Services.Db {
 			if (string.IsNullOrEmpty(entry.Version) == true) {
 				throw new Exception($"missing {nameof(GameVersionUsage.Version)} from {nameof(GameVersionUsage)}");
 			}
+			if (entry.LastUsed == default) {
+				throw new Exception($"value of {nameof(GameVersionUsage.LastUsed)} is still default");
+			}
 
 			_Logger.LogDebug($"updating game version usage [engine={entry.Engine}] [version={entry.Version}] [lastUsed={entry.LastUsed:u}]");
 

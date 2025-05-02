@@ -23,19 +23,22 @@ namespace gex.Services.Db.Match {
         }
 
         public async Task Upsert(BarMatchProcessing proc) {
-
             if (string.IsNullOrEmpty(proc.GameID)) {
                 throw new System.Exception($"missing GameID from bar match processing entry");
             }
+
+			_Logger.LogTrace($"upserting match processing [gameID={proc.GameID}] [priority={proc.Priority}]");
 
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_processing (
                     game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed,
-                    fetch_ms, parse_ms, replay_ms, action_ms
+                    fetch_ms, parse_ms, replay_ms, action_ms,
+					priority
                 ) VALUES (
                     @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed,
-                    @FetchMs, @ParseMs, @ReplayMs, @ActionMs
+                    @FetchMs, @ParseMs, @ReplayMs, @ActionMs,
+					@Priority
                 ) ON CONFLICT (game_id) DO UPDATE 
                     SET demofile_fetched = @DemofileFetched,
                         demofile_parsed = @DemofileParsed,
@@ -44,7 +47,8 @@ namespace gex.Services.Db.Match {
                         fetch_ms = @FetchMs,
                         parse_ms = @ParseMs,
                         replay_ms = @ReplayMs,
-                        action_ms = @ActionMs
+                        action_ms = @ActionMs,
+						priority = @Priority
                 ;
             ");
 
@@ -57,12 +61,22 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("ParseMs", proc.ReplayParsedMs);
             cmd.AddParameter("ReplayMs", proc.ReplaySimulatedMs);
             cmd.AddParameter("ActionMs", proc.ActionsParsedMs);
+			cmd.AddParameter("Priority", proc.Priority);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
         }
 
+		/// <summary>
+		///		load the <see cref="BarMatchProcessing"/> for a specific game
+		/// </summary>
+		/// <param name="gameID">ID of the game</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns>
+		///		the <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/> of <paramref name="gameID"/>,
+		///		or <c>null</c> if it does not exist in the database
+		/// </returns>
         public async Task<BarMatchProcessing?> GetByGameID(string gameID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
@@ -110,6 +124,29 @@ namespace gex.Services.Db.Match {
                 cancellationToken: cancel
             ))).ToList();
         }
+
+		public async Task<BarMatchProcessing?> GetLowestPriority(CancellationToken cancel) {
+			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+			return await conn.QueryFirstOrDefaultAsync<BarMatchProcessing>(new CommandDefinition(
+				@"
+                    SELECT
+                        mp.* 
+                    FROM 
+                        bar_match_processing mp
+						LEFT JOIN bar_match m ON m.id = mp.game_id
+                    WHERE 
+						priority > 0
+                        AND mp.demofile_fetched is not null
+                        AND mp.demofile_parsed is not null
+						AND mp.headless_ran IS NULL
+					ORDER BY
+						priority ASC, m.start_time ASC
+					LIMIT 1;
+                ",
+				cancellationToken: cancel
+			));
+		}
 
     }
 }

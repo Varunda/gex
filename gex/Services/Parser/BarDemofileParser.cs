@@ -6,6 +6,7 @@ using gex.Models.Db;
 using gex.Models.Demofile;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +19,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Demofile {
+namespace gex.Services.Parser {
 
     /// <summary>
     ///     service that takes in the bytes of a demofile and parses it into a <see cref="BarMatch"/>.
@@ -48,7 +49,27 @@ namespace gex.Services.Demofile {
             using MemoryStream stream = new(demofile);
             using GZipStream zlib = new(stream, CompressionMode.Decompress);
             using MemoryStream output = new();
-            await zlib.CopyToAsync(output, cancel);
+
+			// this is copied from CopyToAsync, but includes a failsafe where if the demofile 
+			// gets too large when unzipping, processing exits (anti-zip-bomb)
+            //await zlib.CopyToAsync(output, cancel);
+			byte[] buffer = ArrayPool<byte>.Shared.Rent(1024 * 1024);
+			try {
+				int totalRead = 0;
+				int bytesRead;
+				while ((bytesRead = await zlib.ReadAsync(new Memory<byte>(buffer), cancel).ConfigureAwait(false)) != 0) {
+					totalRead += bytesRead;
+					await output.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancel).ConfigureAwait(false);
+
+					// if the demofile uncompressed is over 1GB, something is very wrong :tm:
+					if (totalRead > 1024 * 1024 * 1024) {
+						_Logger.LogError($"uncompressed demofile reached unsafe size, exiting [filename={filename}]");
+						return $"demofile uncompression reached unsafe size";
+					}
+				}
+			} finally {
+				ArrayPool<byte>.Shared.Return(buffer);
+			}
             byte[] data = output.ToArray();
             _Logger.LogDebug($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
 
@@ -420,6 +441,7 @@ namespace gex.Services.Demofile {
                     allyTeam.Won = true;
                 }
                 allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
+				match.PlayerCount += allyTeam.PlayerCount;
             }
 
             int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();

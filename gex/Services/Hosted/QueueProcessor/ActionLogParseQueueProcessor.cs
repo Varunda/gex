@@ -122,6 +122,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogInformation($"deleted old game events due to force [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
             }
 
+			_Logger.LogDebug($"inserting game events to DB [gameID={entry.GameID}]");
             await _CommanderPositionDb.InsertMany(game.Value.CommanderPositionUpdates, cancel);
             await _ExtraStatsDb.InsertMany(game.Value.ExtraStats, cancel);
             await _FactoryCreateDb.InsertMany(game.Value.FactoryUnitCreated, cancel);
@@ -169,7 +170,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.ActionsParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingRepository.Upsert(processing);
 
-            _Logger.LogInformation($"parsed action log [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
+            _Logger.LogInformation($"parsed action log and inserted DB events [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return true;
         }

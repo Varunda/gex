@@ -19,7 +19,7 @@ export default class ApiWrapper<T> {
 		}
 
 		if (Array.isArray(data.data) == false) {
-			return Loadable.error(`expected array for readList. Did you mean to use readSingle instead? URL: '${url}'`);
+			return Loadable.error(`expected array for readList. is readSingle supposed to be used instead? URL: '${url}'`);
 		}
 
 		const arr: U[] = data.data.map((iter: any) => {
@@ -42,7 +42,7 @@ export default class ApiWrapper<T> {
 		}
 
 		if (Array.isArray(data.data) == true) {
-			return Loadable.error(`unexpected array for readSingle. Did you mean to use readList instead? URL: '${url}'`);
+			return Loadable.error(`unexpected array for readSingle. is readList supposed to be used instead? URL: '${url}'`);
 		}
 
 		const datum: U = reader(data.data);
@@ -59,7 +59,7 @@ export default class ApiWrapper<T> {
 		} else if (response.status == 404) {
 			return Loadable.notFound(response.data);
 		} else if (response.status == 429) {
-			return Loadable.error(`you have been rate limited! more info: ${response.data}`);
+			return Loadable.error(`rate limit hit! more info: ${response.data}`);
 		} else if (response.status == 500) {
 			return Loadable.error(response.data);
 		} else if (response.status == 524 || response.status == 504) {
@@ -82,11 +82,11 @@ export default class ApiWrapper<T> {
             } else if (response.status == 400) {
                 return Loadable.error(`bad request: ${response.data}`);
             } else if (response.status == 403) {
-                return Loadable.error(`forbidden: you are not signed in, or your account lacks permissions`);
+                return Loadable.error(`forbidden: user not signed in, or user's account lacks permissions`);
             } else if (response.status == 404) {
                 return Loadable.notFound(response.data);
             } else if (response.status == 429) {
-                return Loadable.error(`you have been rate limited! more info: ${response.data}`);
+                return Loadable.error(`rate limit hit! more info: ${response.data}`);
             } else if (response.status == 500) {
                 return Loadable.error(`internal server error: ${response.data}`);
             } else if (response.status == 524 || response.status == 504) {
@@ -106,7 +106,7 @@ export default class ApiWrapper<T> {
 			if (responseCode == 400) {
 				return Loadable.error(`bad request: ${responseData}`);
             } else if (responseCode == 403) {
-                return Loadable.error(`forbidden: you are not signed in, or your account lacks permissions`);
+                return Loadable.error(`forbidden: user not signed in, or user's account lacks permissions`);
 			} else if (responseCode == 404) {
 				return Loadable.notFound(responseData);
 			} else if (responseCode == 429) {

@@ -1,10 +1,12 @@
 ﻿import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
+import { HeadlessRunStatus } from "model/HeadlessRunStatus";
 
 export class AppHealth {
     public timestamp: Date = new Date();
     public queues: ServiceQueueCount[] = [];
     public services: AppService[] = [];
+    public headlessRuns: HeadlessRunStatus[] = [];
 }
 
 export class AppService {
@@ -45,6 +47,7 @@ export class AppHealthApi extends ApiWrapper<AppHealth> {
         return {
             queues: elem.queues.map((iter: any) => AppHealthApi.parseQueue(iter)),
             services: elem.services.map((iter: any) => AppHealthApi.parseService(iter)),
+            headlessRuns: elem.headlessRuns.map((iter: any) => HeadlessRunStatus.parse(iter)),
             timestamp: new Date(elem.timestamp)
         };
     }

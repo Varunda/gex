@@ -73,5 +73,15 @@ namespace gex.Models.Db {
 		/// </summary>
 		public bool? ProcessingAction { get; set; }
 
+		/// <summary>
+		///		minimum number of players to be included
+		/// </summary>
+		public int? PlayerCountMinimum { get; set; }
+
+		/// <summary>
+		///		minimum number of players to be included
+		/// </summary>
+		public int? PlayerCountMaximum { get; set; }
+
 	}
 }

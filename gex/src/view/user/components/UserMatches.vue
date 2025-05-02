@@ -74,6 +74,18 @@
 
             <a-col>
                 <a-header>
+                    <b>Outcome</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <span :class="'outcome-' + outcome(entry)">
+                        {{ outcome(entry) }}
+                    </span>
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
                     <b>Link</b>
                 </a-header>
 
@@ -88,6 +100,22 @@
     
 </template>
 
+<style scoped>
+
+    .outcome-Won {
+        color: var(--bs-green);
+    }
+
+    .outcome-Tie {
+        color: var(--bs-blue);
+    }
+
+    .outcome-Lost {
+        color: var(--bs-red);
+    }
+
+</style>
+
 <script lang="ts">
     import Vue, { PropType } from "vue";
     import { Loadable, Loading } from "Loading";
@@ -99,12 +127,14 @@
     import ToggleButton from "components/ToggleButton";
 
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
     import "filters/BarGamemodeFilter";
 
     export const UserMatches = Vue.extend({
         props: {
-            data: { type: Array as PropType<BarMatch[]>, required: true }
+            data: { type: Array as PropType<BarMatch[]>, required: true },
+            UserId: { type: Number, required: true }
         },
 
         data: function() {
@@ -117,6 +147,25 @@
             isFFA: function(match: BarMatch): boolean {
                 return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
             },
+
+            outcome: function(match: BarMatch): string {
+                const winner: BarMatchAllyTeam[] = match.allyTeams.filter(iter => iter.won == true);
+                if (winner.length == 0) {
+                    return "Tie";
+                }
+
+                const player = match.players.find(iter => iter.userID == this.UserId);
+                if (player == undefined) {
+                    console.error(`UserMatches> user was not a player? ${this.UserId}`);
+                    return "Unknown";
+                }
+
+                if (winner.find(iter => iter.allyTeamID == player.allyTeamID) != undefined) {
+                    return "Won";
+                }
+
+                return "Lost";
+            }
         },
 
         computed: {

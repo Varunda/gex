@@ -16,11 +16,13 @@ export class BarMatchPlayer {
     public handicap: number = 0;
 
     public static parse(elem: any): BarMatchPlayer {
+        const lut: number = Lut.lut(elem.color);
+
         return {
             ...elem,
-            color: Lut.lut(elem.color),
+            color: lut,
             username: elem.name,
-            hexColor: "#" + (Lut.lut(elem.color) as number).toString(16).padStart(6, "0")
+            hexColor: "#" + lut.toString(16).padStart(6, "0")
         };
     }
 }

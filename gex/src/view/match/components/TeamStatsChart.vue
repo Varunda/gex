@@ -19,8 +19,8 @@
                             </h2>
 
                             <div :id="'stats-group-' + group.id" class="accordion-collapse collapse" :class="{ 'show': index == 0 }" data-bs-parent="#stat-accordion-parent">
-                                <div class="btn-group btn-group-vertical w-100">
-                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                                <div class="btn-group btn-group-vertical w-100 mb-2">
+                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn ms-0" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
                                         {{ stat[1] }}
                                     </button>
                                 </div>
@@ -136,7 +136,7 @@
                 const check = document.createElement("input");
                 check.type = "checkbox";
                 check.checked = !(iter.hidden ?? true);
-                check.classList.add("form-check-input", "mt-0");
+                check.classList.add("form-check-input", "mt-0", "me-1");
 
                 // Color box
                 const boxSpan = document.createElement('span');
@@ -147,6 +147,7 @@
                 boxSpan.style.flexShrink = "0";
                 boxSpan.style.height = "1em";
                 boxSpan.style.width = "1em";
+                boxSpan.classList.add("me-1");
 
                 // Text
                 const textContainer = document.createElement("p");

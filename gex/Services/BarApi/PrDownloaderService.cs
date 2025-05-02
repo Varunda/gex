@@ -1,6 +1,8 @@
 ﻿using gex.Code;
 using gex.Code.ExtensionMethods;
+using gex.Models.Db;
 using gex.Models.Options;
+using gex.Services.Db;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -15,23 +17,25 @@ namespace gex.Services.BarApi {
 
         private readonly ILogger<PrDownloaderService> _Logger;
         private readonly IOptions<FileStorageOptions> _Options;
+		private readonly GameVersionUsageDb _VersionUsageDb;
 
-        public PrDownloaderService(ILogger<PrDownloaderService> logger,
-            IOptions<FileStorageOptions> options) {
+		public PrDownloaderService(ILogger<PrDownloaderService> logger,
+			IOptions<FileStorageOptions> options, GameVersionUsageDb versionUsageDb) {
 
-            _Logger = logger;
-            _Options = options;
-        }
+			_Logger = logger;
+			_Options = options;
+			_VersionUsageDb = versionUsageDb;
+		}
 
-        /// <summary>
-        ///     check if a game version for a specific engine has been downloaded
-        /// </summary>
-        /// <param name="engine">version of the engine</param>
-        /// <param name="version">game version</param>
-        /// <returns>
-        ///     a boolean value indicating if the game version has already been downloaded for the specified engine
-        /// </returns>
-        public bool HasGameVersion(string engine, string version) {
+		/// <summary>
+		///     check if a game version for a specific engine has been downloaded
+		/// </summary>
+		/// <param name="engine">version of the engine</param>
+		/// <param name="version">game version</param>
+		/// <returns>
+		///     a boolean value indicating if the game version has already been downloaded for the specified engine
+		/// </returns>
+		public bool HasGameVersion(string engine, string version) {
             string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version, "done.txt");
             return File.Exists(gameVersionOutput);
         }
@@ -81,6 +85,13 @@ namespace gex.Services.BarApi {
             await done.WriteAsync(new byte[] { 0x00 }, cancel);
 
             _Logger.LogInformation($"game version fetched [version={version}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms] [exit code={exitCode}]");
+
+			await _VersionUsageDb.Upsert(new GameVersionUsage() {
+				Engine = engine,
+				Version = version,
+				LastUsed = DateTime.UtcNow
+			}, cancel);
+
             return true;
         }
 

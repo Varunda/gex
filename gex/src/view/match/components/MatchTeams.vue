@@ -2,7 +2,7 @@
 <template>
     <div>
         <collapsible header-text="Teams" size-class="h1" bg-color="bg-light">
-            <div class="d-grid" :style="gridStyle">
+            <div v-if="isFunkyTeams == false" class="d-grid" :style="gridStyle">
                 <h4 v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="ally-team-header mb-0"
                     :style="getTeamNameStyle(allyTeam)">
 
@@ -24,6 +24,15 @@
                                 {{ player.username }}
                             </span>
                         </a>
+
+                        <span v-if="player.handicap != 0">
+                            <span v-if="player.handicap > 0" style="color: var(--bg-green)">
+                                (+{{ player.handicap }}%)
+                            </span>
+                            <span v-else>
+                                ({{ player.handicap }}%)
+                            </span>
+                        </span>
                     </div>
 
                     <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-os' + player.teamID"
@@ -34,6 +43,31 @@
                 </template>
             </div>
 
+            <div v-else>
+                <small class="text-muted">These are not usual team size! Gex is not programmed to handle teams of this size, so a fallback is being used instead</small>
+
+                <table class="table table-sm" style="table-layout: fixed">
+                    <thead>
+                        <tr>
+                            <th v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" :style="{ 'background-color': allyTeamColor(allyTeam.allyTeamID) }">
+                                Team {{ allyTeam.allyTeamID + 1 }}
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr v-for="index in maxTeamSize - 1" :key="index">
+                            <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
+                                <span v-if="index > allyTeam.playerCount"></span>
+
+                                <player-cell v-else :player="playersByTeam(allyTeam.allyTeamID)[index - 1]"></player-cell>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+
             <div v-if="match.spectators.length > 0">
                 <h5>
                     Spectators ({{ match.spectators.length }})
@@ -41,7 +75,9 @@
 
                 <div class="d-flex flex-wrap">
                     <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
-                        {{ spec.username }}
+                        <a :href="'/user/' + spec.userID">
+                            {{ spec.username }}
+                        </a>
                     </span>
                 </div>
             </div>
@@ -86,6 +122,31 @@
         allyTeamID: number,
         players: BarMatchPlayer[]
     }
+
+    const PlayerCell = Vue.extend({
+        props: {
+            player: { type: Object as PropType<BarMatchPlayer>, required: true }
+        },
+
+        template: `
+            <span>
+                <a :href="'/user/' + player.userID" style="text-decoration: none; text-shadow: 1px 1px 1px black;">
+                    <span :style="{ 'color': player.hexColor }">
+                        [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
+                        {{ player.username }}
+                    </span>
+                </a>    
+                <span v-if="player.handicap != 0">
+                    <span v-if="player.handicap > 0" style="color: var(--bg-green)">
+                        (+{{ player.handicap }}%)
+                    </span>
+                    <span v-else>
+                        ({{ player.handicap }}%)
+                    </span>
+                </span>
+            </span>
+        `
+    });
 
     export const MatchTeams = Vue.extend({
         props: {
@@ -142,6 +203,14 @@
         },
 
         computed: {
+            maxTeamSize: function(): number {
+                return Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
+            },
+
+            isFunkyTeams: function(): boolean {
+                return this.maxTeamSize > 8;
+            },
+
             playersByAllyTeam: function(): GroupedPlayers[] {
                 return this.match.allyTeams.map(iter => {
                     return {
@@ -163,8 +232,8 @@
         },
 
         components: {
-            Collapsible
-
+            Collapsible,
+            PlayerCell
         }
     });
     export default MatchTeams;

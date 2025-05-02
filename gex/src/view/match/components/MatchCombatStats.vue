@@ -9,7 +9,7 @@
                 <div class="d-flex flex-wrap align-items-center" style="gap: 1rem; justify-content: space-evenly;">
 
                     <div v-for="mostUsed in playerMostUsed" class="text-center border position-sticky" :key="mostUsed.defID" style="border-radius: 0.5rem;">
-                        <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.25rem;">
+                        <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.25rem 0 0.25rem 0;">
                             {{ mostUsed.name }}
                         </div>
 

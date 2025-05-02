@@ -188,6 +188,11 @@ namespace gex.Controllers {
             return File(image, "image/png", false);
         }
 
+		/// <summary>
+		///		get the picture of a unit, first locally saved, otherwise load it from the github
+		/// </summary>
+		/// <param name="defName">definition name of the unit</param>
+		/// <returns></returns>
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName"] )] // 24 hours
         public async Task<IActionResult> UnitPic([FromQuery] string defName) {
 

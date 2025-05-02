@@ -49,6 +49,8 @@ namespace gex.Models.Db {
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
+		public int PlayerCount { get; set; }
+
         public BarMap? MapData { get; set; }
 
     }

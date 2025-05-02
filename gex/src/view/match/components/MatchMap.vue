@@ -155,6 +155,9 @@
 
     // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
+    let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
+    let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
+
     export const MatchMap = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
@@ -164,8 +167,8 @@
         data: function() {
             return {
                 
-                svg: null as d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null,
-                root: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                //svg: null as d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null,
+                //root: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                 tooltip: null as any | null,
                 zoom: {} as any,
 
@@ -231,7 +234,7 @@
                     return;
                 }
 
-                this.svg = d3.select("#map-svg");
+                SVG = d3.select("#map-svg");
 
                 img.addEventListener("load", (ev: Event) => {
                     this.isMapImageLoading = false;
@@ -247,7 +250,7 @@
                     this.svg.attr("height", this.imgH);
                     this.svg.attr("width", this.imgW);
 
-                    this.root = this.svg.append("g")
+                    ROOT = this.svg.append("g")
                         .attr("id", "doc-root");
 
                     this.zoom = d3z.zoom()
@@ -261,12 +264,12 @@
 
                     this.svg.call(this.zoom);
 
-                    this.root.append("image")
+                    ROOT.append("image")
                         .classed("map-no-remove", true)
                         .attr("width", this.imgW).attr("height", this.imgH)
                         .attr("href", this.mapUrl);
 
-                    this.root.append("rect")
+                    ROOT.append("rect")
                         .classed("map-no-remove", true)
                         .attr("x", 0).attr("y", 0)
                         .attr("width", this.imgW).attr("height", this.imgH)
@@ -1071,6 +1074,14 @@
         },
 
         computed: {
+            root: function(): d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null {
+                return ROOT;
+            },
+
+            svg: function() {
+                return SVG;
+            },
+
             mapUrl: function(): string {
                 return `/image-proxy/MapBackground?mapName=${this.match.mapName}&size=texture-mq`;
             },
@@ -1084,7 +1095,11 @@
             },
 
             unitPositionFrames: function(): number[] {
-                return this.output.unitPosition.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i);
+                const set: Set<number> = new Set();
+                for (const ev of this.output.unitPosition) {
+                    set.add(ev.frame);
+                }
+                return Array.from(set.values()).sort((a, b) => a - b);
             },
             
             loadingRectangleDimensions: function() {

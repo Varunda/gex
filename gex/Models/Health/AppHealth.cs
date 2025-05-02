@@ -16,6 +16,8 @@ namespace gex.Models.Health {
 
         public List<ServiceHealthEntry> Services { get; set; } = [];
 
+		public List<HeadlessRunStatus> HeadlessRuns { get; set; } = [];
+
         /// <summary>
         ///     When this data was created
         /// </summary>

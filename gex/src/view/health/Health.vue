@@ -116,6 +116,43 @@
                     </table>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="wt-header">Headless Runs</h1>
+
+                    <table class="table table-sm">
+                        <thead>
+                            <tr class="table-secondary">
+                                <th>Game ID</th>
+                                <th>running</th>
+                                <th>frame</th>
+                                <th>duration</th>
+                                <th>fps</th>
+                                <th>eta</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr v-for="run in health.data.headlessRuns" :key="run.gameID">
+                                <td>{{ run.gameID }}</td>
+                                <td>{{ run.simulating }}</td>
+                                <td>{{ run.frame }}</td>
+                                <td>{{ run.durationFrames}}</td>
+                                <td>{{ run.fps | locale(2) }}</td>
+                                <td>
+                                    <span v-if="run.simulating == true">
+                                        {{ (run.durationFrames - run.frame) / run.fps | mduration }}
+                                    </span>
+                                    <span v-else>
+                                        --
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </template>

@@ -21,6 +21,7 @@ namespace gex.Services.Db.Readers {
             match.Map = reader.GetString("map");
             match.MapName = reader.GetString("map_name");
             match.Gamemode = reader.GetByte("gamemode");
+			match.PlayerCount = reader.GetInt32("player_count");
 
             match.HostSettings = reader.GetJsonb("host_settings");
             match.GameSettings = reader.GetJsonb("game_settings");

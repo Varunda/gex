@@ -27,7 +27,8 @@
 
         data: function () {
             return {
-                ID: 0 as number
+                ID: 0 as number,
+                popover: null as bootstrap.Popover | null
             };
         },
 
@@ -37,15 +38,37 @@
 
         mounted: function () {
             this.$nextTick(() => {
-                console.log(`InfoHover> creating popover at #info-hover-${this.ID}`);
+                this.bindElem();
+            });
+        },
+
+        methods: {
+
+            bindElem: function(): void {
                 const elem: HTMLElement | null = document.getElementById(`info-hover-${this.ID}`);
                 if (elem == null) {
                     console.error(`InfoHover> failed to find #info-hover-${this.ID}`);
-                } else {
-                    new bootstrap.Popover(elem);
+                    return;
                 }
-            });
+
+                if (this.popover != null) {
+                    this.popover.dispose();
+                    this.popover = null;
+                }
+
+                this.popover = new bootstrap.Popover(elem);
+            }
+
         },
+
+        watch: {
+            "text": function(): void {
+                this.$nextTick(() => {
+                    this.bindElem();
+                });
+            }
+
+        }
     });
 
 

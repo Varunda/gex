@@ -32,7 +32,7 @@ using System.Globalization;
 using gex.Services.Db.Readers;
 using gex.Models.Options;
 using gex.Services.BarApi;
-using gex.Services.Demofile;
+using gex.Services.Parser;
 using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
@@ -40,6 +40,8 @@ using Dapper.ColumnMapper;
 using Dapper;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
+using gex.Services.Metrics;
+using gex.Code.Hubs;
 
 namespace gex {
 
@@ -54,7 +56,7 @@ namespace gex {
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services) {
             string stuff = ((IConfigurationRoot)Configuration).GetDebugView();
-            Console.WriteLine(stuff);
+            //Console.WriteLine(stuff);
 
             services.AddLogging(builder => {
                 builder.AddFile("logs/app-{0:yyyy}-{0:MM}-{0:dd}.log", options => {
@@ -248,16 +250,19 @@ namespace gex {
             services.AddGexRepositories();
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarDemofileParser>();
+			services.AddSingleton<BarMapParser>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist
             services.AddAppStartupServices(); // startup services
             services.AddQueueProcessors(); // Hosted queues
             services.AddPeriodicServices(); // periodic run services
+			services.AddBackgroundServices();
+			services.AddGexMetrics();
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
-                services.AddSingleton<DiscordWrapper>();
-                services.AddHostedService<DiscordService>();
+                //services.AddSingleton<DiscordWrapper>();
+                //services.AddHostedService<DiscordService>();
             }
 
             services.AddTransient<AppCurrentAccount>();
@@ -295,11 +300,11 @@ namespace gex {
                 doc.DocumentTitle = "API documentation";
             });
 
+            app.UseCors();
+
             app.UseResponseCaching();
             app.UseAuthentication();
             app.UseAuthorization();
-
-            app.UseCors();
 
             app.UseMiddleware<TimerMiddleware>();
 
@@ -351,12 +356,13 @@ namespace gex {
                     defaults: new { controller = "Home", action = "DownloadMatch" }
                 );
 
+				endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run");
+
                 endpoints.MapSwagger();
             });
 
             logger.LogInformation($"pipeline configured");
         }
-
 
     }
 }

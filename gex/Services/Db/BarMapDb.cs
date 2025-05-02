@@ -3,6 +3,9 @@ using gex.Code.ExtensionMethods;
 using gex.Models.Bar;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db {
@@ -99,6 +102,19 @@ namespace gex.Services.Db {
                 new { FileName = mapName }
             );
         }
+
+		/// <summary>
+		///		get all maps stored in the DB
+		/// </summary>
+		/// <param name="cancel"></param>
+		/// <returns></returns>
+		public async Task<List<BarMap>> GetAll(CancellationToken cancel) {
+			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+			return (await conn.QueryAsync<BarMap>(new CommandDefinition(
+				"SELECT * from bar_map",
+				cancellationToken: cancel
+			))).ToList();
+		}
 
     }
 }

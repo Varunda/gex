@@ -12,6 +12,7 @@ using gex.Services.Queues;
 using gex.Code;
 using gex.Services;
 using gex.Models.Queues;
+using gex.Services.Repositories;
 
 namespace gex.Controllers.Api {
 
@@ -23,6 +24,7 @@ namespace gex.Controllers.Api {
         private readonly IMemoryCache _Cache;
 
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
+		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
 
         private readonly DiscordMessageQueue _DiscordQueue;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
@@ -31,37 +33,41 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
+		private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
 
-        public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
-            DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-            ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
-            BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
-            BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) {
+		public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
+			DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
+			ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
+			BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
+			BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
+			BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository) {
 
-            _Logger = logger;
-            _Cache = cache;
+			_Logger = logger;
+			_Cache = cache;
 
-            _DiscordQueue = discordQueue;
-            _HeadlessRunQueue = headlessRunQueue;
-            _ServiceHealthMonitor = serviceHealthMonitor;
-            _DownloadQueue = downloadQueue;
-            _ParseQueue = parseQueue;
-            _ActionLogQueue = actionLogQueue;
-            _MapStatUpdateQueue = mapStatUpdateQueue;
-            _FactionStatUpdateQueue = factionStatUpdateQueue;
-        }
+			_DiscordQueue = discordQueue;
+			_HeadlessRunQueue = headlessRunQueue;
+			_ServiceHealthMonitor = serviceHealthMonitor;
+			_DownloadQueue = downloadQueue;
+			_ParseQueue = parseQueue;
+			_ActionLogQueue = actionLogQueue;
+			_MapStatUpdateQueue = mapStatUpdateQueue;
+			_FactionStatUpdateQueue = factionStatUpdateQueue;
+			_HeadlessRunStatusQueue = headlessRunStatusQueue;
+			_HeadlessRunStatusRepository = headlessRunStatusRepository;
+		}
 
-        /// <summary>
-        ///     Get an object that indicates how healthy Gex is in various metrics
-        /// </summary>
-        /// <remarks>
-        ///     Feel free to hammer this endpoint as much as you'd like. The results are cached for 800ms, and it only takes like 2ms to
-        ///     get all the data, so hitting this endpoint is not a burden
-        /// </remarks>
-        /// <response code="200">
-        ///     The response will contain a <see cref="AppHealth"/> that represents the health of the app at the time of being called
-        /// </response>
-        [HttpGet]
+		/// <summary>
+		///     Get an object that indicates how healthy Gex is in various metrics
+		/// </summary>
+		/// <remarks>
+		///     Feel free to hammer this endpoint as much as you'd like. The results are cached for 800ms, and it only takes like 2ms to
+		///     get all the data, so hitting this endpoint is not a burden
+		/// </remarks>
+		/// <response code="200">
+		///     The response will contain a <see cref="AppHealth"/> that represents the health of the app at the time of being called
+		/// </response>
+		[HttpGet]
         public ApiResponse<AppHealth> GetRealtimeHealth() {
             if (_Cache.TryGetValue("App.Health", out AppHealth? health) == false || health == null) {
                 health = new AppHealth();
@@ -75,6 +81,7 @@ namespace gex.Controllers.Api {
                     _MakeCount("action_log_queue", _ActionLogQueue),
                     _MakeCount("user_map_stat_update_queue", _MapStatUpdateQueue),
                     _MakeCount("user_faction_stat_update_queue", _FactionStatUpdateQueue),
+					_MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue)
                 };
 
                 foreach (string service in _ServiceHealthMonitor.GetServices()) {
@@ -83,6 +90,8 @@ namespace gex.Controllers.Api {
                         health.Services.Add(entry);
                     }
                 }
+
+				health.HeadlessRuns = _HeadlessRunStatusRepository.GetAll();
 
                 _Cache.Set("App.Health", health, new MemoryCacheEntryOptions() {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(800)

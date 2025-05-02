@@ -1,8 +1,13 @@
-﻿using gex.Models;
+﻿using gex.Code.Hubs;
+using gex.Models;
+using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.Options;
+using gex.Services.Db;
+using gex.Services.Queues;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -23,6 +28,10 @@ namespace gex.Services.BarApi {
         private readonly PrDownloaderService _PrDownloader;
         private readonly BarEngineDownloader _EngineDownloader;
         private readonly EnginePathUtil _EnginePathUtil;
+		private readonly GameVersionUsageDb _VersionUsageDb;
+		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
+		private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
+		private readonly IHubContext<HeadlessReplayHub, IHeadlessReplayHub> _HeadlessReplayHub;
 
         private static int _PortOffset = 0;
 
@@ -30,10 +39,21 @@ namespace gex.Services.BarApi {
 
 		private static Regex GexLoadErrorPattern = new(@"\[t=.+?\]\[f=-000001\] Failed to load: gex\.lua");
 
+		private static Regex GameEndedPattern = new(@"\[t=.+?\]\[f=.+?\] \[SpringApp::Kill\]\[1\] fromRun=1");
+
+		private static Regex StdErrErrorPattern = new Regex(@"^\[t=.+?\]\[f=.+?\] Error: ");
+
+		private static Regex StdErrFatalPattern = new Regex(@"^\[t=.+?\]\[f=.+?\] Fatal: ");
+
+		private const string SOCKET_BIND_ERROR = "Error: [UDPListener::TryBindSocket] binding UDP socket to IP localhost failed: "
+			+ "bind: An attempt was made to access a socket in a way forbidden by its access permissions.";
+
 		public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
 			IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
 			PrDownloaderService prDownloader, BarEngineDownloader engineDownloader,
-            EnginePathUtil enginePathUtil) {
+			EnginePathUtil enginePathUtil, GameVersionUsageDb versionUsageDb,
+			HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
+			IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub) {
 
 			_Logger = logger;
 			_Options = options;
@@ -41,6 +61,10 @@ namespace gex.Services.BarApi {
 			_PrDownloader = prDownloader;
 			_EngineDownloader = engineDownloader;
 			_EnginePathUtil = enginePathUtil;
+			_VersionUsageDb = versionUsageDb;
+			_HeadlessRunStatusRepository = headlessRunStatusRepository;
+			_HeadlessRunStatusQueue = headlessRunStatusQueue;
+			_HeadlessReplayHub = headlessReplayHub;
 		}
 
 		public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -49,7 +73,7 @@ namespace gex.Services.BarApi {
 
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
-                return $"cannot find game with ID '{gameID}'";
+                return $"cannot find game with ID '{gameID}' (missing from repository)";
             }
 
             string gamePrefixLocation = Path.Join(_Options.Value.GameLogLocation, gameID.Substring(0, 2));
@@ -124,6 +148,12 @@ namespace gex.Services.BarApi {
                 --attempts;
             } while (attempts > 0);
 
+			await _VersionUsageDb.Upsert(new GameVersionUsage() {
+				Engine = match.Engine,
+				Version = match.GameVersion,
+				LastUsed = DateTime.UtcNow
+			}, cancel);
+
             // ensure map is downloaded
             if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
                 _Logger.LogDebug($"missing map, downloading [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
@@ -168,9 +198,20 @@ namespace gex.Services.BarApi {
             _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] "
                 + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}]");
 
+			HeadlessRunStatus status = new();
+			status.GameID = gameID;
+			status.Timestamp = DateTime.UtcNow;
+			status.Frame = 0;
+			status.DurationFrames = match.DurationFrameCount;
+			status.Simulating = false;
+			status.Fps = 0d;
+			_HeadlessRunStatusRepository.Upsert(gameID, status);
+			_HeadlessRunStatusQueue.Queue(status);
+
 			long previousTimerUpdate = 0;
 			long previousFrame = 0;
 
+			bool gameEnded = false;
             using AutoResetEvent outputWaitHandle = new(false);
             using AutoResetEvent errorWaitHandle = new(false);
             bar.OutputDataReceived += (sender, e) => {
@@ -184,6 +225,12 @@ namespace gex.Services.BarApi {
 					if (errorMatch.Success == true) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
 						bar.Kill();
+					}
+
+					Match gameEndedMatch = GameEndedPattern.Match(e.Data);
+					if (gameEndedMatch.Success == true) {
+						_Logger.LogDebug($"game ended, ignoring any errors past this [gameID={gameID}]");
+						gameEnded = true;
 					}
 
                     Match m = FramePattern.Match(e.Data);
@@ -206,15 +253,27 @@ namespace gex.Services.BarApi {
 					long deltaFrame = frame - previousFrame;
 					long deltaTimer = replayTimer - previousTimerUpdate;
 
+					HeadlessRunStatus status = new();
+					status.GameID = gameID;
+					status.Timestamp = DateTime.UtcNow;
+					status.Frame = frame;
+					status.DurationFrames = match.DurationFrameCount;
+					status.Simulating = frame > 0;
+					status.Fps = 0d;
+
 					if (frame == 0) {
 						_Logger.LogDebug($"game startup complete [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [engine={match.Engine}] [version={match.GameVersion}]");
 						playbackStartedMs = timer.ElapsedMilliseconds;
 					} else {
 						decimal fps = deltaFrame / (Math.Max(1, deltaTimer) / 1000m);
+						status.Fps = (double)fps;
 						decimal eta = (match.DurationFrameCount - frame) / Math.Max(0.01m, fps);
 						_Logger.LogDebug($"game frame update sent [gameID={gameID}] [frame={frame}/{match.DurationFrameCount}] [eta={eta:F1}s] "
 							+ $"[timer={timer.ElapsedMilliseconds}ms] [speedup={fps/30m:F3}] [fps={fps:F3}]");
 					}
+
+					_HeadlessRunStatusRepository.Upsert(gameID, status);
+					_HeadlessRunStatusQueue.Queue(status);
 
 					previousTimerUpdate = timer.ElapsedMilliseconds - playbackStartedMs;
 					previousFrame = frame;
@@ -229,6 +288,24 @@ namespace gex.Services.BarApi {
 					if (e.Data.Contains("Failed to load: gex.lua")) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
 						bar.Kill();
+					}
+
+					if (e.Data.Contains(SOCKET_BIND_ERROR)) {
+						_Logger.LogError($"BAR failed to bind to port [gameID={gameID}] [port={port}] [error={e.Data}]");
+					}
+
+					if (gameEnded == true) {
+						return;
+					}
+
+					Match m = StdErrErrorPattern.Match(e.Data);
+					if (m.Success == true) {
+						//_Logger.LogError($"Error from stderr caught [gameID={gameID}] [msg={e.Data}]");
+					}
+
+					m = StdErrFatalPattern.Match(e.Data);
+					if (m.Success == true) {
+						_Logger.LogError($"Fatal error from stderr caught [gameID={gameID}] [msg={e.Data}]");
 					}
                 }
             };
@@ -277,6 +354,13 @@ namespace gex.Services.BarApi {
             } catch (Exception ex) {
                 _Logger.LogWarning($"failed to delete data dir after run! [gameID={gameID}] [dataDir={dataDir}] [ex={ex.Message}]");
             }
+
+			try {
+				await _HeadlessReplayHub.Clients.Group($"Gex.Headless.{gameID}").Finish();
+				_HeadlessRunStatusRepository.Remove(gameID);
+			} catch (Exception ex) {
+				_Logger.LogError(ex, $"failed to send Finish event to {gameID}");
+			}
 
             return new GameOutput() { GameID = gameID };
         }

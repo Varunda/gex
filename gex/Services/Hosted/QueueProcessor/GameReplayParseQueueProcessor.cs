@@ -1,4 +1,5 @@
 ﻿using gex.Code.Constants;
+using gex.Code.ExtensionMethods;
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
@@ -8,7 +9,7 @@ using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Db.Readers;
 using gex.Services.Db.UserStats;
-using gex.Services.Demofile;
+using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +36,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarUserDb _UserDb;
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
+		private readonly MapPriorityModDb _MapPriorityModDb;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -52,7 +55,8 @@ namespace gex.Services.Hosted.QueueProcessor {
 			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
 			BarReplayDb replayDb, BarUserDb userDb,
 			BarUserSkillDb userSkillDb, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
-			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb) :
+			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
+			MapPriorityModDb mapPriorityModDb) :
 
 		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -72,6 +76,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 			_MapStatUpdateQueue = mapStatUpdateQueue;
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
 			_GameVersionUsageDb = gameVersionUsageDb;
+			_MapPriorityModDb = mapPriorityModDb;
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -89,12 +94,14 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             bool runHeadless = entry.ForceForward;
 
+			short priority = -1;
+
             BarMatch? existingMatch = await _MatchRepository.GetByID(entry.GameID, cancel);
             if (existingMatch != null && entry.Force == false) {
                 _Logger.LogInformation($"replay file already parsed [gameID={entry.GameID}]");
 
                 List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(entry.GameID, cancel);
-                runHeadless |= players.Count == 2;
+                runHeadless |= players.Count <= 6;
             } else {
                 if (entry.Force == true) {
                     Stopwatch delTimer = Stopwatch.StartNew();
@@ -112,6 +119,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                     _Logger.LogError($"missing replay file [gameID={entry.GameID}] [path={replayPath}]");
                     return false;
                 }
+
+				FileInfo fi = new(replayPath);
+				if (fi.Length > 1024 * 1024 * 64) {
+					_Logger.LogWarning($"demo file is much larger than expected, refusing to parse this [size={fi.Length}] [path={replayPath}]");
+					return false;
+				}
 
                 _Logger.LogDebug($"opening game replay [gameID={entry.GameID}] [path={replayPath}]");
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
@@ -201,12 +214,49 @@ namespace gex.Services.Hosted.QueueProcessor {
                     LastUsed = parsed.StartTime
                 }, cancel);
 
-                runHeadless |= parsed.Players.Count == 2;
+                runHeadless |= parsed.Players.Count <= 6;
+
+				string why = "";
+				priority = -1;
+
+				MapPriorityMod? mapPrioMod = await _MapPriorityModDb.GetByName(parsed.MapName, cancel);
+				if (mapPrioMod != null) {
+					priority += mapPrioMod.Change;
+					why += $"map {parsed.MapName} gives {mapPrioMod.Change}; ";
+				}
+
+				// if Gex has decided to not run the game, assign a priority so it might be processed later
+				if (runHeadless == false || (mapPrioMod != null && mapPrioMod.Change > 0)) {
+					priority = (short) (10 + (mapPrioMod?.Change ?? 0)); // a bit of wiggle room for something idk
+
+					// de-prio low elo games
+					double maxElo = parsed.Players.Select(iter => iter.Skill).Max();
+					if (maxElo < 16) {
+						priority += 30;
+						why += $"low elo game (highest is {maxElo}); ";
+					}
+
+					// de-prio longer games (+1 prior per minute over 30)
+					if (parsed.DurationMs > (1000 * 60 * 30)) {
+						short minutesOver = (short) ((parsed.DurationMs - (1000 * 60 * 30)) / (1000 * 60));
+						priority += (short)(minutesOver * 4);
+						why += $"long game ({minutesOver} mins over 30); ";
+					}
+
+					// de-prio unranked games
+					if (parsed.GameSettings.GetInt32("ranked_game", 0) == 0) {
+						priority += 20;
+						why += $"unranked game; ";
+					}
+
+					_Logger.LogDebug($"game priority set [gameID={parsed.ID}] [priority={priority}] [why={why}]");
+				}
             }
 
             BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
+			processing.Priority = priority;
             processing.ReplayParsed = DateTime.UtcNow;
             processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingRepository.Upsert(processing);

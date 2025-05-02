@@ -5,6 +5,7 @@ using gex.Services.Db;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,20 +18,26 @@ namespace gex.Services.Repositories {
         private readonly BarMapApi _Api;
         private readonly BarMapDb _Db;
         private readonly IMemoryCache _Cache;
+		private readonly PrDownloaderService _PrDownloader;
 
         private const string CACHE_KEY_NAME = "Gex.BarMap.{0}"; // {0} => map name
 
-        public BarMapRepository(ILogger<BarMapRepository> logger,
-            BarMapApi api, BarMapDb db,
-            IMemoryCache cache) {
+		public BarMapRepository(ILogger<BarMapRepository> logger,
+			BarMapApi api, BarMapDb db,
+			IMemoryCache cache, PrDownloaderService prDownloader) {
 
-            _Logger = logger;
-            _Api = api;
-            _Db = db;
-            _Cache = cache;
-        }
+			_Logger = logger;
+			_Api = api;
+			_Db = db;
+			_Cache = cache;
+			_PrDownloader = prDownloader;
+		}
 
-        public async Task<BarMap?> GetByName(string filename, CancellationToken cancel) {
+		public Task<List<BarMap>> GetAll(CancellationToken cancel) {
+			return _Db.GetAll(cancel);
+		}
+
+		public async Task<BarMap?> GetByName(string filename, CancellationToken cancel) {
             if (string.IsNullOrEmpty(filename)) {
                 return null;
             }

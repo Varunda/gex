@@ -75,5 +75,7 @@ namespace gex.Models.Api {
 
         public BarMatchProcessing? Processing { get; set; }
 
+		public HeadlessRunStatus? HeadlessRunStatus { get; set; }
+
     }
 }

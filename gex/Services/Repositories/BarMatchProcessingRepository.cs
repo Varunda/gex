@@ -55,5 +55,9 @@ namespace gex.Services.Repositories {
             return _ProcessingDb.GetPending(cancel);
         }
 
+		public Task<BarMatchProcessing?> GetLowestPriority(CancellationToken cancel) {
+			return _ProcessingDb.GetLowestPriority(cancel);
+		}
+
 	}
 }

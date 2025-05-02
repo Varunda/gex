@@ -23,7 +23,7 @@
             </div>
 
             <div v-else-if="matches.state == 'loaded'">
-                <user-matches :data="matches.data"></user-matches>
+                <user-matches :data="matches.data" :user-id="userID"></user-matches>
             </div>
 
             <div v-else-if="matches.state == 'error'">

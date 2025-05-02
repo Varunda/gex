@@ -25,34 +25,36 @@ namespace gex.Controllers.Api {
         private readonly BarMatchSpectatorDb _SpectatorDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
+		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
 
-        public BarMatchApiController(ILogger<BarMatchApiController> logger,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
-            BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
-            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-            BarMatchProcessingRepository processingRepository) {
+		public BarMatchApiController(ILogger<BarMatchApiController> logger,
+			BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
+			BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
+			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
+			BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository) {
 
-            _Logger = logger;
-            _MatchRepository = matchRepository;
-            _BarMapRepository = barMapRepository;
-            _AllyTeamDb = allyTeamDb;
-            _ChatMessageDb = chatMessageDb;
-            _SpectatorDb = spectatorDb;
-            _PlayerRepository = playerRepository;
-            _ProcessingRepository = processingRepository;
-        }
+			_Logger = logger;
+			_MatchRepository = matchRepository;
+			_BarMapRepository = barMapRepository;
+			_AllyTeamDb = allyTeamDb;
+			_ChatMessageDb = chatMessageDb;
+			_SpectatorDb = spectatorDb;
+			_PlayerRepository = playerRepository;
+			_ProcessingRepository = processingRepository;
+			_HeadlessRunStatusRepository = headlessRunStatusRepository;
+		}
 
-        /// <summary>
-        ///     get a <see cref="BarMatch"/>, optionally including additional information
-        /// </summary>
-        /// <param name="cancel">cancel token</param>
-        /// <param name="gameID">ID of the game</param>
-        /// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated? defaults to false</param>
-        /// <param name="includePlayers">will <see cref="BarMatch.Players"/> be populated? defaults to false</param>
-        /// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
-        /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
-        /// <returns></returns>
-        [HttpGet("{gameID}")]
+		/// <summary>
+		///     get a <see cref="BarMatch"/>, optionally including additional information
+		/// </summary>
+		/// <param name="cancel">cancel token</param>
+		/// <param name="gameID">ID of the game</param>
+		/// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated? defaults to false</param>
+		/// <param name="includePlayers">will <see cref="BarMatch.Players"/> be populated? defaults to false</param>
+		/// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
+		/// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
+		/// <returns></returns>
+		[HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
             string gameID,
             [FromQuery] bool includeAllyTeams = false,
@@ -84,6 +86,7 @@ namespace gex.Controllers.Api {
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
+			ret.HeadlessRunStatus = _HeadlessRunStatusRepository.Get(gameID);
 
             return ApiOk(ret);
         }
@@ -141,6 +144,8 @@ namespace gex.Controllers.Api {
 		/// <param name="processingParsed"></param>
 		/// <param name="processingReplayed"></param>
 		/// <param name="processingAction"></param>
+		/// <param name="playerCountMinimum"></param>
+		/// <param name="playerCountMaximum"></param>
 		/// <param name="offset"></param>
 		/// <param name="limit"></param>
 		/// <param name="cancel"></param>
@@ -160,6 +165,8 @@ namespace gex.Controllers.Api {
 			[FromQuery] bool? processingParsed = null,
 			[FromQuery] bool? processingReplayed = null,
 			[FromQuery] bool? processingAction = null,
+			[FromQuery] int? playerCountMinimum = null,
+			[FromQuery] int? playerCountMaximum = null,
 
 			[FromQuery] int offset = 0,
 			[FromQuery] int limit = 24,
@@ -184,6 +191,8 @@ namespace gex.Controllers.Api {
 			parms.DurationMaximum = durationMaximum;
 			parms.Ranked = ranked;
 			parms.Gamemode = gamemode;
+			parms.PlayerCountMinimum = playerCountMinimum;
+			parms.PlayerCountMaximum = playerCountMaximum;
 			parms.ProcessingDownloaded = processingDownloaded;
 			parms.ProcessingParsed = processingParsed;
 			parms.ProcessingReplayed = processingReplayed;
