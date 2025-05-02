@@ -42,6 +42,7 @@ using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using gex.Services.Metrics;
 using gex.Code.Hubs;
+using gex.Services.Util;
 
 namespace gex {
 
@@ -259,6 +260,7 @@ namespace gex {
             services.AddPeriodicServices(); // periodic run services
 			services.AddBackgroundServices();
 			services.AddGexMetrics();
+			services.AddSingleton<BarMatchPriorityCalculator>();
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
                 //services.AddSingleton<DiscordWrapper>();
@@ -340,7 +342,7 @@ namespace gex {
 
                 endpoints.MapControllerRoute(
                     name: "match",
-                    pattern: "/match/{*.}",
+                    pattern: "/match/{gameID}",
                     defaults: new { controller = "Home", action = "Match" }
                 );
 

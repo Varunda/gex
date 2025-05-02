@@ -12,6 +12,7 @@ using gex.Services.Db.UserStats;
 using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -37,6 +38,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
 		private readonly MapPriorityModDb _MapPriorityModDb;
+		private readonly BarMatchPriorityCalculator _PriorityCalculator;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -56,7 +58,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 			BarReplayDb replayDb, BarUserDb userDb,
 			BarUserSkillDb userSkillDb, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
 			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
-			MapPriorityModDb mapPriorityModDb) :
+			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator) :
 
 		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -77,6 +79,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
 			_GameVersionUsageDb = gameVersionUsageDb;
 			_MapPriorityModDb = mapPriorityModDb;
+			_PriorityCalculator = priorityCalculator;
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -214,44 +217,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                     LastUsed = parsed.StartTime
                 }, cancel);
 
-                runHeadless |= parsed.Players.Count <= 6;
-
-				string why = "more than 6 players; ";
-				priority = -1;
-
-				MapPriorityMod? mapPrioMod = await _MapPriorityModDb.GetByName(parsed.MapName, cancel);
-				if (mapPrioMod != null) {
-					priority += mapPrioMod.Change;
-					why += $"map {parsed.MapName} gives {mapPrioMod.Change}; ";
-				}
-
-				// if Gex has decided to not run the game, assign a priority so it might be processed later
-				if (runHeadless == false || (mapPrioMod != null && mapPrioMod.Change > 0)) {
-					runHeadless = false;
-					priority = (short) (10 + (mapPrioMod?.Change ?? 0)); // a bit of wiggle room for something idk
-
-					// de-prio low elo games
-					double maxElo = parsed.Players.Select(iter => iter.Skill).Max();
-					if (maxElo < 16) {
-						priority += 30;
-						why += $"low elo game (highest is {maxElo}); ";
-					}
-
-					// de-prio longer games (+1 prior per minute over 30)
-					if (parsed.DurationMs > (1000 * 60 * 30)) {
-						short minutesOver = (short) ((parsed.DurationMs - (1000 * 60 * 30)) / (1000 * 60));
-						priority += (short)(minutesOver * 4);
-						why += $"long game ({minutesOver} mins over 30); ";
-					}
-
-					// de-prio unranked games
-					if (parsed.GameSettings.GetInt32("ranked_game", 0) == 0) {
-						priority += 20;
-						why += $"unranked game; ";
-					}
-
-					_Logger.LogDebug($"game priority set [gameID={parsed.ID}] [priority={priority}] [why={why}]");
-				}
+				priority = await _PriorityCalculator.Calculate(parsed, cancel);
+                runHeadless |= (priority == -1);
             }
 
             BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)

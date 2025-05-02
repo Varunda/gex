@@ -141,11 +141,45 @@ namespace gex.Services.Db.Match {
                         AND mp.demofile_parsed is not null
 						AND mp.headless_ran IS NULL
 					ORDER BY
-						priority ASC, m.start_time ASC
+						priority ASC, m.start_time DESC
 					LIMIT 1;
                 ",
 				cancellationToken: cancel
 			));
+		}
+
+		/// <summary>
+		///		get a list of priority processing games
+		/// </summary>
+		/// <param name="count">how many games to list. anything above 1'000 will throw an exception</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns></returns>
+		/// <exception cref="System.Exception"></exception>
+		public async Task<List<BarMatchProcessing>> GetPriorityList(int count, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+			if (count > 1000) {
+				throw new System.Exception($"failsafe, only allowing a max of 1000 for count, got {count}");
+			}
+
+            return (await conn.QueryAsync<BarMatchProcessing>(new CommandDefinition(
+                @$"
+                    SELECT
+                        mp.* 
+                    FROM 
+                        bar_match_processing mp
+						LEFT JOIN bar_match m ON m.id = mp.game_id
+                    WHERE 
+						priority > 0
+                        AND mp.demofile_fetched is not null
+                        AND mp.demofile_parsed is not null
+						AND mp.headless_ran IS NULL
+					ORDER BY
+						priority ASC, m.start_time DESC
+					LIMIT {count};
+                ",
+                cancellationToken: cancel
+            ))).ToList();
 		}
 
     }

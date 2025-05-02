@@ -1,6 +1,9 @@
 ﻿import Vue from "vue";
 
 export const GexMenu = Vue.extend({
+    template: ``,
+
+    /*
     template: `
         <nav class="navbar navbar-expand bg-body-tertiary pt-0 mb-2 container-fluid-negative px-3">
             <div class="navbar-collapse">
@@ -26,4 +29,5 @@ export const GexMenu = Vue.extend({
             </div>
         </nav>
     `,
+    */
 });

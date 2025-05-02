@@ -87,7 +87,7 @@ namespace gex.Services.Hosted {
             }
             */
 
-            _Logger.LogInformation($"stopping");
+            _Logger.LogInformation($"stopped");
         }
 
         protected async Task ThreadMain(CancellationToken cancel) {

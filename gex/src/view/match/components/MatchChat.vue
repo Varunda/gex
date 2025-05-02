@@ -2,24 +2,31 @@
 <template>
     <div>
         <collapsible header-text="Chat" bg-color="bg-light" size-class="h1">
-            <div v-if="show == false" class="alert alert-warning text-center" @click="show = true">
-                Chat is not censored or filtered in any way, and may contain inappropriate language. Click here to view
+
+            <div v-if="messages.length == 0">
+                No chat messages
             </div>
 
-            <div v-else style="max-height: 400px; overflow-y: scroll;">
-                <div class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
-                    <template v-for="msg in messages">
-                        <div style="grid-column: 1;" class="text-nowrap my-2">
-                            [<span class="font-monospace">{{ msg.timestamp }}</span>]
-                            <span :style="{ 'color': msg.color }">
-                                ({{ msg.to }})
-                            </span>
-                        </div>
-                        <div style="grid-column: 2;" class="text-end border-end pe-2 py-2">
-                            <b>{{ msg.from }}</b>
-                        </div>
-                        <div style="grid-column: 3;" class="my-2 ms-2">{{ msg.message }}</div>
-                    </template>
+            <div v-else>
+                <div v-if="show == false" class="alert alert-warning text-center" @click="show = true">
+                    Chat is not censored or filtered in any way, and may contain inappropriate language. Click here to view
+                </div>
+
+                <div v-else style="max-height: 400px; overflow-y: scroll;">
+                    <div class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
+                        <template v-for="msg in messages">
+                            <div style="grid-column: 1;" class="text-nowrap my-2">
+                                [<span class="font-monospace">{{ msg.timestamp }}</span>]
+                                <span :style="{ 'color': msg.color }">
+                                    ({{ msg.to }})
+                                </span>
+                            </div>
+                            <div style="grid-column: 2;" class="text-end border-end pe-2 py-2">
+                                <b>{{ msg.from }}</b>
+                            </div>
+                            <div style="grid-column: 3;" class="my-2 ms-2">{{ msg.message }}</div>
+                        </template>
+                    </div>
                 </div>
             </div>
         </collapsible>

@@ -3,7 +3,10 @@
     <div class="d-flex flex-wrap justify-content-center" style="font-size: 14px; line-height: 1;">
         <div v-for="match in matches" :key="match.id" style="width: 18rem; height: 18rem;" class="me-3 mb-3">
             <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                <h5 class="tile-title">{{ match.map }}</h5>
+                <h5 class="tile-title">
+                    {{ match.map }}
+                </h5>
+
                 <h5 class="tile-versus">
                     <span v-if="isFFA(match)">
                         {{ match.allyTeams.length }}-way FFA
@@ -45,8 +48,14 @@
                     </div>
 
                     <div class="tile-top-right">
-                        <div class="tile-ranked" :style="{ 'background-color': match.gameSettings.ranked_game == '1' ? '#800080' : '#ffa500' }">
-                            {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
+                        <div class="tile-time-ago">
+                            {{ match.startTime | timeAgo }} ago
+                        </div>
+
+                        <div class="tile-processing">
+                            <div v-if="match.processing == null || match.processing.actionsParsed == null" title="This game has not been fully processed!" class="text-warning">
+                                &#9888;
+                            </div>
                         </div>
 
                         <!--
@@ -113,6 +122,14 @@
         text-overflow: clip;
     }
 
+    .tile-time-ago {
+        background-color: #000000AA;
+        font-size: 0.83rem;
+        padding: 0.2rem 0.5rem;
+        border-start-end-radius: 0.75rem;
+        border-end-start-radius: 0.75rem;
+    }
+
     .tile-versus {
         position: absolute;
         font-weight: bold;
@@ -177,6 +194,8 @@
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
+
+    import "filters/TimeAgoFilter";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";

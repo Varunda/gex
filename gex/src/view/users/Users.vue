@@ -1,10 +1,6 @@
 
 <template>
     <div>
-        <div class="d-flex align-items-center">
-            <gex-menu class="flex-grow-1"></gex-menu>
-        </div>
-
         <div class="container">
             <h1>User search</h1>
 

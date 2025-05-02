@@ -34,7 +34,7 @@ namespace gex.Commands {
                     TimeSpan timeAgo = now - entry.LastRan;
                     string ago = $"{timeAgo.Minutes:D2}:{timeAgo.Seconds:D2}";
 
-                    s += $"{entry.Name,-24} | {entry.LastRan,30} | {ago,10} | {entry.RunDuration,10}ms | {entry.Message?.Truncate(160)}\n";
+                    s += $"{entry.Name,-40} | {entry.LastRan,30} | {ago,10} | {entry.RunDuration,10}ms | {entry.Message?.Truncate(160)}\n";
                 }
             }
 
@@ -44,27 +44,29 @@ namespace gex.Commands {
         public void Enable(string serviceName) {
             ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(serviceName);
             if (entry == null) {
-                _Logger.LogWarning($"Cannot enable service '{serviceName}': does not exist");
+                _Logger.LogWarning($"cannot enable service '{serviceName}': does not exist");
             } else {
                 entry.Enabled = true;
                 _ServiceHealthMonitor.Set(serviceName, entry);
-                _Logger.LogInformation($"Enabled service '{serviceName}'");
+                _Logger.LogInformation($"enabled service '{serviceName}'");
             }
         }
 
         public void Disable(string serviceName) {
-            ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(serviceName);
-
-            if (entry == null) {
-                entry = new ServiceHealthEntry() {
-                    Name = serviceName
-                };
-            }
-
+            ServiceHealthEntry entry = _ServiceHealthMonitor.GetOrCreate(serviceName);
             entry.Enabled = false;
             _ServiceHealthMonitor.Set(serviceName, entry);
-            _Logger.LogInformation($"Disabled service '{serviceName}'");
+
+            _Logger.LogInformation($"disabled service '{serviceName}'");
         }
+
+		public void Count(string serviceName, int count) {
+			ServiceHealthEntry entry = _ServiceHealthMonitor.GetOrCreate(serviceName);
+			entry.MaxCount = count;
+            _ServiceHealthMonitor.Set(serviceName, entry);
+
+            _Logger.LogInformation($"set instance count of service '{serviceName}' to {count}");
+		}
 
     }
 

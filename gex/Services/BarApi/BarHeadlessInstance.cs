@@ -32,6 +32,7 @@ namespace gex.Services.BarApi {
 		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
 		private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
 		private readonly IHubContext<HeadlessReplayHub, IHeadlessReplayHub> _HeadlessReplayHub;
+		private readonly BarMatchProcessingRepository _ProcessingRepository;
 
         private static int _PortOffset = 0;
 
@@ -53,7 +54,8 @@ namespace gex.Services.BarApi {
 			PrDownloaderService prDownloader, BarEngineDownloader engineDownloader,
 			EnginePathUtil enginePathUtil, GameVersionUsageDb versionUsageDb,
 			HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
-			IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub) {
+			IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,
+			BarMatchProcessingRepository processingRepository) {
 
 			_Logger = logger;
 			_Options = options;
@@ -65,6 +67,7 @@ namespace gex.Services.BarApi {
 			_HeadlessRunStatusRepository = headlessRunStatusRepository;
 			_HeadlessRunStatusQueue = headlessRunStatusQueue;
 			_HeadlessReplayHub = headlessReplayHub;
+			_ProcessingRepository = processingRepository;
 		}
 
 		public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -224,6 +227,7 @@ namespace gex.Services.BarApi {
 					Match errorMatch = GexLoadErrorPattern.Match(e.Data);
 					if (errorMatch.Success == true) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
+						_HeadlessRunStatusRepository.Remove(gameID);
 						bar.Kill();
 					}
 
@@ -287,6 +291,7 @@ namespace gex.Services.BarApi {
 
 					if (e.Data.Contains("Failed to load: gex.lua")) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");
+						_HeadlessRunStatusRepository.Remove(gameID);
 						bar.Kill();
 					}
 
@@ -318,8 +323,18 @@ namespace gex.Services.BarApi {
             // doing it this way prevents hangs due to not reading stdout or stderr
             // https://stackoverflow.com/questions/139593/processstartinfo-hanging-on-waitforexit-why
             if (!(bar.WaitForExit(processingTimeout) && outputWaitHandle.WaitOne(processingTimeout) && errorWaitHandle.WaitOne(processingTimeout))) {
-                _Logger.LogWarning($"hit game processing timeout [gameID={gameID}] [timeout={processingTimeout}]");
-                return "took longer to process the game than the game ran, something went wrong!";
+				_HeadlessRunStatusRepository.Remove(gameID);
+                _Logger.LogWarning($"hit game processing timeout, increasing priority by 100 [gameID={gameID}] [timeout={processingTimeout}]");
+
+				// if a game takes too long to process, de-prio it for future runs, as it is taking too much time
+				// away from other games that could be processed quicker
+				BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+				if (proc != null) {
+					proc.Priority += 100;
+					await _ProcessingRepository.Upsert(proc);
+				}
+
+                return $"hit processing timeout for game [gameID={gameID}] [timeout={processingTimeout}]";
             }
 
             // game successfully ran, good job gex!

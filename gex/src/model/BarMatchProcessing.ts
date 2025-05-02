@@ -9,6 +9,7 @@ export class BarMatchProcessing {
     public replayParsedMs: number | null = null;
     public replaySimulatedMs: number | null = null;
     public actionsParsedMs: number | null = null;
+    public priority: number = 0;
 
     public static parse(elem: any): BarMatchProcessing {
         return {
@@ -20,7 +21,8 @@ export class BarMatchProcessing {
             replayDownloadedMs: elem.replayDownloadedMs,
             replayParsedMs: elem.replayParsedMs,
             replaySimulatedMs: elem.replaySimulatedMs,
-            actionsParsedMs: elem.actionsParsedMs
+            actionsParsedMs: elem.actionsParsedMs,
+            priority: elem.priority
         };
     }
 

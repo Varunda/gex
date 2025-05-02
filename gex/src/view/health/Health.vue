@@ -1,7 +1,5 @@
 ﻿<template>
     <div>
-        <gex-menu></gex-menu>
-
         <div>
             <h3 class="d-inline">
                 Latest update -

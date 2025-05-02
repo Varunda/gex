@@ -1,11 +1,11 @@
 ﻿<template>
     <div style="max-width: 100vw">
-        <div class="d-flex align-items-center">
-            <gex-menu class="flex-grow-1"></gex-menu>
-        </div>
+        <div v-if="searching == false">
+            <toggle-button v-model="showUnprocessedGames">
+                Show unprocessed
+            </toggle-button>
 
-        <div v-if="searching == false" @click="searching = true">
-            <button class="btn btn-primary">
+            <button class="btn btn-primary" @click="searching = true">
                 Search options
             </button>
         </div>
@@ -143,6 +143,7 @@
     import InfoHover from "components/InfoHover.vue";
     import MatchList from "components/app/MatchList.vue";
     import DropdownSearch from "components/DropdownSearch.vue";
+    import ToggleButton from "components/ToggleButton";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
@@ -158,6 +159,7 @@
         data: function() {
             return {
                 searching: false as boolean,
+                showUnprocessedGames: false as boolean,
 
                 search: {
                     use: false as boolean,
@@ -195,6 +197,10 @@
                 this.offset = Number.parseInt(search.get("offset")!);
             }
 
+            if (search.has("showUnprocessed")) {
+                this.showUnprocessedGames = search.get("showUnprocessed") == "true";
+            }
+
             if (search.has("search")) {
                 const b64: string = search.get("search")!;
                 this.search = JSON.parse(atob(b64));
@@ -208,7 +214,14 @@
         methods: {
             loadRecent: async function(): Promise<void> {
                 this.recent = Loadable.loading();
-                this.recent = await BarMatchApi.getRecent(this.offset);
+
+                if (this.showUnprocessedGames == true) {
+                    this.recent = await BarMatchApi.getRecent(this.offset);
+                } else {
+                    this.recent = await BarMatchApi.search(this.offset, 24, {
+                        processingAction: true
+                    });
+                }
             },
 
             performSearch: async function(): Promise<void> {
@@ -222,6 +235,10 @@
         computed: {
 
             searchParam: function(): string {
+                if (this.showUnprocessedGames == true) {
+                    return "&showUnprocessed=true";
+                }
+
                 if (this.search.use == false) {
                     return "";
                 }
@@ -276,9 +293,15 @@
 
         },
 
+        watch: {
+            showUnprocessedGames: function(): void {
+                this.loadRecent();
+            }
+        },
+
         components: {
             InfoHover, GexMenu,
-            MatchList, DropdownSearch
+            MatchList, DropdownSearch, ToggleButton
         }
     });
 

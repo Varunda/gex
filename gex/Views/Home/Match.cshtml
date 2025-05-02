@@ -1,5 +1,10 @@
 ﻿<meta property="og:title" content="Gex / Match" />
-<meta property="og:description" content="View match info" />
+
+@if (ViewBag.OgDescription == null) {
+    <meta property="og:description" content="View match info" />
+} else {
+    <meta property="og:description" content="@ViewBag.OgDescription" />
+}
 
 <script src="~/lib/signalr/signalr.js"></script>
 <script src="~/dist/view/match/view.js" defer asp-append-version="true"></script>

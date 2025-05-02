@@ -1,12 +1,8 @@
 
 <template>
     <div>
-        <div class="d-flex align-items-center">
-            <gex-menu class="flex-grow-1"></gex-menu>
-        </div>
-
         <div class="container">
-            <div v-if="queue.data.state == 'loaded'" class="mb-3">
+            <div v-if="queue.show == true" class="mb-3">
                 <div v-if="queue.index > -1" class="alert alert-info">
                     <h3 class="text-info text-center">
                         This match is in queue to be ran locally
@@ -15,7 +11,7 @@
                         </button>
                     </h3>
                     <div class="text-center d-block">
-                        This match is in position {{queue.index + 1}} of {{queue.data.data.length}}.
+                        This match is in position {{queue.index + 1}}<span v-if="queue.data.state == 'loaded'"> of {{queue.data.data.length}}.</span><span v-else>.</span>
                         <span v-if="queue.processingTime != null">
                             Estimated time: {{(queue.processingTime * (queue.index + 1)) / 1000 | mduration}}
                         </span>
@@ -104,6 +100,10 @@
                                     <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
                                     <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
                                     <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                                    <tr>
+                                        <td class="text-muted">Prio</td>
+                                        <td class="text-muted">{{ match.data.processing.priority }}</td>
+                                    </tr>
                                 </template>
                                 <tr>
                                     <td class="text-muted">Engine</td>
@@ -137,11 +137,11 @@
 
                 <hr class="border"/>
 
+                <match-teams :match="match.data" class="my-3"></match-teams>
+
                 <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
                     This game has not been ran locally, and in-depth stats are not available
                 </div>
-
-                <match-teams :match="match.data" class="my-3"></match-teams>
 
                 <div v-if="output.state == 'loaded'">
                     <match-map :match="match.data" :output="output.data" class="my-3"></match-map>
@@ -251,17 +251,20 @@
     import MatchOption from "./components/MatchOption.vue";
     import MatchCombatStats from "./components/MatchCombatStats.vue";
     import MatchEcoStats from "./components/MatchEcoStats.vue";
+    import Busy from "components/Busy.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
     import { QueueApi } from "api/QueueApi";
     import { AppHealth, AppHealthApi, ServiceQueueCount } from "api/AppHealthApi";
+    import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
 
     import { GameOutput } from "model/GameOutput";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { HeadlessRunStatus } from "model/HeadlessRunStatus";
     import { HeadlessRunQueueEntry } from "model/queue/HeadlessRunQueueEntry";
+    import { BarMatchProcessing } from "model/BarMatchProcessing";
 
     import { PlayerOpener } from "./compute/PlayerOpenerData";
     import { UnitStats } from "./compute/UnitStatData";
@@ -318,6 +321,8 @@
                 },
 
                 queue: {
+                    show: false as boolean,
+                    length: 0 as number,
                     data: Loadable.idle() as Loading<HeadlessRunQueueEntry[]>,
                     index: 0 as number,
                     processingTime: null as number | null,
@@ -385,9 +390,34 @@
 
                 document.title = `Gex / Match / ${matchName}`;
 
-                if (this.match.data.processing != null) {
-                    if (this.match.data.processing.replaySimulated == null) {
-                        console.log(`Match> doing first queue check`);
+                if (this.match.data.processing != null && this.match.data.processing.replaySimulated == null) {
+
+                    if (this.match.data.processing.priority > -1) {
+                        console.log(`Match> game is in priority queue`);
+
+                        this.loadPriorityIndex().then(() => {
+                            console.log(`Match> game is in priority list at ${this.queue.index}`);
+                            if (this.connection == null) {
+                                this.makeSignalRConnection();
+                            }
+
+                            if (this.queue.wasInQueue == true) {
+                                this.queue.intervalId = setInterval(async () => {
+                                    if (this.queue.wasInQueue == true) {
+                                        console.log(`Match> game is in update queue, updating priority list`);
+                                        await this.loadPriorityIndex();
+                                        console.log(`Match> game is in position ${this.queue.index} (exiting on -1)`);
+
+                                        if (this.queue.index == -1) {
+                                            console.log(`Match> no longer in priority list, stopping queue check`);
+                                            clearInterval(this.queue.intervalId);
+                                        }
+                                    }
+                                }, 6000) as unknown as number;
+                            }
+                        });
+                    } else {
+                        console.log(`Match> game is in run queue, not priority system, doing first check`);
                         // don't block further loading on the queue position
                         this.loadQueuePosition().then(() => {
                             console.log(`Match> loaded queue position, at ${this.queue.index}`);
@@ -454,6 +484,35 @@
                 this.decLoadingStepsAndPossiblyStart();
             },
 
+            loadPriorityIndex: async function(): Promise<void> {
+                const prioList: Loading<BarMatchProcessing[]> = await BarMatchProcessingApi.getPriorityList();
+                if (prioList.state != "loaded") {
+                    console.error(`Match> when loading prio list, expected 'loaded', got ${prioList.state} instead`);
+                    return;
+                }
+
+                this.queue.index = prioList.data.findIndex((iter: BarMatchProcessing) => iter.gameID == this.gameID);
+                if (this.queue.index == -1) {
+                    this.queue.show = false;
+                    this.queue.processingTime = null;
+                    return;
+                }
+
+                this.queue.show = true;
+                this.queue.wasInQueue = true;
+
+                const health: Loading<AppHealth> = await AppHealthApi.getHealth();
+                if (health.state == "loaded") {
+                    const queue: ServiceQueueCount | undefined = health.data.queues.find((iter) => iter.queueName == "headless_run_queue");
+                    if (queue == undefined) {
+                        this.queue.processingTime = null;
+                        return;
+                    }
+
+                    this.queue.processingTime = queue.median;
+                }
+            },
+
             loadQueuePosition: async function(): Promise<void> {
                 this.queue.data = await QueueApi.getHeadlessQueue();
                 if (this.queue.data.state != "loaded") {
@@ -467,8 +526,8 @@
                     return;
                 }
 
+                this.queue.show = true;
                 this.queue.wasInQueue = true;
-                console.log(this.replay.status);
 
                 const health: Loading<AppHealth> = await AppHealthApi.getHealth();
                 if (health.state == "loaded") {
@@ -498,6 +557,7 @@
                 this.connection.on("UpdateProgress", (data: any) => {
                     // getting any updates on the progress means it's exited the queue, so the queue progress can be hidden
                     this.queue.index = -1;
+                    clearInterval(this.queue.intervalId);
                     //console.log(JSON.stringify(data));
                     try {
                         this.replay.status = HeadlessRunStatus.parse(data);
@@ -599,7 +659,7 @@
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
             MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats,
-            ProcessingStep, Collapsible
+            ProcessingStep, Collapsible, Busy
         }
     });
     export default Match;

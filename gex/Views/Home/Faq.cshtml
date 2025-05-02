@@ -1,0 +1,41 @@
+﻿<meta property="og:title" content="Gex / Frequently asked Questions" />
+<meta property="og:description" content="Frequently asked Questions about Gex" />
+
+<style>
+
+</style>
+
+<div class="container">
+
+    <h3>What does Gex mean?</h3>
+    <p>Gex stands for Game Extractor, named after a metal extractor (mex)</p>
+
+    <h3>What games are processed?</h3>
+    <p>
+        Gex downloads all public games without an AI in them. Once downloaded, Gex will parse them to get some basic information about each match.
+    </p>
+    <div>
+        Under certain conditions, Gex will also run the replay file locally to generate in-depth stats
+        <ul>
+            <li>If the game has 6 or less players, and is not on a metal map, Gex will process these games</li>
+            <li>
+                If the game has more than 6 players, or is on a metal map, Gex might process the game, based on a priority system.
+                <br>
+                Gex will prioritize games that are quicker to process. A game will be less likely to be processed if it:
+                <ul>
+                    <li>Is longer than 30 minutes</li>
+                    <li>Is on a metal map</li>
+                    <li>Is unranked</li>
+                    <li>Contains only low OS players</li>
+                    <li>Contains unit tweaks</li>
+                    <li>Changes any of the default mod options (increased starting resources, resource multipliers, etc.)</li>
+                </ul>
+                Matches that meet these conditions are de-prioritized as these matches usually take longer to process, and Gex tries to process quicker games first
+            </li>
+        </ul>
+    </div>
+
+    <h3></h3>
+
+
+</div>
