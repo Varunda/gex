@@ -49,6 +49,7 @@
                             {{ match.gameSettings.ranked_game == "1" ? "Ranked" : "Unranked" }}
                         </div>
 
+                        <!--
                         <div class="tile-processing">
                             <div v-if="match.processing != null">
                                 <span :class="[ match.processing.replayDownloaded != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
@@ -63,6 +64,7 @@
                                 <span class="text-muted">&bull;</span>
                             </div>
                         </div>
+                        -->
                     </div>
 
                 </div>
