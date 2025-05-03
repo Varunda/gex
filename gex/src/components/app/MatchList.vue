@@ -1,84 +1,47 @@
 
 <template>
     <div class="d-flex flex-wrap justify-content-center" style="font-size: 14px; line-height: 1;">
-        <div v-for="match in matches" :key="match.id" style="width: 18rem; height: 18rem;" class="me-3 mb-3">
-            <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                <h5 class="tile-title">
-                    {{ match.map }}
-                </h5>
+        <div v-for="match in matches" :key="match.id" class="me-3 mb-3">
+            <div>
+                <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
+                    <div class="position-absolute" style="width: 18rem; height: 18rem; background-color: #0005; z-index: 1; border-radius: 0.75rem;"></div>
 
-                <h5 class="tile-versus">
-                    <span v-if="isFFA(match)">
-                        {{ match.allyTeams.length }}-way FFA
-                    </span>
-                    <span v-else>
-                        {{ match.allyTeams.map(iter => iter.playerCount).join(" v ") }}
-                    </span>
-                </h5>
+                    <h5 class="tile-title">
+                        {{ match.map }}
+                    </h5>
 
-                <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                    <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="tile-team">
-                        <div v-if="isFFA(match) == false" class="tile-team-title"
+                    <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
+                        <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="tile-team"
                             :style="{
-                                'text-shadow': '1px 1px 1px #000000',
-                                'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                            }">
+                                'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #000000aa 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
+                                'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                                'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
+                            }"
+                        >
 
-                            <span>
-                                Team {{ allyTeam.allyTeamID + 1 }}
-                            </span>
+                            <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                :style="{
+                                    'text-shadow': '1px 1px 1px #000000',
+                                    'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
+                                    'overflow': 'clip',
+                                    'text-overflow': 'ellipsis',
+                                    'margin': '0.25rem 0'
+                                }">
 
-                            <span class="dot" :style="{
-                                'background-color': getAllyTeamColor(match, allyTeam)
-                            }">
-                                &nbsp;
-                            </span>
-                        </div>
-
-                        <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
-                            :style="{
-                                'text-shadow': '1px 1px 1px #000000',
-                                'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                                'overflow': 'clip',
-                                'text-overflow': 'ellipsis'
-                            }">
-
-                            {{ player.username }}
+                                {{ player.username }}
+                            </div>
                         </div>
                     </div>
+                </a>
+            </div>
 
-                    <div class="tile-top-right">
-                        <div class="tile-time-ago">
-                            {{ match.startTime | timeAgo }} ago
-                        </div>
-
-                        <div class="tile-processing">
-                            <div v-if="match.processing == null || match.processing.actionsParsed == null" title="This game has not been fully processed!" class="text-warning">
-                                &#9888;
-                            </div>
-                        </div>
-
-                        <!--
-                        <div class="tile-processing">
-                            <div v-if="match.processing != null">
-                                <span :class="[ match.processing.replayDownloaded != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
-                                <span :class="[ match.processing.replayParsed != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
-                                <span :class="[ match.processing.replaySimulated != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
-                                <span :class="[ match.processing.actionsParsed != null ? 'text-primary' : 'text-muted' ]">&bull;</span>
-                            </div>
-                            <div v-else title="Gex does not what the state of processing is for this match">
-                                <span class="text-muted">&bull;</span>
-                                <span class="text-muted">&bull;</span>
-                                <span class="text-muted">&bull;</span>
-                                <span class="text-muted">&bull;</span>
-                            </div>
-                        </div>
-                        -->
-                    </div>
-
-                </div>
-            </a>
+            <div class="tile-time-ago">
+                {{ match.startTime | compactTimeAgo }} ago
+                &middot;
+                {{ match.startTime | moment("hh:mm A")}}
+            </div>
         </div>
+
     </div>
 </template>
 
@@ -108,26 +71,25 @@
 
     .tile-title {
         position: absolute;
-        font-weight: bold;
-        bottom: 0;
-        left: 0;
-        background-color: #000000AA;
-        padding: 0.2rem 0.5rem;
+        top: 0;
+        background-color: #00000088;
+        padding: 0.5rem 0.5rem;
         margin-bottom: 0;
-        border-end-start-radius: 0.75rem;
+        border-start-start-radius: 0.75rem;
         border-start-end-radius: 0.75rem;
         max-width: 100%;
+        width: 100%;
+        text-align: center;
         overflow: hidden;
         text-wrap: nowrap;
         text-overflow: clip;
+        z-index: 10;
     }
 
     .tile-time-ago {
-        background-color: #000000AA;
         font-size: 0.83rem;
         padding: 0.2rem 0.5rem;
-        border-start-end-radius: 0.75rem;
-        border-end-start-radius: 0.75rem;
+        text-align: center;
     }
 
     .tile-versus {
@@ -164,14 +126,15 @@
     .tile-teams {
         text-align: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        z-index: 10;
     }
 
     .tile-team {
         background-color: #00000066;
         padding: 0.5rem;
         border-radius: 0.25rem;
-        max-width: 48%;
+        max-width: 47%;
     }
 
     .tile-team-title {
@@ -196,6 +159,7 @@
     import Vue, { PropType } from "vue";
 
     import "filters/TimeAgoFilter";
+    import "filters/CompactTimeAgoFilter";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";

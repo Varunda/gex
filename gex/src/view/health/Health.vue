@@ -191,6 +191,7 @@
                 latestUpdate: null as | Date | null,
 
                 timerID: undefined as number | undefined,
+                loadingData: false as boolean,
 
                 settings: {
                     showGraph: true as boolean,
@@ -204,6 +205,10 @@
 
             this.updateHealth();
             this.timerID = setInterval(async () => {
+                if (this.loadingData == true ) {
+                    return;
+                }
+
                 await this.updateHealth();
             }, 1000) as unknown as number;
 
@@ -234,7 +239,9 @@
 
         methods: {
             updateHealth: async function(): Promise<void> {
+                this.loadingData = true;
                 this.health = await AppHealthApi.getHealth();
+                this.loadingData = false;
                 if (this.health.state == "loaded") {
                     this.latestUpdate = new Date();
                 }

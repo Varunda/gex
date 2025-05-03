@@ -25,7 +25,7 @@
                             </span>
                         </a>
 
-                        <span v-if="player.handicap != 0">
+                        <span v-if="player.handicap != 0" class="player-handicap">
                             <span v-if="player.handicap > 0" style="color: var(--bg-green)">
                                 (+{{ player.handicap }}%)
                             </span>
@@ -101,10 +101,15 @@
         margin-bottom: 0.5rem;
     }
 
+    .player-handicap {
+        font-size: 0.9rem;
+    }
+
     .player-os {
         justify-self: stretch;
         text-align: start;
         margin-bottom: 0.5rem;
+        font-size: 0.9rem;
     }
 
 </style>
