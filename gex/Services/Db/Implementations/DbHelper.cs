@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using gex.Models.Db;
+using System.Collections.Concurrent;
 
 namespace gex.Services.Db.Implementations {
 
@@ -18,14 +19,29 @@ namespace gex.Services.Db.Implementations {
         private readonly ILogger<DbHelper> _Logger;
         private readonly IConfiguration _Configuration;
 
+        private static ConcurrentDictionary<string, NpgsqlDataSource> _DataSources = new();
+
         public DbHelper(ILogger<DbHelper> logger, IConfiguration config) {
             _Logger = logger;
             _Configuration = config;
 
+            // create all data sources up top, and name them so the otel metrics have nice names (instead of the connection string)
             IConfigurationSection allStrings = _Configuration.GetSection("ConnectionStrings");
-            string? connStr = allStrings[Dbs.MAIN];
+            foreach (KeyValuePair<string, string?> conn in allStrings.AsEnumerable()) {
+                _Logger.LogInformation($"creating data source [name={conn.Key}] [value={conn.Value}]");
+                if (string.IsNullOrEmpty(conn.Value)) {
+                    _Logger.LogWarning($"skipping DB with no connection string [name={conn.Key}]");
+                    continue;
+                }
+                string dbName = conn.Key.Split(":")[1];
+                NpgsqlDataSource ds = new NpgsqlDataSourceBuilder(conn.Value) {
+                    Name = dbName
+                }.Build();
 
-            _Logger.LogInformation($"db helper setup [conn str={connStr}]");
+                if (_DataSources.TryAdd(dbName, ds) == false) {
+					_Logger.LogError($"failed to add datasource to dict [dbName={dbName}]");
+				}
+            }
         }
 
         /// <summary>
@@ -44,21 +60,11 @@ namespace gex.Services.Db.Implementations {
         ///     A new <see cref="NpgsqlConnection"/>
         /// </returns>
         public NpgsqlConnection Connection(string server = Dbs.MAIN, string? task = null, bool enlist = true) {
-            IConfigurationSection allStrings = _Configuration.GetSection("ConnectionStrings");
-            string? connStr = allStrings[server];
-
-            if (string.IsNullOrEmpty(connStr)) {
-                throw new Exception($"No connection string for {server} exists. Currently have [{string.Join(", ", allStrings.GetChildren().ToList().Select(iter => iter.Path))}]. "
+            NpgsqlDataSource ds = _DataSources.GetValueOrDefault(server) ??
+                throw new Exception($"No connection string for {server} exists. Currently have [{string.Join(", ", _DataSources.Keys)}]. "
                     + $"Set this value in config, or by using 'dotnet user-secrets set ConnectionStrings:{server} {{connection string}}");
-            }
 
-            if (enlist == false) {
-                connStr += ";Enlist=false";
-            }
-
-            NpgsqlConnection conn = new(connStr);
-
-            return conn;
+            return ds.CreateConnection();
         }
 
         /// <summary>
@@ -75,7 +81,9 @@ namespace gex.Services.Db.Implementations {
         ///     A new <see cref="NpgsqlCommand"/> ready to be used
         /// </returns>
         public async Task<NpgsqlCommand> Command(NpgsqlConnection connection, string text, CancellationToken cancel = default) {
-            await connection.OpenAsync(cancel);
+            if (connection.State == ConnectionState.Closed) {
+                await connection.OpenAsync(cancel);
+            }
 
             NpgsqlCommand cmd = connection.CreateCommand();
             cmd.CommandType = CommandType.Text;

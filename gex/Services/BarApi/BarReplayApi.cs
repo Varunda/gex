@@ -95,7 +95,8 @@ namespace gex.Services.BarApi {
 
             JsonElement? childNull = json.GetChild("Map");
             if (childNull != null) {
-                replay.MapName = childNull.Value.GetRequiredString("fileName");
+				replay.MapName = childNull.Value.GetString("fileName", "");
+                //replay.MapName = childNull.Value.GetRequiredString("fileName");
             } else {
                 _Logger.LogWarning($"missing Map from replay! [gameID={gameID}]");
             }

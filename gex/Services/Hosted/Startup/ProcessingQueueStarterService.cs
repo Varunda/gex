@@ -75,10 +75,10 @@ namespace gex.Services.Hosted.Startup {
 
                 } else if (proc.ReplaySimulated == null) {
                     List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(proc.GameID, cancel);
-                    if (players.Count == 2) {
+                    if (players.Count <= 6) {
                         _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() { GameID = proc.GameID, Force = true });
                     } else {
-                        _Logger.LogWarning($"why is this game in here? [gameID={proc.GameID}]");
+                        _Logger.LogWarning($"why is this game in here? [gameID={proc.GameID}] [players.Count={players.Count}]");
                     }
                 } else if (proc.ReplaySimulated != null && proc.ActionsParsed == null) {
                     _ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() { GameID = proc.GameID, Force = true });

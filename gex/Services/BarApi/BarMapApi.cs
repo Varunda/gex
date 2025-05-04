@@ -36,7 +36,7 @@ namespace gex.Services.BarApi {
         public async Task<Result<BarMap, string>> GetByName(string filename, CancellationToken cancel) {
 
             string url = BASE_URL + "/" + filename;
-            _Logger.LogTrace($"attemping map load [filename={filename}] [url={url}]");
+            _Logger.LogTrace($"attempting map load [filename={filename}] [url={url}]");
             HttpResponseMessage response = await _Http.GetAsync(url);
 
             if (response.IsSuccessStatusCode == false) {

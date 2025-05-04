@@ -24,6 +24,15 @@ namespace gex.Code.Commands {
             _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
         }
 
+		public void Download(string gameID) {
+            _Logger.LogInformation($"forcing download of game [gameID={gameID}]");
+            _Queue.Queue(new GameReplayDownloadQueueEntry() {
+                GameID = gameID,
+                Force = true,
+                ForceForward = true
+            });
+		}
+
         public void ForceRun(string gameID) {
             _Logger.LogInformation($"forcing a reprocess of game [gameID={gameID}]");
             _Queue.Queue(new GameReplayDownloadQueueEntry() {

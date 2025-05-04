@@ -82,7 +82,7 @@ namespace gex.Controllers {
 							return;
 						}
 
-						ogDesc = $"Duel: {players[0].Name} v {players[1].Name}";
+						ogDesc = $"Duel: {players[0].Name} / {players[1].Name}";
 					} else {
 						List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(gameID, cancel);
 						if (allyTeams.Count == 0) {

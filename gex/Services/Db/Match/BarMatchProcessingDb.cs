@@ -114,7 +114,7 @@ namespace gex.Services.Db.Match {
                         OR mp.demofile_parsed is null
                         OR (
                             mp.game_id IN (
-                                SELECT game_id FROM bar_match_player group by game_id HAVING COUNT(*) = 2
+                                SELECT id FROM bar_match WHERE player_count <= 6
                             )
                             AND mp.headless_ran IS NULL
                         )

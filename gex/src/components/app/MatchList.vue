@@ -10,25 +10,29 @@
                         {{ match.map }}
                     </h5>
 
-                    <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                        <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="tile-team"
-                            :style="{
-                                'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #000000aa 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
-                                'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
-                                'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
-                            }"
-                        >
+                    <div class="flex-grow-1 align-content-center" style="z-index: 10;">
+                        <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
+                            <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 
-                            <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                <div class="tile-team"
                                 :style="{
-                                    'text-shadow': '1px 1px 1px #000000',
-                                    'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                                    'overflow': 'clip',
-                                    'text-overflow': 'ellipsis',
-                                    'margin': '0.25rem 0'
-                                }">
+                                    'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
+                                    'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                                    'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
+                                }"
+                                >
+                                    <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                        :style="{
+                                            'text-shadow': '1px 1px 1px #000000',
+                                            'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
+                                            'overflow': 'clip',
+                                            'text-overflow': 'ellipsis',
+                                            'margin': '0.25rem 0'
+                                        }">
 
-                                {{ player.username }}
+                                        {{ player.username }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -36,9 +40,13 @@
             </div>
 
             <div class="tile-time-ago">
-                {{ match.startTime | compactTimeAgo }} ago
+                Ended {{ match.endTime | compactTimeAgo }} ago
                 &middot;
-                {{ match.startTime | moment("hh:mm A")}}
+                {{ match.endTime | moment("hh:mm A")}}
+
+                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning" title="This game has not been fully processed!">
+
+                </span>
             </div>
         </div>
 
@@ -52,6 +60,7 @@
         height: 18rem;
         display: flex;
         position: relative;
+        flex-direction: column;
         background-position: center center;
         background-size: 100%;
         transition: background-size 0.2s;
@@ -70,8 +79,11 @@
     }
 
     .tile-title {
+        /*
         position: absolute;
         top: 0;
+        */
+        flex-grow: 0;
         background-color: #00000088;
         padding: 0.5rem 0.5rem;
         margin-bottom: 0;
@@ -128,13 +140,13 @@
         justify-content: center;
         gap: 0.75rem;
         z-index: 10;
+        flex-grow: 1;
     }
 
     .tile-team {
         background-color: #00000066;
         padding: 0.5rem;
         border-radius: 0.25rem;
-        max-width: 47%;
     }
 
     .tile-team-title {

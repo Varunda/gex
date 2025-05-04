@@ -11,6 +11,7 @@ export class BarMatch {
     public engine: string = "";
     public gameVersion: string = "";
     public startTime: Date = new Date();
+    public endTime: Date = new Date();
     public map: string = "";
     public mapName: string = "";
     public fileName: string = "";
@@ -34,6 +35,7 @@ export class BarMatch {
         return {
             ...elem,
             startTime: new Date(elem.startTime),
+            endTime: new Date((new Date(elem.startTime)).getTime() + elem.durationMs),
 
             hostSettings: elem.hostSettings,
             gameSettings: elem.gameSettings,
