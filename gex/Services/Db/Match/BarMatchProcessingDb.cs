@@ -116,6 +116,7 @@ namespace gex.Services.Db.Match {
                             mp.game_id IN (
                                 SELECT id FROM bar_match WHERE player_count <= 6
                             )
+							AND mp.priority = -1
                             AND mp.headless_ran IS NULL
                         )
                         OR (mp.actions_parsed IS NULL AND mp.headless_ran IS NOT NULL)

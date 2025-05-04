@@ -92,6 +92,11 @@ namespace gex.Services.Util {
 				why += $"assist drones enabled; ";
 			}
 
+			if (match.GameSettings.GetString("map_waterislava", "0") != "0") {
+				priority += 30;
+				why += $"water is lava; ";
+			}
+
 			if (priority < -1) {
 				_Logger.LogWarning($"found a negative priority after calculating priority! assuming a wrap-around occured "
 					+ $"[gameID={match.ID}] [priority={priority}] [why={why}]");
