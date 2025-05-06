@@ -30,11 +30,11 @@
                     </thead>
 
                     <tbody>
-                        <tr v-for="index in maxTeamSize - 1" :key="index">
+                        <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <player-item v-if="index <= allyTeam.playerCount" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
+                                <player-item v-if="index <= allyTeam.playerCount+1" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
                                 <span v-else>
-                                    <!-- space intentionally left blank -->
+                                    <!-- uneven team placeholder -->
                                 </span>
                             </td>
                         </tr>
