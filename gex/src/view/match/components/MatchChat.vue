@@ -22,7 +22,7 @@
                                 </span>
                             </div>
                             <div style="grid-column: 2;" class="text-end border-end pe-2 py-2">
-                                <b>{{ msg.from }}</b>
+                                <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
                             </div>
                             <div style="grid-column: 3;" class="my-2 ms-2">{{ msg.message }}</div>
                         </template>
@@ -49,6 +49,7 @@
         color: string;
         timestamp: string;
         message: string;
+        playerColor: string; 
     }
 
     export const MatchChat = Vue.extend({
@@ -92,6 +93,10 @@
                 } else {
                     return "#aaaaaa";
                 }
+            },
+
+            getPlayerColor: function(id: number): string {
+                return this.match.players.find(p => p.playerID == id)?.hexColor ?? ""
             }
         },
 
@@ -104,6 +109,7 @@
                         from: this.getIdName(iter.fromId),
                         to: this.getIdName(iter.toId),
                         color: this.getIdColor(iter.toId),
+                        playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(iter.gameTimestamp),
                         message: iter.message
                     }
