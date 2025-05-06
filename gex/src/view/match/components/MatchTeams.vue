@@ -2,108 +2,45 @@
 <template>
     <div>
         <collapsible header-text="Teams" size-class="h1" bg-color="bg-light">
-            <div v-if="isMobile == false">
-                <div v-if="isFunkyTeams == false" class="d-grid" :style="gridStyle">
-                    <h4 v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="ally-team-header mb-0"
-                        :style="getTeamNameStyle(allyTeam)">
-
-                        Team {{ allyTeam.allyTeamID + 1 }}
-                    </h4>
-
-                    <template v-for="allyTeam in match.allyTeams">
-                        <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
-                            :style="getPlayerStyle(allyTeam, player, index)" class="player-name">
-
-                            <a :href="'/user/' + player.userID" style="text-decoration: none;">
-                                <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
-                                    <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
-                                    <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
-                                    <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
-                                    <span v-else>
-                                        ?
-                                    </span>
-                                    {{ player.username }}
-                                </span>
-                            </a>
-
-                            <span v-if="player.handicap != 0" class="player-handicap">
-                                <span v-if="player.handicap > 0" style="color: var(--bg-green)">
-                                    (+{{ player.handicap }}%)
-                                </span>
-                                <span v-else>
-                                    ({{ player.handicap }}%)
-                                </span>
-                            </span>
+            <div v-if="isFunkyTeams == false">
+                <div class="teams">
+                    <div class="team" v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
+                        <div>
+                            <h4 class="ally-team-header mb-0" :style="getTeamNameStyle(allyTeam)">
+                                Team {{ allyTeam.allyTeamID + 1 }}
+                            </h4>
                         </div>
 
-                        <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-os' + player.teamID"
-                            :style="getPlayerOsStyle(allyTeam, player, index)" class="player-os">
-
-                            [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
+                        <div class="player" v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="index"> 
+                            <player-item :player="player" />
                         </div>
-                    </template>
-                </div>
-
-                <div v-else>
-                    <small class="text-muted">These are not usual team size! Gex is not programmed to handle teams of this size, so a fallback is being used instead</small>
-
-                    <table class="table table-sm" style="table-layout: fixed">
-                        <thead>
-                            <tr>
-                                <th v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" :style="{ 'background-color': allyTeamColor(allyTeam.allyTeamID) }">
-                                    Team {{ allyTeam.allyTeamID + 1 }}
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr v-for="index in maxTeamSize - 1" :key="index">
-                                <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                    <span v-if="index > allyTeam.playerCount"></span>
-
-                                    <player-cell v-else :player="playersByTeam(allyTeam.allyTeamID)[index - 1]"></player-cell>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div v-else>
-                <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" class="mb-2">
-                    <h4 class="ally-team-header mb-0" :style="getTeamNameStyle(allyTeam)">
-                        Team {{ allyTeam.allyTeamID + 1 }}
-                    </h4>
-
-                    <div v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID"
-                        :style="getPlayerStyle(allyTeam, player, index)" class="player-name">
-
-                        <a :href="'/user/' + player.userID" style="text-decoration: none;">
-                            <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
-                                <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
-                                <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
-                                <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
-                                <span v-else>
-                                    ?
-                                </span>
-                                {{ player.username }}
-                            </span>
-                        </a>
-
-                        [<span class="font-monospace" style="font-size: 0.9rem;">{{ player.skill | locale(2) }}</span>]
-
-                        <span v-if="player.handicap != 0" class="player-handicap">
-                            <span v-if="player.handicap > 0" style="color: var(--bg-green)">
-                                (+{{ player.handicap }}%)
-                            </span>
-                            <span v-else>
-                                ({{ player.handicap }}%)
-                            </span>
-                        </span>
                     </div>
                 </div>
             </div>
+            <div v-else>
+                <small class="text-muted">These are not usual team size! Gex is not programmed to handle teams of this size, so a fallback is being used instead</small>
 
+                <table class="table table-sm" style="table-layout: fixed">
+                    <thead>
+                        <tr>
+                            <th v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" :style="{ 'background-color': allyTeamColor(allyTeam.allyTeamID) }">
+                                Team {{ allyTeam.allyTeamID + 1 }}
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr v-for="index in maxTeamSize - 1" :key="index">
+                            <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
+                                <player-item v-if="index <= allyTeam.playerCount" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
+                                <span v-else>
+                                    <!-- space intentionally left blank -->
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <div v-if="match.spectators.length > 0">
                 <h5>
                     Spectators ({{ match.spectators.length }})
@@ -123,30 +60,56 @@
 
 <style scoped>
 
+    .teams {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .team-player {
+        display: flex;
+        align-items: center;
+    }
+
+    .team {
+        flex: 1 4 25%;
+        border-spacing: 0.5rem;
+        border-collapse: separate;
+        text-align: center;
+    }
+
+    .team h4 {
+        display: inline-block;
+    }
+
+    @media only screen and (max-width: 800px) {
+        .team {
+            flex: 1 2 50%;
+        }
+    }
+
+    .player {
+       white-space: nowrap;
+    }
+
+    .player--name {
+        margin-right: 0.35rem;
+    }
+
+    .player--os, .player--handicap {
+        font-size: 0.9rem;
+    }
+
     .ally-team-header {
         text-align: center;
         border-radius: 0.5rem;
         padding: 0.25rem 2rem;
         -webkit-text-stroke: #000 3px;
         paint-order: stroke fill;
+        flex: 0;
     }
 
-    .player-name {
-        justify-self: stretch;
-        text-align: end;
-        margin-bottom: 0.5rem;
-    }
-
-    .player-handicap {
-        font-size: 0.9rem;
-    }
-
-    .player-os {
-        justify-self: stretch;
-        text-align: start;
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
-    }
 
 </style>
 
@@ -164,20 +127,26 @@
         players: BarMatchPlayer[]
     }
 
-    const PlayerCell = Vue.extend({
+    const PlayerItem = Vue.extend({
         props: {
             player: { type: Object as PropType<BarMatchPlayer>, required: true }
         },
 
         template: `
             <span>
-                <a :href="'/user/' + player.userID" style="text-decoration: none; text-shadow: 1px 1px 1px black;">
-                    <span :style="{ 'color': player.hexColor }">
-                        [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
+                <a :href="'/user/' + player.userID" style="text-decoration: none;">
+                    <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
+                        <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
+                        <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
+                        <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
+                        <span v-else>
+                            ?
+                        </span>
                         {{ player.username }}
                     </span>
-                </a>    
-                <span v-if="player.handicap != 0">
+                </a>
+                <span class="player--os">[<span class="font-monospace">{{ player.skill | locale(2) }}</span>]</span>
+                <span v-if="player.handicap != 0" class="player--handicap">
                     <span v-if="player.handicap > 0" style="color: var(--bg-green)">
                         (+{{ player.handicap }}%)
                     </span>
@@ -185,7 +154,7 @@
                         ({{ player.handicap }}%)
                     </span>
                 </span>
-            </span>
+            <span>
         `
     });
 
@@ -212,35 +181,9 @@
 
             getTeamNameStyle(allyTeam: BarMatchAllyTeam) {
                 return {
-                    'grid-column': `${((allyTeam.allyTeamID * 2) % 8) + 1} / span 2`,
-                    'grid-row': this.getTeamNameRow(allyTeam),
                     'background-color': this.allyTeamColor(allyTeam.allyTeamID)
                 };
             },
-
-            getPlayerStyle(allyTeam: BarMatchAllyTeam, player: BarMatchPlayer, index: number) {
-                return {
-                    "grid-column": ((player.allyTeamID * 2) % 8) + 1,
-                    "grid-row": this.getPlayerRow(allyTeam, player, index),
-                };
-            },
-
-            getPlayerOsStyle(allyTeam: BarMatchAllyTeam, player: BarMatchPlayer, index: number) {
-                return {
-                    "grid-column": ((player.allyTeamID * 2) % 8) + 2,
-                    "grid-row": this.getPlayerRow(allyTeam, player, index),
-                };
-            },
-
-            getTeamNameRow(allyTeam: BarMatchAllyTeam): number {
-                return (Math.floor(allyTeam.allyTeamID / 4) * 4) + 2;
-            },
-
-            getPlayerRow(allyTeam: BarMatchAllyTeam, player: BarMatchPlayer, index: number): number {
-                const v = (Math.floor(allyTeam.allyTeamID / 4) * 4) + 1 + Math.floor(index % 8) + 2;
-                //console.log(`MatchTeams> player ${player.username} on all ${allyTeam.allyTeamID} at index ${index} goes to ${v}`);
-                return v;
-            }
         },
 
         computed: {
@@ -259,26 +202,12 @@
                         players: this.match.players.filter(p => p.allyTeamID == iter.allyTeamID)
                     }
                 });
-            },
-
-            gridStyle: function() {
-                // show at most 8 teams per row
-                const count: number = Math.min(8, this.match.allyTeams.length * 2);
-                return {
-                    "grid-template-columns": `repeat(${count}, 1fr)`,
-                    "justify-items": "center",
-                    "column-gap": "0.5rem"
-                };
-            },
-
-            isMobile: function(): boolean {
-                return window.screen.width < 800;
             }
         },
 
         components: {
             Collapsible,
-            PlayerCell
+            PlayerItem
         }
     });
     export default MatchTeams;
