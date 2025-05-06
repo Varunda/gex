@@ -261,6 +261,7 @@ namespace gex {
 			services.AddBackgroundServices();
 			services.AddGexMetrics();
 			services.AddSingleton<BarMatchPriorityCalculator>();
+			services.AddSingleton<BarDemofileResultProcessor>();
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
                 //services.AddSingleton<DiscordWrapper>();

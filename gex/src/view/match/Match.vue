@@ -74,7 +74,7 @@
 
             <div v-else-if="match.state == 'loaded'">
 
-                <div class="d-flex">
+                <div class="d-flex flex-wrap">
                     <div class="flex-grow-1">
                         <h1>{{ match.data.map }} ({{ match.data.gamemode | gamemode }})</h1>
 
@@ -140,7 +140,7 @@
                 <match-teams :match="match.data" class="my-3"></match-teams>
 
                 <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
-                    This game has not been ran locally, and in-depth stats are not available
+                    This game has not been ran locally, and in-depth stats are not available. <a href="/faq">More info</a>
                 </div>
 
                 <div v-if="output.state == 'loaded'">

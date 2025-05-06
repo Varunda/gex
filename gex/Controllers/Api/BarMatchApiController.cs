@@ -84,7 +84,7 @@ namespace gex.Controllers.Api {
             }
 
             ApiMatch ret = new(match);
-            ret.MapData = await _BarMapRepository.GetByName(match.MapName, cancel);
+            ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
 			ret.HeadlessRunStatus = _HeadlessRunStatusRepository.Get(gameID);
 

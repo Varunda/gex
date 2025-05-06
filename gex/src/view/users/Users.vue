@@ -33,7 +33,9 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            {{ entry.username }}
+                            <a :href="'/user/' + entry.userID">
+                                {{ entry.username }}
+                            </a>
                         </a-body>
                     </a-col>
 

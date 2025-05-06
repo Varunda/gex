@@ -86,6 +86,23 @@ namespace gex.Services.Db {
             );
         }
 
+		/// <summary>
+		///		get a <see cref="BarMap"/> by <see cref="BarMap.Name"/>
+		/// </summary>
+		/// <param name="name">name to get</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns>
+		///		the <see cref="BarMap"/> with <see cref="BarMap.Name"/> of <paramref name="name"/>
+		/// </returns>
+		public async Task<BarMap?> GetByName(string name, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryFirstOrDefaultAsync<BarMap>(new CommandDefinition(
+				"SELECT * FROM bar_map WHERE name = @Name",
+				new { Name = name },
+				cancellationToken: cancel
+			));
+		}
+
         /// <summary>
         ///     load a map based on name. the name is normalized to replace spaces with undersocres,
         ///     and put to lowercase

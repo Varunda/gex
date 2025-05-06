@@ -4,6 +4,7 @@ using gex.Models.Bar;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db {
@@ -20,7 +21,7 @@ namespace gex.Services.Db {
             _DbHelper = dbHelper;
         }
 
-        public async Task Insert(BarReplay replay) {
+        public async Task Insert(BarReplay replay, CancellationToken cancel) {
             if (string.IsNullOrEmpty(replay.ID)) {
                 throw new System.Exception($"missing ID from bar replay");
             }
@@ -35,14 +36,14 @@ namespace gex.Services.Db {
                 ) VALUES (
                     @ID, @FileName, @MapName
                 );
-            ");
+            ", cancel);
 
             cmd.AddParameter("ID", replay.ID);
             cmd.AddParameter("FileName", replay.FileName);
             cmd.AddParameter("MapName", replay.MapName);
-            await cmd.PrepareAsync();
+            await cmd.PrepareAsync(cancel);
 
-            await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync(cancel);
             await conn.CloseAsync();
         }
 

@@ -5,7 +5,7 @@
             Map
         </h2>
 
-        <div class="d-flex justify-content-center mb-2" style="gap: 0.5rem;">
+        <div class="d-flex justify-content-lg-center mb-2 flex-wrap" style="gap: 0.5rem;">
             <toggle-button v-model="map.startingBox">
                 Starting box
             </toggle-button>

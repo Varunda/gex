@@ -13,6 +13,7 @@ using gex.Code;
 using gex.Services;
 using gex.Models.Queues;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace gex.Controllers.Api {
 
@@ -68,6 +69,7 @@ namespace gex.Controllers.Api {
 		///     The response will contain a <see cref="AppHealth"/> that represents the health of the app at the time of being called
 		/// </response>
 		[HttpGet]
+		[DisableRateLimiting]
         public ApiResponse<AppHealth> GetRealtimeHealth() {
             if (_Cache.TryGetValue("App.Health", out AppHealth? health) == false || health == null) {
                 health = new AppHealth();

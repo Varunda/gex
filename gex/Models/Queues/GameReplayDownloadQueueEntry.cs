@@ -1,4 +1,6 @@
-﻿namespace gex.Models.Queues {
+﻿using gex.Models.Db;
+
+namespace gex.Models.Queues {
 
     public class GameReplayDownloadQueueEntry {
 

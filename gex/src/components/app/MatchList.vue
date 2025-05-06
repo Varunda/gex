@@ -7,12 +7,12 @@
                     <div class="position-absolute" style="width: 18rem; height: 18rem; background-color: #0005; z-index: 1; border-radius: 0.75rem;"></div>
 
                     <h5 class="tile-title">
-                        {{ match.map }}
+                        {{ mapNameWithoutVersion(match.map) }}
                     </h5>
 
-                    <div class="flex-grow-1 align-content-center" style="z-index: 10;">
+                    <div class="flex-grow-1 align-content-center w-100" style="z-index: 10;">
                         <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                            <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
+                            <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 
                                 <div class="tile-team"
                                 :style="{
@@ -42,7 +42,9 @@
             <div class="tile-time-ago">
                 Ended {{ match.endTime | compactTimeAgo }} ago
                 &middot;
-                {{ match.endTime | moment("hh:mm A")}}
+                <span :title="match.endTime | moment('YYYY-MM-DD hh:mm:ss A')">
+                    {{ match.endTime | moment("hh:mm A")}}
+                </span>
 
                 <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning" title="This game has not been fully processed!">
 
@@ -147,6 +149,7 @@
         background-color: #00000066;
         padding: 0.5rem;
         border-radius: 0.25rem;
+        min-width: 47%;
     }
 
     .tile-team-title {
@@ -189,6 +192,17 @@
         },
 
         methods: {
+            mapNameWithoutVersion: function(name: string): string {
+                const m = name.match(/^([a-zA-Z\s]*)[vV_\s][\d\.]*/);
+                if (m == null) {
+                    return name;
+                }
+                if (m.length < 2) {
+                    return name;
+                }
+                return m[1];
+            },
+
             getMapThumbnail: function(map: string): string {
                 return `/image-proxy/MapBackground?mapName=${map.replace(/ /g, "%20")}&size=texture-thumb`;
             },

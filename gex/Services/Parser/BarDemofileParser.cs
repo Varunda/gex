@@ -61,8 +61,9 @@ namespace gex.Services.Parser {
 					totalRead += bytesRead;
 					await output.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancel).ConfigureAwait(false);
 
-					// if the demofile uncompressed is over 1GB, something is very wrong :tm:
-					if (totalRead > 1024 * 1024 * 1024) {
+					// if the demofile uncompressed is over 256MB, something is very wrong :tm:
+					// largest demo file i have is 20MB compressed, 56MB uncompressed 
+					if (totalRead > 1024 * 1024 * 256) {
 						_Logger.LogError($"uncompressed demofile reached unsafe size, exiting [filename={filename}]");
 						return $"demofile uncompression reached unsafe size";
 					}
@@ -253,6 +254,14 @@ namespace gex.Services.Parser {
 					msg.GameTimestamp = packet.GameTime;
 
 					match.ChatMessages.Add(msg);
+				} else if (packet.PacketType == BarPacketType.GAME_ID) {
+					ByteArrayReader packetReader = new(packet.Data);
+					string packetGameID = BitConverter.ToString(packetReader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
+
+					if (packetGameID != header.GameID) {
+						return $"inconsistent gameID found, refusing to process further";
+					}
+
 				} else if (packet.PacketType == BarPacketType.START_POS) {
 					ByteArrayReader packetReader = new(packet.Data);
 					byte playerID = packetReader.ReadByte();

@@ -10,6 +10,8 @@
 
         public const int CHAT = 7;
 
+		public const int GAME_ID = 9;
+
         public const int GAME_OVER = 30;
 
         public const int START_POS = 36;

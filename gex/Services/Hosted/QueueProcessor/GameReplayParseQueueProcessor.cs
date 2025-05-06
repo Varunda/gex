@@ -35,10 +35,9 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarUserDb _UserDb;
-        private readonly BarUserSkillDb _UserSkillDb;
-        private readonly GameVersionUsageDb _GameVersionUsageDb;
 		private readonly MapPriorityModDb _MapPriorityModDb;
 		private readonly BarMatchPriorityCalculator _PriorityCalculator;
+		private readonly BarDemofileResultProcessor _ResultProcessor;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -56,9 +55,10 @@ namespace gex.Services.Hosted.QueueProcessor {
 			BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
 			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
 			BarReplayDb replayDb, BarUserDb userDb,
-			BarUserSkillDb userSkillDb, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
+			BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
 			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
-			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator) :
+			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
+			BarDemofileResultProcessor resultProcessor) :
 
 		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -74,12 +74,11 @@ namespace gex.Services.Hosted.QueueProcessor {
 			_BarMapRepository = barMapRepository;
 			_ReplayDb = replayDb;
 			_UserDb = userDb;
-			_UserSkillDb = userSkillDb;
 			_MapStatUpdateQueue = mapStatUpdateQueue;
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
-			_GameVersionUsageDb = gameVersionUsageDb;
 			_MapPriorityModDb = mapPriorityModDb;
 			_PriorityCalculator = priorityCalculator;
+			_ResultProcessor = resultProcessor;
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -145,78 +144,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 BarMatch parsed = match.Value;
                 parsed.MapName = replay.MapName;
 
-                BarMap? map = await _BarMapRepository.GetByName(replay.MapName, cancel);
-                if (map == null) {
-                    _Logger.LogWarning($"missing bar map! [map={replay.MapName}] [gameID={parsed.ID}]");
-                }
-
-                foreach (BarMatchAllyTeam allyTeam in parsed.AllyTeams) {
-                    await _MatchAllyTeamDb.Insert(allyTeam);
-                }
-                long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-                foreach (BarMatchPlayer player in parsed.Players) {
-                    await _PlayerRepository.Insert(player);
-                }
-                long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-                foreach (BarMatchSpectator spec in parsed.Spectators) {
-                    await _MatchSpectatorDb.Insert(spec);
-                }
-                long insertSpecMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-                foreach (BarMatchChatMessage msg in parsed.ChatMessages) {
-                    await _MatchChatMessageDb.Insert(msg);
-                }
-                long insertChatMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-                await _MatchRepository.Insert(parsed, cancel);
-                long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-                _Logger.LogInformation($"processed match [ID={entry.GameID}] [parse replay={parseReplayMs}ms]"
-                    + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
-                    + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [match db={insertMatchMs}ms]");
-
-                foreach (BarMatchPlayer player in parsed.Players) {
-                    try {
-                        _MapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
-                            UserID = player.UserID,
-                            Map = parsed.Map,
-                            Gamemode = parsed.Gamemode
-                        });
-
-                        _FactionStatUpdateQueue.Queue(new UserFactionStatUpdateQueueEntry() {
-                            UserID = player.UserID,
-                            Faction = BarFaction.GetId(player.Faction),
-                            Gamemode = parsed.Gamemode
-                        });
-
-                        await _UserDb.Upsert(player.UserID, new Models.UserStats.BarUser() {
-                            UserID = player.UserID,
-                            Username = player.Name,
-                            LastUpdated = DateTime.UtcNow
-                        }, cancel);
-
-                        if (parsed.Gamemode != BarGamemode.DEFAULT) {
-                            await _UserSkillDb.Upsert(new Models.UserStats.BarUserSkill() {
-                                UserID = player.UserID,
-                                Gamemode = parsed.Gamemode,
-                                Skill = player.Skill,
-                                SkillUncertainty = player.SkillUncertainty,
-                                LastUpdated = DateTime.UtcNow
-                            }, cancel);
-                        }
-                    } catch (Exception ex) {
-                        _Logger.LogError(ex, $"failed to upsert user after parse [gameID={entry.GameID}] [userID={player.UserID}]");
-                    }
-                }
-
-                await _GameVersionUsageDb.Upsert(new GameVersionUsage() {
-                    Engine = parsed.Engine,
-                    Version = parsed.GameVersion,
-                    LastUsed = parsed.StartTime
-                }, cancel);
-
+				await _ResultProcessor.Process(parsed, cancel);
 				priority = await _PriorityCalculator.Calculate(parsed, cancel);
                 runHeadless |= (priority == -1);
             }

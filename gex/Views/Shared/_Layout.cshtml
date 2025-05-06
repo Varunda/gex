@@ -40,29 +40,36 @@
     <div id="toaster" class="toast-container position-fixed" style="top: 0; right: 0;"></div>
 
     @if (ViewBag.HideHeader != true) {
-        <nav class="navbar navbar-expand bg-body-tertiary pt-0 mb-2 container-fluid-negative px-3">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary pt-0 mb-2 container-fluid-negative px-3">
             <div class="navbar-collapse">
                 <a class="navbar-brand py-0" href="/">
                     <img src="/img/logo0.png" style="height: 100%; width: 48px;" title="homepage" />
                     Gex
                 </a>
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Recent games</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users">User search</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/faq">FAQ</a>
-                    </li>
-                </ul>
 
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/legal">Legal</a>
-                    </li>
-                </ul>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbar">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">Recent games</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/users">User search</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/faq">FAQ</a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/legal">Legal</a>
+                        </li>
+                    </ul>
+                </div>
 
             </div>
         </nav>

@@ -88,7 +88,7 @@ namespace gex.Services.Util {
 			}
 
 			if (match.GameSettings.GetString("assistdronesenabled", "disabled") == "enabled") {
-				priority += 20;
+				priority += 10;
 				why += $"assist drones enabled; ";
 			}
 

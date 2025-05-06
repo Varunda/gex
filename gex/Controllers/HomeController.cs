@@ -124,6 +124,10 @@ namespace gex.Controllers {
 			return View();
 		}
 
+		public IActionResult Upload() {
+			return View();
+		}
+
         /// <summary>
         ///     action to download a replay file
         /// </summary>

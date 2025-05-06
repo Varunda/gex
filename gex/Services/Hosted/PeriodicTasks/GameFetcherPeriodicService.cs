@@ -127,7 +127,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
             if (existingReplay != null) {
                 _Logger.LogDebug($"match replay already saved, but the match doesn't exist, processing further [gameID={replay.ID}]");
             } else {
-                await _ReplayDb.Insert(result.Value);
+                await _ReplayDb.Insert(result.Value, cancel);
             }
 
             BarMatchProcessing processing = new();

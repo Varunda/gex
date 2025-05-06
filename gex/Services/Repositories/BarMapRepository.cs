@@ -37,7 +37,11 @@ namespace gex.Services.Repositories {
 			return _Db.GetAll(cancel);
 		}
 
-		public async Task<BarMap?> GetByName(string filename, CancellationToken cancel) {
+		public Task<BarMap?> GetByName(string name, CancellationToken cancel) {
+			return _Db.GetByName(name, cancel);
+		}
+
+		public async Task<BarMap?> GetByFileName(string filename, CancellationToken cancel) {
             if (string.IsNullOrEmpty(filename)) {
                 return null;
             }

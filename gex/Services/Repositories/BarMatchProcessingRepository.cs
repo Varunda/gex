@@ -42,7 +42,7 @@ namespace gex.Services.Repositories {
 					_Cache.Remove(CACHE_KEY_PRIO);
 				}
 			} else {
-				// if there was cached entry, lets assume this is a new entry, so the prio list might have changed
+				// if there wasn't cached entry, lets assume this is a new entry, so the prio list might have changed
 				_Cache.Remove(CACHE_KEY_PRIO);
 			}
 

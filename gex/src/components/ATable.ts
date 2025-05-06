@@ -618,7 +618,7 @@ export const ATable = Vue.extend({
 							"colspan": `${this.nodes.columns.length}`
 						}
 					},
-					this.createPageButtons(createElement)
+					[this.createPageButtons(createElement)]
 				)
 			]);
         },
@@ -948,130 +948,138 @@ export const ATable = Vue.extend({
             );
         },
 
-        createPageButtons(createElement: CreateElement): VNode[] {
-            const nodes: VNode[] = [
-                // Page selection buttons
-                createElement("div", { staticClass: "btn-group mr-2" }, [
-                    // First page button
-                    createElement("button",
-                        {
-                            staticClass: "btn btn-light",
-                            domProps: {
-                                type: "button"
-                            },
-                            on: {
-                                click: (): void => { this.paging.page = 0; }
-                            }
-                        },
-                        [this.createIcon(createElement, "fa-chevron-circle-left", "fas")]
-                    ),
+        createPageButtons(createElement: CreateElement): VNode {
 
-                    // Previous page button
-                    createElement("button",
-                        {
-                            staticClass: "btn btn-light",
-                            domProps: {
-                                type: "button"
-                            },
-                            on: {
-                                click: (): void => { this.setPage(this.paging.page - 1) }
-                            }
-                        },
-                        [this.createIcon(createElement, "fa-chevron-left", "fas")]
-                    ),
-
-                    // Page selection buttons, show 10 max
-                    [...Array(Math.min(this.pageCount, 10)).keys()] // Get [0, N]
-                        .map(i => ++i) // Transform to [1, N + 1]
-                        .filter(i => i + this.pageOffset <= this.pageCount) // Ignore those over page count
-                        .map((index: number): VNode => {
-                            return createElement("button",
-                                {
-                                    staticClass: "btn",
-                                    class: {
-                                        "btn-primary": this.paging.page + 1 == index + this.pageOffset,
-                                        "btn-light": this.paging.page + 1 != index + this.pageOffset
-                                    },
-                                    on: {
-                                        click: (): void => { this.setPage(index + this.pageOffset - 1) }
-                                    }
+            const shelf: VNode = createElement("div",
+                {
+                    staticClass: "d-flex",
+                    staticStyle: {
+                        "flex-wrap": "wrap"
+                    }
+                },
+                [
+                    // Page selection buttons
+                    createElement("div", { staticClass: "btn-group mr-2" }, [
+                        // First page button
+                        createElement("button",
+                            {
+                                staticClass: "btn btn-light",
+                                domProps: {
+                                    type: "button"
                                 },
-                                [`${this.pageOffset + index}`]
-                            )
-                        }
-                        ),
-
-                    // Next page button
-                    createElement("button",
-                        {
-                            staticClass: "btn btn-light",
-                            domProps: {
-                                type: "button"
-                            },
-                            on: {
-                                click: (): void => { this.setPage(this.paging.page + 1) }
-                            }
-                        },
-                        [this.createIcon(createElement, "fa-chevron-right", "fas")]
-                    ),
-
-                    // Last page button
-                    createElement("button",
-                        {
-                            staticClass: "btn btn-light",
-                            domProps: {
-                                type: "button"
-                            },
-                            on: {
-                                click: (): void => { this.setPage(this.pageCount - 1); }
-                            }
-                        },
-                        [this.createIcon(createElement, "fa-chevron-circle-right", "fas")]
-                    )]
-                ),
-
-                // Viewing text
-                createElement("span",
-                    `Viewing ${Math.min(this.displayedEntries.length, this.paging.size)}/${this.filteredEntries.length}
-                        entries in ${this.pageCount} pages`),
-
-                // Page size selector
-                createElement("span", { staticClass: "float-end" }, [
-                    "Page size:",
-
-                    // Input to select the page size
-                    createElement("select",
-                        {
-                            staticClass: "form-control w-auto d-inline-block",
-                            staticStyle: {
-                                "vertical-align": "middle"
-                            },
-                            domProps: {
-                                value: this.paging.size
-                            },
-                            on: {
-                                input: (ev: InputEvent): void => {
-                                    this.paging.size = Number.parseInt((ev.target as any).value);
+                                on: {
+                                    click: (): void => { this.paging.page = 0; }
                                 }
                             },
-                        },
-                        [
-                            this.pageSizes.map((amount: number): VNode => {
-                                return createElement("option",
+                            [this.createIcon(createElement, "fa-chevron-circle-left", "fas")]
+                        ),
+
+                        // Previous page button
+                        createElement("button",
+                            {
+                                staticClass: "btn btn-light",
+                                domProps: {
+                                    type: "button"
+                                },
+                                on: {
+                                    click: (): void => { this.setPage(this.paging.page - 1) }
+                                }
+                            },
+                            [this.createIcon(createElement, "fa-chevron-left", "fas")]
+                        ),
+
+                        // Page selection buttons, show 10 max
+                        [...Array(Math.min(this.pageCount, 10)).keys()] // Get [0, N]
+                            .map(i => ++i) // Transform to [1, N + 1]
+                            .filter(i => i + this.pageOffset <= this.pageCount) // Ignore those over page count
+                            .map((index: number): VNode => {
+                                return createElement("button",
                                     {
-                                        domProps: {
-                                            value: amount
+                                        staticClass: "btn",
+                                        class: {
+                                            "btn-primary": this.paging.page + 1 == index + this.pageOffset,
+                                            "btn-light": this.paging.page + 1 != index + this.pageOffset
+                                        },
+                                        on: {
+                                            click: (): void => { this.setPage(index + this.pageOffset - 1) }
                                         }
                                     },
-                                    [`${amount}`]
+                                    [`${this.pageOffset + index}`]
                                 )
-                            })
-                        ]
-                    )
-                ])
-            ];
+                            }
+                        ),
 
-            return nodes;
+                        // Next page button
+                        createElement("button",
+                            {
+                                staticClass: "btn btn-light",
+                                domProps: {
+                                    type: "button"
+                                },
+                                on: {
+                                    click: (): void => { this.setPage(this.paging.page + 1) }
+                                }
+                            },
+                            [this.createIcon(createElement, "fa-chevron-right", "fas")]
+                        ),
+
+                        // Last page button
+                        createElement("button",
+                            {
+                                staticClass: "btn btn-light",
+                                domProps: {
+                                    type: "button"
+                                },
+                                on: {
+                                    click: (): void => { this.setPage(this.pageCount - 1); }
+                                }
+                            },
+                            [this.createIcon(createElement, "fa-chevron-circle-right", "fas")]
+                        )
+                    ]),
+
+                    // Viewing text
+                    createElement("span", { staticClass: "flex-grow-1 text-center align-self-center" },
+                        `Viewing ${Math.min(this.displayedEntries.length, this.paging.size)}/${this.filteredEntries.length} entries in ${this.pageCount} pages`),
+
+                    // Page size selector
+                    createElement("span", { staticClass: "float-end" }, [
+                        "Page size:",
+
+                        // Input to select the page size
+                        createElement("select",
+                            {
+                                staticClass: "form-control w-auto d-inline-block",
+                                staticStyle: {
+                                    "vertical-align": "middle"
+                                },
+                                domProps: {
+                                    value: this.paging.size
+                                },
+                                on: {
+                                    input: (ev: InputEvent): void => {
+                                        this.paging.size = Number.parseInt((ev.target as any).value);
+                                    }
+                                },
+                            },
+                            [
+                                this.pageSizes.map((amount: number): VNode => {
+                                    return createElement("option",
+                                        {
+                                            domProps: {
+                                                value: amount
+                                            }
+                                        },
+                                        [`${amount}`]
+                                    )
+                                })
+                            ]
+                        )
+                    ])
+                ]
+            );
+
+            return shelf;
         },
 
         createFilterConditionButton(createElement: CreateElement, filter: Filter): VNode {
