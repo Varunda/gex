@@ -2,7 +2,7 @@
     <div>
         <div class="wt-header d-flex" :class="classes" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
             <span :id="'icon-' + elementID" class="fas fa-caret-down"></span>
-            {{HeaderText}}
+            {{ HeaderText }}
 
             <slot name="header"></slot>
         </div>
@@ -21,10 +21,10 @@
             HeaderText: { type: String, required: true },
             show: { type: Boolean, required: false, default: true },
             SizeClass: { type: String, required: false, default: "h2" },
-            BgColor: { type: String, required: false, default: "bg-secondary" }
+            BgColor: { type: String, required: false, default: "bg-secondary" },
         },
 
-        data: function() {
+        data: function () {
             return {
                 id: Math.floor(Math.random() * 1000000),
 
@@ -32,10 +32,10 @@
                 direction: this.show as boolean,
 
                 icon: null as HTMLElement | null,
-            }
+            };
         },
 
-        mounted: function(): void {
+        mounted: function (): void {
             this.$nextTick(() => {
                 this.addListeners();
 
@@ -47,19 +47,19 @@
         },
 
         methods: {
-            addListeners: function(): void {
+            addListeners: function (): void {
                 document.getElementById(this.elementID)?.addEventListener("show.bs.collapse", () => {
                     this.direction = true;
                     this.startAnimation();
                 });
 
                 document.getElementById(this.elementID)?.addEventListener("hide.bs.collapse", () => {
-                    this.direction= false;
+                    this.direction = false;
                     this.startAnimation();
                 });
             },
 
-            startAnimation: function(): void {
+            startAnimation: function (): void {
                 if (this.icon == null) {
                     return console.warn(`Cannot animate on ${this.elementID}, icon is null`);
                 }
@@ -87,23 +87,21 @@
                         prev = timestamp;
                         window.requestAnimationFrame(step);
                     }
-                }
+                };
 
                 window.requestAnimationFrame(step);
             },
         },
 
         computed: {
-            elementID: function(): string {
+            elementID: function (): string {
                 return `collapsible-${this.id}`;
             },
 
-            classes: function(): string[] {
-                return [
-                    this.SizeClass, this.BgColor, this.BgColor == "bg-light" ? "text-dark" : "text-light"
-                ];
-            }
-        }
+            classes: function (): string[] {
+                return [this.SizeClass, this.BgColor, this.BgColor == "bg-light" ? "text-dark" : "text-light"];
+            },
+        },
     });
     export default Collapsible;
 </script>

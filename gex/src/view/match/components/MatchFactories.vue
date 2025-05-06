@@ -1,4 +1,3 @@
-
 <template>
     <div>
         <h1 class="wt-header bg-secondary">
@@ -7,20 +6,16 @@
         </h1>
 
         <div v-for="player in data" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
-            <h3 :style="{ 'color': player.color }">
+            <h3 :style="{ color: player.color }">
                 {{ player.name }}
             </h3>
 
             <div class="list-group">
                 <div v-for="(b, index) in player.factories" :key="index">
-                    <a class="btn btn-link" data-bs-toggle="collapse" :href="'#factory-units-' + b.factoryID">
-                        {{ b.name }} - {{ b.totalMade }}
-                    </a>
+                    <a class="btn btn-link" data-bs-toggle="collapse" :href="'#factory-units-' + b.factoryID"> {{ b.name }} - {{ b.totalMade }} </a>
 
                     <div :id="'factory-units-' + b.factoryID" class="collapse">
-                        <div v-for="unit in b.units" :key="b.factoryID + '-' + unit.defID">
-                            {{ unit.name }} - {{ unit.count }}
-                        </div>
+                        <div v-for="unit in b.units" :key="b.factoryID + '-' + unit.defID">{{ unit.name }} - {{ unit.count }}</div>
                     </div>
                 </div>
             </div>
@@ -36,28 +31,26 @@
 
     export const MatchFactories = Vue.extend({
         props: {
-            data: { type: Array as PropType<PlayerFactories[]>, required: true }
+            data: { type: Array as PropType<PlayerFactories[]>, required: true },
         },
 
-        data: function() {
-            return {
-
-            }
+        data: function () {
+            return {};
         },
 
         methods: {
-            playerStyle: function(color: string): object {
+            playerStyle: function (color: string): object {
                 return {
                     "background-color": color + "22",
-                    "border": `${color} solid 1px`,
-                    "border-radius": "0.25rem"
+                    border: `${color} solid 1px`,
+                    "border-radius": "0.25rem",
                 };
-            }
+            },
         },
 
         components: {
-            InfoHover
-        }
+            InfoHover,
+        },
     });
     export default MatchFactories;
 </script>

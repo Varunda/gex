@@ -1,26 +1,19 @@
-
 <template>
     <div>
         <div class="d-flex">
             <div class="flex-grow-1"></div>
 
-            <div class="flex-grow-2" style="max-width: 640px;">
-                <div class="h1 text-center">
-                    upload
-                </div>
+            <div class="flex-grow-2" style="max-width: 640px">
+                <div class="h1 text-center">upload</div>
 
                 <div class="input-group">
                     <input id="file-upload" type="file" class="form-control" @change="updateName" />
                     <label class="custom-file-label" for="file-upload"></label>
                 </div>
 
-                <div class="text-center mb-3">
-                    max 50MB upload
-                </div>
+                <div class="text-center mb-3">max 50MB upload</div>
 
-                <div>
-                    Replays are located within the demos file of your game install
-                </div>
+                <div>Replays are located within the demos file of your game install</div>
 
                 <div class="w-100">
                     <button class="btn btn-primary w-100" @click="doUpload">Upload</button>
@@ -30,26 +23,23 @@
             <div class="flex-grow-1"></div>
         </div>
 
-        <hr class="border">
+        <hr class="border" />
 
         <div class="text-center">
             <div v-if="match.state == 'idle'"></div>
 
-            <div v-else-if="match.state == 'loading'">
-                Loading...
-            </div>
+            <div v-else-if="match.state == 'loading'">Loading...</div>
 
             <div v-else-if="match.state == 'loaded'">
                 <a :href="'/match/' + match.data.id">View match</a>
             </div>
-
         </div>
     </div>
 </template>
 
 <script lang="ts">
     import Vue from "vue";
-    import { Loading, Loadable } from "Loading"
+    import { Loading, Loadable } from "Loading";
 
     import "filters/MomentFilter";
 
@@ -66,41 +56,39 @@
     import Toaster from "Toaster";
 
     export const Upload = Vue.extend({
-        props: {
+        props: {},
 
-        },
-
-        data: function() {
+        data: function () {
             return {
                 file: null as HTMLInputElement | null,
                 fileText: "" as string,
-                match: Loadable.idle() as Loading<BarMatch>
+                match: Loadable.idle() as Loading<BarMatch>,
             };
         },
 
-        created: function(): void {
+        created: function (): void {
             document.title = "Gex / Upload";
         },
 
-        mounted: function(): void {
+        mounted: function (): void {
             this.$nextTick(() => {
                 this.makeFile();
             });
         },
 
         methods: {
-            makeFile: function(): void {
+            makeFile: function (): void {
                 this.file = document.getElementById("file-upload") as HTMLInputElement | null;
             },
 
-            updateName: function(ev: any): void {
+            updateName: function (ev: any): void {
                 const files: FileList = ev.target.files;
                 if (files.length > 0) {
                     this.fileText = files.item(0)?.name ?? "missing name";
                 }
             },
 
-            doUpload: async function(): Promise<void> {
+            doUpload: async function (): Promise<void> {
                 const files: FileList = (this.file as any).files;
 
                 if (files.length == 0) {
@@ -128,20 +116,20 @@
                         Toaster.add("Upload error", `error uploading!`, "danger");
                     }
                 }
-            }
+            },
         },
 
-        computed: {
+        computed: {},
 
-        },
-
-        watch: {
-
-        },
+        watch: {},
 
         components: {
-            InfoHover, ApiError, ToggleButton, Collapsible, Busy
-        }
+            InfoHover,
+            ApiError,
+            ToggleButton,
+            Collapsible,
+            Busy,
+        },
     });
     export default Upload;
 </script>

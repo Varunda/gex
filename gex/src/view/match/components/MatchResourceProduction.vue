@@ -1,14 +1,18 @@
-
 <template>
     <div>
         <h2 class="wt-header bg-primary">Unit resource production</h2>
 
         <div class="d-flex flex-wrap mb-3">
-            <button v-for="player in match.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
-                    'background-color': (selectedTeam == player.teamID) ? player.hexColor : 'var(--bs-secondary)',
-                    'color': (selectedTeam == player.teamID) ? 'white' : player.hexColor
-                }" @click="selectedTeam = player.teamID">
-
+            <button
+                v-for="player in match.players"
+                :key="player.teamID"
+                class="btn m-1 flex-grow-0"
+                :style="{
+                    'background-color': selectedTeam == player.teamID ? player.hexColor : 'var(--bs-secondary)',
+                    color: selectedTeam == player.teamID ? 'white' : player.hexColor,
+                }"
+                @click="selectedTeam = player.teamID"
+            >
                 <span style="text-shadow: 1px 1px 1px black">
                     {{ player.username }}
                 </span>
@@ -17,27 +21,29 @@
 
         <h4 v-if="selectedPlayer" class="text-center">
             Viewing unit stats for
-            <span :style="{ 'color': selectedPlayer.hexColor }">
+            <span :style="{ color: selectedPlayer.hexColor }">
                 {{ selectedPlayer.username }}
             </span>
         </h4>
 
-        <a-table :entries="entries"
-            :show-footer="true" :show-filters="true"
-            default-sort-field="count" default-sort-order="desc"
-            :page-sizes="[ 5, 10, 25, 50, 100 ]" :default-page-size="5">
-
+        <a-table
+            :entries="entries"
+            :show-footer="true"
+            :show-filters="true"
+            default-sort-field="count"
+            default-sort-order="desc"
+            :page-sizes="[5, 10, 25, 50, 100]"
+            :default-page-size="5"
+        >
             <a-col sort-field="name">
                 <a-header>
                     <b>Unit</b>
                 </a-header>
 
-                <a-filter field="name" type="string" method="input"
-                    :conditions="[ 'contains', 'equals' ]">
-                </a-filter>
+                <a-filter field="name" type="string" method="input" :conditions="['contains', 'equals']"> </a-filter>
 
                 <a-body v-slot="entry">
-                    <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                    <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                     {{ entry.name }}
                 </a-body>
             </a-col>
@@ -119,7 +125,6 @@
                     <b>{{ sumEnergyUsed | compact }}</b>
                 </a-footer>
             </a-col>
-
         </a-table>
     </div>
 </template>
@@ -143,55 +148,65 @@
     export const MatchResourceProduction = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
-            data: { type: Array as PropType<ResourceProductionData[]>, required: true }
+            data: { type: Array as PropType<ResourceProductionData[]>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 selectedTeam: 0 as number,
-            }
+            };
         },
 
-        methods: {
-
-        },
+        methods: {},
 
         computed: {
-            entries: function(): Loading<ResourceProductionEntry[]> {
-                return Loadable.loaded(this.data.find(iter => iter.teamID == this.selectedTeam)?.units ?? []);
+            entries: function (): Loading<ResourceProductionEntry[]> {
+                return Loadable.loaded(this.data.find((iter) => iter.teamID == this.selectedTeam)?.units ?? []);
             },
 
-            selectedPlayer: function(): BarMatchPlayer | null {
-                return this.match.players.find(iter => iter.teamID == this.selectedTeam) || null;
+            selectedPlayer: function (): BarMatchPlayer | null {
+                return this.match.players.find((iter) => iter.teamID == this.selectedTeam) || null;
             },
 
-            sumMetalMade: function(): number {
-                if (this.entries.state != "loaded") {throw `what 3245712`;}
-                return this.entries.data.reduce((acc, val) => acc += val.metalMade, 0);
+            sumMetalMade: function (): number {
+                if (this.entries.state != "loaded") {
+                    throw `what 3245712`;
+                }
+                return this.entries.data.reduce((acc, val) => (acc += val.metalMade), 0);
             },
 
-            sumMetalUsed: function(): number {
-                if (this.entries.state != "loaded") {throw `what 324572`;}
-                return this.entries.data.reduce((acc, val) => acc += val.metalUsed, 0);
+            sumMetalUsed: function (): number {
+                if (this.entries.state != "loaded") {
+                    throw `what 324572`;
+                }
+                return this.entries.data.reduce((acc, val) => (acc += val.metalUsed), 0);
             },
 
-            sumEnergyMade: function(): number {
-                if (this.entries.state != "loaded") {throw `what 324571`;}
-                return this.entries.data.reduce((acc, val) => acc += val.energyMade, 0);
+            sumEnergyMade: function (): number {
+                if (this.entries.state != "loaded") {
+                    throw `what 324571`;
+                }
+                return this.entries.data.reduce((acc, val) => (acc += val.energyMade), 0);
             },
 
-            sumEnergyUsed: function(): number {
-                if (this.entries.state != "loaded") {throw `what 324712`;}
-                return this.entries.data.reduce((acc, val) => acc += val.energyUsed, 0);
+            sumEnergyUsed: function (): number {
+                if (this.entries.state != "loaded") {
+                    throw `what 324712`;
+                }
+                return this.entries.data.reduce((acc, val) => (acc += val.energyUsed), 0);
             },
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover
-        }
-
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+            Collapsible,
+            InfoHover,
+        },
     });
     export default MatchResourceProduction;
-
 </script>

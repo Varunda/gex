@@ -27,7 +27,7 @@
     interface FlatpickrGlobalInterface {
         state: "mounted" | "mounting" | "unmounted";
         count: number;
-    };
+    }
 
     export const DateTimePicker = Vue.extend({
         props: {
@@ -56,18 +56,20 @@
             AllowInput: { type: Boolean, required: false, default: false },
 
             // Is this value readonly? TODO: Implement this
-            readonly: { type: Boolean, required: false, default: false }
+            readonly: { type: Boolean, required: false, default: false },
         },
 
-        data: function() {
+        data: function () {
             return {
-                instance: null as (flatpickr.Instance | flatpickr.Instance[] | null),
-                id: 0 as number
-            }
+                instance: null as flatpickr.Instance | flatpickr.Instance[] | null,
+                id: 0 as number,
+            };
         },
 
-        mounted: function() {
-            if (document.head == null) { throw `document.head is null, cannot mount flatpickr`; }
+        mounted: function () {
+            if (document.head == null) {
+                throw `document.head is null, cannot mount flatpickr`;
+            }
 
             let cfg: FlatpickrGlobalInterface | undefined = (window as any).Flatpickr;
             if (cfg == undefined) {
@@ -85,11 +87,13 @@
                 const script = document.createElement("script");
                 script.setAttribute("src", "/lib/flatpickr/dist/flatpickr.js");
                 script.setAttribute("async", "true");
-                script.onload = ((event: Event) => {
+                script.onload = (event: Event) => {
                     console.log(`DateTimePicker> flatpickr js loaded`);
                     loadedJS = true;
-                    if (loadedCSS == true) { ((window as any).Flatpickr as FlatpickrGlobalInterface).state = "mounted"; }
-                });
+                    if (loadedCSS == true) {
+                        ((window as any).Flatpickr as FlatpickrGlobalInterface).state = "mounted";
+                    }
+                };
                 document.head.appendChild(script);
                 console.log(`DateTimePicker> mounted flatpickr js`);
 
@@ -98,11 +102,13 @@
                 css.setAttribute("href", "/lib/flatpickr/dist/flatpickr.css");
                 css.setAttribute("rel", "stylesheet");
                 css.setAttribute("async", "true");
-                css.onload = ((event: Event) => {
+                css.onload = (event: Event) => {
                     console.log(`DateTimePicker> flatpickr css loaded`);
                     loadedCSS = true;
-                    if (loadedJS == true) { ((window as any).Flatpickr as FlatpickrGlobalInterface).state = "mounted"; }
-                });
+                    if (loadedJS == true) {
+                        ((window as any).Flatpickr as FlatpickrGlobalInterface).state = "mounted";
+                    }
+                };
                 document.head.appendChild(css);
                 console.log(`DateTimePicker> mounted flatpickr css`);
             }
@@ -115,7 +121,7 @@
             });
         },
 
-        created: function(): void {
+        created: function (): void {
             if (this.AllowNull && this.value == null) {
                 return;
             }
@@ -124,7 +130,7 @@
             }
         },
 
-        beforeDestroy: function(): void {
+        beforeDestroy: function (): void {
             if (this.instance != null) {
                 if (Array.isArray(this.instance)) {
                     for (const inst of this.instance) {
@@ -138,7 +144,7 @@
         },
 
         methods: {
-            init: function(): void {
+            init: function (): void {
                 const cfg: FlatpickrGlobalInterface | undefined = (window as any).Flatpickr;
                 if (cfg == undefined) {
                     throw `Flatpickr window interface was undefined in init(). Interface must also be set`;
@@ -192,13 +198,11 @@
                         },
                     });
                     if (this.instance == null || (Array.isArray(this.instance) && this.instance.length == 0)) {
-                        throw `Failed to start ${'#flatpickr' + this.id}. No instance returned`;
+                        throw `Failed to start ${"#flatpickr" + this.id}. No instance returned`;
                     }
                 }
-            }
-        }
-
+            },
+        },
     });
     export default DateTimePicker;
-
 </script>

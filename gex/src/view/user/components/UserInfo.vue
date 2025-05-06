@@ -1,4 +1,3 @@
-
 <template>
     <div>
         <h2 class="wt-header">User info</h2>
@@ -8,29 +7,23 @@
         </h4>
 
         <div class="mb-3">
-            <h4 class="wt-header mb-1">
-                Skill
-            </h4>
+            <h4 class="wt-header mb-1">Skill</h4>
 
-            <div class="d-flex" style="gap: 1rem;">
+            <div class="d-flex" style="gap: 1rem">
                 <div v-for="skill in user.skill" :key="skill.gamemode" class="text-center mx-3">
                     <h5>
                         {{ skill.gamemode | gamemode }}
                     </h5>
                     <div>
                         {{ skill.skill | locale(2) }}
-                        <span class="text-muted">
-                            &plusmn;{{ skill.skillUncertainty | locale(2) }}
-                        </span>
+                        <span class="text-muted"> &plusmn;{{ skill.skillUncertainty | locale(2) }} </span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div>
-            <h4 class="wt-header mb-1">
-                Maps
-            </h4>
+            <h4 class="wt-header mb-1">Maps</h4>
             <h6 class="text-muted mb-3">
                 Map stats are seperated into gamemode, so it is possible to have 1 map listed multiple times, each for a different gamemode
             </h6>
@@ -41,9 +34,7 @@
                         <b>Map</b>
                     </a-header>
 
-                    <a-filter field="map" type="string" method="input"
-                        :conditions="[ 'contains', 'equals' ]">
-                    </a-filter>
+                    <a-filter field="map" type="string" method="input" :conditions="['contains', 'equals']"> </a-filter>
 
                     <a-body v-slot="entry">
                         {{ entry.map }}
@@ -90,10 +81,7 @@
                     </a-body>
                 </a-col>
             </a-table>
-
-
         </div>
-
     </div>
 </template>
 
@@ -111,29 +99,29 @@
 
     export const UserInfo = Vue.extend({
         props: {
-            user: { type: Object as PropType<BarUser>, required: true }
+            user: { type: Object as PropType<BarUser>, required: true },
         },
 
-        data: function() {
-            return {
-
-            }
+        data: function () {
+            return {};
         },
 
-        methods: {
+        methods: {},
 
-        },
-
-        computed:  {
-
-            mapData: function(): Loading<BarUserMapStats[] >{
+        computed: {
+            mapData: function (): Loading<BarUserMapStats[]> {
                 return Loadable.loaded(this.user.mapStats);
-            }
+            },
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol
-        }
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+        },
     });
     export default UserInfo;
 </script>

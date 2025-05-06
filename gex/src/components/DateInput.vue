@@ -13,19 +13,19 @@
             AllowNull: { type: Boolean, required: false, default: false },
         },
 
-        data: function() {
+        data: function () {
             return {
                 date: new Date() as Date | null,
-                str: "" as string | null
-            }
+                str: "" as string | null,
+            };
         },
 
-        created: function(): void {
+        created: function (): void {
             this.updateDate();
         },
 
         methods: {
-            updateDate: function(): void {
+            updateDate: function (): void {
                 this.date = this.value;
                 if (this.date != null) {
                     this.str = DateUtil.getLocalDateOnlyString(DateUtil.zeroParts(this.date, { hours: true, minutes: true, seconds: true }));
@@ -34,7 +34,7 @@
                 }
             },
 
-            handleInput: function(ev: any): void {
+            handleInput: function (ev: any): void {
                 const target: HTMLInputElement = ev.target;
                 this.str = target.value;
 
@@ -45,17 +45,16 @@
                 }
 
                 this.$emit("input", this.date);
-            }
+            },
         },
 
         watch: {
-            value: function(): void {
+            value: function (): void {
                 this.$nextTick(() => {
                     this.updateDate();
                 });
-            }
-        }
+            },
+        },
     });
     export default DateInput;
-
 </script>

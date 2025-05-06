@@ -2,8 +2,9 @@
     display: none;
 }
 
-.strike::before, strike::after {
-    content: '';
+.strike::before,
+strike::after {
+    content: "";
     flex: 1;
     border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
@@ -29,16 +30,28 @@
 }
 
 @-moz-keyframes spin {
-    from { -moz-transform: rotate(0deg); }
-    to { -moz-transform: rotate(360deg); }
+    from {
+        -moz-transform: rotate(0deg);
+    }
+    to {
+        -moz-transform: rotate(360deg);
+    }
 }
 @-webkit-keyframes spin {
-    from { -webkit-transform: rotate(0deg); }
-    to { -webkit-transform: rotate(360deg); }
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
 }
 @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .loading {
@@ -147,33 +160,57 @@
 }
 
 @keyframes slide-right-in {
-    0%      { right: -500px; }
-    100%    { right: 0px; }
+    0% {
+        right: -500px;
+    }
+    100% {
+        right: 0px;
+    }
 }
 
 @keyframes slide-right-out {
-    0%      { right: 0px; }
-    100%    { right: -500px; }
+    0% {
+        right: 0px;
+    }
+    100% {
+        right: -500px;
+    }
 }
 
 @keyframes slide-left-in {
-    0%      { left: -500px; }
-    100%    { left: 0px; }
+    0% {
+        left: -500px;
+    }
+    100% {
+        left: 0px;
+    }
 }
 
 @keyframes slide-left-out {
-    0%      { left: 0px; }
-    100%    { left: -500px; }
+    0% {
+        left: 0px;
+    }
+    100% {
+        left: -500px;
+    }
 }
 
 @keyframes slide-300-in {
-    0%      { right: -300px; }
-    100%    { right: 0px; }
+    0% {
+        right: -300px;
+    }
+    100% {
+        right: 0px;
+    }
 }
 
 @keyframes slide-300-out {
-    0%      { right: 0px; }
-    100%    { right: -300px; }
+    0% {
+        right: 0px;
+    }
+    100% {
+        right: -300px;
+    }
 }
 
 .slide-300-in {
@@ -188,7 +225,7 @@
 
 @font-face {
     font-family: "Atkinson Hyperlegible";
-    src: url('/font/AtkinsonHyperlegible-Regular.ttf');
+    src: url("/font/AtkinsonHyperlegible-Regular.ttf");
 }
 
 @font-face {

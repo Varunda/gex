@@ -1,35 +1,46 @@
-
 <template>
-    <div class="d-flex flex-wrap justify-content-center" style="font-size: 14px; line-height: 1;">
+    <div class="d-flex flex-wrap justify-content-center" style="font-size: 14px; line-height: 1">
         <div v-for="match in matches" :key="match.id" class="me-3 mb-3">
             <div>
                 <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                    <div class="position-absolute" style="width: 18rem; height: 18rem; background-color: #0005; z-index: 1; border-radius: 0.75rem;"></div>
+                    <div class="position-absolute" style="width: 18rem; height: 18rem; background-color: #0005; z-index: 1; border-radius: 0.75rem"></div>
 
                     <h5 class="tile-title">
                         {{ mapNameWithoutVersion(match.map) }}
                     </h5>
 
-                    <div class="flex-grow-1 align-content-center w-100" style="z-index: 10;">
-                        <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                            <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
-
-                                <div class="tile-team"
-                                :style="{
-                                    'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
-                                    'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
-                                    'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
-                                }"
+                    <div class="flex-grow-1 align-content-center w-100" style="z-index: 10">
+                        <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto">
+                            <div
+                                v-for="allyTeam in match.allyTeams"
+                                :key="allyTeam.allyTeamID"
+                                style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem"
+                            >
+                                <div
+                                    class="tile-team"
+                                    :style="{
+                                        background:
+                                            'linear-gradient(' +
+                                            (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') +
+                                            ', #00000000 0%, ' +
+                                            getAllyTeamColor(match, allyTeam) +
+                                            '66 100%)',
+                                        'border-right': allyTeam.allyTeamID % 2 == 1 ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                                        'border-left': allyTeam.allyTeamID % 2 == 0 ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                                    }"
                                 >
-                                    <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                    <div
+                                        v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)"
+                                        :key="allyTeam.allyTeamID + '-' + player.teamID"
+                                        :title="player.username"
                                         :style="{
                                             'text-shadow': '1px 1px 1px #000000',
-                                            'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                                            'overflow': 'clip',
+                                            'text-align': match.allyTeams.length == 2 ? (allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start') : 'auto',
+                                            overflow: 'clip',
                                             'text-overflow': 'ellipsis',
-                                            'margin': '0.25rem 0'
-                                        }">
-
+                                            margin: '0.25rem 0',
+                                        }"
+                                    >
                                         {{ player.username }}
                                     </div>
                                 </div>
@@ -40,23 +51,23 @@
             </div>
 
             <div class="tile-time-ago">
-                Ended {{ match.endTime | compactTimeAgo }} ago
-                &middot;
+                Ended {{ match.endTime | compactTimeAgo }} ago &middot;
                 <span :title="match.endTime | moment('YYYY-MM-DD hh:mm:ss A')">
-                    {{ match.endTime | moment("hh:mm A")}}
+                    {{ match.endTime | moment("hh:mm A") }}
                 </span>
 
-                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning" title="This game has not been fully processed!">
-
+                <span
+                    v-if="match.processing == null || match.processing.actionsParsed == null"
+                    class="bi bi-cone text-warning"
+                    title="This game has not been fully processed!"
+                >
                 </span>
             </div>
         </div>
-
     </div>
 </template>
 
 <style scoped>
-
     .tile {
         width: 18rem;
         height: 18rem;
@@ -111,7 +122,7 @@
         font-weight: bold;
         top: 0;
         left: 0;
-        background-color: #000000AA;
+        background-color: #000000aa;
         padding: 0.2rem 0.5rem;
         margin-top: 0;
         border-start-start-radius: 0.75rem;
@@ -133,7 +144,7 @@
     }
 
     .tile-processing {
-        background-color: #000000AA;
+        background-color: #000000aa;
         border-end-start-radius: 0.75rem;
     }
 
@@ -167,7 +178,6 @@
         position: relative;
         margin-left: 0.25rem;
     }
-
 </style>
 
 <script lang="ts">
@@ -182,17 +192,15 @@
 
     export const MatchList = Vue.extend({
         props: {
-            matches: { type: Array as PropType<BarMatch[]>, required: true }
+            matches: { type: Array as PropType<BarMatch[]>, required: true },
         },
 
-        data: function() {
-            return {
-
-            }
+        data: function () {
+            return {};
         },
 
         methods: {
-            mapNameWithoutVersion: function(name: string): string {
+            mapNameWithoutVersion: function (name: string): string {
                 const m = name.match(/^([a-zA-Z\s]*)[vV_\s][\d\.]*/);
                 if (m == null) {
                     return name;
@@ -203,32 +211,32 @@
                 return m[1];
             },
 
-            getMapThumbnail: function(map: string): string {
+            getMapThumbnail: function (map: string): string {
                 return `/image-proxy/MapBackground?mapName=${map.replace(/ /g, "%20")}&size=texture-thumb`;
             },
 
-            isFFA: function(match: BarMatch): boolean {
-                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
+            isFFA: function (match: BarMatch): boolean {
+                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map((iter) => iter.playerCount)) == 1;
             },
 
-            getAllyTeamColor: function(match: BarMatch, allyTeam: BarMatchAllyTeam): string {
-                return match.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
+            getAllyTeamColor: function (match: BarMatch, allyTeam: BarMatchAllyTeam): string {
+                return match.players.find((iter) => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
             },
 
-            getMatchMaxPlayers: function(match: BarMatch): number {
-                return Math.max(...match.allyTeams.map(iter => iter.playerCount));
+            getMatchMaxPlayers: function (match: BarMatch): number {
+                return Math.max(...match.allyTeams.map((iter) => iter.playerCount));
             },
 
-            getMatchAllyPlayers: function(match: BarMatch, allyTeamID: number): BarMatchPlayer[] {
-                return match.players.filter(iter => iter.allyTeamID == allyTeamID);
+            getMatchAllyPlayers: function (match: BarMatch, allyTeamID: number): BarMatchPlayer[] {
+                return match.players.filter((iter) => iter.allyTeamID == allyTeamID);
             },
 
-            getMatchStyle: function(match: BarMatch) {
+            getMatchStyle: function (match: BarMatch) {
                 return {
-                    "background-image": `url(${this.getMapThumbnail(match.mapName)})`
-                }
-            }
-        }
+                    "background-image": `url(${this.getMapThumbnail(match.mapName)})`,
+                };
+            },
+        },
     });
     export default MatchList;
 </script>

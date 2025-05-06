@@ -1,7 +1,6 @@
-
 <template>
     <div>
-        <div class="d-flex" style="justify-content: space-between; align-items: center;">
+        <div class="d-flex" style="justify-content: space-between; align-items: center">
             <h2>
                 <b>Wind speed</b>
             </h2>
@@ -9,21 +8,15 @@
             <div>
                 <div>
                     Min wind: {{ map.minimumWind }}
-                    <span class="text-muted">
-                        (for {{ timeAtMin / 30 | mduration }})
-                    </span>
+                    <span class="text-muted"> (for {{ (timeAtMin / 30) | mduration }}) </span>
                 </div>
                 <div>
                     Max wind: {{ map.maximumWind }}
-                    <span class="text-muted">
-                        (for {{ timeAtMax / 30 | mduration }})
-                    </span>
+                    <span class="text-muted"> (for {{ (timeAtMax / 30) | mduration }}) </span>
                 </div>
             </div>
 
-            <div>
-                Average wind: {{ avg | locale(2) }}
-            </div>
+            <div>Average wind: {{ avg | locale(2) }}</div>
         </div>
 
         <div style="height: 200px">
@@ -47,20 +40,20 @@
     export const MatchWindGraph = Vue.extend({
         props: {
             updates: { type: Array as PropType<GameEventWindUpdate[]>, required: true },
-            map: { type: Object as PropType<BarMap>, required: true }
+            map: { type: Object as PropType<BarMap>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 chart: null as null | Chart,
 
                 avg: 0 as number,
                 timeAtMin: 0 as number,
-                timeAtMax: 0 as number
-            }
+                timeAtMax: 0 as number,
+            };
         },
 
-        mounted: function(): void {
+        mounted: function (): void {
             this.$nextTick(() => {
                 this.calcNumbers();
                 this.makeGraph();
@@ -68,9 +61,7 @@
         },
 
         methods: {
-
-            calcNumbers: function(): void {
-
+            calcNumbers: function (): void {
                 for (const ev of this.updates) {
                     this.avg += ev.value;
 
@@ -86,7 +77,7 @@
                 this.avg = this.avg / this.updates.length;
             },
 
-            makeGraph: function(): void {
+            makeGraph: function (): void {
                 const canvas: HTMLElement | null = document.getElementById("wind-over-time-graph");
                 if (canvas == null) {
                     return console.error(`MatchWindGraph> missing #wind-over-time-graph`);
@@ -105,14 +96,16 @@
                 this.chart = new Chart(ctx, {
                     type: "line",
                     data: {
-                        labels: this.updates.map(iter => `${TimeUtils.duration(iter.frame / 30)}`),
+                        labels: this.updates.map((iter) => `${TimeUtils.duration(iter.frame / 30)}`),
                         datasets: [
                             {
-                                data: this.updates.map(iter => { return { x: iter.frame, y: iter.value }}),
+                                data: this.updates.map((iter) => {
+                                    return { x: iter.frame, y: iter.value };
+                                }),
                                 fill: true,
-                                backgroundColor: "#FFFFFFAA"
-                            }
-                        ]
+                                backgroundColor: "#FFFFFFAA",
+                            },
+                        ],
                     },
                     options: {
                         scales: {
@@ -129,13 +122,13 @@
                                 beginAtZero: true,
                                 max: this.map.maximumWind,
                                 grid: {
-                                    color: "#999"
-                                }
+                                    color: "#999",
+                                },
                             },
                         },
                         interaction: {
                             intersect: false,
-                            mode: "nearest"
+                            mode: "nearest",
                         },
                         responsive: true,
                         maintainAspectRatio: false,
@@ -144,19 +137,15 @@
                                 display: false,
                                 labels: {
                                     color: "#fff",
-                                }
-                            }
+                                },
+                            },
                         },
                     },
-
                 });
-            }
-
+            },
         },
 
-        components: {
-
-        }
+        components: {},
     });
     export default MatchWindGraph;
 </script>

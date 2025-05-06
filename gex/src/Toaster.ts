@@ -5,7 +5,6 @@ import { Loading, Loadable } from "Loading";
 export type TextColor = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "body" | "muted";
 
 export default class Toaster {
-
     private static _nextInstance: number = 1;
 
     public static remove(instanceID: number): void {
@@ -52,8 +51,6 @@ export default class Toaster {
 
         toast.show();
     }
-
 }
 
 (window as any).Toaster = Toaster; // Necessary so they can be removed
-

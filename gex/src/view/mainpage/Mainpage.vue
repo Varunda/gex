@@ -1,19 +1,14 @@
 ﻿<template>
     <div style="max-width: 100vw">
         <div v-if="searching == false">
-            <toggle-button v-model="showUnprocessedGames">
-                Show unprocessed
-            </toggle-button>
+            <toggle-button v-model="showUnprocessedGames"> Show unprocessed </toggle-button>
 
-            <button class="btn btn-primary" @click="searching = true">
-                Search options
-            </button>
+            <button class="btn btn-primary" @click="searching = true">Search options</button>
         </div>
 
         <hr class="border" />
 
         <div v-if="searching == true" class="row mb-3">
-
             <div class="col-12">
                 <h4 @click="searching = false">Search options</h4>
             </div>
@@ -80,45 +75,35 @@
 
             <div class="col-4">
                 <label>Minimum player count</label>
-                <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
+                <input v-model.number="search.playerCountMinimum" class="form-control" type="number" />
             </div>
 
             <div class="col-4">
                 <label>Maximum player count</label>
-                <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
+                <input v-model.number="search.playerCountMaximum" class="form-control" type="number" />
             </div>
 
             <div class="col-12 mt-2">
                 <button class="btn btn-primary" @click="performSearch">Search</button>
             </div>
-
         </div>
 
         <div>
             <div v-if="recent.state == 'idle'"></div>
 
-            <div v-else-if="recent.state == 'loading'">
-                Loading...
-            </div>
+            <div v-else-if="recent.state == 'loading'">Loading...</div>
 
             <div v-else-if="recent.state == 'loaded'">
-
                 <match-list :matches="recent.data"></match-list>
 
-                <div v-if="recent.data.length == 0">
-                    No matches found!
-                </div>
+                <div v-if="recent.data.length == 0">No matches found!</div>
 
-                <hr class="border">
+                <hr class="border" />
 
                 <div class="d-flex">
-                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2">
-                        First
-                    </a>
+                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2"> First </a>
 
-                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary">
-                        Newer
-                    </a>
+                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary"> Newer </a>
 
                     <div class="flex-grow-1"></div>
 
@@ -126,9 +111,7 @@
 
                     <div class="flex-grow-1"></div>
 
-                    <a v-if="recent.data.length > 0" :href="'/?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
-                        Older
-                    </a>
+                    <a v-if="recent.data.length > 0" :href="'/?offset=' + (offset + 24) + searchParam" class="btn btn-primary"> Older </a>
                 </div>
             </div>
         </div>
@@ -152,11 +135,9 @@
     import "filters/MomentFilter";
 
     export const Mainpage = Vue.extend({
-        props: {
+        props: {},
 
-        },
-
-        data: function() {
+        data: function () {
             return {
                 searching: false as boolean,
                 showUnprocessedGames: false as boolean,
@@ -183,15 +164,15 @@
 
                 offset: 0 as number,
                 limit: 24 as number,
-                recent: Loadable.idle() as Loading<BarMatch[]>
-            }
+                recent: Loadable.idle() as Loading<BarMatch[]>,
+            };
         },
 
-        created: function(): void {
+        created: function (): void {
             document.title = "Gex / Recent matches";
         },
 
-        beforeMount: function(): void {
+        beforeMount: function (): void {
             const search: URLSearchParams = new URLSearchParams(location.search);
             if (search.has("offset")) {
                 this.offset = Number.parseInt(search.get("offset")!);
@@ -208,33 +189,31 @@
             } else {
                 this.loadRecent();
             }
-
         },
 
         methods: {
-            loadRecent: async function(): Promise<void> {
+            loadRecent: async function (): Promise<void> {
                 this.recent = Loadable.loading();
 
                 if (this.showUnprocessedGames == true) {
                     this.recent = await BarMatchApi.getRecent(this.offset);
                 } else {
                     this.recent = await BarMatchApi.search(this.offset, 24, {
-                        processingAction: true
+                        processingAction: true,
                     });
                 }
             },
 
-            performSearch: async function(): Promise<void> {
+            performSearch: async function (): Promise<void> {
                 this.search.use = true;
 
                 this.recent = Loadable.loading();
                 this.recent = await BarMatchApi.search(this.offset, 24, this.searchOptions);
-            }
+            },
         },
 
         computed: {
-
-            searchParam: function(): string {
+            searchParam: function (): string {
                 if (this.showUnprocessedGames == true) {
                     return "&showUnprocessed=true";
                 }
@@ -246,7 +225,7 @@
                 return `&search=${btoa(JSON.stringify(this.searchOptions))}`;
             },
 
-            searchOptions: function() {
+            searchOptions: function () {
                 let options: any = {};
 
                 if (this.search.engine && this.search.engine != "") {
@@ -283,26 +262,28 @@
                 return options;
             },
 
-            dropdownSearchCalls: function() {
+            dropdownSearchCalls: function () {
                 return {
                     engine: MatchSearchApi.getUniqueEngines,
                     gameVersion: MatchSearchApi.getUniqueGameVersions,
-                    map: MatchSearchApi.getUniqueMaps
-                }
-            }
-
+                    map: MatchSearchApi.getUniqueMaps,
+                };
+            },
         },
 
         watch: {
-            showUnprocessedGames: function(): void {
+            showUnprocessedGames: function (): void {
                 this.loadRecent();
-            }
+            },
         },
 
         components: {
-            InfoHover, GexMenu,
-            MatchList, DropdownSearch, ToggleButton
-        }
+            InfoHover,
+            GexMenu,
+            MatchList,
+            DropdownSearch,
+            ToggleButton,
+        },
     });
 
     export default Mainpage;
