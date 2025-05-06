@@ -49,6 +49,7 @@
         color: string;
         timestamp: string;
         message: string;
+        playerColor: string; 
     }
 
     export const MatchChat = Vue.extend({
@@ -95,7 +96,11 @@
             },
 
             getPlayerAllyTeamId: function(id: number): number {
-                return this.match.players.find(p => p.playerID == id)?.allyTeamID ?? -1
+                return this.match.players.find(p => p.playerID == id)?.allyTeamID ?? -1;
+            },
+            
+            getPlayerColor: function(id: number): string {
+                return this.match.players.find(p => p.playerID == id)?.hexColor ?? "";
             }
         },
 
@@ -103,13 +108,14 @@
 
             messages: function(): FullMessage[] {
                 return this.match.chatMessages.map((iter, index) => {
-                    const allyTeamID = this.getPlayerAllyTeamId(iter.fromId)
+                    const allyTeamID = this.getPlayerAllyTeamId(iter.fromId);
 
                     return {
                         id: index,
                         from: this.getIdName(iter.fromId),
-                        to: this.getIdName(iter.toId, allyTeamID),
-                        color: this.getIdColor(iter.toId, allyTeamID),
+                        to: this.getIdName(iter.toId),
+                        color: this.getIdColor(iter.toId),
+                        playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(iter.gameTimestamp),
                         message: iter.message
                     }
