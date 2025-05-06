@@ -1,8 +1,6 @@
-
 <template>
     <div>
         <collapsible header-text="Unit defs" :show="false">
-
             <toggle-button v-model="onlySeen">Show only used units</toggle-button>
 
             <toggle-button v-model="debug">debug view</toggle-button>
@@ -24,7 +22,7 @@
                     <tr v-for="unitDef in shownUnits" :key="unitDef.definitionID">
                         <td>
                             {{ unitDef.definitionID }}
-                            <img :src="'/image-proxy/UnitIcon?defName=' + unitDef.definitionName" width="24" height="24">
+                            <img :src="'/image-proxy/UnitIcon?defName=' + unitDef.definitionName" width="24" height="24" />
                         </td>
                         <td>{{ unitDef.definitionName }}</td>
                         <td>{{ unitDef.name }}</td>
@@ -36,7 +34,7 @@
                 </tbody>
             </table>
 
-            <div v-if="debug" style="overflow-x: scroll;" >
+            <div v-if="debug" style="overflow-x: scroll">
                 <table class="table table-sm">
                     <thead>
                         <tr>
@@ -53,12 +51,10 @@
                             </td>
                         </tr>
                     </tbody>
-
                 </table>
             </div>
         </collapsible>
     </div>
-    
 </template>
 
 <style scoped>
@@ -67,7 +63,6 @@
         width: 33ch;
         left: 0;
     }
-
 </style>
 
 <script lang="ts">
@@ -84,24 +79,23 @@
     export const UnitDefView = Vue.extend({
         props: {
             UnitDefs: { type: Array as PropType<GameEventUnitDef[]>, required: true },
-            output: {type: Object as PropType<GameOutput>, required: true }
+            output: { type: Object as PropType<GameOutput>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 onlySeen: true as boolean,
                 seen: new Set() as Set<number>,
-                debug: false as boolean
-            }
+                debug: false as boolean,
+            };
         },
 
-        created: function(): void {
+        created: function (): void {
             this.findSeen();
         },
 
         methods: {
-
-            findSeen: function(): void {
+            findSeen: function (): void {
                 for (const ev of this.output.unitsCreated) {
                     this.seen.add(ev.definitionID);
                 }
@@ -109,24 +103,22 @@
                 for (const ev of this.output.unitsKilled) {
                     this.seen.add(ev.definitionID);
                 }
-            }
+            },
         },
 
         computed: {
-
-            shownUnits: function(): GameEventUnitDef[] {
+            shownUnits: function (): GameEventUnitDef[] {
                 if (this.onlySeen == false) {
                     return this.UnitDefs;
                 }
-                return this.UnitDefs.filter(iter => this.seen.has(iter.definitionID));
-            }
-
+                return this.UnitDefs.filter((iter) => this.seen.has(iter.definitionID));
+            },
         },
 
         components: {
-            Collapsible, ToggleButton
-        }
-
+            Collapsible,
+            ToggleButton,
+        },
     });
     export default UnitDefView;
 </script>

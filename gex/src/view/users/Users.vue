@@ -1,32 +1,22 @@
-
 <template>
     <div>
         <div class="container">
             <h1>User search</h1>
 
-            <input class="form-control" type="text" v-model="searchTerm" @keyup.enter="searchWrapper">
+            <input class="form-control" type="text" v-model="searchTerm" @keyup.enter="searchWrapper" />
 
-            <span class="text-muted">
-                Press enter to search (minimum 3 characters)
-            </span>
+            <span class="text-muted"> Press enter to search (minimum 3 characters) </span>
 
-            <hr class="border">
+            <hr class="border" />
 
-            <h2 v-show="searchedValue.length > 0">
-                Search results for: {{ searchedValue }}
-            </h2>
+            <h2 v-show="searchedValue.length > 0">Search results for: {{ searchedValue }}</h2>
 
             <div v-if="users.state == 'idle'"></div>
 
-            <div v-else-if="users.state == 'loading'">
-                Loading...
-            </div>
+            <div v-else-if="users.state == 'loading'">Loading...</div>
 
             <div v-else-if="users.state == 'loaded'">
-
-                <a-table :entries="users"
-                    default-sort-field="searchDiff" default-sort-order="asc">
-
+                <a-table :entries="users" default-sort-field="searchDiff" default-sort-order="asc">
                     <a-col sort-field="username">
                         <a-header>
                             <b>Username</b>
@@ -45,18 +35,14 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            <span v-if="entry.highestElo == null">
-                                --
-                            </span>
+                            <span v-if="entry.highestElo == null"> -- </span>
 
                             <span v-else>
                                 <span class="font-monospace">
                                     {{ entry.highestElo.skill | locale(2, 2) }}&plusmn;{{ entry.highestElo.skillUncertainty | locale(2) }}
                                 </span>
 
-                                <span class="text-muted">
-                                    (in {{ entry.highestElo.gamemode | gamemode }})
-                                </span>
+                                <span class="text-muted"> (in {{ entry.highestElo.gamemode | gamemode }}) </span>
                             </span>
                         </a-body>
                     </a-col>
@@ -70,9 +56,7 @@
                             <span class="font-monospace">
                                 {{ entry.avgEloStr }}
                             </span>
-                            <span class="text-muted">
-                                (over {{ entry.skill.length }} gamemodes)
-                            </span>
+                            <span class="text-muted"> (over {{ entry.skill.length }} gamemodes) </span>
                         </a-body>
                     </a-col>
 
@@ -85,9 +69,7 @@
                             <a :href="'/user/' + entry.userID">View</a>
                         </a-body>
                     </a-col>
-
                 </a-table>
-
             </div>
         </div>
     </div>
@@ -95,7 +77,7 @@
 
 <script lang="ts">
     import Vue from "vue";
-    import { Loading, Loadable } from "Loading"
+    import { Loading, Loadable } from "Loading";
 
     import "filters/MomentFilter";
     import "filters/DurationFilter";
@@ -130,32 +112,27 @@
         highestEloValue: number;
         avgEloStr: string;
         avgEloValue: number;
-    }
+    };
 
     export const Users = Vue.extend({
-        props: {
+        props: {},
 
-        },
-
-        data: function() {
+        data: function () {
             return {
                 searchTerm: "" as string,
                 searchedValue: "" as string,
-                users: Loadable.idle() as Loading<ExpandedUser[]>
+                users: Loadable.idle() as Loading<ExpandedUser[]>,
             };
         },
 
-        created: function(): void {
+        created: function (): void {
             document.title = "Gex / User search";
         },
 
-        beforeMount: function(): void {
-
-        },
+        beforeMount: function (): void {},
 
         methods: {
-
-            searchWrapper: function(): void {
+            searchWrapper: function (): void {
                 if (this.searchTerm.length < 3) {
                     return;
                 }
@@ -163,7 +140,7 @@
                 this.search(this.searchTerm);
             },
 
-            search: async function(term: string): Promise<void> {
+            search: async function (term: string): Promise<void> {
                 this.users = Loadable.loading();
 
                 const ret: Loading<BarUser[]> = await BarUserApi.search(this.searchTerm, true);
@@ -173,42 +150,43 @@
                     return;
                 }
 
-                this.users = Loadable.loaded(ret.data.map(iter => {
+                this.users = Loadable.loaded(
+                    ret.data.map((iter) => {
+                        const searchDiff: number = StringDistance.calculate(iter.username, term);
 
-                    const searchDiff: number = StringDistance.calculate(iter.username, term);
+                        if (iter.skill.length == 0) {
+                            return {
+                                ...iter,
+                                searchDiff: searchDiff,
+                                highestElo: null,
+                                highestEloValue: 0,
+                                avgEloStr: "--",
+                                avgEloValue: 0,
+                            };
+                        }
 
-                    if (iter.skill.length == 0) {
+                        const highest: BarUserSkill | null = [...iter.skill.sort((a, b) => b.skill - a.skill)][0];
+
+                        const count: number = iter.skill.length;
+
+                        const skill: number = iter.skill.reduce((acc, iter) => (acc += iter.skill), 0) / count;
+                        const uncertain: number = iter.skill.reduce((acc, iter) => (acc += iter.skillUncertainty), 0) / count;
+
                         return {
                             ...iter,
                             searchDiff: searchDiff,
-                            highestElo: null,
-                            highestEloValue: 0,
-                            avgEloStr: "--",
-                            avgEloValue: 0
+                            highestElo: highest,
+                            highestEloValue: highest.skill,
+                            avgEloStr: `${LocaleUtil.locale(skill, 2, 2)}±${LocaleUtil.locale(uncertain, 2)}`,
+                            avgEloValue: skill,
                         };
-                    }
-
-                    const highest: BarUserSkill | null = [...iter.skill.sort((a, b) => b.skill - a.skill)][0];
-
-                    const count: number = iter.skill.length;
-
-                    const skill: number = iter.skill.reduce((acc, iter) => acc += iter.skill, 0) / count;
-                    const uncertain: number = iter.skill.reduce((acc, iter) => acc += iter.skillUncertainty, 0) / count;
-
-                    return {
-                        ...iter,
-                        searchDiff: searchDiff,
-                        highestElo: highest,
-                        highestEloValue: highest.skill,
-                        avgEloStr: `${LocaleUtil.locale(skill, 2, 2)}±${LocaleUtil.locale(uncertain, 2)}`,
-                        avgEloValue: skill
-                    };
-                }));
+                    })
+                );
 
                 this.searchedValue = term;
             },
 
-            highestSkill: function(user: BarUser): string {
+            highestSkill: function (user: BarUser): string {
                 if (user.skill.length == 0) {
                     return "--";
                 }
@@ -218,32 +196,36 @@
                 return `${LocaleUtil.locale(highest.skill, 2)}±${LocaleUtil.locale(highest.skillUncertainty, 2)} (in ${GamemodeUtil.getName(highest.gamemode)})`;
             },
 
-            averageSkill: function(user: BarUser): string {
+            averageSkill: function (user: BarUser): string {
                 if (user.skill.length == 0) {
                     return "--";
                 }
 
-                const skillSum: number = user.skill.reduce((acc, iter) => acc += iter.skill, 0);
-                const uncertainSum: number = user.skill.reduce((acc, iter) => acc += iter.skillUncertainty, 0);
+                const skillSum: number = user.skill.reduce((acc, iter) => (acc += iter.skill), 0);
+                const uncertainSum: number = user.skill.reduce((acc, iter) => (acc += iter.skillUncertainty), 0);
 
                 const count: number = user.skill.length;
 
                 return `${LocaleUtil.locale(skillSum / count, 2)}±${LocaleUtil.locale(uncertainSum / count, 2)}`;
-            }
+            },
         },
 
-        computed: {
+        computed: {},
 
-        },
-
-        watch: {
-
-        },
+        watch: {},
 
         components: {
-            GexMenu, InfoHover, ApiError, ToggleButton,
-            ATable, AHeader, ABody, AFooter, AFilter, ACol
-        }
+            GexMenu,
+            InfoHover,
+            ApiError,
+            ToggleButton,
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+        },
     });
     export default Users;
 </script>

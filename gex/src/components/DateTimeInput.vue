@@ -14,44 +14,43 @@
             AllowNull: { type: Boolean, required: false, default: false },
         },
 
-        data: function() {
+        data: function () {
             return {
                 date: new Date() as Date,
-                str: "" as string
-            }
+                str: "" as string,
+            };
         },
 
-        created: function(): void {
+        created: function (): void {
             this.updateDate();
         },
 
         methods: {
-            updateDate: function(): void {
+            updateDate: function (): void {
                 this.date = this.value;
                 this.str = DateUtil.getLocalDateString(this.date);
             },
 
-            handleInput: function(ev: any): void {
+            handleInput: function (ev: any): void {
                 const target: HTMLInputElement = ev.target;
                 this.str = target.value;
                 this.date = new Date(this.str);
 
                 this.$emit("input", this.date);
-            }
+            },
         },
 
         watch: {
-            value: function(): void {
+            value: function (): void {
                 this.$nextTick(() => {
                     this.updateDate();
                 });
-            }
+            },
         },
 
         components: {
-            Fragment
-        }
+            Fragment,
+        },
     });
     export default DateTimeInput;
-
 </script>

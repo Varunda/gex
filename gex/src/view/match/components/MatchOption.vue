@@ -1,4 +1,3 @@
-
 <template>
     <collapsible :header-text="name" size-class="h6" :show="false" class="flex-grow-1" bg-color="bg-dark">
         <div style="max-height: 400px; overflow-y: auto">
@@ -9,9 +8,7 @@
                             {{ iter }}
                         </td>
                         <td>
-                            <span v-if="options[iter] == ''" class="text-muted">
-                                --
-                            </span>
+                            <span v-if="options[iter] == ''" class="text-muted"> -- </span>
                             <span v-else style="word-break: break-all">
                                 {{ options[iter] }}
                             </span>
@@ -31,24 +28,18 @@
     export const MatchOption = Vue.extend({
         props: {
             name: { type: String, required: true },
-            options: { type: Object, required: true }
+            options: { type: Object, required: true },
         },
 
-        data: function() {
-            return {
-
-            }
+        data: function () {
+            return {};
         },
 
-        methods: {
-
-        },
+        methods: {},
 
         components: {
-            Collapsible
-        }
-
+            Collapsible,
+        },
     });
     export default MatchOption;
-
 </script>

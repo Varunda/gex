@@ -1,26 +1,40 @@
-
 <template>
     <div>
         <collapsible header-text="Player stats" bg-color="bg-light" size-class="h1">
             <div class="d-flex flex-row">
-
                 <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
-
-                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[perSecond ? 'btn-primary' : 'btn-dark border']">
                         Show per sec
                     </button>
 
                     <div class="accordion accordion-flush" id="stat-accordion-parent">
                         <div v-for="(group, index) of statGroups" class="accordion-item mb-2" :key="group.name">
                             <h2 class="accordion-header">
-                                <button class="accordion-button me-2" :class="{ 'collapsed': index != 0 }" type="button" data-bs-toggle="collapse" :data-bs-target="'#stats-group-' + group.id">
+                                <button
+                                    class="accordion-button me-2"
+                                    :class="{ collapsed: index != 0 }"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    :data-bs-target="'#stats-group-' + group.id"
+                                >
                                     {{ group.name }}
                                 </button>
                             </h2>
 
-                            <div :id="'stats-group-' + group.id" class="accordion-collapse collapse" :class="{ 'show': index == 0 }" data-bs-parent="#stat-accordion-parent">
+                            <div
+                                :id="'stats-group-' + group.id"
+                                class="accordion-collapse collapse"
+                                :class="{ show: index == 0 }"
+                                data-bs-parent="#stat-accordion-parent"
+                            >
                                 <div class="btn-group btn-group-vertical w-100 mb-2">
-                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn ms-0" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                                    <button
+                                        v-for="stat in group.values"
+                                        :key="stat[0]"
+                                        @click="showDataset(stat[0])"
+                                        class="btn ms-0"
+                                        :class="[showedStat == stat[0] ? 'btn-primary' : 'btn-dark border']"
+                                    >
                                         {{ stat[1] }}
                                     </button>
                                 </div>
@@ -85,7 +99,6 @@
         id: "html-legend",
 
         afterUpdate(chart: Chart, args, options) {
-
             const containerID: string | null | undefined = (options as any).containerID;
             if (!containerID) {
                 throw `missing containerID (put it in options.plugins.'html-legend'.containerID)`;
@@ -100,10 +113,10 @@
                 ul.firstChild.remove();
             }
 
-            const items: LegendItem[] = chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
+            const items: LegendItem[] =
+                chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
 
             items.forEach((iter) => {
-
                 const li = document.createElement("li");
                 li.style.alignItems = "center";
                 li.style.cursor = "pointer";
@@ -139,11 +152,11 @@
                 check.classList.add("form-check-input", "mt-0", "me-1");
 
                 // Color box
-                const boxSpan = document.createElement('span');
+                const boxSpan = document.createElement("span");
                 boxSpan.style.background = iter.fillStyle?.toString() ?? "";
                 boxSpan.style.borderColor = iter.strokeStyle?.toString() ?? "";
                 boxSpan.style.borderWidth = iter.lineWidth + "px";
-                boxSpan.style.display = 'inline-block';
+                boxSpan.style.display = "inline-block";
                 boxSpan.style.flexShrink = "0";
                 boxSpan.style.height = "1em";
                 boxSpan.style.width = "1em";
@@ -165,7 +178,7 @@
                 li.appendChild(textContainer);
                 ul.appendChild(li);
             });
-        }
+        },
     };
 
     type StatKey = keyof MergedStats;
@@ -202,13 +215,13 @@
         ["unitsCaptured", "Units captured"],
         ["unitsSent", "Units sent"],
         ["unitsReceived", "Units received"],
-        ["unitsOutCaptured", "Units out captured"]
+        ["unitsOutCaptured", "Units out captured"],
     ];
 
     type StatGroup = {
         id: string;
         name: string;
-        values: [StatKey, string][]
+        values: [StatKey, string][];
     };
 
     const STAT_GROUPS: StatGroup[] = [
@@ -221,7 +234,7 @@
                 ["unitsKilled", "Units killed"],
                 ["damageDealt", "Damage dealt"],
                 ["damageReceived", "Damage receieved"],
-            ]
+            ],
         },
         {
             id: "unit-value",
@@ -232,7 +245,7 @@
                 ["ecoValue", "Eco value"],
                 ["utilValue", "Util value"],
                 ["otherValue", "Other value"],
-            ]
+            ],
         },
         {
             id: "build-power",
@@ -240,8 +253,8 @@
             values: [
                 ["buildPowerAvailable", "Build power total"],
                 ["buildPowerUsed", "Build power used"],
-                ["buildPowerPercent", "Build power usage"]
-            ]
+                ["buildPowerPercent", "Build power usage"],
+            ],
         },
         {
             id: "eco",
@@ -255,7 +268,7 @@
                 ["energyExcess", "Energy excess"],
                 ["energyReceived", "Energy receieved"],
                 ["energySent", "Energy sent"],
-            ]
+            ],
         },
         {
             id: "unit",
@@ -264,35 +277,34 @@
                 ["unitsCaptured", "Units captured"],
                 ["unitsSent", "Units sent"],
                 ["unitsReceived", "Units received"],
-                ["unitsOutCaptured", "Units out captured"]
-            ]
-        }
-
+                ["unitsOutCaptured", "Units out captured"],
+            ],
+        },
     ];
 
     type StatSetEntry = {
         id: string;
         name: string;
         values: number[];
-    }        
+    };
 
     type StatSet = {
         teamID: number | null;
         name: string;
 
         stats: StatSetEntry[];
-    }
+    };
 
     type StatEntry = {
         frame: number;
         value: number;
-    }
+    };
 
     /**
      * takes the label of a dataset item, and gets the ID of the "team id" (which can also be the ally team ID)
      * @param label label of the dataset from the chart
      */
-    const getDatasetIdFromLabel = (label: string): number =>{
+    const getDatasetIdFromLabel = (label: string): number => {
         const reg: RegExpMatchArray | null = label.match(/\{#(-?\d+)\}/);
         if (reg == null) {
             console.warn(`TeamStatsChart> failed to find dataset id from label ${label}`);
@@ -306,7 +318,7 @@
 
         const datasetIdStr: string = reg.at(1)!;
         return Number.parseInt(datasetIdStr);
-    }
+    };
 
     // 2025-04-13 TODO: ok, how i handle the teams and ally teams is fucking awful
     //      the "team id" for an ally team is just the negative +1 (because ally teams have a 0)
@@ -319,7 +331,7 @@
             match: { type: Object as PropType<BarMatch>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 chart: null as Chart | null,
 
@@ -330,12 +342,11 @@
 
                 perSecond: false as boolean,
 
-                showedStat: "armyValue" as StatKey
-            }
+                showedStat: "armyValue" as StatKey,
+            };
         },
 
-        mounted: function(): void {
-
+        mounted: function (): void {
             EventBus.$on("enable-dataset-id", (datasetId: number) => {
                 console.log(`TeamStatsChart> enable-dataset-id ${datasetId}`);
                 this.shownStats.add(datasetId);
@@ -348,7 +359,7 @@
 
             this.$nextTick(() => {
                 // by default, if the game isn't a 1v1, only show the team aggregate stats
-                const largestTeam: number = Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
+                const largestTeam: number = Math.max(...this.match.allyTeams.map((iter) => iter.playerCount));
                 if (largestTeam == 1) {
                     this.shownStats = new Set(this.teamIds);
                     this.validDatasetIds = new Set(this.teamIds);
@@ -367,7 +378,7 @@
         },
 
         methods: {
-            makeChart: function(): void {
+            makeChart: function (): void {
                 if (this.chart != null) {
                     this.chart.destroy();
                     this.chart = null;
@@ -386,8 +397,11 @@
                 this.chart = new Chart(ctx, {
                     type: "line",
                     data: {
-                        labels: this.stats.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i).map(iter => `${TimeUtils.duration(iter / 30)}`),
-                        datasets: []
+                        labels: this.stats
+                            .map((iter) => iter.frame)
+                            .filter((v, i, arr) => arr.indexOf(v) == i)
+                            .map((iter) => `${TimeUtils.duration(iter / 30)}`),
+                        datasets: [],
                     },
                     options: {
                         scales: {
@@ -402,51 +416,49 @@
                                 },
                             },
                             y: {
-                                ticks:{
-                                    color: "#fff"
+                                ticks: {
+                                    color: "#fff",
                                 },
                                 grid: {
-                                    color: "#666"
-                                }
-                            }
+                                    color: "#666",
+                                },
+                            },
                         },
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            'html-legend': {
-                                containerID: "team-stat-legend"
+                            "html-legend": {
+                                containerID: "team-stat-legend",
                             },
                             tooltip: {
                                 enabled: false,
                                 mode: "index",
                                 position: "nearest",
                                 intersect: false,
-                                external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx,
-                                    TableUtils.defaultValueFormatter,
-                                    (label: string): string => {
+                                external: (ctx) =>
+                                    TableUtils.chart("team-stats-chart-tooltip", ctx, TableUtils.defaultValueFormatter, (label: string): string => {
                                         return label.split("{")[0];
-                                    }
-                                )
+                                    }),
                             },
                             legend: {
                                 display: false,
                                 labels: {
                                     color: "#fff",
-                                    filter: (item) => item.hidden != true
+                                    filter: (item) => item.hidden != true,
                                 },
-                                position: "right"
-                            }
+                                position: "right",
+                            },
                         },
                         hover: {
                             mode: "index",
-                            intersect: false
-                        }
+                            intersect: false,
+                        },
                     },
-                    plugins: [ htmlLegendPlugin ]
+                    plugins: [htmlLegendPlugin],
                 });
             },
 
-            makeDatasets: function(): void {
+            makeDatasets: function (): void {
                 if (this.chart == null) {
                     console.log(`TeamStatsChart> chart is null, creating`);
                     this.makeChart();
@@ -473,7 +485,7 @@
 
                         map.set(i.teamID, a);
 
-                        const allyTeamID: number | undefined = this.match.players.find(iter => iter.teamID == i.teamID)?.allyTeamID;
+                        const allyTeamID: number | undefined = this.match.players.find((iter) => iter.teamID == i.teamID)?.allyTeamID;
                         if (allyTeamID == undefined) {
                             console.warn(`TeamStatsChart> missing allyTeamID for player [teamID=${i.teamID}]`);
                         } else {
@@ -481,7 +493,7 @@
                             //console.log(`TeamStatsChart> player ${i.teamID} is on ally team ${allyTeamID} (which is going to ${datasetID})`);
                             const allyTeamStats: StatEntry[] = map.get(datasetID) ?? [];
 
-                            const frameStats: StatEntry | undefined = allyTeamStats.find(iter => iter.frame == i.frame);
+                            const frameStats: StatEntry | undefined = allyTeamStats.find((iter) => iter.frame == i.frame);
                             if (frameStats == undefined) {
                                 allyTeamStats.push({ frame: i.frame, value: v });
                             } else {
@@ -503,7 +515,7 @@
                                 const d = values[i].value - prev.value;
                                 const dt = Math.max(1, values[i].frame - prev.frame);
 
-                                diff.push({ frame: dt, value: d / dt * 30 }); // 30 fps
+                                diff.push({ frame: dt, value: (d / dt) * 30 }); // 30 fps
                                 prev = values[i];
                             }
                             values = diff;
@@ -511,20 +523,21 @@
 
                         const teamIdFromAlly: number = -1 * (teamID + 1);
 
-                        const team: BarMatchPlayer | undefined = (teamID >= 0) 
-                            ? this.match.players.find(iter => iter.teamID == teamID)
-                            : this.match.players.find(iter => iter.allyTeamID == teamIdFromAlly);
+                        const team: BarMatchPlayer | undefined =
+                            teamID >= 0
+                                ? this.match.players.find((iter) => iter.teamID == teamID)
+                                : this.match.players.find((iter) => iter.allyTeamID == teamIdFromAlly);
 
                         //console.log(`TeamStatsChart> teamID ${teamID}, name ${team?.username}`);
 
                         const ds = {
-                            data: values.map(i => i.value),
+                            data: values.map((i) => i.value),
                             label: (teamID >= 0 ? `${team?.username ?? `<missing ${teamID}>`}` : `Team ${teamIdFromAlly + 1}`) + `{#${teamID}}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
                             fill: false,
                             hidden: true,
-                            lineTension: (this.perSecond == true) ? 0.5 : 0.1
+                            lineTension: this.perSecond == true ? 0.5 : 0.1,
                         };
 
                         //console.log(`created dataset ${teamID}-${stat[0]}`);
@@ -535,7 +548,7 @@
                 }
             },
 
-            showDataset: function(field: StatKey): void {
+            showDataset: function (field: StatKey): void {
                 if (this.chart == null) {
                     console.log(`TeamStatsChart> chart is null, creating`);
                     this.makeChart();
@@ -552,7 +565,7 @@
                 }
                 this.chart.data.datasets.length = 0;
 
-                const keys: Set<string> = new Set(Array.from(this.validDatasetIds.values()).map(iter => `${iter}-${field}`));
+                const keys: Set<string> = new Set(Array.from(this.validDatasetIds.values()).map((iter) => `${iter}-${field}`));
                 console.log("TeamStatsChart> keys to add:", keys);
 
                 for (const iter of this.datasets) {
@@ -571,7 +584,9 @@
                     const did: number = Number.parseInt(datasetId);
 
                     const dataset: ChartDataset = iter[1];
-                    console.log(`TeamStatsChart> adding dataset ${iter[0]} [datasetId=${datasetId}/${did}] [hidden=${!this.shownStats.has(did)}] [statName=${statName}]`);
+                    console.log(
+                        `TeamStatsChart> adding dataset ${iter[0]} [datasetId=${datasetId}/${did}] [hidden=${!this.shownStats.has(did)}] [statName=${statName}]`
+                    );
                     dataset.hidden = !this.shownStats.has(did);
                     this.chart.data.datasets.push(dataset);
 
@@ -595,7 +610,7 @@
                         if (aIsAt == true && bIsAt == true) {
                             res = aAtId - bAtId;
                         } else if (aIsAt == true && bIsAt == false) {
-                            const bTeam: number = this.match.players.find(iter => iter.teamID == bId)?.allyTeamID ?? NaN;
+                            const bTeam: number = this.match.players.find((iter) => iter.teamID == bId)?.allyTeamID ?? NaN;
                             bAtId = bTeam;
 
                             if (bTeam == aAtId) {
@@ -607,7 +622,7 @@
                                 res = aAtId - bTeam;
                             }
                         } else if (aIsAt == false && bIsAt == true) {
-                            const aTeam: number = this.match.players.find(iter => iter.teamID == aId)?.allyTeamID ?? NaN;
+                            const aTeam: number = this.match.players.find((iter) => iter.teamID == aId)?.allyTeamID ?? NaN;
                             aAtId = aTeam;
 
                             if (aTeam == bAtId) {
@@ -618,8 +633,8 @@
                                 res = aTeam - bAtId;
                             }
                         } else if (aIsAt == false && bIsAt == false) {
-                            const aTeam: number = this.match.players.find(iter => iter.teamID == aId)?.allyTeamID ?? NaN;
-                            const bTeam: number = this.match.players.find(iter => iter.teamID == bId)?.allyTeamID ?? NaN;
+                            const aTeam: number = this.match.players.find((iter) => iter.teamID == aId)?.allyTeamID ?? NaN;
+                            const bTeam: number = this.match.players.find((iter) => iter.teamID == bId)?.allyTeamID ?? NaN;
                             aAtId = aTeam;
                             bAtId = bTeam;
 
@@ -643,43 +658,42 @@
         },
 
         computed: {
-            statNames: function(): [StatKey, string][] {
+            statNames: function (): [StatKey, string][] {
                 return STATS;
             },
 
-            statGroups: function() {
+            statGroups: function () {
                 return STAT_GROUPS;
             },
 
-            selectedStatName: function(): string {
-                return (this.statNames.find(iter => iter[0] == this.showedStat) ?? ["", ""])[1];
+            selectedStatName: function (): string {
+                return (this.statNames.find((iter) => iter[0] == this.showedStat) ?? ["", ""])[1];
             },
 
-            teamIds: function(): number[] {
+            teamIds: function (): number[] {
                 //return [...this.match.players.map(iter => iter.teamID), ...this.match.allyTeams.map(iter => -1 * (iter.allyTeamID + 1))];
-                return [...this.match.players.map(iter => iter.teamID)];
+                return [...this.match.players.map((iter) => iter.teamID)];
             },
 
-            allyTeamIdsAsDatasetIds: function(): number[] {
-                return [...this.match.allyTeams.map(iter => -1 * (iter.allyTeamID + 1))];
+            allyTeamIdsAsDatasetIds: function (): number[] {
+                return [...this.match.allyTeams.map((iter) => -1 * (iter.allyTeamID + 1))];
             },
 
-            datasetIds: function(): number[] {
+            datasetIds: function (): number[] {
                 return [...this.teamIds, ...this.allyTeamIdsAsDatasetIds];
-            }
+            },
         },
 
         watch: {
-            perSecond: function(): void {
+            perSecond: function (): void {
                 this.makeDatasets();
                 this.showDataset(this.showedStat);
-            }
+            },
         },
 
         components: {
-            Collapsible
-        }
+            Collapsible,
+        },
     });
     export default TeamStatsChart;
-
 </script>

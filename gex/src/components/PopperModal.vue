@@ -1,13 +1,11 @@
 ﻿<template>
-    <div id="stat-table" style="display: none; background-color: var(--secondary); color: white; border: 2px var(--light) solid;">
-        <div class="d-flex bg-dark" style="align-items: center;">
+    <div id="stat-table" style="display: none; background-color: var(--secondary); color: white; border: 2px var(--light) solid">
+        <div class="d-flex bg-dark" style="align-items: center">
             <span class="flex-grow-1 px-2">
-                {{modalData.title}}
+                {{ modalData.title }}
             </span>
 
-            <button type="button" class="btn flex-grow-0" @click="closeStatTooltip">
-                &times;
-            </button>
+            <button type="button" class="btn flex-grow-0" @click="closeStatTooltip">&times;</button>
         </div>
 
         <div style="max-height: 30vh; overflow: auto">
@@ -15,7 +13,7 @@
                 <thead>
                     <tr>
                         <th v-for="column in modalData.columnNames">
-                            {{column}}
+                            {{ column }}
                         </th>
                     </tr>
                 </thead>
@@ -23,11 +21,9 @@
                 <tbody v-if="modalData.loading == false">
                     <tr v-for="datum in modalData.data">
                         <td v-for="field in modalData.columnFields">
-                            <div v-if="modalData.renderers.has(field)" v-html="modalData.renderers.get(field)(datum)">
-
-                            </div>
+                            <div v-if="modalData.renderers.has(field)" v-html="modalData.renderers.get(field)(datum)"></div>
                             <div v-else>
-                                {{datum[field]}}
+                                {{ datum[field] }}
                             </div>
                         </td>
                     </tr>
@@ -35,9 +31,7 @@
 
                 <tbody v-else>
                     <tr>
-                        <td :colspan="modalData.columnNames.length">
-                            Loading...
-                        </td>
+                        <td :colspan="modalData.columnNames.length">Loading...</td>
                     </tr>
                 </tbody>
             </table>
@@ -53,14 +47,14 @@
 
     export const PopperModal = Vue.extend({
         props: {
-            value: { type: Object as PropType<PopperModalData>, required: true }
+            value: { type: Object as PropType<PopperModalData>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 modalData: new PopperModalData() as PopperModalData,
                 popperInstance: null as Instance | null,
-            }
+            };
         },
 
         methods: {
@@ -100,7 +94,7 @@
                 });
             },
 
-            closeStatTooltip: function(): void {
+            closeStatTooltip: function (): void {
                 console.log(`close stat tooltip`);
                 if (this.popperInstance != null) {
                     this.popperInstance.destroy();
@@ -116,19 +110,15 @@
         watch: {
             value: {
                 deep: true,
-                handler: function(): void {
+                handler: function (): void {
                     this.setModalData(this.value);
-                }
-            }
+                },
+            },
         },
 
-        computed: {
+        computed: {},
 
-        },
-
-        components: {
-
-        }
+        components: {},
     });
 
     export default PopperModal;

@@ -1,14 +1,8 @@
-
-
 <template>
     <div>
         <h2 class="wt-header">Recent matches</h2>
 
-        <a-table :entries="matches"
-            :show-filters="true"
-            :default-page-size="10"
-            default-sort-field="startTime" default-sort-order="desc">
-
+        <a-table :entries="matches" :show-filters="true" :default-page-size="10" default-sort-field="startTime" default-sort-order="desc">
             <a-col sort-field="startTime">
                 <a-header>
                     <b>Timestamp</b>
@@ -24,9 +18,7 @@
                     <b>Map</b>
                 </a-header>
 
-                <a-filter field="map" type="string" method="input"
-                    :conditions="[ 'contains', 'equals' ]">
-                </a-filter>
+                <a-filter field="map" type="string" method="input" :conditions="['contains', 'equals']"> </a-filter>
 
                 <a-body v-slot="entry">
                     {{ entry.map }}
@@ -39,11 +31,9 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <span v-if="isFFA(entry)">
-                        {{ entry.allyTeams.length }} way FFA
-                    </span>
+                    <span v-if="isFFA(entry)"> {{ entry.allyTeams.length }} way FFA </span>
                     <span v-else>
-                        {{ entry.allyTeams.map(iter => iter.playerCount).join(" v ") }}
+                        {{ entry.allyTeams.map((iter) => iter.playerCount).join(" v ") }}
                     </span>
                 </a-body>
             </a-col>
@@ -53,9 +43,7 @@
                     <b>Gamemode</b>
                 </a-header>
 
-                <a-filter field="gamemode" type="number" method="dropdown" :source="source.gamemode"
-                    :conditions="[ 'equals' ]">
-                </a-filter>
+                <a-filter field="gamemode" type="number" method="dropdown" :source="source.gamemode" :conditions="['equals']"> </a-filter>
 
                 <a-body v-slot="entry">
                     {{ entry.gamemode | gamemode }}
@@ -68,7 +56,7 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.durationMs / 1000 | mduration }}
+                    {{ (entry.durationMs / 1000) | mduration }}
                 </a-body>
             </a-col>
 
@@ -90,18 +78,14 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <a :href="'/match/' + entry.id">
-                        View
-                    </a>
+                    <a :href="'/match/' + entry.id"> View </a>
                 </a-body>
             </a-col>
         </a-table>
     </div>
-    
 </template>
 
 <style scoped>
-
     .outcome-Won {
         color: var(--bs-green);
     }
@@ -113,7 +97,6 @@
     .outcome-Lost {
         color: var(--bs-red);
     }
-
 </style>
 
 <script lang="ts">
@@ -134,46 +117,44 @@
     export const UserMatches = Vue.extend({
         props: {
             data: { type: Array as PropType<BarMatch[]>, required: true },
-            UserId: { type: Number, required: true }
+            UserId: { type: Number, required: true },
         },
 
-        data: function() {
-            return {
-
-            }
+        data: function () {
+            return {};
         },
 
         methods: {
-            isFFA: function(match: BarMatch): boolean {
-                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
+            isFFA: function (match: BarMatch): boolean {
+                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map((iter) => iter.playerCount)) == 1;
             },
 
-            outcome: function(match: BarMatch): string {
-                const winner: BarMatchAllyTeam[] = match.allyTeams.filter(iter => iter.won == true);
+            outcome: function (match: BarMatch): string {
+                const winner: BarMatchAllyTeam[] = match.allyTeams.filter((iter) => iter.won == true);
                 if (winner.length == 0) {
                     return "Tie";
                 }
 
-                const player = match.players.find(iter => iter.userID == this.UserId);
+                const player = match.players.find((iter) => iter.userID == this.UserId);
                 if (player == undefined) {
                     console.error(`UserMatches> user was not a player? ${this.UserId}`);
                     return "Unknown";
                 }
 
-                if (winner.find(iter => iter.allyTeamID == player.allyTeamID) != undefined) {
+                if (winner.find((iter) => iter.allyTeamID == player.allyTeamID) != undefined) {
                     return "Won";
                 }
 
                 return "Lost";
-            }
+            },
         },
 
         computed: {
-            matches: function(): Loading<BarMatch[]> {
+            matches: function (): Loading<BarMatch[]> {
                 return Loadable.loaded(this.data);
             },
 
-            source: function() {
+            source: function () {
                 return {
                     gamemode: [
                         { key: "All", value: null },
@@ -181,18 +162,22 @@
                         { key: "Small team", value: GamemodeUtil.SMALL_TEAM },
                         { key: "Large team", value: GamemodeUtil.LARGE_TEAM },
                         { key: "FFA", value: GamemodeUtil.FFA },
-                        { key: "Team FFA", value: GamemodeUtil.TEAM_FFA }
-                    ]
-                }
-            }
-
-
+                        { key: "Team FFA", value: GamemodeUtil.TEAM_FFA },
+                    ],
+                };
+            },
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            InfoHover, ToggleButton 
-        }
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+            InfoHover,
+            ToggleButton,
+        },
     });
     export default UserMatches;
 </script>

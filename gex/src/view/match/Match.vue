@@ -1,4 +1,3 @@
-
 <template>
     <div>
         <div class="container">
@@ -6,29 +5,24 @@
                 <div v-if="queue.index > -1" class="alert alert-info">
                     <h3 class="text-info text-center">
                         This match is in queue to be ran locally
-                        <button title="Refresh" class="btn btn-link p-0" @click="loadQueuePosition" :class=" {'spin': queue.data.state != 'loaded'}">
+                        <button title="Refresh" class="btn btn-link p-0" @click="loadQueuePosition" :class="{ spin: queue.data.state != 'loaded' }">
                             <span>&#x21bb;</span>
                         </button>
                     </h3>
                     <div class="text-center d-block">
-                        This match is in position {{queue.index + 1}}<span v-if="queue.data.state == 'loaded'"> of {{queue.data.data.length}}.</span><span v-else>.</span>
-                        <span v-if="queue.processingTime != null">
-                            Estimated time: {{(queue.processingTime * (queue.index + 1)) / 1000 | mduration}}
-                        </span>
+                        This match is in position {{ queue.index + 1 }}<span v-if="queue.data.state == 'loaded'"> of {{ queue.data.data.length }}.</span
+                        ><span v-else>.</span>
+                        <span v-if="queue.processingTime != null"> Estimated time: {{ ((queue.processingTime * (queue.index + 1)) / 1000) | mduration }} </span>
                     </div>
                 </div>
             </div>
 
             <div v-if="showWaitForActions">
-                <h4 class="alert alert-warning text-center">
-                    Gex is currently parsing the output after running the game locally, please refresh in a minute!
-                </h4>
+                <h4 class="alert alert-warning text-center">Gex is currently parsing the output after running the game locally, please refresh in a minute!</h4>
             </div>
 
             <div v-if="showClickToReload">
-                <h4 class="text-success text-center btn-link" @click="loadBoth">
-                    This match was ran locally! Click here to load the data
-                </h4>
+                <h4 class="text-success text-center btn-link" @click="loadBoth">This match was ran locally! Click here to load the data</h4>
             </div>
 
             <div v-if="replay.status != null && showHeadlessStatus" class="alert alert-info text-center">
@@ -37,69 +31,80 @@
                 <h5>
                     Estimated time left:
                     <span v-if="replay.status.simulating == true">
-                        {{ (replay.status.durationFrames - replay.status.frame) / replay.status.fps | mduration }}
+                        {{ ((replay.status.durationFrames - replay.status.frame) / replay.status.fps) | mduration }}
                     </span>
-                    <span v-else>
-                        Game is booting up
-                    </span>
+                    <span v-else> Game is booting up </span>
                 </h5>
 
                 <div class="mb-0">
-                    <div class="progress" style="height: 1rem;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                    <div class="progress" style="height: 1rem">
+                        <div
+                            class="progress-bar progress-bar-striped progress-bar-animated"
                             :class="{
-                                'progress-bar-animated': replay.status.simulating
+                                'progress-bar-animated': replay.status.simulating,
                             }"
                             :style="{
-                                'width': (replay.status.frame / replay.status.durationFrames * 100) + '%',
-                            }
-                        ">
-                        </div>
+                                width: (replay.status.frame / replay.status.durationFrames) * 100 + '%',
+                            }"
+                        ></div>
                     </div>
 
                     <span v-if="replay.status.simulating == true">
                         On frame {{ replay.status.frame }} of {{ replay.status.durationFrames }}, running at {{ (replay.status.fps / 30) | locale(2) }}x speed
                     </span>
-                    <span v-else>
-                        Game is currently booting up
-                    </span>
+                    <span v-else> Game is currently booting up </span>
                 </div>
             </div>
 
-            <div v-if="match.state == 'idle'"> </div>
+            <div v-if="match.state == 'idle'"></div>
 
-            <div v-else-if="match.state == 'loading'">
-                Loading...
-            </div>
+            <div v-else-if="match.state == 'loading'">Loading...</div>
 
             <div v-else-if="match.state == 'loaded'">
-
                 <div class="d-flex flex-wrap">
                     <div class="flex-grow-1">
                         <h1>{{ match.data.map }} ({{ match.data.gamemode | gamemode }})</h1>
 
                         <h2>played on {{ match.data.startTime | moment }}</h2>
 
-                        <h2>took {{  match.data.durationMs / 1000 | mduration }}</h2>
+                        <h2>took {{ (match.data.durationMs / 1000) | mduration }}</h2>
 
                         <h2>
-                            <span v-if="isFFA">
-                                {{ match.data.allyTeams.length }}-way FFA
-                            </span>
+                            <span v-if="isFFA"> {{ match.data.allyTeams.length }}-way FFA </span>
                             <span v-else>
-                                {{ match.data.allyTeams.map(iter => iter.playerCount).join(" v ") }}
+                                {{ match.data.allyTeams.map((iter) => iter.playerCount).join(" v ") }}
                             </span>
                         </h2>
                     </div>
 
                     <div v-if="match.data.processing" class="flex-grow-0">
-                        <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
+                        <table class="table table-sm table-borderless" style="font-size: 0.8rem">
                             <tbody>
                                 <template v-if="match.data.processing">
-                                    <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
-                                    <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
-                                    <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
-                                    <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                                    <tr
+                                        is="ProcessingStep"
+                                        step="Replay downloaded"
+                                        :when="match.data.processing.replayDownloaded"
+                                        :duration="match.data.processing.replayDownloadedMs"
+                                    ></tr>
+                                    <tr
+                                        is="ProcessingStep"
+                                        step="Replay parsed"
+                                        :when="match.data.processing.replayParsed"
+                                        :duration="match.data.processing.replayParsedMs"
+                                    ></tr>
+                                    <tr
+                                        is="ProcessingStep"
+                                        step="Replay simulated"
+                                        :when="match.data.processing.replaySimulated"
+                                        :duration="match.data.processing.replaySimulatedMs"
+                                    ></tr>
+                                    <tr
+                                        is="ProcessingStep"
+                                        step="Events parsed"
+                                        :when="match.data.processing.actionsParsed"
+                                        :duration="match.data.processing.actionsParsedMs"
+                                    ></tr>
                                     <tr>
                                         <td class="text-muted">Prio</td>
                                         <td class="text-muted">{{ match.data.processing.priority }}</td>
@@ -118,7 +123,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex" style="gap: 0.5rem;">
+                <div class="d-flex" style="gap: 0.5rem">
                     <match-option name="Game settings" :options="match.data.gameSettings"></match-option>
                     <match-option name="Map settings" :options="match.data.mapSettings"></match-option>
                     <match-option name="Lobby settings" :options="match.data.spadsSettings"></match-option>
@@ -126,20 +131,19 @@
                 </div>
 
                 <h4>
-                    <a :href="'/downloadmatch/' + gameID" download="download">
-                        Download replay
-                    </a>
+                    <a :href="'/downloadmatch/' + gameID" download="download"> Download replay </a>
                 </h4>
 
-                <h4>
-                    View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
-                </h4>
+                <h4>View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a></h4>
 
-                <hr class="border"/>
+                <hr class="border" />
 
                 <match-teams :match="match.data" class="my-3"></match-teams>
 
-                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
+                <div
+                    v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)"
+                    class="text-center alert alert-info mt-4"
+                >
                     This game has not been ran locally, and in-depth stats are not available. <a href="/faq">More info</a>
                 </div>
 
@@ -147,31 +151,35 @@
                     <match-map :match="match.data" :output="output.data" class="my-3"></match-map>
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
-
                         <team-stats-chart :stats="computedData.merged" :match="match.data" class="my-4"></team-stats-chart>
 
-                        <hr class="border">
+                        <hr class="border" />
 
                         <match-opener :openers="computedData.opener" class="my-4"></match-opener>
 
-                        <hr class="border">
+                        <hr class="border" />
 
                         <h1 class="wt-header bg-light text-dark">Unit stats</h1>
 
-                        <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded">
+                        <div style="position: sticky; top: 10px; z-index: 9999" class="bg-dark pt-3 pb-1 px-2 border rounded">
                             <h4 v-if="selectedPlayer" class="text-center">
                                 Viewing unit stats for
-                                <span :style="{ 'color': selectedPlayer.hexColor }">
+                                <span :style="{ color: selectedPlayer.hexColor }">
                                     {{ selectedPlayer.username }}
                                 </span>
                             </h4>
 
                             <div class="d-flex flex-wrap mb-3">
-                                <button v-for="player in match.data.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
-                                        'background-color': (selectedTeam == player.teamID) ? player.hexColor : 'var(--bs-secondary)',
-                                        'color': (selectedTeam == player.teamID) ? 'white' : player.hexColor
-                                    }" @click="selectedTeam = player.teamID">
-
+                                <button
+                                    v-for="player in match.data.players"
+                                    :key="player.teamID"
+                                    class="btn m-1 flex-grow-0"
+                                    :style="{
+                                        'background-color': selectedTeam == player.teamID ? player.hexColor : 'var(--bs-secondary)',
+                                        color: selectedTeam == player.teamID ? 'white' : player.hexColor,
+                                    }"
+                                    @click="selectedTeam = player.teamID"
+                                >
                                     <span style="text-shadow: 1px 1px 1px black">
                                         {{ player.username }}
                                     </span>
@@ -179,27 +187,49 @@
                             </div>
                         </div>
 
-                        <hr class="border">
+                        <hr class="border" />
 
-                        <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :selected-team="selectedTeam" class="my-4"></match-combat-stats>
-                        <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
-                            :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-team="selectedTeam" class="my-4">
+                        <match-combat-stats
+                            :match="match.data"
+                            :unit-stats="computedData.unitStats"
+                            :selected-team="selectedTeam"
+                            class="my-4"
+                        ></match-combat-stats>
+                        <match-eco-stats
+                            :match="match.data"
+                            :output="output.data"
+                            :unit-stats="computedData.unitStats"
+                            :unit-resources="computedData.unitResources"
+                            :merged="computedData.merged"
+                            :selected-team="selectedTeam"
+                            class="my-4"
+                        >
                         </match-eco-stats>
                     </div>
 
                     <match-chat :match="match.data"></match-chat>
 
                     <small class="text-muted">
-                        {{ 
-                            output.data.extraStats.length + output.data.commanderPositionUpdates.length + output.data.factoryUnitCreated.length + output.data.teamDiedEvents.length
-                            + output.data.teamStats.length + output.data.unitDefinitions.size + output.data.unitResources.length + output.data.unitsCreated.length
-                            + output.data.unitsKilled.length + output.data.windUpdates.length + output.data.unitDamage.length + output.data.unitPosition.length | locale(0)
+                        {{
+                            (output.data.extraStats.length +
+                                output.data.commanderPositionUpdates.length +
+                                output.data.factoryUnitCreated.length +
+                                output.data.teamDiedEvents.length +
+                                output.data.teamStats.length +
+                                output.data.unitDefinitions.size +
+                                output.data.unitResources.length +
+                                output.data.unitsCreated.length +
+                                output.data.unitsKilled.length +
+                                output.data.windUpdates.length +
+                                output.data.unitDamage.length +
+                                output.data.unitPosition.length)
+                                | locale(0)
                         }}
                         events
                     </small>
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
-                        <hr class="border">
+                        <hr class="border" />
 
                         <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
                     </div>
@@ -210,13 +240,9 @@
                 <api-error :error="match.problem"></api-error>
             </div>
 
-            <div v-else>
-                unchecked state of match: {{ match.state }}
-            </div>
+            <div v-else>unchecked state of match: {{ match.state }}</div>
         </div>
-
     </div>
-    
 </template>
 
 <style scoped>
@@ -228,7 +254,7 @@
 <script lang="ts">
     import * as sR from "signalR";
     import Vue from "vue";
-    import { Loading, Loadable } from "Loading"
+    import { Loading, Loadable } from "Loading";
 
     import "filters/MomentFilter";
 
@@ -275,9 +301,9 @@
 
     export const ProcessingStep = Vue.extend({
         props: {
-            step: { type: String }, 
-            when: { },
-            duration: { }
+            step: { type: String },
+            when: {},
+            duration: {},
         },
 
         template: `
@@ -292,15 +318,13 @@
                     </span>
                 </td>
             </tr>
-        `
+        `,
     });
 
     export const Match = Vue.extend({
-        props: {
+        props: {},
 
-        },
-
-        data: function() {
+        data: function () {
             return {
                 gameID: "" as string,
 
@@ -309,7 +333,7 @@
 
                 loadingSteps: 2 as number,
 
-                unitIdToDefId: new Map as Map<number, number>,
+                unitIdToDefId: new Map() as Map<number, number>,
 
                 selectedTeam: 0 as number,
 
@@ -317,7 +341,7 @@
                     opener: [] as PlayerOpener[],
                     unitStats: [] as UnitStats[],
                     unitResources: [] as ResourceProductionData[],
-                    merged: [] as MergedStats[]
+                    merged: [] as MergedStats[],
                 },
 
                 queue: {
@@ -327,29 +351,28 @@
                     index: 0 as number,
                     processingTime: null as number | null,
                     wasInQueue: false as boolean,
-                    intervalId: -1 as number
+                    intervalId: -1 as number,
                 },
 
                 replay: {
-                    status: null as HeadlessRunStatus | null
+                    status: null as HeadlessRunStatus | null,
                 },
 
-                connection: null as sR.HubConnection | null
-
+                connection: null as sR.HubConnection | null,
             };
         },
 
-        created: function(): void {
+        created: function (): void {
             this.gameID = location.pathname.split("/")[2];
             document.title = "Gex / Match";
         },
 
-        beforeMount: function(): void {
+        beforeMount: function (): void {
             this.loadBoth();
         },
 
         methods: {
-            loadBoth: async function(): Promise<void> {
+            loadBoth: async function (): Promise<void> {
                 this.loadingSteps = 2;
                 await this.loadMatch();
 
@@ -363,7 +386,7 @@
                 this.queue.wasInQueue = false;
             },
 
-            loadMatch: async function(): Promise<void> {
+            loadMatch: async function (): Promise<void> {
                 this.match = Loadable.loading();
                 this.match = await BarMatchApi.getByID(this.gameID);
 
@@ -384,14 +407,13 @@
                     if (this.isFFA == true) {
                         matchName = `${this.match.data.allyTeams.length}-way FFA`;
                     } else {
-                        matchName = this.match.data.allyTeams.map(iter => iter.playerCount).join(" v ");
+                        matchName = this.match.data.allyTeams.map((iter) => iter.playerCount).join(" v ");
                     }
                 }
 
                 document.title = `Gex / Match / ${matchName}`;
 
                 if (this.match.data.processing != null && this.match.data.processing.replaySimulated == null) {
-
                     if (this.match.data.processing.priority > -1) {
                         console.log(`Match> game is in priority queue`);
 
@@ -439,14 +461,14 @@
                                     }
                                 }, 6000) as unknown as number;
                             }
-                        })
+                        });
                     }
                 }
 
                 this.decLoadingStepsAndPossiblyStart();
             },
 
-            decLoadingStepsAndPossiblyStart: function(): void {
+            decLoadingStepsAndPossiblyStart: function (): void {
                 --this.loadingSteps;
 
                 if (this.loadingSteps > 0) {
@@ -473,7 +495,7 @@
                 this.computedData.merged = MergedStats.compute(this.output.data);
             },
 
-            loadOutput: async function(): Promise<void> {
+            loadOutput: async function (): Promise<void> {
                 this.output = Loadable.loading();
                 this.output = await GameOutputApi.getEvents(this.gameID);
 
@@ -484,7 +506,7 @@
                 this.decLoadingStepsAndPossiblyStart();
             },
 
-            loadPriorityIndex: async function(): Promise<void> {
+            loadPriorityIndex: async function (): Promise<void> {
                 const prioList: Loading<BarMatchProcessing[]> = await BarMatchProcessingApi.getPriorityList();
                 if (prioList.state != "loaded") {
                     console.error(`Match> when loading prio list, expected 'loaded', got ${prioList.state} instead`);
@@ -513,7 +535,7 @@
                 }
             },
 
-            loadQueuePosition: async function(): Promise<void> {
+            loadQueuePosition: async function (): Promise<void> {
                 this.queue.data = await QueueApi.getHeadlessQueue();
                 if (this.queue.data.state != "loaded") {
                     return;
@@ -541,7 +563,7 @@
                 }
             },
 
-            makeSignalRConnection: async function(): Promise<void> {
+            makeSignalRConnection: async function (): Promise<void> {
                 console.log(`Match> creating connecion to sR`);
                 if (this.connection != null) {
                     console.log(`Match> closing previous sR connection`);
@@ -549,10 +571,7 @@
                     console.log(`Match> closed previous sR connection`);
                 }
 
-                this.connection = new sR.HubConnectionBuilder()
-                    .withUrl("/ws/headless-run")
-                    .withAutomaticReconnect([5000, 10000, 20000, 20000])
-                    .build();
+                this.connection = new sR.HubConnectionBuilder().withUrl("/ws/headless-run").withAutomaticReconnect([5000, 10000, 20000, 20000]).build();
 
                 this.connection.on("UpdateProgress", (data: any) => {
                     // getting any updates on the progress means it's exited the queue, so the queue progress can be hidden
@@ -598,11 +617,11 @@
                 } catch (err) {
                     console.error("error during sR connection", err);
                 }
-            }
+            },
         },
 
         computed: {
-            unitTweaks: function(): string {
+            unitTweaks: function (): string {
                 if (this.match.state != "loaded") {
                     return "";
                 }
@@ -610,57 +629,70 @@
                 return atob(this.match.data.gameSettings.tweakunits);
             },
 
-            isFFA: function(): boolean {
+            isFFA: function (): boolean {
                 if (this.match.state != "loaded") {
                     return false;
                 }
-                return this.match.data.allyTeams.length > 2 && Math.max(...this.match.data.allyTeams.map(iter => iter.playerCount)) == 1;
+                return this.match.data.allyTeams.length > 2 && Math.max(...this.match.data.allyTeams.map((iter) => iter.playerCount)) == 1;
             },
 
-            selectedPlayer: function(): BarMatchPlayer | null {
+            selectedPlayer: function (): BarMatchPlayer | null {
                 if (this.match.state != "loaded") {
                     return null;
                 }
 
-                return this.match.data.players.find(iter => iter.teamID == this.selectedTeam) || null;
+                return this.match.data.players.find((iter) => iter.teamID == this.selectedTeam) || null;
             },
 
-            showHeadlessStatus: function(): boolean {
-                return this.replay.status != null
-                    && (
-                        this.match.state != "loaded"
-                        || this.match.data.processing == null
-                        || this.match.data.processing.replaySimulated == null
+            showHeadlessStatus: function (): boolean {
+                return (
+                    this.replay.status != null &&
+                    (this.match.state != "loaded" ||
+                        this.match.data.processing == null ||
+                        this.match.data.processing.replaySimulated == null ||
                         // if the timestamp of the latest update is BEFORE the end time of simulation
-                        || this.match.data.processing.replaySimulated.getTime() <= this.replay.status.timestamp.getTime()
-                    )
+                        this.match.data.processing.replaySimulated.getTime() <= this.replay.status.timestamp.getTime())
+                );
             },
 
-            showWaitForActions: function(): boolean {
-                return this.match.state == "loaded"
-                    && this.match.data.processing != null
-                    && this.match.data.processing.replaySimulated != null
-                    && this.match.data.processing.actionsParsed == null;
+            showWaitForActions: function (): boolean {
+                return (
+                    this.match.state == "loaded" &&
+                    this.match.data.processing != null &&
+                    this.match.data.processing.replaySimulated != null &&
+                    this.match.data.processing.actionsParsed == null
+                );
             },
 
-            showClickToReload: function(): boolean {
-                return this.queue.wasInQueue == true
-                    && this.queue.index == -1
-                    && this.replay.status == null;
-            }
-
+            showClickToReload: function (): boolean {
+                return this.queue.wasInQueue == true && this.queue.index == -1 && this.replay.status == null;
+            },
         },
 
-        watch: {
-
-        },
+        watch: {},
 
         components: {
-            GexMenu, InfoHover, ApiError, ToggleButton,
-            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats,
-            ProcessingStep, Collapsible, Busy
-        }
+            GexMenu,
+            InfoHover,
+            ApiError,
+            ToggleButton,
+            MatchOpener,
+            MatchFactories,
+            UnitDefView,
+            MatchWindGraph,
+            MatchUnitStats,
+            TeamStatsChart,
+            MatchResourceProduction,
+            MatchTeams,
+            MatchMap,
+            MatchChat,
+            MatchOption,
+            MatchCombatStats,
+            MatchEcoStats,
+            ProcessingStep,
+            Collapsible,
+            Busy,
+        },
     });
     export default Match;
 </script>

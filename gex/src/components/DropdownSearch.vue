@@ -12,7 +12,7 @@
     -->
 
     <div>
-        <input v-model="search" class="form-control" :list="'datalist-' + ID" placeholder="search...">
+        <input v-model="search" class="form-control" :list="'datalist-' + ID" placeholder="search..." />
 
         <datalist :id="'datalist-' + ID">
             <option v-for="v in values" :key="v.value" :value="v.value">
@@ -31,10 +31,10 @@
     export const DropdownSearch = Vue.extend({
         props: {
             value: { type: String, required: false },
-            api: { type: Function, required: true }
+            api: { type: Function, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 ID: Math.floor(Math.random() * 100000) as number,
                 enterLockout: 0 as number,
@@ -43,10 +43,10 @@
 
                 search: "" as string,
                 searchInput: {} as HTMLElement,
-            }
+            };
         },
 
-        mounted: function(): void {
+        mounted: function (): void {
             this.search = this.value;
 
             this.api().then((value: Loading<SearchResult[]>) => {
@@ -59,7 +59,7 @@
         },
 
         methods: {
-            enterPress: function(): void {
+            enterPress: function (): void {
                 const lockoutDiff: number = this.enterLockout - Date.now();
                 console.log(`DropdownSearch #${this.ID}> lockoutDiff is ${lockoutDiff}`);
                 if (lockoutDiff >= 0) {
@@ -84,12 +84,12 @@
                 return;
             },
 
-            performSearch: function(): void {
+            performSearch: function (): void {
                 console.log(`DropdownSearch #${this.ID}> emiting do search: '${this.search.trim()}'`);
                 this.$emit("do-search", this.search.trim());
             },
 
-            focus: function(): void {
+            focus: function (): void {
                 this.$nextTick(() => {
                     this.searchInput.focus();
                 });
@@ -97,11 +97,10 @@
         },
 
         watch: {
-            search: function(): void {
+            search: function (): void {
                 this.$emit("input", this.search);
-            }
-        }
-
+            },
+        },
     });
 
     export default DropdownSearch;

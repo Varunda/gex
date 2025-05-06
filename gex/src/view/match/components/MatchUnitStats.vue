@@ -1,15 +1,18 @@
-
 <template>
     <div>
-
         <h1 class="wt-header bg-light">Unit stats</h1>
 
         <div class="d-flex flex-wrap mb-3">
-            <button v-for="player in match.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
-                    'background-color': (selectedTeam == player.teamID) ? player.hexColor : 'var(--bs-secondary)',
-                    'color': (selectedTeam == player.teamID) ? 'white' : player.hexColor
-                }" @click="selectedTeam = player.teamID">
-
+            <button
+                v-for="player in match.players"
+                :key="player.teamID"
+                class="btn m-1 flex-grow-0"
+                :style="{
+                    'background-color': selectedTeam == player.teamID ? player.hexColor : 'var(--bs-secondary)',
+                    color: selectedTeam == player.teamID ? 'white' : player.hexColor,
+                }"
+                @click="selectedTeam = player.teamID"
+            >
                 <span style="text-shadow: 1px 1px 1px black">
                     {{ player.username }}
                 </span>
@@ -18,7 +21,7 @@
 
         <h4 v-if="selectedPlayer" class="text-center">
             Viewing unit stats for
-            <span :style="{ 'color': selectedPlayer.hexColor }">
+            <span :style="{ color: selectedPlayer.hexColor }">
                 {{ selectedPlayer.username }}
             </span>
         </h4>
@@ -30,7 +33,7 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                    <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                     {{ entry.name }}
                     <info-hover :text="entry.definition.tooltip"></info-hover>
                 </a-body>
@@ -139,11 +142,8 @@
                     <info-hover text="Total metal worth of units killed by this type of unit"></info-hover>
                 </a-header>
 
-                <a-body v-slot="entry">
-                    {{ entry.metalRatio * 100 | locale(2) }}%
-                </a-body>
+                <a-body v-slot="entry"> {{ (entry.metalRatio * 100) | locale(2) }}% </a-body>
             </a-col>
-
         </a-table>
     </div>
 </template>
@@ -165,34 +165,37 @@
     export const MatchUnitStats = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
-            UnitStats: { type: Array as PropType<UnitStats[]>, required: true }
+            UnitStats: { type: Array as PropType<UnitStats[]>, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 selectedTeam: 0 as number,
-            }
+            };
         },
 
-        methods: {
-
-        },
+        methods: {},
 
         computed: {
-            data: function(): Loading<UnitStats[]> {
-                return Loadable.loaded(this.UnitStats.filter(iter => iter.teamID == this.selectedTeam));
+            data: function (): Loading<UnitStats[]> {
+                return Loadable.loaded(this.UnitStats.filter((iter) => iter.teamID == this.selectedTeam));
             },
 
-            selectedPlayer: function(): BarMatchPlayer | null {
-                return this.match.players.find(iter => iter.teamID == this.selectedTeam) || null;
-            }
+            selectedPlayer: function (): BarMatchPlayer | null {
+                return this.match.players.find((iter) => iter.teamID == this.selectedTeam) || null;
+            },
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover
-        }
-
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+            Collapsible,
+            InfoHover,
+        },
     });
     export default MatchUnitStats;
 </script>

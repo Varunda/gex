@@ -1,22 +1,17 @@
-
 <template>
     <div>
         <div class="container">
             <div v-if="user.state == 'idle'"></div>
 
-            <div v-else-if="user.state == 'loading'">
-                Loading...
-            </div>
+            <div v-else-if="user.state == 'loading'">Loading...</div>
 
             <div v-else-if="user.state == 'loaded'">
                 <user-info :user="user.data"></user-info>
             </div>
 
             <div v-if="matches.state == 'idle'"></div>
-            
-            <div v-else-if="matches.state == 'loading'">
-                Loading...
-            </div>
+
+            <div v-else-if="matches.state == 'loading'">Loading...</div>
 
             <div v-else-if="matches.state == 'loaded'">
                 <user-matches :data="matches.data" :user-id="userID"></user-matches>
@@ -26,16 +21,14 @@
                 <api-error :error="matches.problem"></api-error>
             </div>
 
-            <div v-else>
-                unchecked state of matches: {{ matches.state }}
-            </div>
+            <div v-else>unchecked state of matches: {{ matches.state }}</div>
         </div>
     </div>
 </template>
 
 <script lang="ts">
     import Vue from "vue";
-    import { Loading, Loadable } from "Loading"
+    import { Loading, Loadable } from "Loading";
 
     import "filters/MomentFilter";
     import "filters/DurationFilter";
@@ -57,29 +50,27 @@
     import { BarUser } from "model/BarUser";
 
     export const User = Vue.extend({
-        props: {
+        props: {},
 
-        },
-
-        data: function() {
+        data: function () {
             return {
                 userID: 0 as number,
                 matches: Loadable.idle() as Loading<BarMatch[]>,
-                user: Loadable.idle() as Loading<BarUser>
+                user: Loadable.idle() as Loading<BarUser>,
             };
         },
 
-        created: function(): void {
+        created: function (): void {
             this.userID = Number.parseInt(location.pathname.split("/")[2]);
         },
 
-        beforeMount: function(): void {
+        beforeMount: function (): void {
             this.loadMatches();
             this.loadUser();
         },
 
         methods: {
-            loadUser: async function(): Promise<void> {
+            loadUser: async function (): Promise<void> {
                 this.user = Loadable.loading();
                 this.user = await BarUserApi.getByUserID(this.userID);
 
@@ -92,19 +83,18 @@
                 }
             },
 
-            loadMatches: async function(): Promise<void> {
+            loadMatches: async function (): Promise<void> {
                 this.matches = Loadable.loading();
                 this.matches = await BarMatchApi.getByUserID(this.userID);
             },
 
-            isFFA: function(match: BarMatch): boolean {
-                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
+            isFFA: function (match: BarMatch): boolean {
+                return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map((iter) => iter.playerCount)) == 1;
             },
         },
 
         computed: {
-
-            mostRecentMatch: function(): BarMatch | null {
+            mostRecentMatch: function (): BarMatch | null {
                 if (this.matches.state != "loaded") {
                     return null;
                 }
@@ -116,25 +106,31 @@
                 return this.matches.data[0];
             },
 
-            mostRecentMatchPlayer: function(): BarMatchPlayer | null {
+            mostRecentMatchPlayer: function (): BarMatchPlayer | null {
                 if (this.mostRecentMatch == null) {
                     return null;
                 }
 
-                return this.mostRecentMatch.players.find(iter => iter.userID == this.userID) ?? null;
-            }
-
+                return this.mostRecentMatch.players.find((iter) => iter.userID == this.userID) ?? null;
+            },
         },
 
-        watch: {
-
-        },
+        watch: {},
 
         components: {
-            GexMenu, InfoHover, ApiError, ToggleButton,
-            ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            UserMatches, UserInfo
-        }
+            GexMenu,
+            InfoHover,
+            ApiError,
+            ToggleButton,
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+            UserMatches,
+            UserInfo,
+        },
     });
     export default User;
 </script>

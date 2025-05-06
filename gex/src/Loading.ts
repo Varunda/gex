@@ -1,16 +1,14 @@
-﻿
-/**
- * Wrapper around an external resource being loaded (usually from the API) 
+﻿/**
+ * Wrapper around an external resource being loaded (usually from the API)
  */
 export type Loading<T> =
-    { state: "loading", data: null }
-    | { state: "loaded", data: T }
-    | { state: "error", problem: ProblemDetails }
-    | { state: "nocontent", data: null }
-    | { state: "notfound", message: string }
-    | { state: "idle", data: null }
-    | { state: "saving", data: T }
-    ;
+    | { state: "loading"; data: null }
+    | { state: "loaded"; data: T }
+    | { state: "error"; problem: ProblemDetails }
+    | { state: "nocontent"; data: null }
+    | { state: "notfound"; message: string }
+    | { state: "idle"; data: null }
+    | { state: "saving"; data: T };
 
 export class ProblemDetails {
     public type: string = "";
@@ -18,22 +16,17 @@ export class ProblemDetails {
     public status: number = 0;
     public detail: string = "";
     public instance: string = "";
-};
+}
 
 function isProblemDetails(obj: object): obj is ProblemDetails {
     const pd: ProblemDetails = obj as ProblemDetails;
-    return pd.type !== undefined
-        && pd.title !== undefined
-        && pd.status !== undefined
-        && pd.detail !== undefined
-        && pd.instance !== undefined;
+    return pd.type !== undefined && pd.title !== undefined && pd.status !== undefined && pd.detail !== undefined && pd.instance !== undefined;
 }
 
 /**
  * Helper class to generating Loading instances
  */
 export class Loadable {
-
     /**
      * Create a Loading that is in the state of 'loading'. Data will be null
      */
@@ -50,7 +43,7 @@ export class Loadable {
 
     /**
      * Create a Loading that is in the state of 'loaded'. Data will be what is passed
-     * 
+     *
      * @param data Data that was loaded externally
      */
     public static loaded<T>(data: T): Loading<T> {
@@ -59,7 +52,7 @@ export class Loadable {
 
     /**
      * Create a Loading that is in the state of 'error'. Data will be the error passed
-     * 
+     *
      * @param err Error that occured while attemping to load this external resource
      */
     public static error<T>(err: string | object | ProblemDetails): Loading<T> {
@@ -69,7 +62,7 @@ export class Loadable {
 
                 return {
                     state: "error",
-                    problem: pb
+                    problem: pb,
                 };
             } catch (ex) {
                 console.log(`failed to parse ${err} to a valid json object: ${ex}`);
@@ -80,8 +73,8 @@ export class Loadable {
                         title: `generic error: ${err}`,
                         status: 0,
                         detail: err,
-                        instance: ""
-                    }
+                        instance: "",
+                    },
                 };
             }
         } else if (isProblemDetails(err)) {
@@ -94,14 +87,14 @@ export class Loadable {
                     title: "generic error",
                     status: 0,
                     detail: JSON.stringify(err),
-                    instance: ""
-                }
+                    instance: "",
+                },
             };
         }
     }
 
     /**
-     * Create a Loading that is in the state of 'nocontent'. Data will be null 
+     * Create a Loading that is in the state of 'nocontent'. Data will be null
      */
     public static nocontent<T>(): Loading<T> {
         return { state: "nocontent", data: null };
@@ -110,7 +103,7 @@ export class Loadable {
     /**
      * Create a Loading that is in the state of 'notfound'.
      * Data will be a string that represents what resource was missing
-     * 
+     *
      * @param res String that indicates what resources were missing
      */
     public static notFound<T>(res: string): Loading<T> {
@@ -122,7 +115,7 @@ export class Loadable {
      *  Used when an external resource has been loaded, but is now being changed. The data is still loaded and valid,
      *      but is being updated. This is useful for a saving icon that rotates when the data is being saved, but
      *      the data that is loaded should still be displayed
-     * 
+     *
      * @param data Data that was previously loaded, but is now saving
      */
     public static saving<T>(data: T): Loading<T> {
@@ -151,12 +144,11 @@ export class Loadable {
 
     public static promise<T>(data: Promise<T>): Promise<Loading<T>> {
         return new Promise<Loading<T>>((resolve, reject) => {
-			data.then((data) => {
-				resolve(Loadable.loaded(data));
-			}).catch((err: any) => {
+            data.then((data) => {
+                resolve(Loadable.loaded(data));
+            }).catch((err: any) => {
                 resolve(Loadable.error(err));
-			});
+            });
         });
     }
-
 }

@@ -1,21 +1,19 @@
-
 <template>
     <div>
         <collapsible header-text="Economy" bg-color="bg-light" size-class="h1">
-            <div class="d-flex flex-wrap align-items-center mb-5" style="gap: 1rem; justify-content: space-evenly;">
-
+            <div class="d-flex flex-wrap align-items-center mb-5" style="gap: 1rem; justify-content: space-evenly">
                 <div>
                     <template v-for="interest in interestingActions">
-                        <h2>{{ interest.frame / 30 | mduration }}</h2>
+                        <h2>{{ (interest.frame / 30) | mduration }}</h2>
                         <h5>{{ interest.action }}</h5>
                     </template>
                 </div>
 
                 <div>
-                    <h2> {{ totalBuildPower | compact }}</h2>
+                    <h2>{{ totalBuildPower | compact }}</h2>
                     <h5>Peak build power</h5>
 
-                    <h2>{{ 100 -buildPowerUsedAverage | locale(0) }}%</h2>
+                    <h2>{{ (100 - buildPowerUsedAverage) | locale(0) }}%</h2>
                     <h5>
                         Idle build power
                         <info-hover text="Average percentage of build power idle"></info-hover>
@@ -23,10 +21,10 @@
                 </div>
 
                 <div>
-                    <h2>{{ playerResourceStats.reduce((acc, iter) => acc += iter.metalUsed, 0) | compact }}</h2>
+                    <h2>{{ playerResourceStats.reduce((acc, iter) => (acc += iter.metalUsed), 0) | compact }}</h2>
                     <h5>Metal used</h5>
 
-                    <h2>{{ playerResourceStats.reduce((acc, iter) => acc += iter.energyUsed, 0) | compact }}</h2>
+                    <h2>{{ playerResourceStats.reduce((acc, iter) => (acc += iter.energyUsed), 0) | compact }}</h2>
                     <h5>Energy used</h5>
                 </div>
 
@@ -34,20 +32,20 @@
                     <div>Most used factory</div>
 
                     <template v-if="highestProductionFactory != undefined">
-                        <img :src="'/image-proxy/UnitPic?defName=' + highestProductionFactory.factoryDefinitionName" height="128" width="128">
+                        <img :src="'/image-proxy/UnitPic?defName=' + highestProductionFactory.factoryDefinitionName" height="128" width="128" />
 
-                        <div>{{highestProductionFactory.totalMade}} units made</div>
+                        <div>{{ highestProductionFactory.totalMade }} units made</div>
                     </template>
                 </div>
 
                 <div>
                     <div>Main energy source</div>
 
-                    <img :src="'/image-proxy/UnitPic?defName=' + highestEnergySource.defName" height="128" width="128">
+                    <img :src="'/image-proxy/UnitPic?defName=' + highestEnergySource.defName" height="128" width="128" />
 
                     <div>
                         {{ highestEnergySource.energy | compact }}
-                        <img src="/img/energy.png" width="24" height="24">
+                        <img src="/img/energy.png" width="24" height="24" />
                     </div>
                 </div>
             </div>
@@ -62,7 +60,7 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                            <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                             {{ entry.name }}
                         </a-body>
                     </a-col>
@@ -139,18 +137,18 @@
                 </a-table>
             </div>
 
-            <div class="d-flex mb-5" style="gap: 1rem;">
+            <div class="d-flex mb-5" style="gap: 1rem">
                 <div class="flex-grow-1" style="flex-basis: 50%">
                     <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
-                                <h4 class="mb-0" style="min-width: 12rem;">
+                                <h4 class="mb-0" style="min-width: 12rem">
                                     <b>Metal</b>
                                 </h4>
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -201,13 +199,13 @@
                     <a-table :entries="energyProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
-                                <h4 class="mb-0" style="min-width: 12rem;">
+                                <h4 class="mb-0" style="min-width: 12rem">
                                     <b>Energy</b>
                                 </h4>
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -245,18 +243,18 @@
                 </div>
             </div>
 
-            <div class="d-flex" style="gap: 1rem;">
+            <div class="d-flex" style="gap: 1rem">
                 <div class="flex-grow-1" style="flex-basis: 50%">
                     <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
-                                <h4 class="mb-0" style="min-width: 12rem;">
+                                <h4 class="mb-0" style="min-width: 12rem">
                                     <b>Other buildings</b>
                                 </h4>
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24" />
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -307,7 +305,6 @@
                     <match-wind-graph :updates="output.windUpdates" :map="match.mapData"></match-wind-graph>
                 </div>
             </div>
-
         </collapsible>
     </div>
 </template>
@@ -333,14 +330,14 @@
 
     import "filters/LocaleFilter";
     import "filters/CompactFilter";
-import { FactoryData, PlayerFactories } from "../compute/FactoryData";
+    import { FactoryData, PlayerFactories } from "../compute/FactoryData";
 
     type ResourcesByUnitDef = {
-        defID: number,
-        defName: string,
-        name: string,
-        energy: number,
-        metal: number
+        defID: number;
+        defName: string;
+        name: string;
+        energy: number;
+        metal: number;
     };
 
     class InterestingEvent {
@@ -356,31 +353,30 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
             UnitStats: { type: Array as PropType<UnitStats[]>, required: true },
             UnitResources: { type: Array as PropType<ResourceProductionData[]>, required: true },
             merged: { type: Array as PropType<MergedStats[]>, required: true },
-            SelectedTeam: { type: Number, required: true }
+            SelectedTeam: { type: Number, required: true },
         },
 
-        data: function() {
+        data: function () {
             return {
                 interestingActions: [] as InterestingEvent[],
 
-                factories: [] as PlayerFactories[]
-            }
+                factories: [] as PlayerFactories[],
+            };
         },
 
-        mounted: function(): void {
+        mounted: function (): void {
             this.makeFactoryData();
             this.makeInterstingActions();
         },
 
         methods: {
-
-            makeFactoryData: function(): void {
+            makeFactoryData: function (): void {
                 this.factories = [];
 
                 this.factories = PlayerFactories.compute(this.match, this.output);
             },
 
-            makeInterstingActions: function(): void {
+            makeInterstingActions: function (): void {
                 this.interestingActions = [];
 
                 const interest: InterestingEvent[] = [];
@@ -413,7 +409,7 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                             interest.push({
                                 frame: ev.frame,
                                 action: "Bot -> Vehicle swap",
-                                interest: 10
+                                interest: 10,
                             });
                             vehicleSwap = true;
                         }
@@ -424,7 +420,7 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                             interest.push({
                                 frame: ev.frame,
                                 action: "T1 made",
-                                interest: 1
+                                interest: 1,
                             });
                             t1made = true;
                         }
@@ -435,18 +431,18 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                             interest.push({
                                 frame: ev.frame,
                                 action: "T2 made",
-                                interest: 2
+                                interest: 2,
                             });
                             t2made = true;
                         }
                     }
 
                     if (t3made == false) {
-                        if (def.isFactory == true && def.isFactory == true && def.unitGroup == "buildert3" && def.speed ==  0) {
+                        if (def.isFactory == true && def.isFactory == true && def.unitGroup == "buildert3" && def.speed == 0) {
                             interest.push({
                                 frame: ev.frame,
                                 action: "Gantry made",
-                                interest: 5
+                                interest: 5,
                             });
                             t3made = true;
                         }
@@ -457,7 +453,7 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                             interest.push({
                                 frame: ev.frame,
                                 action: "First AFUS",
-                                interest: 5
+                                interest: 5,
                             });
                             firstAfus = true;
                         }
@@ -467,53 +463,59 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                 this.interestingActions = interest.sort((a, b) => b.interest - a.interest).slice(0, 2);
             },
 
-            isBuilder: function(entry: ResourceProductionEntry): boolean {
+            isBuilder: function (entry: ResourceProductionEntry): boolean {
                 return !!entry.definition && entry.definition.buildPower > 0 && entry.definition.isFactory == false;
             },
 
-            isMetalProduction: function(entry: ResourceProductionEntry): boolean {
-                return !!entry.definition && entry.definition.speed == 0 && (entry.definition.energyConversionCapacity > 0 || entry.definition.metalMake > 0 || entry.definition.isMetalExtractor > 0);
+            isMetalProduction: function (entry: ResourceProductionEntry): boolean {
+                return (
+                    !!entry.definition &&
+                    entry.definition.speed == 0 &&
+                    (entry.definition.energyConversionCapacity > 0 || entry.definition.metalMake > 0 || entry.definition.isMetalExtractor > 0)
+                );
             },
 
-            isEnergyProduction: function(entry: ResourceProductionEntry): boolean {
+            isEnergyProduction: function (entry: ResourceProductionEntry): boolean {
                 return !!entry.definition && entry.energyMade > 0 && entry.definition.speed == 0;
-            }
-
+            },
         },
 
         computed: {
-
-            playerResourceStats: function(): ResourceProductionEntry[] {
-                return this.UnitResources.find(iter => iter.teamID == this.SelectedTeam)?.units ?? [];
+            playerResourceStats: function (): ResourceProductionEntry[] {
+                return this.UnitResources.find((iter) => iter.teamID == this.SelectedTeam)?.units ?? [];
             },
 
-            dataResources: function(): Loading<ResourceProductionEntry[]> {
+            dataResources: function (): Loading<ResourceProductionEntry[]> {
                 return Loadable.loaded(this.playerResourceStats);
             },
 
-            builders: function(): Loading<ResourceProductionEntry[]> {
+            builders: function (): Loading<ResourceProductionEntry[]> {
                 return Loadable.loaded(this.playerResourceStats.filter(this.isBuilder));
             },
 
-            metalProduction: function(): Loading<ResourceProductionEntry[]> {
+            metalProduction: function (): Loading<ResourceProductionEntry[]> {
                 return Loadable.loaded(this.playerResourceStats.filter(this.isMetalProduction));
             },
 
-            energyProduction: function(): Loading<ResourceProductionEntry[]> {
+            energyProduction: function (): Loading<ResourceProductionEntry[]> {
                 return Loadable.loaded(this.playerResourceStats.filter(this.isEnergyProduction));
             },
 
-            otherBuildings: function(): Loading<ResourceProductionEntry[]> {
-                return Loadable.loaded(this.playerResourceStats.filter(iter => {
-                    return iter.definition
-                        && this.isMetalProduction(iter) == false
-                        && this.isEnergyProduction(iter) == false
-                        && this.isBuilder(iter) == false
-                        && iter.definition.speed == 0
-                }));
+            otherBuildings: function (): Loading<ResourceProductionEntry[]> {
+                return Loadable.loaded(
+                    this.playerResourceStats.filter((iter) => {
+                        return (
+                            iter.definition &&
+                            this.isMetalProduction(iter) == false &&
+                            this.isEnergyProduction(iter) == false &&
+                            this.isBuilder(iter) == false &&
+                            iter.definition.speed == 0
+                        );
+                    })
+                );
             },
 
-            highestEnergySource: function(): ResourcesByUnitDef {
+            highestEnergySource: function (): ResourcesByUnitDef {
                 const map: Map<number, ResourcesByUnitDef> = new Map();
 
                 for (const iter of this.playerResourceStats) {
@@ -522,7 +524,7 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                         defName: iter.defName,
                         name: iter.name,
                         energy: 0,
-                        metal: 0
+                        metal: 0,
                     };
 
                     entry.energy += iter.energyMade;
@@ -534,7 +536,7 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                 let arr: ResourcesByUnitDef[] = Array.from(map.values());
                 arr = arr.sort((a, b) => {
                     return b.energy - a.energy;
-                })
+                });
 
                 if (arr.length == 0) {
                     return {
@@ -542,14 +544,14 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                         defName: "none",
                         name: "none",
                         energy: 0,
-                        metal: 0
+                        metal: 0,
                     };
                 }
                 return arr[0];
             },
 
-            highestProductionFactory: function(): FactoryData | undefined {
-                const fac: PlayerFactories | undefined = this.factories.find(iter => iter.teamID == this.SelectedTeam);
+            highestProductionFactory: function (): FactoryData | undefined {
+                const fac: PlayerFactories | undefined = this.factories.find((iter) => iter.teamID == this.SelectedTeam);
                 if (fac == undefined || fac.factories.length == 0) {
                     return undefined;
                 }
@@ -559,38 +561,43 @@ import { FactoryData, PlayerFactories } from "../compute/FactoryData";
                 })[0];
             },
 
-            buildPowerUsedAverage: function(): number {
-                const team = this.merged.filter(iter => iter.teamID == this.SelectedTeam);
-                const sum: number = team.reduce((acc, iter) => acc += (iter.buildPowerUsed / Math.max(1, iter.buildPowerAvailable)) * 100, 0);
+            buildPowerUsedAverage: function (): number {
+                const team = this.merged.filter((iter) => iter.teamID == this.SelectedTeam);
+                const sum: number = team.reduce((acc, iter) => (acc += (iter.buildPowerUsed / Math.max(1, iter.buildPowerAvailable)) * 100), 0);
 
                 return sum / Math.max(1, team.length);
             },
 
-            totalBuildPower: function(): number {
-                return Math.max(...this.merged.filter(iter => iter.teamID == this.SelectedTeam).map(iter => iter.buildPowerAvailable));
+            totalBuildPower: function (): number {
+                return Math.max(...this.merged.filter((iter) => iter.teamID == this.SelectedTeam).map((iter) => iter.buildPowerAvailable));
             },
 
-            playerStats: function(): UnitStats[] {
-                return this.UnitStats.filter(iter => iter.teamID == this.SelectedTeam);
+            playerStats: function (): UnitStats[] {
+                return this.UnitStats.filter((iter) => iter.teamID == this.SelectedTeam);
             },
 
-            data: function(): Loading<UnitStats[]> {
+            data: function (): Loading<UnitStats[]> {
                 return Loadable.loaded(this.playerStats);
             },
         },
 
         watch: {
-            SelectedTeam: function() {
+            SelectedTeam: function () {
                 this.makeInterstingActions();
-            }
+            },
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover, MatchWindGraph
-        }
-
+            ATable,
+            AHeader,
+            ABody,
+            AFooter,
+            AFilter,
+            ACol,
+            Collapsible,
+            InfoHover,
+            MatchWindGraph,
+        },
     });
     export default MatchEcoStats;
-
 </script>
