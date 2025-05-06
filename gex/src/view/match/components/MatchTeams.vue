@@ -41,7 +41,7 @@
                     </tbody>
                 </table>
             </div>
-            <div v-if="match.spectators.length > 0">
+            <div v-if="match.spectators.length > 0" class="mt-2">
                 <h5>
                     Spectators ({{ match.spectators.length }})
                 </h5>
