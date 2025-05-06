@@ -65,7 +65,7 @@
 
         methods: {
 
-            getIdName: function(id: number): string {
+            getIdName: function(id: number, allyTeamID: number = -2): string {
                 if (id == 255) {
                     return "HOST";
                 } else if (id == 254) {
@@ -73,7 +73,7 @@
                 } else if (id == 253) {
                     return "Spec";
                 } else if (id == 252) {
-                    return "Allies";
+                    return `Allies [Team ${allyTeamID + 1}]`;
                 } else {
                     return this.match.players.find(iter => iter.teamID == id)?.username
                         ?? this.match.spectators.find(iter => iter.playerID == id)?.username
@@ -81,7 +81,7 @@
                 }
             },
 
-            getIdColor: function(id: number): string {
+            getIdColor: function(id: number, allyTeamID: number = -2): string {
                 if (id == 255) {
                     return "var(--bs-purple)";
                 } else if (id == 254) {
@@ -89,14 +89,18 @@
                 } else if (id == 253) {
                     return "#ffff00";
                 } else if (id == 252) {
-                    return "#00ff00";
+                    return this.match.players.find(at => at.allyTeamID == allyTeamID)?.hexColor ?? "#00ff00";
                 } else {
                     return "#aaaaaa";
                 }
             },
 
+            getPlayerAllyTeamId: function(id: number): number {
+                return this.match.players.find(p => p.playerID == id)?.allyTeamID ?? -1;
+            },
+            
             getPlayerColor: function(id: number): string {
-                return this.match.players.find(p => p.playerID == id)?.hexColor ?? ""
+                return this.match.players.find(p => p.playerID == id)?.hexColor ?? "";
             }
         },
 
@@ -104,6 +108,8 @@
 
             messages: function(): FullMessage[] {
                 return this.match.chatMessages.map((iter, index) => {
+                    const allyTeamID = this.getPlayerAllyTeamId(iter.fromId);
+
                     return {
                         id: index,
                         from: this.getIdName(iter.fromId),
