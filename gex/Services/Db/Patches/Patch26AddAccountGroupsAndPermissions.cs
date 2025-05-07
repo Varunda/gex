@@ -27,10 +27,10 @@ namespace gex.Services.Db.Patches {
                 );
 
                 INSERT INTO app_group (
-                    id, name, hex_color, implies
+                    id, name, hex_color
                 ) OVERRIDING SYSTEM VALUE
                 VALUES (
-                    1, 'admin', 'ff00ff', ''
+                    1, 'admin', 'ff00ff'
                 ) ON CONFLICT (id) DO NOTHING;
 
                 CREATE TABLE IF NOT EXISTS app_account_access_logs (
