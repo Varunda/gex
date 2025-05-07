@@ -10,9 +10,11 @@
                                 Team {{ allyTeam.allyTeamID + 1 }}
                             </h4>
                         </div>
-
-                        <div class="player" v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)" :key="index"> 
-                            <player-item :player="player" />
+                        
+                        <div class="players">
+                            <template v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)"> 
+                                <match-player-item :player="player" />
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -32,7 +34,7 @@
                     <tbody>
                         <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <player-item v-if="index <= allyTeam.playerCount+1" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
+                                <match-player-item v-if="index <= allyTeam.playerCount+1" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
                                 <span v-else>
                                     <!-- uneven team placeholder -->
                                 </span>
@@ -83,22 +85,19 @@
         display: inline-block;
     }
 
+    .players {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+        white-space: nowrap;
+        column-gap: 0.5rem;
+        row-gap: 0.25rem;
+    }
+
     @media only screen and (max-width: 800px) {
         .team {
             flex: 1 2 50%;
         }
-    }
-
-    .player {
-       white-space: nowrap;
-    }
-
-    .player--name {
-        margin-right: 0.35rem;
-    }
-
-    .player--os, .player--handicap {
-        font-size: 0.9rem;
     }
 
     .ally-team-header {
@@ -117,6 +116,7 @@
     import Vue, { PropType } from "vue";
 
     import Collapsible from "components/Collapsible.vue";
+    import MatchPlayerItem from "./MatchPlayerItem.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
@@ -126,37 +126,6 @@
         allyTeamID: number,
         players: BarMatchPlayer[]
     }
-
-    const PlayerItem = Vue.extend({
-        props: {
-            player: { type: Object as PropType<BarMatchPlayer>, required: true }
-        },
-
-        template: `
-            <span>
-                <a :href="'/user/' + player.userID" style="text-decoration: none;">
-                    <span style="text-shadow: 1px 1px 1px #000000;" :style="{ 'color': player.hexColor }">
-                        <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16">
-                        <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16">
-                        <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16">
-                        <span v-else>
-                            ?
-                        </span>
-                        {{ player.username }}
-                    </span>
-                </a>
-                <span class="player--os">[<span class="font-monospace">{{ player.skill | locale(2) }}</span>]</span>
-                <span v-if="player.handicap != 0" class="player--handicap">
-                    <span v-if="player.handicap > 0" style="color: var(--bg-green)">
-                        (+{{ player.handicap }}%)
-                    </span>
-                    <span v-else>
-                        ({{ player.handicap }}%)
-                    </span>
-                </span>
-            <span>
-        `
-    });
 
     export const MatchTeams = Vue.extend({
         props: {
@@ -192,7 +161,7 @@
             },
 
             isFunkyTeams: function(): boolean {
-                return this.maxTeamSize > 8;
+                return this.maxTeamSize > 3;
             },
 
             playersByAllyTeam: function(): GroupedPlayers[] {
@@ -207,7 +176,7 @@
 
         components: {
             Collapsible,
-            PlayerItem
+            MatchPlayerItem
         }
     });
     export default MatchTeams;
