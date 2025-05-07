@@ -2,6 +2,7 @@
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
+using gex.Models.Internal;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
@@ -63,7 +64,8 @@ namespace gex.Controllers.Api {
 		[HttpPost("upload")]
 		[RequestTimeout(1000 * 60)] // allow 60 secs to upload
 		[DisableFormValueModelBinding]
-		//[Authorize]
+		[Authorize]
+		[PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]
 		public async Task<ApiResponse<BarMatch>> Upload(CancellationToken cancel) {
 			Stopwatch stepTimer = Stopwatch.StartNew();
 
