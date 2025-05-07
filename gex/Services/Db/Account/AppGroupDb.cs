@@ -44,9 +44,9 @@ namespace gex.Services.Db.Account {
             using NpgsqlConnection conn = _DbHelper.Connection();
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO app_group (
-                    name, hex_color, implies
+                    name, hex_color
                 ) VALUES (
-                    @Name, @HexColor, @Implies
+                    @Name, @HexColor
                 )
                 RETURNING id;
             ", cancel);
@@ -67,12 +67,11 @@ namespace gex.Services.Db.Account {
             using NpgsqlConnection conn = _DbHelper.Connection();
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO app_group (
-                    name, hex_color, implies
+                    name, hex_color
                 ) VALUES (
-                    @Name, @HexColor, @Implies
+                    @Name, @HexColor
                 ) ON CONFLICT (id) DO UPDATE
-                    SET name = @Name,
-                        implies = @Implies
+                    SET name = @Name
                 RETURNING id;
             ", cancel);
 
