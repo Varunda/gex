@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using gex.Services.Repositories.Account;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Repositories {
 
@@ -11,6 +12,10 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMapRepository>();
             services.AddSingleton<BarMatchProcessingRepository>();
 			services.AddSingleton<HeadlessRunStatusRepository>();
+
+			services.AddSingleton<AppPermissionRepository>();
+			services.AddSingleton<AppGroupRepository>();
+			services.AddSingleton<AppAccountGroupMembershipRepository>();
         }
 
     }

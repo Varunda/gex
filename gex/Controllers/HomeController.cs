@@ -16,6 +16,8 @@ using System;
 using gex.Services.Db.Match;
 using System.Collections.Generic;
 using System.Linq;
+using gex.Models.Internal;
+using Microsoft.AspNetCore.Authentication;
 
 namespace gex.Controllers {
 
@@ -50,7 +52,7 @@ namespace gex.Controllers {
         }
 
         [Authorize]
-        [AccountRequired]
+		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public IActionResult AccountManagement() {
             return View();
         }
@@ -60,7 +62,7 @@ namespace gex.Controllers {
         }
 
         [Authorize]
-        [AccountRequired]
+		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public IActionResult Cache() {
             return View();
         }
@@ -124,8 +126,25 @@ namespace gex.Controllers {
 			return View();
 		}
 
+		[PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]
+		[Authorize]
 		public IActionResult Upload() {
 			return View();
+		}
+
+		[Authorize]
+		public IActionResult Login() {
+			return View("Index");
+		}
+
+		public async Task<IActionResult> Logout(string? returnUrl = null) {
+			await HttpContext.SignOutAsync();
+
+			if (returnUrl == null) {
+				return RedirectToAction("Index", "Home");
+			}
+
+			return Redirect(returnUrl);
 		}
 
         /// <summary>

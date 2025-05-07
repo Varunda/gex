@@ -65,10 +65,6 @@ namespace gex.Controllers.Api {
 		[DisableFormValueModelBinding]
 		//[Authorize]
 		public async Task<ApiResponse<BarMatch>> Upload(CancellationToken cancel) {
-
-			// disable for now
-			return ApiNotFound<BarMatch>("");
-
 			Stopwatch stepTimer = Stopwatch.StartNew();
 
             BarMatchProcessing processing = new();

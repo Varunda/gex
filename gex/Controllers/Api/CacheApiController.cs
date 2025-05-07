@@ -13,7 +13,7 @@ namespace gex.Controllers.Api {
 
     [ApiController]
     [Route("/api/cache")]
-    [AccountRequired]
+    [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
     public class CacheApiController : ApiControllerBase {
 
         private readonly ILogger<CacheApiController> _Logger;

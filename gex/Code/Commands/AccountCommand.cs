@@ -5,11 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using gex.Commands;
 using gex.Models;
-using gex.Services.Db;
+using gex.Services.Db.Account;
 
 namespace gex.Code.Commands {
 
-    [Command]
+	[Command]
     public class AccountCommand {
 
         private readonly ILogger<AccountCommand> _Logger;

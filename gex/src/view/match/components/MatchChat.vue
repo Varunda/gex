@@ -113,7 +113,7 @@
                     return {
                         id: index,
                         from: this.getIdName(iter.fromId),
-                        to: this.getIdName(iter.toId),
+                        to: this.getIdName(iter.toId, allyTeamID),
                         color: this.getIdColor(iter.toId),
                         playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(iter.gameTimestamp),

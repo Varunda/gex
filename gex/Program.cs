@@ -29,6 +29,7 @@ using Dapper;
 using Dapper.ColumnMapper;
 using OpenTelemetry.Metrics;
 using gex.Services.Metrics;
+using gex.Models.Internal;
 
 namespace gex {
 
@@ -163,10 +164,8 @@ namespace gex {
                 CancellationTokenSource cts = new();
                 cts.CancelAfter(1000 * 1);
                 await _Host.StopAsync(cts.Token);
-                //stopSource.CancelAfter(1 * 1000);
             } else {
                 Console.WriteLine($"stopping without a token");
-                //stopSource.Cancel();
                 await _Host.StopAsync();
             }
 
@@ -205,6 +204,9 @@ namespace gex {
                 logger.LogDebug($"adding dapper column mapping [type={t.FullName}]");
                 SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
             }
+
+			SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.UIntHandler());
+			SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.ULongHandler());
         }
 
 		private static List<string> GetMetricNames() {

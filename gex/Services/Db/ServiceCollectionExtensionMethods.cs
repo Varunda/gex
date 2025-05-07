@@ -1,3 +1,4 @@
+using gex.Services.Db.Account;
 using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
@@ -5,11 +6,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Db {
 
-    public static class ServiceCollectionExtensionMethods {
+	public static class ServiceCollectionExtensionMethods {
 
         public static void AddDatabasesServices(this IServiceCollection services) {
-            services.AddSingleton<AppAccountDbStore>();
+			// internal
             services.AddSingleton<AppMetadataDbStore>();
+
+			// account
+            services.AddSingleton<AppAccountDbStore>();
+			services.AddSingleton<AppAccountGroupMembershipDb>();
+			services.AddSingleton<AppGroupDb>();
+			services.AddSingleton<AppGroupPermissionDb>();
 
             // bar match
             services.AddSingleton<BarReplayDb>();

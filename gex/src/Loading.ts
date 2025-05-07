@@ -1,4 +1,5 @@
-﻿
+﻿import Toaster from "Toaster";
+
 /**
  * Wrapper around an external resource being loaded (usually from the API) 
  */
@@ -61,8 +62,9 @@ export class Loadable {
      * Create a Loading that is in the state of 'error'. Data will be the error passed
      * 
      * @param err Error that occured while attemping to load this external resource
+     * @param url URL that caused the error
      */
-    public static error<T>(err: string | object | ProblemDetails): Loading<T> {
+    public static error<T>(err: string | object | ProblemDetails, url?: string): Loading<T> {
         if (typeof err == "string") {
             try {
                 const pb: ProblemDetails = JSON.parse(err);
@@ -76,7 +78,7 @@ export class Loadable {
                 return {
                     state: "error",
                     problem: {
-                        type: "generic-error",
+                        type: url ?? "generic-error",
                         title: `generic error: ${err}`,
                         status: 0,
                         detail: err,
@@ -90,7 +92,7 @@ export class Loadable {
             return {
                 state: "error",
                 problem: {
-                    type: "generic-error",
+                    type: url ?? "generic-error",
                     title: "generic error",
                     status: 0,
                     detail: JSON.stringify(err),
@@ -147,6 +149,14 @@ export class Loadable {
         }
 
         throw `failed to wrap, unchecked state: '${wrap.state}'`;
+    }
+
+    public static toastError<T>(l: Loading<T>, title: string): void {
+        if (l.state != "error") {
+            return;
+        }
+
+        Toaster.add(title, `<code>${l.problem.title}</code>`, "danger");
     }
 
     public static promise<T>(data: Promise<T>): Promise<Loading<T>> {

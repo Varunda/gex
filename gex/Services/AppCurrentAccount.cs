@@ -1,7 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using gex.Models;
-using gex.Services.Db;
+using gex.Services.Db.Account;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,10 +11,10 @@ using System.Threading.Tasks;
 
 namespace gex.Services {
 
-    /// <summary>
-    ///     Service to get the current user making an HTTP request
-    /// </summary>
-    public class AppCurrentAccount {
+	/// <summary>
+	///     Service to get the current user making an HTTP request
+	/// </summary>
+	public class AppCurrentAccount {
 
         private readonly ILogger<AppCurrentAccount> _Logger;
         private readonly IHttpContextAccessor _Context;

@@ -119,7 +119,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
 					healthEntry.RunDuration = timer.ElapsedMilliseconds;
 					healthEntry.Message = $"locally ran game {nextPrio.GameID}";
 
-				} catch (Exception ex) {
+				} catch (Exception ex) when (cancel.IsCancellationRequested == false) {
 					++errorsInARow;
 					_Logger.LogError(ex, $"failed to run priority process");
 
@@ -128,6 +128,8 @@ namespace gex.Services.Hosted.BackgroundTasks {
 						await Task.Delay(TimeSpan.FromMinutes(5), cancel);
 						errorsInARow = 0;
 					}
+				} catch (Exception) when (cancel.IsCancellationRequested == true) {
+					_Logger.LogInformation($"stopping service");
 				}
 
 				healthEntry.LastRan = DateTime.UtcNow;

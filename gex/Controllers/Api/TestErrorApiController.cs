@@ -5,12 +5,13 @@ using System.Threading.Tasks;
 using gex.Models;
 using gex.Services.Db;
 using gex.Code;
+using gex.Models.Internal;
 
 namespace gex.Controllers.Api {
 
     [ApiController]
     [Route("/api/test-error")]
-    [AccountRequired]
+    [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
     public class TestErrorApiController : ApiControllerBase {
 
         private readonly ILogger<TestErrorApiController> _Logger;
