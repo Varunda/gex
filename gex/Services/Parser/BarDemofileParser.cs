@@ -202,7 +202,15 @@ namespace gex.Services.Parser {
                     }
                     
                     else if (iter.Name.StartsWith("ai")) {
-                        _Logger.LogDebug($"ai parsing?");
+						// [ai0]
+                        int aiID = int.Parse(iter.Name.Split("ai")[1]);
+						int teamID = iter.Value.GetRequiredInt32("team");
+
+						BarMatchAiPlayer ai = new();
+						ai.AiID = aiID;
+						ai.TeamID = teamID;
+						ai.Name = iter.Value.GetRequiredString("name");
+						match.AiPlayers.Add(ai);
                     }
 
                 }

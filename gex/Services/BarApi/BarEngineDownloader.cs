@@ -17,6 +17,7 @@ namespace gex.Services.BarApi {
         private readonly ILogger<BarEngineDownloader> _Logger;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly PathEnvironmentService _PathUtil;
+		private readonly EnginePathUtil _EnginePathUtil;
 
         private static readonly HttpClient _Http = new HttpClient();
 
@@ -31,16 +32,18 @@ namespace gex.Services.BarApi {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
 
-        public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
-            IOptions<FileStorageOptions> options, PathEnvironmentService pathUtil) {
+		public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
+			IOptions<FileStorageOptions> options, PathEnvironmentService pathUtil,
+			EnginePathUtil enginePathUtil) {
 
-            _Logger = logger;
-            _Options = options;
-            _PathUtil = pathUtil;
-        }
+			_Logger = logger;
+			_Options = options;
+			_PathUtil = pathUtil;
+			_EnginePathUtil = enginePathUtil;
+		}
 
-        public bool HasEngine(string version) {
-            string path = GetEnginePath(version);
+		public bool HasEngine(string version) {
+            string path = _EnginePathUtil.Get(version);
             return Directory.Exists(path);
         }
 
@@ -52,7 +55,7 @@ namespace gex.Services.BarApi {
         /// <returns></returns>
         /// <exception cref="System.Exception"></exception>
         public async Task DownloadEngine(string version, CancellationToken cancel) {
-            string path = GetEnginePath(version);
+            string path = _EnginePathUtil.Get(version);
             if (Directory.Exists(path)) {
                 _Logger.LogInformation($"engine version already downloaded [version={version}]");
                 return;
@@ -100,20 +103,6 @@ namespace gex.Services.BarApi {
             await sevenZipProc.WaitForExitAsync(cancel);
 
             _Logger.LogDebug($"downloaded engine [version={version}] [timer={timer.ElapsedMilliseconds}ms]");
-        }
-
-        private string GetEnginePath(string version) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
-
-            if (OperatingSystem.IsWindows() == true) {
-                path += "-win";
-            } else if (OperatingSystem.IsLinux() == true) {
-                path += "-linux";
-            } else {
-                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
-            }
-
-            return path;
         }
 
     }

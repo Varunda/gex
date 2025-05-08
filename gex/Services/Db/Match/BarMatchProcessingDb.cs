@@ -135,7 +135,7 @@ namespace gex.Services.Db.Match {
                         mp.* 
                     FROM 
                         bar_match_processing mp
-						LEFT JOIN bar_match m ON m.id = mp.game_id
+						INNER JOIN bar_match m ON m.id = mp.game_id
                     WHERE 
 						priority > 0
                         AND mp.demofile_fetched is not null

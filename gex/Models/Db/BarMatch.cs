@@ -47,6 +47,11 @@ namespace gex.Models.Db {
 
         public List<BarMatchSpectator> Spectators { get; set; } = [];
 
+		/// <summary>
+		///		not currently saved in the DB, only returned from parsing
+		/// </summary>
+		public List<BarMatchAiPlayer> AiPlayers { get; set; } = [];
+
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
 		public int PlayerCount { get; set; }

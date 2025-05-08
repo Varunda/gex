@@ -16,15 +16,15 @@ namespace gex.Services.BarApi {
     public class PrDownloaderService {
 
         private readonly ILogger<PrDownloaderService> _Logger;
-        private readonly IOptions<FileStorageOptions> _Options;
+		private readonly EnginePathUtil _EnginePathUtil;
 		private readonly GameVersionUsageDb _VersionUsageDb;
 
 		public PrDownloaderService(ILogger<PrDownloaderService> logger,
-			IOptions<FileStorageOptions> options, GameVersionUsageDb versionUsageDb) {
+			GameVersionUsageDb versionUsageDb, EnginePathUtil enginePathUtil) {
 
 			_Logger = logger;
-			_Options = options;
 			_VersionUsageDb = versionUsageDb;
+			_EnginePathUtil = enginePathUtil;
 		}
 
 		/// <summary>
@@ -36,7 +36,7 @@ namespace gex.Services.BarApi {
 		///     a boolean value indicating if the game version has already been downloaded for the specified engine
 		/// </returns>
 		public bool HasGameVersion(string engine, string version) {
-            string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version, "done.txt");
+            string gameVersionOutput = Path.Join(_EnginePathUtil.Get(engine), "games", version, "done.txt");
             return File.Exists(gameVersionOutput);
         }
 
@@ -55,7 +55,7 @@ namespace gex.Services.BarApi {
                 return true;
             }
 
-            string gameVersionOutput = Path.Join(GetEnginePath(engine), "games", version);
+            string gameVersionOutput = Path.Join(_EnginePathUtil.Get(engine), "games", version);
 
             if (Directory.Exists(gameVersionOutput) == true) {
                 _Logger.LogInformation($"incomplete game version downloaded found [engine={engine}] [version={version}] [path={gameVersionOutput}]");
@@ -106,7 +106,7 @@ namespace gex.Services.BarApi {
         public bool HasMap(string engine, string map) {
             string mapName = (map + ".sd7").Replace(" ", "_").ToLower();
             // yes, double maps is correct, it's what pr-downloaded just wants i guess, zany
-            string path = Path.Join(GetEnginePath(engine), "maps", "maps", mapName);
+            string path = Path.Join(_EnginePathUtil.Get(engine), "maps", "maps", mapName);
             return File.Exists(path);
         }
 
@@ -126,7 +126,7 @@ namespace gex.Services.BarApi {
 
             // pr-downloader.exe --filesystem-writepath "./maps" --download-map "All That Glitters v2.2"
 
-            string mapOutput = Path.Join(GetEnginePath(engine), "maps");
+            string mapOutput = Path.Join(_EnginePathUtil.Get(engine), "maps");
 
             ProcessStartInfo startInfo = GetForEngine(engine, $"--filesystem-writepath \"{mapOutput}\" --download-map \"{mapName}\"");
             _Logger.LogDebug($"getting map [version={mapName}] [engine={engine}] [args={startInfo.Arguments}]");
@@ -144,7 +144,7 @@ namespace gex.Services.BarApi {
 
         private ProcessStartInfo GetForEngine(string engine, string arguments) {
 
-            string path = Path.Join(GetEnginePath(engine), "pr-downloader");
+            string path = Path.Join(_EnginePathUtil.Get(engine), "pr-downloader");
             if (OperatingSystem.IsWindows()) { path += ".exe"; }
 
             if (File.Exists(path) == false) {
@@ -153,7 +153,7 @@ namespace gex.Services.BarApi {
 
             ProcessStartInfo startInfo = new();
             startInfo.FileName = path;
-            startInfo.WorkingDirectory = GetEnginePath(engine);
+            startInfo.WorkingDirectory = _EnginePathUtil.Get(engine);
 			startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_USE_STREAMER", "false");
             startInfo.EnvironmentVariables.AddOrUpdate("PRD_HTTP_SEARCH_URL", "https://files-cdn.beyondallreason.dev/find");
             startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_REPO_MASTER", "https://repos-cdn.beyondallreason.dev/repos.gz");
@@ -162,20 +162,6 @@ namespace gex.Services.BarApi {
             startInfo.RedirectStandardOutput = true;
 
             return startInfo;
-        }
-
-        private string GetEnginePath(string version) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
-
-            if (OperatingSystem.IsWindows() == true) {
-                path += "-win";
-            } else if (OperatingSystem.IsLinux() == true) {
-                path += "-linux";
-            } else {
-                _Logger.LogWarning($"unchecked operating system [is android={OperatingSystem.IsAndroid()}] [is bsd={OperatingSystem.IsFreeBSD()}]");
-            }
-
-            return path;
         }
 
     }

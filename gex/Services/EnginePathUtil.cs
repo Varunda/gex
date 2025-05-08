@@ -17,7 +17,7 @@ namespace gex.Services {
 		}
 
 		public string Get(string version) {
-            string path = _Options.Value.EngineLocation + Path.DirectorySeparatorChar + version;
+            string path = Path.GetFullPath(Path.Join(_Options.Value.EngineLocation, version));
 
             if (OperatingSystem.IsWindows() == true) {
                 path += "-win";

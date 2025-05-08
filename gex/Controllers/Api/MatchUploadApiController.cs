@@ -146,6 +146,10 @@ namespace gex.Controllers.Api {
 				return ApiBadRequest<BarMatch>($"this game has already been seen, but is being processed, please wait!");
 			}
 
+			if (match.AiPlayers.Count > 0) {
+				return ApiBadRequest<BarMatch>($"Games with AI players are not allowed to be uploaded");
+			}
+
 			_Logger.LogInformation($"new demofile has been uploaded [gameID={match.ID}]");
 
 			//

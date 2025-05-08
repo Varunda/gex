@@ -43,6 +43,17 @@
                 <a :href="'/match/' + match.data.id">View match</a>
             </div>
 
+            <div v-else-if="match.state == 'error'" class="alert alert-danger d-inline-block">
+                <b>Failed to upload match:</b>
+                <br>
+                <span v-if="match.problem.instance != ''">
+                    {{ match.problem.title }}
+                </span>
+                <span v-else>
+                    {{ match.problem.detail }}
+                </span>
+            </div>
+
         </div>
     </div>
 </template>
@@ -119,13 +130,15 @@
                     }
 
                     if (f.size > 1024 * 1024 * 50) {
-                        console.error(`upload is too big!`);
+                        this.match = Loadable.error("Uploads cannot be larger than 50MB");
+                        console.error(`upload is too big! ${f.size} > ${1024 * 1024 * 50}`);
                         continue;
                     }
 
                     this.match = await MatchUploadApi.upload(f);
                     if (this.match.state != "loaded") {
-                        Toaster.add("Upload error", `error uploading!`, "danger");
+                        Loadable.toastError(this.match, "Upload error");
+                        //Toaster.add("Upload error", `error uploading!`, "danger");
                     }
                 }
             }
