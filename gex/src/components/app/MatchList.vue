@@ -15,12 +15,12 @@
                             <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 
                                 <div class="tile-team"
-                                :style="{
-                                    'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
-                                    'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
-                                    'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
-                                }"
-                                >
+                                    :style="{
+                                        'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
+                                        'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                                        'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
+                                    }">
+
                                     <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
                                         :style="{
                                             'text-shadow': '1px 1px 1px #000000',
@@ -193,14 +193,15 @@
 
         methods: {
             mapNameWithoutVersion: function(name: string): string {
-                const m = name.match(/^([a-zA-Z\s]*)[vV_\s][\d\.]*/);
+                name = name.replace(/ /g, " ");
+                const m = name.match(/^([a-zA-Z\-_\d\s]*)[vV_\s][\d\.]*/);
                 if (m == null) {
                     return name;
                 }
                 if (m.length < 2) {
                     return name;
                 }
-                return m[1];
+                return m[1].replace(/_/g, " ");
             },
 
             getMapThumbnail: function(map: string): string {

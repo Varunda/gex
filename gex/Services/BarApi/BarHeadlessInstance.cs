@@ -151,6 +151,11 @@ namespace gex.Services.BarApi {
                 --attempts;
             } while (attempts > 0);
 
+			if (_PrDownloader.HasGameVersion(match.Engine, match.GameVersion) == false) {
+				_Logger.LogError($"failed to download game version [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
+				return $"failed to download game version ({match.GameVersion})";
+			}
+
 			await _VersionUsageDb.Upsert(new GameVersionUsage() {
 				Engine = match.Engine,
 				Version = match.GameVersion,
@@ -162,6 +167,11 @@ namespace gex.Services.BarApi {
                 _Logger.LogDebug($"missing map, downloading [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
                 await _PrDownloader.GetMap(match.Engine, match.Map, cancel);
             }
+
+			if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
+				_Logger.LogError($"failed to download map [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
+				return $"failed to download map ({match.Map})";
+			}
 
             // setup script file to be ran
             string scriptsFile = Path.Join(enginePath, $"_script-{gameID}.txt");
@@ -297,6 +307,8 @@ namespace gex.Services.BarApi {
 
 					if (e.Data.Contains(SOCKET_BIND_ERROR)) {
 						_Logger.LogError($"BAR failed to bind to port [gameID={gameID}] [port={port}] [error={e.Data}]");
+						_HeadlessRunStatusRepository.Remove(gameID);
+						bar.Kill();
 					}
 
 					if (gameEnded == true) {
@@ -359,6 +371,7 @@ namespace gex.Services.BarApi {
 
             string actionLogLocation = Path.Join(dataDir, "actions.json");
             if (File.Exists(actionLogLocation) == false) {
+				_HeadlessRunStatusRepository.Remove(gameID);
                 return $"failed to find action log after game ran! {actionLogLocation} was missing";
             }
 

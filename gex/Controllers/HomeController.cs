@@ -100,6 +100,8 @@ namespace gex.Controllers {
 							ogDesc = $"{(biggestTeam >= 4 ? "Large team" : "Small team")}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
 						}
 					}
+
+					ogDesc += $" on {match.Map}";
 				}, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
 
 				ViewBag.OgDescription = ogDesc;

@@ -226,6 +226,7 @@
 
             performSearch: async function(): Promise<void> {
                 this.search.use = true;
+                this.offset = 0;
 
                 this.recent = Loadable.loading();
                 this.recent = await BarMatchApi.search(this.offset, 24, this.searchOptions);

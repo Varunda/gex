@@ -9,6 +9,10 @@
                     upload
                 </div>
 
+                <div>
+                    Uploading a game makes the game public, and anyone can view it. Do not upload games that others want to keep private
+                </div>
+
                 <div class="input-group">
                     <input id="file-upload" type="file" class="form-control" @change="updateName" />
                     <label class="custom-file-label" for="file-upload"></label>

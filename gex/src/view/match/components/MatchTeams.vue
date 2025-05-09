@@ -161,7 +161,7 @@
             },
 
             isFunkyTeams: function(): boolean {
-                return this.maxTeamSize > 3;
+                return this.maxTeamSize > 8;
             },
 
             playersByAllyTeam: function(): GroupedPlayers[] {
