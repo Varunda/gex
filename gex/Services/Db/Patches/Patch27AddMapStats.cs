@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
+	[Patch]
 	public class Patch27AddMapStats : IDbPatch {
 		public int MinVersion => 27;
 		public string Name => "add map_stats";
