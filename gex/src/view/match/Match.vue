@@ -76,7 +76,12 @@
 
                 <div class="d-flex flex-wrap">
                     <div class="flex-grow-1">
-                        <h1>{{ match.data.map }} ({{ match.data.gamemode | gamemode }})</h1>
+                        <h1>
+                            <a :href="'/map/' + match.data.mapName">
+                                {{ match.data.map }}
+                            </a>
+                            ({{ match.data.gamemode | gamemode }})
+                        </h1>
 
                         <h2>played on {{ match.data.startTime | moment }}</h2>
 

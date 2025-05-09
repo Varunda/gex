@@ -89,7 +89,7 @@
             </div>
 
             <div class="col-12 mt-2">
-                <button class="btn btn-primary" @click="performSearch">Search</button>
+                <button class="btn btn-primary" @click="doSearchWrapper">Search</button>
             </div>
 
         </div>
@@ -201,7 +201,7 @@
                 this.showUnprocessedGames = search.get("showUnprocessed") == "true";
             }
 
-            if (search.has("search")) {
+            if (search.has("search") && search.get("search") != "") {
                 const b64: string = search.get("search")!;
                 this.search = JSON.parse(atob(b64));
                 this.performSearch();
@@ -224,12 +224,21 @@
                 }
             },
 
-            performSearch: async function(): Promise<void> {
+            doSearchWrapper: async function(): Promise<void> {
                 this.search.use = true;
                 this.offset = 0;
+                const url = new URL(location.href);
+                history.pushState({ path: url.href }, "", `/?offset=0${this.searchParam}`);
+
+                this.performSearch();
+            },
+
+            performSearch: async function(): Promise<void> {
+                this.search.use = true;
 
                 this.recent = Loadable.loading();
                 this.recent = await BarMatchApi.search(this.offset, 24, this.searchOptions);
+
             }
         },
 

@@ -354,6 +354,12 @@ namespace gex {
                 );
 
                 endpoints.MapControllerRoute(
+                    name: "map",
+                    pattern: "/map/{*.}",
+                    defaults: new { controller = "Home", action = "Map" }
+                );
+
+                endpoints.MapControllerRoute(
                     name: "download matcth",
                     pattern: "/downloadmatch/{gameID}",
                     defaults: new { controller = "Home", action = "DownloadMatch" }

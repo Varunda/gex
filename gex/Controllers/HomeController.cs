@@ -166,5 +166,9 @@ namespace gex.Controllers {
             return File(fs, "application/octet-stream", fileDownloadName: match.FileName, false);
         }
 
+		public IActionResult Map(string filename) {
+			return View();
+		}
+
     }
 }

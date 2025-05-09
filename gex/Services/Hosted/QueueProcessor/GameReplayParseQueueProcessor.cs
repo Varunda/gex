@@ -43,8 +43,9 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarDemofileParser _Parser;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
+		private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
 
-        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
 		public GameReplayParseQueueProcessor(ILoggerFactory factory,
@@ -55,10 +56,10 @@ namespace gex.Services.Hosted.QueueProcessor {
 			BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
 			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
 			BarReplayDb replayDb, BarUserDb userDb,
-			BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
+			BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
 			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
 			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
-			BarDemofileResultProcessor resultProcessor) :
+			BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) :
 
 		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -74,11 +75,12 @@ namespace gex.Services.Hosted.QueueProcessor {
 			_BarMapRepository = barMapRepository;
 			_ReplayDb = replayDb;
 			_UserDb = userDb;
-			_MapStatUpdateQueue = mapStatUpdateQueue;
+			_UserMapStatUpdateQueue = userMapStatUpdateQueue;
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
 			_MapPriorityModDb = mapPriorityModDb;
 			_PriorityCalculator = priorityCalculator;
 			_ResultProcessor = resultProcessor;
+			_MapStatUpdateQueue = mapStatUpdateQueue;
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -147,6 +149,10 @@ namespace gex.Services.Hosted.QueueProcessor {
 				await _ResultProcessor.Process(parsed, cancel);
 				priority = await _PriorityCalculator.Calculate(parsed, cancel);
                 runHeadless |= (priority == -1);
+
+				_MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
+					MapFilename = parsed.MapName
+				});
             }
 
             BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)

@@ -23,6 +23,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<UserMapStatUpdateQueueProcessor>();
             services.AddHostedService<UserFactionStatUpdateQueueProcessor>();
 			services.AddHostedService<HeadlessRunStatusUpdateQueueProcessor>();
+			services.AddHostedService<MapStatUpdateQueueProcessor>();
         }
 
         public static void AddPeriodicServices(this IServiceCollection services) {
