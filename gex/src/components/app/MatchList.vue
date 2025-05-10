@@ -15,11 +15,7 @@
                             <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 
                                 <div class="tile-team"
-                                    :style="{
-                                        'background': 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + getAllyTeamColor(match, allyTeam) + '66 100%)',
-                                        'border-right': (allyTeam.allyTeamID % 2 == 1) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid',
-                                        'border-left': (allyTeam.allyTeamID % 2 == 0) ? 'unset' : getAllyTeamColor(match, allyTeam) + ' 1px solid'
-                                    }">
+                                    :style="getTeamPanelStyle(match, allyTeam)">
 
                                     <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
                                         :style="{
@@ -202,6 +198,20 @@
                     return name;
                 }
                 return m[1].replace(/_/g, " ");
+            },
+
+            getTeamPanelStyle: function(match: BarMatch, allyTeam: BarMatchAllyTeam) {
+
+                let background: string = 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + this.getAllyTeamColor(match, allyTeam) + '66 100%)';
+                if (match.allyTeams.length > 2) {
+                    background = `${this.getAllyTeamColor(match, allyTeam)}66`;
+                }
+
+                return {
+                    'background': background,
+                    'border-right': match.allyTeams.length > 2 ? 'unset' : (allyTeam.allyTeamID % 2 == 1) ? 'unset' : this.getAllyTeamColor(match, allyTeam) + ' 1px solid',
+                    'border-left': match.allyTeams.length > 2 ? 'unset' : (allyTeam.allyTeamID % 2 == 0) ? 'unset' : this.getAllyTeamColor(match, allyTeam) + ' 1px solid'
+                }
             },
 
             getMapThumbnail: function(map: string): string {
