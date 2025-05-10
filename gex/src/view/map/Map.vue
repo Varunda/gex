@@ -31,6 +31,21 @@
                 <div class="flex-grow-0"></div>
             </div>
 
+            <div class="d-flex justify-content-center">
+                <div class="flex-grow-0"></div>
+                <div>
+                    <div>
+                        Gamemode:
+                    </div>
+                    <div class="btn-group">
+                        <button v-for="gamemode in startSpotGamemodes" :key="gamemode" @click="selectedGamemode = gamemode" class="btn" :class="[ selectedGamemode == gamemode ? 'btn-primary' : 'btn-secondary' ]">
+                            {{ gamemode | gamemode }}
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow-0"></div>
+            </div>
+
             <div v-if="isMapImageLoading == true" :style="loadingRectangleDimensions" class="text-center">
                 Loading map image...
             </div>
@@ -175,6 +190,8 @@
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
     import { BarMatchApi } from "api/BarMatchApi";
+import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
+import LocaleUtil from "util/Locale";
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
@@ -190,6 +207,8 @@
 
                 tooltip: null as any | null,
                 transform: { k: 1 as number, x: 0 as number, y: 0 as number },
+
+                selectedGamemode: 0 as number,
 
                 mapW: 0 as number,
                 mapH: 0 as number,
@@ -399,16 +418,19 @@
                     return;
                 }
 
-                const total: number = this.stats.data.startSpots.reduce((acc, iter) => acc += iter.countTotal, 0);
-                const max: number = Math.max(...this.stats.data.startSpots.map(iter => iter.countTotal));
+                if (this.selectedGamemode == 0 && this.startSpotGamemodes.length > 0) {
+                    this.selectedGamemode = this.startSpotGamemodes[0];
+                }
 
-                console.log(`drawing start spots`);
-                for (const spot of this.stats.data.startSpots) {
+                const spots: MapStatsStartSpot[] = this.stats.data.startSpots.filter(iter => iter.gamemode == this.selectedGamemode);
+
+                const max: number = Math.max(...spots.map(iter => iter.countTotal));
+
+                for (const spot of spots) {
 
                     const opacity: number = this.lerp(15, 100, spot.countTotal / max);
-                    console.log(opacity.toString());
 
-                    this.svg.append("rect")
+                    this.root.append("rect")
                         .attr("id", `start-spot-${spot.startX}-${spot.startZ}`)
                         .attr("x", this.toImgX(spot.startX))
                         .attr("y", this.toImgZ(spot.startZ))
@@ -425,13 +447,14 @@
                                 return;
                             }
 
-                            const startSpot = this.stats.data.startSpots.find(iter => iter.startX == startX && iter.startZ == startZ);
+                            const startSpot = this.stats.data.startSpots.find(iter => iter.startX == startX && iter.startZ == startZ && iter.gamemode == this.selectedGamemode);
                             if (startSpot == undefined) {
                                 console.log(`Map> missing start spot at (${startX},${startZ})`);
                                 return;
                             }
 
-                            this.showTooltip(`Starts: ${startSpot.countTotal}<br>Wins: ${startSpot.countWin} (${Math.round(startSpot.countWin / startSpot.countTotal * 100)}%)`);
+                            this.showTooltip(`${startX},${startZ}<br><table class="table table-sm mb-0"><tr><td>Starts</td><td>${LocaleUtil.locale(startSpot.countTotal, 0)}</td></tr>
+                                <tr><td>Wins</td><td>${LocaleUtil.locale(startSpot.countWin, 0)} (${Math.round(startSpot.countWin / startSpot.countTotal * 100)}%)</td></tr></table>`);
                         })
                         .on("mousemove", (ev: any) => {
                             this.moveTooltip(ev);
@@ -491,7 +514,6 @@
             },
 
             loadingRectangleDimensions: function() {
-
                 if (this.barMap.state != "loaded") {
                     return;
                 }
@@ -502,8 +524,22 @@
                     "width": `500px`,
                     "height": `${500 / mapRatio}px`
                 };
+            },
+
+            startSpotGamemodes: function(): number[] {
+                if (this.stats.state != "loaded") {
+                    return [];
+                }
+
+                return Array.from(new Set(this.stats.data.startSpots.map(iter => iter.gamemode)).values()).sort();
             }
 
+        },
+
+        watch: {
+            selectedGamemode: function(): void {
+                this.drawMap();
+            }
         },
 
         components: {
