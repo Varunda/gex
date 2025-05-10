@@ -44,8 +44,8 @@ namespace gex.Services.Db.MapStats {
 						m.map_name,
 						m.gamemode,
 						NOW() at time zone 'utc',
-						64 * TRUNC(p.starting_position_x / 64),
-						64 * TRUNC(p.starting_position_z / 64),
+						128 * TRUNC(p.starting_position_x / 128),
+						128 * TRUNC(p.starting_position_z / 128),
 						count(*),
 						count(*) filter (where at.won = true) 
 					FROM 

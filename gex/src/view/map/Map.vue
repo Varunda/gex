@@ -392,7 +392,7 @@
 
                 this.root.selectAll("*:not(.map-no-remove)").remove();
 
-                const cellSize: number = 64;
+                const cellSize: number = 128;
 
                 if (this.stats.state != "loaded") {
                     console.warn(`Map> cannot drawMap, stats is not loaded`);
