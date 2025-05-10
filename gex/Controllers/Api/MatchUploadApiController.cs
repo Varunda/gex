@@ -5,6 +5,7 @@ using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Models.Options;
 using gex.Models.Queues;
+using gex.Services;
 using gex.Services.Db;
 using gex.Services.Parser;
 using gex.Services.Queues;
@@ -40,13 +41,15 @@ namespace gex.Controllers.Api {
 		private readonly BarMapRepository _MapRepository;
 		private readonly BarMatchPriorityCalculator _PriorityCalculator;
 		private readonly BaseQueue<HeadlessRunQueueEntry> _RunQueue;
+		private readonly AppCurrentAccount _CurrentAccount;
 
 		public MatchUploadApiController(ILogger<MatchUploadApiController> logger,
 			BarMatchRepository matchRepository, BarDemofileParser demofileParser,
 			BarMatchProcessingRepository processingRepository, IOptions<FileStorageOptions> options,
 			BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayDb replayDb,
 			BarDemofileResultProcessor demofileProcessor, BarMapRepository mapRepository,
-			BarMatchPriorityCalculator priorityCalculator, BaseQueue<HeadlessRunQueueEntry> runQueue) {
+			BarMatchPriorityCalculator priorityCalculator, BaseQueue<HeadlessRunQueueEntry> runQueue,
+			AppCurrentAccount currentAccount) {
 
 			_Logger = logger;
 			_MatchRepository = matchRepository;
@@ -59,6 +62,7 @@ namespace gex.Controllers.Api {
 			_MapRepository = mapRepository;
 			_PriorityCalculator = priorityCalculator;
 			_RunQueue = runQueue;
+			_CurrentAccount = currentAccount;
 		}
 
 		[HttpPost("upload")]
@@ -67,6 +71,11 @@ namespace gex.Controllers.Api {
 		[Authorize]
 		[PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]
 		public async Task<ApiResponse<BarMatch>> Upload(CancellationToken cancel) {
+			AppAccount? currentUser = await _CurrentAccount.Get(cancel);
+			if (currentUser == null) {
+				return ApiInternalError<BarMatch>($"bad state: current user is null?");
+			}
+
 			Stopwatch stepTimer = Stopwatch.StartNew();
 
             BarMatchProcessing processing = new();
@@ -133,6 +142,7 @@ namespace gex.Controllers.Api {
 			processing.ReplayParsed = DateTime.UtcNow;
 
 			BarMatch match = parsed.Value;
+			match.UploadedBy = currentUser.ID;
 
 			BarMatch? existing = await _MatchRepository.GetByID(match.ID, cancel);
 			if (existing != null) {
@@ -190,7 +200,7 @@ namespace gex.Controllers.Api {
 			}
 
 			processing.GameID = match.ID;
-			processing.Priority = await _PriorityCalculator.Calculate(match, cancel);
+			processing.Priority = await _PriorityCalculator.Calculate(match, CancellationToken.None);
             await _ProcessingRepository.Upsert(processing);
 
 			// while this isn't strictly necessary due to the info already being here, this is needed if re-parsing locally

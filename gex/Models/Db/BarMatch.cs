@@ -56,6 +56,8 @@ namespace gex.Models.Db {
 
 		public int PlayerCount { get; set; }
 
+		public long? UploadedBy { get; set; }
+
         public BarMap? MapData { get; set; }
 
     }

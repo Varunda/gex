@@ -1,3 +1,4 @@
+import { AppAccount } from "./account/AppAccount";
 import { BarMap } from "./BarMap";
 import { BarMatchAllyTeam } from "./BarMatchAllyTeam";
 import { BarMatchChatMessage } from "./BarMatchChatMessage";
@@ -16,6 +17,7 @@ export class BarMatch {
     public mapName: string = "";
     public fileName: string = "";
     public durationMs: number = 0;
+    public uploadedByID: number | null = null;
 
     public hostSettings: any = {};
     public gameSettings: any = {};
@@ -30,6 +32,7 @@ export class BarMatch {
     public mapData: BarMap | null = null;
     public processing: BarMatchProcessing | null = null;
     public headlessRunStatus: HeadlessRunStatus | null = null;
+    public uploadedBy: AppAccount | null = null;
 
     public static parse(elem: any): BarMatch {
         return {
@@ -49,7 +52,8 @@ export class BarMatch {
 
             mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
             processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),
-            headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus)
+            headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus),
+            uploadedBy: elem.uploadedBy == null ? null : AppAccount.parse(elem.uploadedBy)
         }
     }
 

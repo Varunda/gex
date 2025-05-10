@@ -41,11 +41,11 @@ namespace gex.Services.Db.Match {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
                     id, start_time, map, duration_ms, duration_frame_count,
-					engine, game_version, file_name, map_name, gamemode, player_count,
+					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @Map, @DurationMs, @DurationFrameCount,
-					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount,
+					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -61,6 +61,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("MapName", match.MapName);
             cmd.AddParameter("Gamemode", match.Gamemode);
 			cmd.AddParameter("PlayerCount", match.PlayerCount);
+			cmd.AddParameter("UploadedBy", match.UploadedBy);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
@@ -85,12 +86,12 @@ namespace gex.Services.Db.Match {
                 SELECT *
                     FROM bar_match
                     WHERE id = @ID;
-            ");
+            ", cancel);
 
             cmd.AddParameter("ID", ID);
-            await cmd.PrepareAsync();
+            await cmd.PrepareAsync(cancel);
 
-            BarMatch? match = await _Reader.ReadSingle(cmd);
+            BarMatch? match = await _Reader.ReadSingle(cmd, cancel);
             await conn.CloseAsync();
 
             return match;
@@ -111,7 +112,7 @@ namespace gex.Services.Db.Match {
                     ORDER BY start_time DESC
                     LIMIT {limit}
                     OFFSET {offset}
-            ");
+            ", cancel);
 
             await cmd.PrepareAsync(cancel);
 
@@ -176,8 +177,10 @@ namespace gex.Services.Db.Match {
 			}
 
 			if (parms.Ranked != null) {
-				conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
-				cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
+				// 2025-05-09 TODO: why does this return 0 results when used as a query parameter?
+				//conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
+				//cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
+				conditions.Add($"m.game_settings->>'ranked_game' = {(parms.Ranked.Value == true ? "'1'" : "'0'")}");
 			}
 
 			if (parms.Gamemode != null) {

@@ -32,49 +32,49 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         search.set("offset", encodeURIComponent(offset));
         search.set("limit", encodeURIComponent(limit));
 
-        if (options.engine) {
+        if (options.engine != undefined) {
             search.set("engine", options.engine);
         }
-        if (options.gameVersion) {
+        if (options.gameVersion != undefined) {
             search.set("gameVersion", options.gameVersion);
         }
-        if (options.map) {
+        if (options.map != undefined) {
             search.set("map", options.map);
         }
-        if (options.startTimeAfter) {
+        if (options.startTimeAfter != undefined) {
             search.set("startTimeAfter", options.startTimeAfter.toISOString());
         }
-        if (options.startTimeBefore) {
+        if (options.startTimeBefore != undefined) {
             search.set("startTimeBefore", options.startTimeBefore.toISOString());
         }
-        if (options.durationMinimum) {
+        if (options.durationMinimum != undefined) {
             search.set("durationMinimum", options.durationMinimum.toString());
         }
-        if (options.durationMaximum) {
+        if (options.durationMaximum != undefined) {
             search.set("durationMaximum", options.durationMaximum.toString());
         }
-        if (options.ranked) {
+        if (options.ranked != undefined) {
             search.set("ranked", options.ranked ? "true" : "false");
         }
-        if (options.gamemode) {
+        if (options.gamemode != undefined) {
             search.set("gamemode", options.gamemode.toString());
         }
-        if (options.playerCountMinimum) {
+        if (options.playerCountMinimum != undefined) {
             search.set("playerCountMinimum", options.playerCountMinimum.toString());
         }
-        if (options.playerCountMaximum) {
+        if (options.playerCountMaximum != undefined) {
             search.set("playerCountMaximum", options.playerCountMaximum.toString());
         }
-        if (options.processingDownloaded) {
+        if (options.processingDownloaded != undefined) {
             search.set("processingDownloaded", options.processingDownloaded ? "true" : "false");
         }
-        if (options.processingParsed) {
+        if (options.processingParsed != undefined) {
             search.set("processingParsed", options.processingParsed ? "true" : "false");
         }
-        if (options.processingReplayed) {
+        if (options.processingReplayed != undefined) {
             search.set("processingReplayed", options.processingReplayed ? "true" : "false");
         }
-        if (options.processingAction) {
+        if (options.processingAction != undefined) {
             search.set("processingAction", options.processingAction ? "true" : "false");
         }
 

@@ -77,9 +77,7 @@
                 <div class="d-flex flex-wrap">
                     <div class="flex-grow-1">
                         <h1>
-                            <a :href="'/map/' + match.data.mapName">
-                                {{ match.data.map }}
-                            </a>
+                            <a :href="'/map/' + match.data.mapName">{{ match.data.map }}</a>
                             ({{ match.data.gamemode | gamemode }})
                         </h1>
 
@@ -138,6 +136,17 @@
 
                 <h4>
                     View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
+                </h4>
+
+                <h4 v-if="match.data.uploadedByID != null">
+                    Uploaded by
+                    <info-hover text="This match was not found from BAR's public API, and was instead uploaded by a user"></info-hover>:
+                    <span v-if="match.data.uploadedBy == null">
+                        unknown user {{ match.data.uploadedByID }}
+                    </span>
+                    <span v-else>
+                        {{ match.data.uploadedBy.name }}
+                    </span>
                 </h4>
 
                 <hr class="border"/>

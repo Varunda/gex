@@ -131,6 +131,10 @@
                     </a>
                 </div>
             </div>
+
+            <div v-else-if="recent.state == 'error'">
+                <api-error :error="recent.problem"></api-error>
+            </div>
         </div>
     </div>
 </template>
@@ -150,6 +154,7 @@
     import { MatchSearchApi } from "api/MatchSearchApi";
 
     import "filters/MomentFilter";
+import ApiError from "components/ApiError";
 
     export const Mainpage = Vue.extend({
         props: {
@@ -311,7 +316,7 @@
 
         components: {
             InfoHover, GexMenu,
-            MatchList, DropdownSearch, ToggleButton
+            MatchList, DropdownSearch, ToggleButton, ApiError
         }
     });
 

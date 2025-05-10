@@ -1,6 +1,7 @@
 ﻿using gex.Models;
 using gex.Models.Api;
 using gex.Models.Db;
+using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -26,12 +27,14 @@ namespace gex.Controllers.Api {
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
 		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
+		private readonly AppAccountDbStore _AccountDb;
 
 		public BarMatchApiController(ILogger<BarMatchApiController> logger,
 			BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
 			BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
 			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-			BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository) {
+			BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
+			AppAccountDbStore accountDb) {
 
 			_Logger = logger;
 			_MatchRepository = matchRepository;
@@ -42,6 +45,7 @@ namespace gex.Controllers.Api {
 			_PlayerRepository = playerRepository;
 			_ProcessingRepository = processingRepository;
 			_HeadlessRunStatusRepository = headlessRunStatusRepository;
+			_AccountDb = accountDb;
 		}
 
 		/// <summary>
@@ -87,6 +91,9 @@ namespace gex.Controllers.Api {
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
 			ret.HeadlessRunStatus = _HeadlessRunStatusRepository.Get(gameID);
+			if (ret.UploadedByID != null) {
+				ret.UploadedBy = await _AccountDb.GetByID(ret.UploadedByID.Value, cancel);
+			}
 
             return ApiOk(ret);
         }

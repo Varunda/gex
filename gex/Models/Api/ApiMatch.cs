@@ -33,6 +33,8 @@ namespace gex.Models.Api {
             Spectators = match.Spectators;
             ChatMessages = match.ChatMessages;
             MapData = match.MapData;
+			PlayerCount = match.PlayerCount;
+			UploadedByID = match.UploadedBy;
         }
 
         public string ID { get; set; } = "";
@@ -52,6 +54,10 @@ namespace gex.Models.Api {
         public long DurationMs { get; set; }
 
         public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
+
+		public int PlayerCount { get; set; }
+
+		public long? UploadedByID { get; set; }
 
         public JsonElement HostSettings { get; set; } = default;
 
@@ -76,6 +82,8 @@ namespace gex.Models.Api {
         public BarMatchProcessing? Processing { get; set; }
 
 		public HeadlessRunStatus? HeadlessRunStatus { get; set; }
+
+		public AppAccount? UploadedBy { get; set; }
 
     }
 }

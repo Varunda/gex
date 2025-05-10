@@ -93,7 +93,7 @@ namespace gex.Services {
         ///     Get the current user, null if the user is not signed in
         /// </summary>
         /// <returns></returns>
-        public async Task<AppAccount?> Get() {
+        public async Task<AppAccount?> Get(CancellationToken cancel = default) {
             if (_Context.HttpContext == null) {
                 _Logger.LogWarning($"_Context.HttpContext is null, cannot get claims");
                 return null;
@@ -128,7 +128,7 @@ namespace gex.Services {
                     throw new InvalidCastException($"failed to convert {id} to a valid ulong");
                 }
 
-                return await _AccountDb.GetByDiscordID(discordID, CancellationToken.None);
+                return await _AccountDb.GetByDiscordID(discordID, cancel);
             } else {
                 _Logger.LogWarning($"Unchecked stat of httpContext.User");
             }

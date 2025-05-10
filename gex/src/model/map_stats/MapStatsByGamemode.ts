@@ -1,5 +1,4 @@
 
-
 export class MapStatsByGamemode {
     public mapFileName: string = "";
     public gamemode: number = 0;
