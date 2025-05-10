@@ -466,7 +466,7 @@ namespace gex.Services.Parser {
 
             if (allyTeamCount == 2 && largestAllyTeam == 1) {
                 match.Gamemode = BarGamemode.DUEL;
-            } else if (allyTeamCount == 2 && largestAllyTeam <= 4) {
+            } else if (allyTeamCount == 2 && largestAllyTeam <= 5) {
                 match.Gamemode = BarGamemode.SMALL_TEAM;
             } else if (allyTeamCount == 2 && largestAllyTeam <= 8) {
                 match.Gamemode = BarGamemode.LARGE_TEAM;
