@@ -63,6 +63,8 @@ namespace gex.Services.Db.MapStats {
 				COMMIT TRANSACTION;
 			", cancel);
 
+			cmd.CommandTimeout = 60 * 5; // 5 minutes
+
 			cmd.AddParameter("MapFileName", mapFilename);
 			await cmd.PrepareAsync(cancel);
 

@@ -113,10 +113,7 @@ namespace gex.Services.Db.Match {
                         mp.demofile_fetched is null
                         OR mp.demofile_parsed is null
                         OR (
-                            mp.game_id IN (
-                                SELECT id FROM bar_match WHERE player_count <= 6
-                            )
-							AND mp.priority = -1
+							mp.priority = -1
                             AND mp.headless_ran IS NULL
                         )
                         OR (mp.actions_parsed IS NULL AND mp.headless_ran IS NOT NULL)

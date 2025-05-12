@@ -80,7 +80,7 @@ namespace gex.Services.Parser {
         private Result<BarMatch, string> ReadBytes(string filename, byte[] data) {
             ByteArrayReader reader = new(data);
 
-            Models.Demofile.Demofile demofile = new();
+            Demofile demofile = new();
 
             BarMatch match = new();
             match.FileName = filename;

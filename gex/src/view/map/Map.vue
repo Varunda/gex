@@ -54,22 +54,22 @@
                 <div class="flex-grow-1">
                     <table class="table table-borderless">
                         <tr>
-                            <td>Size</td>
+                            <td class="text-end pe-4">Size</td>
                             <td>{{ barMap.data.width }}x{{ barMap.data.height }}</td>
                         </tr>
 
                         <tr>
-                            <td>Max metal</td>
+                            <td class="text-end pe-4">Max metal</td>
                             <td>{{ barMap.data.maxMetal }}</td>
                         </tr>
 
                         <tr>
-                            <td>Tidal</td>
+                            <td class="text-end pe-4">Tidal</td>
                             <td>{{ barMap.data.tidalStrength }}</td>
                         </tr>
 
                         <tr>
-                            <td>Wind</td>
+                            <td class="text-end pe-4">Wind</td>
                             <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
                         </tr>
                     </table>
@@ -186,12 +186,14 @@
     import { MapStatsByGamemode } from "model/map_stats/MapStatsByGamemode";
     import { MapStats } from "model/map_stats/MapStats";
     import { BarMatch } from "model/BarMatch";
+    import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
     import { BarMatchApi } from "api/BarMatchApi";
-import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
-import LocaleUtil from "util/Locale";
+
+    import LocaleUtil from "util/Locale";
+    import ColorUtils, { RGB } from "util/Color";
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
@@ -330,6 +332,9 @@ import LocaleUtil from "util/Locale";
             bind: async function(): Promise<void> {
                 this.barMap = Loadable.loading();
                 this.barMap = await MapApi.getByFilename(this.mapFilename);
+                if (this.barMap.state == "loaded") {
+                    document.title = `Gex / Map / ${this.barMap.data.name}`;
+                }
 
                 this.stats = Loadable.loading();
                 this.stats = await MapStatsApi.getByMapFilename(this.mapFilename);
@@ -419,16 +424,27 @@ import LocaleUtil from "util/Locale";
                 }
 
                 if (this.selectedGamemode == 0 && this.startSpotGamemodes.length > 0) {
-                    this.selectedGamemode = this.startSpotGamemodes[0];
+                    this.selectedGamemode = this.sumMapStats.gamemode;
                 }
 
                 const spots: MapStatsStartSpot[] = this.stats.data.startSpots.filter(iter => iter.gamemode == this.selectedGamemode);
 
                 const max: number = Math.max(...spots.map(iter => iter.countTotal));
 
+                const red: RGB = { red: 186, green: 62, blue: 51 };
+                const green: RGB = { red: 65, green: 157, blue: 73 };
+
                 for (const spot of spots) {
+                    const winRate: number = spot.countWin / spot.countTotal;
 
                     const opacity: number = this.lerp(15, 100, spot.countTotal / max);
+                    let color: RGB = ColorUtils.colorGradient(this.lerp(0, 1, winRate), red, green);
+                    if (winRate < 0.45) {
+                        color = red;
+                    } else if (winRate >= 0.55) {
+                        color = green;
+                    }
+                    const c: string = ColorUtils.rgbaToString(color, opacity / 100);
 
                     this.root.append("rect")
                         .attr("id", `start-spot-${spot.startX}-${spot.startZ}`)
@@ -436,7 +452,11 @@ import LocaleUtil from "util/Locale";
                         .attr("y", this.toImgZ(spot.startZ))
                         .attr("width", `${this.toImgX(cellSize)}px`)
                         .attr("height", `${this.toImgZ(cellSize)}px`)
-                        .style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
+                        //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
+                        .style("fill", c)
+                        .style("stroke", "#0000007F")
+                        .style("stroke-width", "1px")
+                        .style("paint-order", "fill stroke")
                         .on("mouseenter", (ev: any) => {
                             const id: string = ev.target.id;
                             const parts: string[] = id.split("-");

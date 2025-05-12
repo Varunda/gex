@@ -14,6 +14,7 @@ using gex.Services;
 using gex.Models.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.RateLimiting;
+using gex.Models.Internal;
 
 namespace gex.Controllers.Api {
 
@@ -56,6 +57,44 @@ namespace gex.Controllers.Api {
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
 			_HeadlessRunStatusQueue = headlessRunStatusQueue;
 			_HeadlessRunStatusRepository = headlessRunStatusRepository;
+		}
+
+		/// <summary>
+		///		disable a service
+		/// </summary>
+		/// <param name="name">name of the service</param>
+		/// <returns></returns>
+		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+		[HttpPost("disable/{name}")]
+		public ApiResponse DisableService(string name) {
+
+			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
+			if (entry == null) {
+				return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
+			}
+
+			entry.Enabled = false;
+
+			return ApiOk();
+		}
+
+		/// <summary>
+		///		enable a service
+		/// </summary>
+		/// <param name="name">name of the service</param>
+		/// <returns></returns>
+		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+		[HttpPost("enable/{name}")]
+		public ApiResponse EnableService(string name) {
+
+			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
+			if (entry == null) {
+				return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
+			}
+
+			entry.Enabled = true;
+
+			return ApiOk();
 		}
 
 		/// <summary>

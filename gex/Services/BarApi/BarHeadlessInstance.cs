@@ -99,6 +99,12 @@ namespace gex.Services.BarApi {
                 return $"cannot find demofile at '{demofileLocation}'";
             }
 
+			FileInfo demofileInfo = new(demofileLocation);
+			if (demofileInfo.Length > 1024 * 1024 * 64) {
+				_Logger.LogError($"demofile size is larger than expected, refusing to process [gameID={gameID}] [size={demofileInfo.Length}]");
+				return $"demofile size is too large, refusing to processing";
+			}
+
             _Logger.LogDebug($"loaded match for headless replay [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}] [map={match.Map}] [filename={match.FileName}]");
 
             if (_EngineDownloader.HasEngine(match.Engine) == false) {

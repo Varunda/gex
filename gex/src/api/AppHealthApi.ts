@@ -56,4 +56,12 @@ export class AppHealthApi extends ApiWrapper<AppHealth> {
         return AppHealthApi.get().readSingle(`/api/health`, AppHealthApi.parse);
     }
 
+    public static async disableService(name: string): Promise<Loading<void>> {
+        return AppHealthApi.get().post(`/api/health/disable/${encodeURIComponent(name)}`);
+    }
+
+    public static async enableService(name: string): Promise<Loading<void>> {
+        return AppHealthApi.get().post(`/api/health/enable/${encodeURIComponent(name)}`);
+    }
+
 }

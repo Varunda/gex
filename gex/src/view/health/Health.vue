@@ -31,7 +31,17 @@
                         <tbody>
                             <tr v-for="service in health.data.services">
                                 <td>{{service.name}}</td>
-                                <td>{{service.enabled}}</td>
+                                <td>
+                                    {{service.enabled}}
+                                    <span v-if="canManageServices" class="ms-3">
+                                        <button v-if="!service.enabled" class="btn btn-sm btn-success" @click="enableService(service.name)">
+                                            Enable
+                                        </button>
+                                        <button v-else-if="service.enabled" class="btn btn-sm btn-warning" @click="disableService(service.name)">
+                                            Disable
+                                        </button>
+                                    </span>
+                                </td>
                                 <td>{{service.lastRan | moment("YYYY-MM-DD hh:mm:ssA")}}</td>
                                 <td>{{service.runDuration / 1000 | mduration}}</td>
                                 <td>{{service.message}}</td>
@@ -175,6 +185,8 @@
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
 
+    import AccountUtil from "util/Account";
+
     interface EventQueueEntry {
         when: Date;
         count: number;
@@ -246,9 +258,21 @@
                     this.latestUpdate = new Date();
                 }
             },
+
+            disableService: async function(name: string): Promise<void> {
+                await AppHealthApi.disableService(name);
+            },
+
+            enableService: async function(name: string): Promise<void> {
+                await AppHealthApi.enableService(name);
+            },
         },
 
         computed: {
+
+            canManageServices: function(): boolean {
+                return AccountUtil.hasPermission("App.Account.Admin");
+            }
 
         },
 
