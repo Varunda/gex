@@ -24,24 +24,26 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarReplayFileApi _ReplayFileApi;
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
+		private readonly BarReplayApi _ReplayApi;
         private readonly IOptions<FileStorageOptions> _Options;
 
-        public GameReplayDownloadQueueProcessor(ILoggerFactory factory,
-            BaseQueue<GameReplayDownloadQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingRepository processingRepository, BarReplayFileApi replayFileApi,
-            IOptions<FileStorageOptions> options, BarReplayDb replayDb,
-            BaseQueue<GameReplayParseQueueEntry> parseQueue)
+		public GameReplayDownloadQueueProcessor(ILoggerFactory factory,
+			BaseQueue<GameReplayDownloadQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
+			BarMatchProcessingRepository processingRepository, BarReplayFileApi replayFileApi,
+			IOptions<FileStorageOptions> options, BarReplayDb replayDb,
+			BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayApi replayApi)
 
-        : base("game_replay_download_queue", factory, queue, serviceHealthMonitor) {
+		: base("game_replay_download_queue", factory, queue, serviceHealthMonitor) {
 
-            _ProcessingRepository = processingRepository;
-            _ReplayFileApi = replayFileApi;
-            _Options = options;
-            _ReplayDb = replayDb;
-            _ParseQueue = parseQueue;
-        }
+			_ProcessingRepository = processingRepository;
+			_ReplayFileApi = replayFileApi;
+			_Options = options;
+			_ReplayDb = replayDb;
+			_ParseQueue = parseQueue;
+			_ReplayApi = replayApi;
+		}
 
-        protected override async Task<bool> _ProcessQueueEntry(GameReplayDownloadQueueEntry entry, CancellationToken cancel) {
+		protected override async Task<bool> _ProcessQueueEntry(GameReplayDownloadQueueEntry entry, CancellationToken cancel) {
             _Logger.LogInformation($"performing game replay download [gameID={entry.GameID}]");
             Stopwatch timer = Stopwatch.StartNew();
 
@@ -49,7 +51,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             if (replay == null) {
                 _Logger.LogError($"cannot download game replay: missing {nameof(BarReplay)} {entry.GameID}");
                 return false;
-            }
+			}
 
             string outputPath = Path.Join(_Options.Value.ReplayLocation, replay.FileName);
 
@@ -62,7 +64,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
                 Result<byte[], string> result = await _ReplayFileApi.DownloadReplay(replay.FileName, cancel);
                 if (result.IsOk == false) {
-                    _Logger.LogError($"failed to download replay file {replay.FileName}: {result.Error}");
+                    _Logger.LogError($"failed to download replay file [FileName={replay.FileName}] [gameID={entry.GameID}] [error={result.Error}]");
                 } else {
                     using FileStream file = File.OpenWrite(outputPath);
                     await file.WriteAsync(result.Value, cancel);

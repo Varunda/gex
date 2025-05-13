@@ -24,17 +24,41 @@
             <img id="map-dims" :src="mapUrl" style="display: none;">
 
             <div class="d-flex justify-content-center">
-                <div class="flex-grow-0"></div>
-                <div id="d3_canvas" style="overflow: hidden; position: sticky; background-color: #0a224255" class="d-inline-block">
+                <div class="flex-grow-0 bg-danger">
+                </div>
+                <div id="d3_canvas" style="position: sticky" class="d-inline-block">
                     <svg id="map-svg" :viewBox="viewboxStr"></svg>
                 </div>
-                <div class="flex-grow-0"></div>
+                <div class="flex-grow-0 bg-warning">
+                </div>
             </div>
+
+            <table class="table table-borderless">
+                <tr>
+                    <td class="text-end pe-4">Size</td>
+                    <td>{{ barMap.data.width }}x{{ barMap.data.height }}</td>
+                </tr>
+
+                <tr>
+                    <td class="text-end pe-4">Max metal</td>
+                    <td>{{ barMap.data.maxMetal }}</td>
+                </tr>
+
+                <tr>
+                    <td class="text-end pe-4">Tidal</td>
+                    <td>{{ barMap.data.tidalStrength }}</td>
+                </tr>
+
+                <tr>
+                    <td class="text-end pe-4">Wind</td>
+                    <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
+                </tr>
+            </table>
 
             <div class="d-flex justify-content-center">
                 <div class="flex-grow-0"></div>
                 <div>
-                    <div>
+                    <div class="text-center">
                         Gamemode:
                     </div>
                     <div class="btn-group">
@@ -52,27 +76,6 @@
 
             <div class="d-flex mb-3">
                 <div class="flex-grow-1">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td class="text-end pe-4">Size</td>
-                            <td>{{ barMap.data.width }}x{{ barMap.data.height }}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="text-end pe-4">Max metal</td>
-                            <td>{{ barMap.data.maxMetal }}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="text-end pe-4">Tidal</td>
-                            <td>{{ barMap.data.tidalStrength }}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="text-end pe-4">Wind</td>
-                            <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
-                        </tr>
-                    </table>
 
                 </div>
             </div>
@@ -220,7 +223,17 @@
 
                 barMap: Loadable.idle() as Loading<BarMap>,
                 stats: Loadable.idle() as Loading<MapStats>,
-                recent: Loadable.idle() as Loading<BarMatch[]>
+                recent: Loadable.idle() as Loading<BarMatch[]>,
+
+                palette: [
+                    ColorUtils.hexToRgb("#b2182b"), // <44%
+                    ColorUtils.hexToRgb("#ef8a62"), // 46%
+                    ColorUtils.hexToRgb("#fddbc7"), // 49%
+                    ColorUtils.hexToRgb("#f7f7f7"), // 50%
+                    ColorUtils.hexToRgb("#d1e5f0"), // 51%
+                    ColorUtils.hexToRgb("#67a9cf"), // 54%
+                    ColorUtils.hexToRgb("#2166ac"), // >56%
+                ] as RGB[]
             }
         },
 
@@ -437,14 +450,25 @@
                 for (const spot of spots) {
                     const winRate: number = spot.countWin / spot.countTotal;
 
-                    const opacity: number = this.lerp(15, 100, spot.countTotal / max);
+                    const opacity: number = this.lerp(0, 100, spot.countTotal / max);
                     let color: RGB = ColorUtils.colorGradient(this.lerp(0, 1, winRate), red, green);
-                    if (winRate < 0.45) {
-                        color = red;
-                    } else if (winRate >= 0.55) {
-                        color = green;
+                    if (winRate <= 0.44) {
+                        color =  this.palette[0];
+                    } else if (winRate > 0.44 && winRate <= 0.46) {
+                        color = this.palette[1];
+                    } else if (winRate > 0.46 && winRate <= 0.49) {
+                        color = this.palette[2];
+                    } else if (winRate > 0.49 && winRate <= 0.51) {
+                        color = this.palette[3];
+                    } else if (winRate > 0.51 && winRate <= 0.54) {
+                        color = this.palette[4];
+                    } else if (winRate > 0.54 && winRate <= 0.56) {
+                        color = this.palette[5];
+                    } else {
+                        color = this.palette[6];
                     }
-                    const c: string = ColorUtils.rgbaToString(color, opacity / 100);
+
+                    const c: string = ColorUtils.rgbaToString(color, Math.pow((opacity / 100), (1 / Math.E)));
 
                     this.root.append("rect")
                         .attr("id", `start-spot-${spot.startX}-${spot.startZ}`)
@@ -473,7 +497,8 @@
                                 return;
                             }
 
-                            this.showTooltip(`${startX},${startZ}<br><table class="table table-sm mb-0"><tr><td>Starts</td><td>${LocaleUtil.locale(startSpot.countTotal, 0)}</td></tr>
+                            this.showTooltip(`${startX},${startZ}<br><table class="table table-sm mb-0">
+                                <tr><td>Starts</td><td>${LocaleUtil.locale(startSpot.countTotal, 0)}</td></tr>
                                 <tr><td>Wins</td><td>${LocaleUtil.locale(startSpot.countWin, 0)} (${Math.round(startSpot.countWin / startSpot.countTotal * 100)}%)</td></tr></table>`);
                         })
                         .on("mousemove", (ev: any) => {

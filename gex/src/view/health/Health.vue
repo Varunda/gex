@@ -29,7 +29,7 @@
                         </thead>
 
                         <tbody>
-                            <tr v-for="service in health.data.services">
+                            <tr v-for="service in health.data.services" :key="service.name">
                                 <td>{{service.name}}</td>
                                 <td>
                                     {{service.enabled}}

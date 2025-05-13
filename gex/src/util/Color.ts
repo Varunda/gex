@@ -150,6 +150,24 @@ export default class ColorUtils {
         return `rgba(${rgb.red}, ${rgb.green}, ${rgb.blue}, ${t})`;
     }
 
+    public static hexToRgb(hex: string): RGB {
+        let rgb: RGB = { red: 0, green: 0, blue: 0 };
+
+        if (hex.length == 7) {
+            hex = hex.slice(1, 7); // snip the leading #
+        }
+
+        if (hex.length == 6) {
+            rgb.red = Number.parseInt(hex.slice(0, 2), 16);
+            rgb.green = Number.parseInt(hex.slice(2, 4), 16);
+            rgb.blue = Number.parseInt(hex.slice(4, 6), 16);
+        } else if (hex.length == 3) {
+            throw `length of 3 isn't handled yet`;
+        }
+
+        return rgb;
+    }
+
     /**
      * Get a random RGB color
      */

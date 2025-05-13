@@ -15,6 +15,7 @@ using gex.Models.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.RateLimiting;
 using gex.Models.Internal;
+using Microsoft.AspNetCore.Authorization;
 
 namespace gex.Controllers.Api {
 
@@ -66,6 +67,7 @@ namespace gex.Controllers.Api {
 		/// <returns></returns>
 		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
 		[HttpPost("disable/{name}")]
+		[Authorize]
 		public ApiResponse DisableService(string name) {
 
 			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
@@ -85,6 +87,7 @@ namespace gex.Controllers.Api {
 		/// <returns></returns>
 		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
 		[HttpPost("enable/{name}")]
+		[Authorize]
 		public ApiResponse EnableService(string name) {
 
 			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
