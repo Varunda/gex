@@ -21,7 +21,7 @@ namespace gex.Services.Db.MapStats {
 			_DbHelper = dbHelper;
 		}
 
-		public async Task<List<MapStatsStartSpot>> Get(string mapFilename, CancellationToken cancel) {
+		public async Task<List<MapStatsStartSpot>> GetByMap(string mapFilename, CancellationToken cancel) {
 			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 			return await conn.QueryListAsync<MapStatsStartSpot>(
 				"SELECT * FROM map_stats_start_spot WHERE map_file_name = @MapFilename",

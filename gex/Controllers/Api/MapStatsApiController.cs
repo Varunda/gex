@@ -19,21 +19,26 @@ namespace gex.Controllers.Api {
 		private readonly BarMapRepository _MapRepository;
 		private readonly MapStatsDb _MapStatsDb;
 		private readonly MapStatsStartSpotDb _StartSpotDb;
+		private readonly MapStatsByFactionDb _FactionStatsDb;
 
 		public MapStatsApiController(ILogger<MapStatsApiController> logger,
 			MapStatsDb mapStatsDb, MapStatsStartSpotDb startSpotDb,
-			BarMapRepository mapRepository) {
+			BarMapRepository mapRepository, MapStatsByFactionDb factionStatsDb) {
 
 			_Logger = logger;
 			_MapStatsDb = mapStatsDb;
 			_StartSpotDb = startSpotDb;
 			_MapRepository = mapRepository;
+			_FactionStatsDb = factionStatsDb;
 		}
 
 		/// <summary>
 		///		get the <see cref="MapStatsByGamemode"/> of a map
 		/// </summary>
 		/// <param name="mapFilename">filename of the map (from <see cref="BarMap.FileName"/></param>
+		/// <param name="includeStats">will basic stats be included? defaults to false</param>
+		/// <param name="includeStartSpots">will basic stats be included? defaults to false</param>
+		/// <param name="includeFactionStats">will basic stats be included? defaults to false</param>
 		/// <param name="cancel">cancellation token</param>
 		/// <response code="200">
 		///		the response will contain a list of <see cref="MapStatsByGamemode"/>s
@@ -41,7 +46,11 @@ namespace gex.Controllers.Api {
 		/// </response>
 		[HttpGet("{mapFilename}")]
 		public async Task<ApiResponse<MapStats>> GetByMap(string mapFilename,
-			CancellationToken cancel) {
+			[FromQuery] bool includeStats = false,
+			[FromQuery] bool includeStartSpots = false,
+			[FromQuery] bool includeFactionStats = false,
+			CancellationToken cancel = default
+		) {
 
 			BarMap? map = await _MapRepository.GetByFileName(mapFilename, cancel);
 			if (map == null) {
@@ -49,8 +58,19 @@ namespace gex.Controllers.Api {
 			}
 
 			MapStats stats = new();
-			stats.Stats = await _MapStatsDb.GetByMap(mapFilename, cancel);
-			stats.StartSpots = await _StartSpotDb.Get(mapFilename, cancel);
+			stats.MapFilename = map.FileName;
+
+			if (includeStats == true) {
+				stats.Stats = await _MapStatsDb.GetByMap(mapFilename, cancel);
+			}
+
+			if (includeStartSpots == true) {
+				stats.StartSpots = await _StartSpotDb.GetByMap(mapFilename, cancel);
+			}
+
+			if (includeFactionStats == true) {
+				stats.FactionStats = await _FactionStatsDb.GetByMap(mapFilename, cancel);
+			}
 
 			return ApiOk(stats);
 		}

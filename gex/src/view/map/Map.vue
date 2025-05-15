@@ -1,5 +1,11 @@
 <template>
     <div class="container">
+        <div class="alert alert-info text-center">
+            <span class="bi bi-cone text-warning"></span>
+            This page is a heavy work in progress
+            <span class="bi bi-cone text-warning"></span>
+        </div>
+
         <div v-if="barMap.state == 'idle'"></div>
 
         <div v-else-if="barMap.state == 'loading'">
@@ -91,7 +97,6 @@
                     
                     <template v-else>
                         <div class="d-flex mb-3 text-center" style="justify-content: space-around;">
-
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Total play count</h5>
@@ -129,7 +134,6 @@
 
                             <tbody>
                                 <tr v-for="stat in stats.data.stats" :key="stat.gamemode">
-
                                     <td>{{ stat.gamemode | gamemode }}</td>
                                     <td>{{ stat.durationAverageMs / 1000 | mduration }}</td>
                                     <td>{{ stat.durationMedianMs / 1000 | mduration }}</td>
@@ -139,6 +143,32 @@
                                     <td>{{ stat.playCountDay | locale(0) }}</td>
                                 </tr>
                             </tbody>
+                        </table>
+
+                        <h2 class="wt-header">Faction stats</h2>
+
+                        <table class="table">
+                            <thead>
+                                <tr class="table-secondary">
+                                    <th>Faction</th>
+                                    <th>All time</th>
+                                    <th>Month</th>
+                                    <th>Week</th>
+                                    <th>Day</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr v-for="faction in factionStats" :key="faction.faction">
+                                    <td>{{ faction.faction | faction }}</td>
+                                    <td>{{ faction.winCountAllTime / Math.max(faction.playCountAllTime) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountMonth / Math.max(faction.playCountMonth) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountWeek / Math.max(faction.playCountWeek) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountDay / Math.max(faction.playCountDay) * 100 | locale(2) }}%</td>
+
+                                </tr>
+                            </tbody>
+
                         </table>
                     </template>
 
@@ -182,6 +212,7 @@
     import MatchList from "components/app/MatchList.vue";
 
     import "filters/BarGamemodeFilter";
+    import "filters/BarFactionFilter";
     import "filters/MomentFilter";
     import "filters/LocaleFilter";
 
@@ -190,6 +221,7 @@
     import { MapStats } from "model/map_stats/MapStats";
     import { BarMatch } from "model/BarMatch";
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
+    import { MapStatsByFaction } from "model/map_stats/MapStatsByFaction";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
@@ -444,14 +476,11 @@
 
                 const max: number = Math.max(...spots.map(iter => iter.countTotal));
 
-                const red: RGB = { red: 186, green: 62, blue: 51 };
-                const green: RGB = { red: 65, green: 157, blue: 73 };
-
                 for (const spot of spots) {
-                    const winRate: number = spot.countWin / spot.countTotal;
+                    const winRate: number = spot.countWin / Math.max(1, spot.countTotal);
 
-                    const opacity: number = this.lerp(0, 100, spot.countTotal / max);
-                    let color: RGB = ColorUtils.colorGradient(this.lerp(0, 1, winRate), red, green);
+                    const opacity: number = this.lerp(0, 100, spot.countTotal / Math.max(1, max));
+                    let color: RGB = this.palette[0];
                     if (winRate <= 0.44) {
                         color =  this.palette[0];
                     } else if (winRate > 0.44 && winRate <= 0.46) {
@@ -577,6 +606,14 @@
                 }
 
                 return Array.from(new Set(this.stats.data.startSpots.map(iter => iter.gamemode)).values()).sort();
+            },
+
+            factionStats: function(): MapStatsByFaction[] {
+                if (this.stats.state != "loaded") {
+                    return [];
+                }
+
+                return this.stats.data.factionStats.filter((iter) => iter.gamemode == this.selectedGamemode);
             }
 
         },

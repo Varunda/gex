@@ -56,6 +56,7 @@ namespace gex.Services.Db {
 			// map stats
 			services.AddSingleton<MapStatsDb>();
 			services.AddSingleton<MapStatsStartSpotDb>();
+			services.AddSingleton<MapStatsByFactionDb>();
 
             // other
             services.AddSingleton<BarMapDb>();

@@ -10,5 +10,7 @@ namespace gex.Models.MapStats {
 
 		public List<MapStatsStartSpot> StartSpots { get; set; } = [];
 
+		public List<MapStatsByFaction> FactionStats { get; set; } = [];
+
 	}
 }
