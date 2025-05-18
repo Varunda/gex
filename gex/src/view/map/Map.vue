@@ -168,11 +168,14 @@
 
                                 </tr>
                             </tbody>
-
                         </table>
+
+                        <span v-if="factionStats.length > 0" class="text-muted text-small">
+                            last updated {{ factionStats[0].timestamp | moment }}
+                        </span>
                     </template>
 
-                    <span class="text-muted text-small">
+                    <span class="text-muted text-small d-block">
                         If a gamemode does not exist, it means Gex has not seen a match played of that gamemode
                     </span>
                 </div>
@@ -346,14 +349,19 @@
 
                 ROOT.append("image")
                     .classed("map-no-remove", true)
+                    .attr("id", "map-image")
                     .attr("width", this.imgW).attr("height", this.imgH)
-                    .attr("href", this.mapUrl);
+                    .attr("href", this.mapUrl)
+                    .style("filter", "saturate(0%)")
+                    ;
 
+                /*
                 ROOT.append("rect")
                     .classed("map-no-remove", true)
                     .attr("x", 0).attr("y", 0)
                     .attr("width", this.imgW).attr("height", this.imgH)
                     .style("fill", "#0a224244");
+                */
 
                 this.tooltip = d3.select("#d3_canvas")
                     .append("div")
@@ -497,7 +505,7 @@
                         color = this.palette[6];
                     }
 
-                    const c: string = ColorUtils.rgbaToString(color, Math.pow((opacity / 100), (1 / Math.E)));
+                    const c: string = ColorUtils.rgbaToString(color, Math.max(0.15, Math.pow((opacity / 100), (1 / Math.E))));
 
                     this.root.append("rect")
                         .attr("id", `start-spot-${spot.startX}-${spot.startZ}`)
@@ -507,8 +515,8 @@
                         .attr("height", `${this.toImgZ(cellSize)}px`)
                         //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
                         .style("fill", c)
-                        .style("stroke", "#0000007F")
-                        .style("stroke-width", "1px")
+                        //.style("stroke", "#0000007F")
+                        //.style("stroke-width", "1px")
                         .style("paint-order", "fill stroke")
                         .on("mouseenter", (ev: any) => {
                             const id: string = ev.target.id;
@@ -544,6 +552,12 @@
         computed: {
             mapUrl: function(): string {
                 return `/image-proxy/MapBackground?mapName=${this.mapFilename}&size=texture-lq`;
+            },
+
+            mapSaturation: function() {
+                return {
+                    "filter": "saturation(50%);"
+                }
             },
 
             sumMapStats: function(): MapStatsByGamemode {
