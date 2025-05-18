@@ -12,7 +12,7 @@
 
                     <div class="flex-grow-1 align-content-center w-100" style="z-index: 10;">
                         <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                            <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
+                            <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 
                                 <div class="tile-team"
                                     :style="getTeamPanelStyle(match, allyTeam)">
@@ -20,7 +20,7 @@
                                     <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
                                         :style="{
                                             'text-shadow': '1px 1px 1px #000000',
-                                            'text-align': match.allyTeams.length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
+                                            'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
                                             'overflow': 'clip',
                                             'text-overflow': 'ellipsis',
                                             'margin': '0.25rem 0'
@@ -42,9 +42,8 @@
                     {{ match.endTime | moment("hh:mm A")}}
                 </span>
 
-                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning" title="This game has not been fully processed!">
-
-                </span>
+                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
+                    title="This game has not been fully processed!"></span>
             </div>
         </div>
 
@@ -188,6 +187,11 @@
         },
 
         methods: {
+
+            matchAllyTeams: function(match: BarMatch): BarMatchAllyTeam[] {
+                return match.allyTeams.filter(iter => iter.playerCount > 0);
+            },
+
             mapNameWithoutVersion: function(name: string): string {
                 name = name.replace(/ /g, " ");
                 const m = name.match(/^([a-zA-Z\-_\d\s]*)[vV_\s][\d\.]*/);
@@ -202,16 +206,30 @@
 
             getTeamPanelStyle: function(match: BarMatch, allyTeam: BarMatchAllyTeam) {
 
+                const allyTeamCount: number = this.matchAllyTeams(match).length;
+
                 let background: string = 'linear-gradient(' + (allyTeam.allyTeamID % 2 == 0 ? '90deg' : '270deg') + ', #00000000 0%, ' + this.getAllyTeamColor(match, allyTeam) + '66 100%)';
-                if (match.allyTeams.length > 2) {
+                if (allyTeamCount != 2) {
                     background = `${this.getAllyTeamColor(match, allyTeam)}66`;
                 }
 
-                return {
-                    'background': background,
-                    'border-right': match.allyTeams.length > 2 ? 'unset' : (allyTeam.allyTeamID % 2 == 1) ? 'unset' : this.getAllyTeamColor(match, allyTeam) + ' 1px solid',
-                    'border-left': match.allyTeams.length > 2 ? 'unset' : (allyTeam.allyTeamID % 2 == 0) ? 'unset' : this.getAllyTeamColor(match, allyTeam) + ' 1px solid'
+                const border: string = this.getAllyTeamColor(match, allyTeam) + " 1px solid";
+
+                const style: any = {
+                    "background": background
+                };
+
+                if (allyTeamCount != 2) {
+                    style["border"] = border;
+                } else {
+                    if (allyTeam.allyTeamID % 2 == 0) {
+                        style["border-right"] = border;
+                    } else {
+                        style["border-left"] = border;
+                    }
                 }
+
+                return style;
             },
 
             getMapThumbnail: function(map: string): string {
