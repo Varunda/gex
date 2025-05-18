@@ -8,12 +8,15 @@
                         <div>
                             <h4 class="ally-team-header mb-0" :style="getTeamNameStyle(allyTeam)">
                                 Team {{ allyTeam.allyTeamID + 1 }}
+                                <span v-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
+                                    title="This team won the match!">
+                                </span>
                             </h4>
                         </div>
                         
                         <div class="players">
                             <template v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)"> 
-                                <match-player-item :player="player" />
+                                <match-player-item :player="player" :key="index" />
                             </template>
                         </div>
                     </div>
@@ -27,6 +30,9 @@
                         <tr>
                             <th v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" :style="{ 'background-color': allyTeamColor(allyTeam.allyTeamID) }">
                                 Team {{ allyTeam.allyTeamID + 1 }}
+                                <span v-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
+                                    title="This team won the match!">
+                                </span>
                             </th>
                         </tr>
                     </thead>
@@ -56,6 +62,10 @@
                     </span>
                 </div>
             </div>
+
+            <toggle-button class="btn-small" v-model="showWinner">
+                Show winner
+            </toggle-button>
         </collapsible>
     </div>
 </template>
@@ -116,6 +126,8 @@
     import Vue, { PropType } from "vue";
 
     import Collapsible from "components/Collapsible.vue";
+    import ToggleButton from "components/ToggleButton";
+
     import MatchPlayerItem from "./MatchPlayerItem.vue";
 
     import { BarMatch } from "model/BarMatch";
@@ -134,6 +146,7 @@
 
         data: function() {
             return {
+                showWinner: false as boolean
 
             }
         },
@@ -176,7 +189,7 @@
 
         components: {
             Collapsible,
-            MatchPlayerItem
+            MatchPlayerItem, ToggleButton
         }
     });
     export default MatchTeams;
