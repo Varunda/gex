@@ -96,28 +96,30 @@
                     </div>
 
                     <div v-if="match.data.processing" class="flex-grow-0">
-                        <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
-                            <tbody>
-                                <template v-if="match.data.processing">
-                                    <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
-                                    <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
-                                    <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
-                                    <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                        <collapsible header-text="Gex processing metadata" size-class="h6" :show="screenWidth > 1200">
+                            <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
+                                <tbody>
+                                    <template v-if="match.data.processing">
+                                        <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
+                                        <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
+                                        <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
+                                        <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                                        <tr>
+                                            <td class="text-muted">Prio</td>
+                                            <td class="text-muted">{{ match.data.processing.priority }}</td>
+                                        </tr>
+                                    </template>
                                     <tr>
-                                        <td class="text-muted">Prio</td>
-                                        <td class="text-muted">{{ match.data.processing.priority }}</td>
+                                        <td class="text-muted">Engine</td>
+                                        <td class="text-muted">{{ match.data.engine }}</td>
                                     </tr>
-                                </template>
-                                <tr>
-                                    <td class="text-muted">Engine</td>
-                                    <td class="text-muted">{{ match.data.engine }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Game version</td>
-                                    <td class="text-muted">{{ match.data.gameVersion }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    <tr>
+                                        <td class="text-muted">Game version</td>
+                                        <td class="text-muted">{{ match.data.gameVersion }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </collapsible>
                     </div>
                 </div>
 
@@ -616,6 +618,11 @@
         },
 
         computed: {
+
+            screenWidth: function(): number {
+                return window.screen.width;
+            },
+
             unitTweaks: function(): string {
                 if (this.match.state != "loaded") {
                     return "";
