@@ -138,6 +138,7 @@
         gap: 0.75rem;
         z-index: 10;
         flex-grow: 1;
+        align-items: center;
     }
 
     .tile-team {
