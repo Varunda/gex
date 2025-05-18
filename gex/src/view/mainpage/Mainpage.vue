@@ -93,6 +93,11 @@
                 <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 
+            <div class="col-lg-4 col-12">
+                <label>Game link</label>
+                <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
+            </div>
+
             <div class="col-12 mt-2">
                 <button class="btn btn-primary" @click="doSearchWrapper">Search</button>
             </div>
@@ -175,8 +180,12 @@ import ApiError from "components/ApiError";
                 searching: false as boolean,
                 showUnprocessedGames: false as boolean,
 
+                gameIdRegex: new RegExp(/[0-9a-f]{32}/) as RegExp,
+
                 search: {
                     use: false as boolean,
+
+                    gameID: "" as string,
 
                     engine: "" as string,
                     gameVersion: "" as string,
@@ -256,6 +265,24 @@ import ApiError from "components/ApiError";
                 this.search.use = true;
 
                 this.recent = Loadable.loading();
+
+                if (this.search.gameID != "") {
+                    const reg: RegExpExecArray | null = this.gameIdRegex.exec(this.search.gameID);
+                    console.log(reg);
+                    if (reg != null && reg.length > 0) {
+                        const first: string | undefined = reg.at(0);
+                        if (first != undefined) {
+                            const match: Loading<BarMatch> = await BarMatchApi.getByID(first);
+                            if (match.state == "loaded") {
+                                this.recent = Loadable.loaded([match.data]);
+                            } else {
+                                this.recent = Loadable.rewrap(match);
+                            }
+                            return;
+                        }
+                    }
+                }
+
                 this.recent = await BarMatchApi.search(this.offset, 24, this.searchOptions);
 
             }
