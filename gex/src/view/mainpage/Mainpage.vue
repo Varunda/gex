@@ -15,25 +15,30 @@
         <div v-if="searching == true" class="row mb-3">
 
             <div class="col-12">
-                <h4 @click="searching = false">Search options</h4>
+                <h4 @click="searching = false">
+                    Search options
+                    <span v-if="searching == true">
+                        &times;
+                    </span>
+                </h4>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Engine</label>
                 <dropdown-search v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Game version</label>
                 <dropdown-search v-model="search.gameVersion" :api="dropdownSearchCalls.gameVersion"></dropdown-search>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Map</label>
                 <dropdown-search v-model="search.map" :api="dropdownSearchCalls.map"></dropdown-search>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Ranked?</label>
                 <select v-model="search.ranked" class="form-control">
                     <option :value="null">Unset</option>
@@ -42,7 +47,7 @@
                 </select>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Downloaded?</label>
                 <select v-model="search.processingDownloaded" class="form-control">
                     <option :value="null">Unset</option>
@@ -51,7 +56,7 @@
                 </select>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Parsed?</label>
                 <select v-model="search.processingParsed" class="form-control">
                     <option :value="null">Unset</option>
@@ -60,7 +65,7 @@
                 </select>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Replayed?</label>
                 <select v-model="search.processingReplayed" class="form-control">
                     <option :value="null">Unset</option>
@@ -69,7 +74,7 @@
                 </select>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Actions parsed?</label>
                 <select v-model="search.processingAction" class="form-control">
                     <option :value="null">Unset</option>
@@ -78,18 +83,22 @@
                 </select>
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Minimum player count</label>
                 <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
             </div>
 
-            <div class="col-4">
+            <div class="col-lg-4 col-12">
                 <label>Maximum player count</label>
                 <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 
             <div class="col-12 mt-2">
                 <button class="btn btn-primary" @click="doSearchWrapper">Search</button>
+            </div>
+
+            <div class="col-12">
+                <hr class="border">
             </div>
 
         </div>
@@ -217,6 +226,11 @@ import ApiError from "components/ApiError";
         },
 
         methods: {
+
+            showSearch: function(): void {
+                this.searching = true;
+            },
+
             loadRecent: async function(): Promise<void> {
                 this.recent = Loadable.loading();
 
