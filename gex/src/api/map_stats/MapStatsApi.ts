@@ -8,7 +8,7 @@ export class MapStatsApi extends ApiWrapper<MapStatsByGamemode> {
     public static get(): MapStatsApi { return MapStatsApi._instance; }
 
     public static getByMapFilename(filename: string): Promise<Loading<MapStats>> {
-        return MapStatsApi.get().readSingle(`/api/map-stats/${encodeURIComponent(filename)}?includeStats=true&includeStartSpots=true&includeFactionStats=true`, MapStats.parse);
+        return MapStatsApi.get().readSingle(`/api/map-stats/${encodeURIComponent(filename)}?includeStats=true&includeStartSpots=true&includeFactionStats=true&includeOpeningLabs=true`, MapStats.parse);
     }
 
 }

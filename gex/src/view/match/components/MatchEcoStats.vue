@@ -139,7 +139,7 @@
                 </a-table>
             </div>
 
-            <div class="d-flex mb-5" style="gap: 1rem;">
+            <div class="d-flex flex-wrap mb-5" style="gap: 1rem;">
                 <div class="flex-grow-1" style="flex-basis: 50%">
                     <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
@@ -245,7 +245,7 @@
                 </div>
             </div>
 
-            <div class="d-flex" style="gap: 1rem;">
+            <div class="d-flex flex-wrap" style="gap: 1rem;">
                 <div class="flex-grow-1" style="flex-basis: 50%">
                     <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
@@ -330,10 +330,10 @@
     import { UnitStats } from "../compute/UnitStatData";
     import MergedStats from "../compute/MergedStats";
     import { ResourceProductionData, ResourceProductionEntry } from "../compute/ResourceProductionData";
+    import { FactoryData, PlayerFactories } from "../compute/FactoryData";
 
     import "filters/LocaleFilter";
     import "filters/CompactFilter";
-import { FactoryData, PlayerFactories } from "../compute/FactoryData";
 
     type ResourcesByUnitDef = {
         defID: number,

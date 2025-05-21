@@ -37,5 +37,6 @@ namespace gex.Services.Db.Patches {
 			await cmd.ExecuteNonQueryAsync();
 			await conn.CloseAsync();
 		}
+
 	}
 }

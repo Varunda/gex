@@ -161,11 +161,31 @@
                             <tbody>
                                 <tr v-for="faction in factionStats" :key="faction.faction">
                                     <td>{{ faction.faction | faction }}</td>
-                                    <td>{{ faction.winCountAllTime / Math.max(faction.playCountAllTime) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountMonth / Math.max(faction.playCountMonth) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountWeek / Math.max(faction.playCountWeek) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountDay / Math.max(faction.playCountDay) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountAllTime / Math.max(faction.playCountAllTime, 1) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountMonth / Math.max(faction.playCountMonth, 1) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountWeek / Math.max(faction.playCountWeek, 1) * 100 | locale(2) }}%</td>
+                                    <td>{{ faction.winCountDay / Math.max(faction.playCountDay, 1) * 100 | locale(2) }}%</td>
 
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="table">
+                            <thead>
+                                <tr class="table-secondary">
+                                    <th>Lab</th>
+                                    <th>Play rate</th>
+                                    <th>Win count</th>
+                                    <th>Win rate</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr v-for="lab in openingLabs" :key="lab.defName">
+                                    <td>{{ lab.defName | defName }}</td>
+                                    <td>{{ lab.countTotal }}</td>
+                                    <td>{{ lab.countWin }}</td>
+                                    <td>{{ lab.countWin / lab.countTotal * 100 | locale(2) }}%</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -218,13 +238,15 @@
     import "filters/BarFactionFilter";
     import "filters/MomentFilter";
     import "filters/LocaleFilter";
+    import "filters/DefNameFilter";
 
     import { BarMap } from "model/BarMap";
-    import { MapStatsByGamemode } from "model/map_stats/MapStatsByGamemode";
-    import { MapStats } from "model/map_stats/MapStats";
     import { BarMatch } from "model/BarMatch";
+    import { MapStats } from "model/map_stats/MapStats";
+    import { MapStatsByGamemode } from "model/map_stats/MapStatsByGamemode";
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { MapStatsByFaction } from "model/map_stats/MapStatsByFaction";
+    import { MapStatsOpeningLab } from "model/map_stats/MapStatsOpeningLab";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
@@ -628,8 +650,19 @@
                 }
 
                 return this.stats.data.factionStats.filter((iter) => iter.gamemode == this.selectedGamemode);
-            }
+            },
 
+            openingLabs: function(): MapStatsOpeningLab[] {
+                if (this.stats.state != "loaded") {
+                    return [];
+                }
+
+                return this.stats.data.openingLabs.filter((iter) => iter.gamemode == this.selectedGamemode);
+            },
+
+            openingLabSum: function(): number {
+                return this.openingLabs.reduce((acc, iter) => acc += iter.countTotal, 0);
+            }
         },
 
         watch: {

@@ -13,15 +13,18 @@ namespace gex.Services.Hosted.QueueProcessor {
 		private readonly MapStatsDb _MapStatsDb;
 		private readonly MapStatsStartSpotDb _StartSpotDb;
 		private readonly MapStatsByFactionDb _FactionStatsDb;
+		private readonly MapStatsOpeningLabDb _OpeningLabDb;
 
 		public MapStatUpdateQueueProcessor(ILoggerFactory factory,
 			BaseQueue<MapStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-			MapStatsDb mapStatsDb, MapStatsStartSpotDb startSpotDb, MapStatsByFactionDb factionStatsDb)
+			MapStatsDb mapStatsDb, MapStatsStartSpotDb startSpotDb, MapStatsByFactionDb factionStatsDb,
+			MapStatsOpeningLabDb openingLabDb)
 		: base("map_stat_update_queue", factory, queue, serviceHealthMonitor) {
 
 			_MapStatsDb = mapStatsDb;
 			_StartSpotDb = startSpotDb;
 			_FactionStatsDb = factionStatsDb;
+			_OpeningLabDb = openingLabDb;
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(MapStatUpdateQueueEntry entry, CancellationToken cancel) {
@@ -38,9 +41,11 @@ namespace gex.Services.Hosted.QueueProcessor {
 			await _FactionStatsDb.Generate(entry.MapFilename, cancel);
 			long factionMs = timer.ElapsedMilliseconds; timer.Restart();
 
-			_Logger.LogInformation($"updated map stats [timer={overAllTimer.ElapsedMilliseconds}ms] "
-				+ $"[stats={statsMs}ms] [start spots={startMs}ms] [faction={factionMs}ms]");
+			await _OpeningLabDb.Generate(entry.MapFilename, cancel);
+			long openingLabMs = timer.ElapsedMilliseconds; timer.Restart();
 
+			_Logger.LogInformation($"updated map stats [mapFilename={entry.MapFilename}] [timer={overAllTimer.ElapsedMilliseconds}ms] "
+				+ $"[stats={statsMs}ms] [start spots={startMs}ms] [faction={factionMs}ms] [opening lab={openingLabMs}ms]");
 
 			return true;
 		}

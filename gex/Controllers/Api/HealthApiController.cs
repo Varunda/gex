@@ -34,16 +34,18 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
-        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 		private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
+		private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
 
 		public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
 			DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
 			ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
 			BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
-			BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
-			BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository) {
+			BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
+			BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository,
+			BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) {
 
 			_Logger = logger;
 			_Cache = cache;
@@ -54,6 +56,7 @@ namespace gex.Controllers.Api {
 			_DownloadQueue = downloadQueue;
 			_ParseQueue = parseQueue;
 			_ActionLogQueue = actionLogQueue;
+			_UserMapStatUpdateQueue = userMapStatUpdateQueue;
 			_MapStatUpdateQueue = mapStatUpdateQueue;
 			_FactionStatUpdateQueue = factionStatUpdateQueue;
 			_HeadlessRunStatusQueue = headlessRunStatusQueue;
@@ -125,7 +128,8 @@ namespace gex.Controllers.Api {
                     _MakeCount("action_log_queue", _ActionLogQueue),
                     _MakeCount("user_map_stat_update_queue", _MapStatUpdateQueue),
                     _MakeCount("user_faction_stat_update_queue", _FactionStatUpdateQueue),
-					_MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue)
+					_MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue),
+					_MakeCount("map_stat_update_queue", _MapStatUpdateQueue)
                 };
 
                 foreach (string service in _ServiceHealthMonitor.GetServices()) {

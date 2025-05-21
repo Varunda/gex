@@ -275,6 +275,8 @@ import ApiError from "components/ApiError";
                             const match: Loading<BarMatch> = await BarMatchApi.getByID(first);
                             if (match.state == "loaded") {
                                 this.recent = Loadable.loaded([match.data]);
+                            } else if (match.state == "nocontent") {
+                                this.recent = Loadable.loaded([]);
                             } else {
                                 this.recent = Loadable.rewrap(match);
                             }

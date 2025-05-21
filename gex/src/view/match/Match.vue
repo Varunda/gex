@@ -174,7 +174,7 @@
 
                         <h1 class="wt-header bg-light text-dark">Unit stats</h1>
 
-                        <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded">
+                        <div class="player-stats-container">
                             <h4 v-if="selectedPlayer" class="text-center">
                                 Viewing unit stats for
                                 <span :style="{ 'color': selectedPlayer.hexColor }">
@@ -239,6 +239,35 @@
     text {
         font-family: "Atkinson Hyperlegible";
     }
+
+
+    /* <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded"> */
+    .player-stats-container {
+        position: sticky;
+        top: 10px;
+        z-index: 9999;
+        padding-top: 1rem;
+        padding-bottom: 0.25rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        border-radius: var(--bs-border-radius) !important;
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+        border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+    }
+
+    @media (max-width: 768px) {
+        .player-stats-container {
+
+        }
+    }
+
+    @media (min-width: 768px) {
+        .player-stats-container {
+
+        }
+    }
+
 </style>
 
 <script lang="ts">
