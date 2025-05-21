@@ -15,7 +15,7 @@ namespace gex.Services.Db.Patches {
 					SELECT uc.*, ud.definition_name 
 					FROM game_event_unit_created uc 
 						LEFT JOIN game_id_to_unit_def_hash h ON h.game_id = uc.game_id
-						LEFT JOIN unit_def_set_entry ud ON h.hash = ud.hash
+						LEFT JOIN unit_def_set_entry ud ON h.hash = ud.hash AND uc.definition_id = ud.definition_id
 				);
 
 				CREATE TABLE IF NOT EXISTS map_stats_opening_lab (

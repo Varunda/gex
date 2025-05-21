@@ -69,7 +69,7 @@ namespace gex.Services.Db.MapStats {
 					first_lab fl
 					left join bar_match m ON fl.id = m.id
 					left join bar_match_player p ON fl.id = p.game_id AND fl.team_id = p.team_id
-					left join bar_match_ally_team at ON p.game_id = at.game_id AND p.ally_team_id = at.ally_team_id
+					left join bar_match_ally_team at ON fl.id = at.game_id AND p.ally_team_id = at.ally_team_id
 				WHERE m.gamemode <> 0
 				GROUP BY 1, 2, 3;
 
