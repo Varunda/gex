@@ -161,11 +161,22 @@
                             <tbody>
                                 <tr v-for="faction in factionStats" :key="faction.faction">
                                     <td>{{ faction.faction | faction }}</td>
-                                    <td>{{ faction.winCountAllTime / Math.max(faction.playCountAllTime, 1) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountMonth / Math.max(faction.playCountMonth, 1) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountWeek / Math.max(faction.playCountWeek, 1) * 100 | locale(2) }}%</td>
-                                    <td>{{ faction.winCountDay / Math.max(faction.playCountDay, 1) * 100 | locale(2) }}%</td>
-
+                                    <td>
+                                        {{ faction.winCountAllTime / Math.max(faction.playCountAllTime, 1) * 100 | locale(2) }}%
+                                        ({{ faction.winCountAllTime }} / {{ faction.playCountAllTime }})
+                                    </td>
+                                    <td>
+                                        {{ faction.winCountMonth / Math.max(faction.playCountMonth, 1) * 100 | locale(2) }}%
+                                        ({{ faction.winCountMonth }} / {{ faction.playCountMonth }})
+                                    </td>
+                                    <td>
+                                        {{ faction.winCountWeek / Math.max(faction.playCountWeek, 1) * 100 | locale(2) }}%
+                                        ({{ faction.winCountWeek }} / {{ faction.playCountWeek }})
+                                    </td>
+                                    <td>
+                                        {{ faction.winCountDay / Math.max(faction.playCountDay, 1) * 100 | locale(2) }}%
+                                        ({{ faction.winCountDay }} / {{ faction.playCountDay }})
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
