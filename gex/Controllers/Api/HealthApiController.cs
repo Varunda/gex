@@ -126,7 +126,7 @@ namespace gex.Controllers.Api {
                     _MakeCount("replay_parse_queue", _ParseQueue),
                     _MakeCount("headless_run_queue", _HeadlessRunQueue),
                     _MakeCount("action_log_queue", _ActionLogQueue),
-                    _MakeCount("user_map_stat_update_queue", _MapStatUpdateQueue),
+                    _MakeCount("user_map_stat_update_queue", _UserMapStatUpdateQueue),
                     _MakeCount("user_faction_stat_update_queue", _FactionStatUpdateQueue),
 					_MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue),
 					_MakeCount("map_stat_update_queue", _MapStatUpdateQueue)

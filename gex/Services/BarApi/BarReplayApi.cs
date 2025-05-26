@@ -1,9 +1,11 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Models;
 using gex.Models.Bar;
+using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -16,6 +18,8 @@ namespace gex.Services.BarApi {
     public class BarReplayApi {
 
         private readonly ILogger<BarReplayApi> _Logger;
+		private readonly BarApiMetric _Metric;
+
         private static readonly HttpClient _Http = new HttpClient();
 
         private const string BAR_API_URL = "https://api.bar-rts.com";
@@ -30,19 +34,25 @@ namespace gex.Services.BarApi {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
 
-        public BarReplayApi(ILogger<BarReplayApi> logger) {
-            _Logger = logger;
-        }
+		public BarReplayApi(ILogger<BarReplayApi> logger,
+			BarApiMetric metric) {
 
-        /// <summary>
-        ///     get recent <see cref="BarRecentReplay"/>s
-        /// </summary>
-        /// <param name="page">page to get</param>
-        /// <param name="limit">limit</param>
-        /// <param name="cancel">cancellation token</param>
-        /// <returns></returns>
-        public async Task<Result<List<BarRecentReplay>, string>> GetRecent(int page = 1, int limit = 50, CancellationToken cancel = default) {
+			_Logger = logger;
+			_Metric = metric;
+		}
+
+		/// <summary>
+		///     get recent <see cref="BarRecentReplay"/>s
+		/// </summary>
+		/// <param name="page">page to get</param>
+		/// <param name="limit">limit</param>
+		/// <param name="cancel">cancellation token</param>
+		/// <returns></returns>
+		public async Task<Result<List<BarRecentReplay>, string>> GetRecent(int page = 1, int limit = 50, CancellationToken cancel = default) {
+			Stopwatch timer = Stopwatch.StartNew();
             HttpResponseMessage response = await _Http.GetAsync(BAR_API_URL + $"/replays?page={page}&limit={limit}&hasBots=false&endedNormally=true", cancel);
+			_Metric.RecordDuration("recent", timer.ElapsedMilliseconds / 1000d);
+			_Metric.RecordUse("recent");
 
             if (response.IsSuccessStatusCode == false) {
                 return $"failed to call bar API [status code={response.StatusCode}]";
@@ -75,8 +85,12 @@ namespace gex.Services.BarApi {
 
         public async Task<Result<BarReplay, string>> GetReplay(string gameID, CancellationToken cancel = default) {
             string url = BAR_API_URL + "/replays/" + gameID;
-            HttpResponseMessage response = await _Http.GetAsync(url, cancel);
             _Logger.LogDebug($"getting replay [gameID={gameID}] [url={url}]");
+
+			Stopwatch timer = Stopwatch.StartNew();
+            HttpResponseMessage response = await _Http.GetAsync(url, cancel);
+			_Metric.RecordDuration("replay", timer.ElapsedMilliseconds / 1000d);
+			_Metric.RecordUse("replay");
 
             if (response.IsSuccessStatusCode == false) {
                 return $"failed to call bar API [status code={response.StatusCode}]";

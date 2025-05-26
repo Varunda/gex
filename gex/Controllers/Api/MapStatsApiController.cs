@@ -40,8 +40,9 @@ namespace gex.Controllers.Api {
 		/// </summary>
 		/// <param name="mapFilename">filename of the map (from <see cref="BarMap.FileName"/></param>
 		/// <param name="includeStats">will basic stats be included? defaults to false</param>
-		/// <param name="includeStartSpots">will basic stats be included? defaults to false</param>
-		/// <param name="includeFactionStats">will basic stats be included? defaults to false</param>
+		/// <param name="includeStartSpots">will start spot stats be included? defaults to false</param>
+		/// <param name="includeFactionStats">will faction stats be included? defaults to false</param>
+		/// <param name="includeOpeningLabs">will lab opener stats be included? defaults to false</param>
 		/// <param name="cancel">cancellation token</param>
 		/// <response code="200">
 		///		the response will contain a list of <see cref="MapStatsByGamemode"/>s

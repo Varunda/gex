@@ -209,6 +209,10 @@ namespace gex {
 			SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.ULongHandler());
         }
 
+		/// <summary>
+		///		automatically get all metric names used within the program. uses the <see cref="MetricNameAttribute"/>
+		/// </summary>
+		/// <returns></returns>
 		private static List<string> GetMetricNames() {
 			Type[] types = Assembly.GetExecutingAssembly().GetTypes()
 				.Where(iter => iter.GetCustomAttribute<MetricNameAttribute>() != null).ToArray();
