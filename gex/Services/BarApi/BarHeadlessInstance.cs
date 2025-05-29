@@ -142,6 +142,10 @@ namespace gex.Services.BarApi {
             int attempts = 3;
 
             do {
+				if (cancel.IsCancellationRequested == true) {
+					break;
+				}
+
                 // ensure the game version is downloaded
                 if (_PrDownloader.HasGameVersion(match.Engine, match.GameVersion) == false) {
                     _Logger.LogDebug($"missing game version, downloading [gameID={gameID}] [engine={match.Engine}] [version={match.GameVersion}]");
@@ -304,6 +308,8 @@ namespace gex.Services.BarApi {
                     errorWaitHandle.Set();
                 } else {
                     error.AppendLine(e.Data);
+
+					// [t=00:00:00.104862] Fatal: [ExitSpringProcess] errorMsg="[thread::error::run] not enough free space on drive containing writeable data-directory <path> msgCaption="Spring: caught std::exception" mainThread=1
 
 					if (e.Data.Contains("Failed to load: gex.lua")) {
 						_Logger.LogError($"Gex Lua addon was not loaded! killing instance [gameID={gameID}] [error={e.Data}]");

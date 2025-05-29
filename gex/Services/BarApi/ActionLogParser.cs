@@ -86,7 +86,12 @@ namespace gex.Services.BarApi {
 
                     else if (action == GameActionType.TEAM_DIED) {
                         GameEventTeamDied e = Serialize<GameEventTeamDied>(json)!;
-                        output.TeamDiedEvents.Add(e);
+                        e.Frame = frame;
+                        if (output.TeamDiedEvents.FirstOrDefault(iter => iter.Frame == e.Frame && iter.TeamID == e.TeamID) != null) {
+                            _Logger.LogWarning($"duplicate TEamDied event found [gameID={gameID}] [frame={e.Frame}] [teamID={e.TeamID}]");
+                        } else {
+                            output.TeamDiedEvents.Add(e);
+                        }
                         ev = e;
                     } 
 

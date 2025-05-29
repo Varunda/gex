@@ -57,14 +57,27 @@ namespace gex.Services.Db.MapStats {
 				INSERT INTO map_stats_opening_lab (
 					map_file_name, gamemode, def_name,
 					timestamp,
-					count_total, count_win
+					count_total, win_total,
+					count_month, win_month,
+					count_week, win_week,
+					count_day, win_day
 				) SELECT
 					m.map_name,
 					m.gamemode,
 					fl.defname,
 					NOW() at time zone 'utc',
+
 					count(*) ""count_total"",
-					count(*) filter (where at.won = true) ""count_win""
+					count(*) filter (where at.won = true) ""win_total"",
+
+					count(*) filter (where m.start_time >= (NOW() at time zone 'utc' - '1 month'::interval)) ""count_month"",
+					count(*) filter (where at.won = true AND m.start_time >= (NOW() at time zone 'utc' - '1 month'::interval)) ""win_month"",
+
+					count(*) filter (where m.start_time >= (NOW() at time zone 'utc' - '1 week'::interval)) ""count_week"",
+					count(*) filter (where at.won = true AND m.start_time >= (NOW() at time zone 'utc' - '1 week'::interval)) ""win_week"",
+
+					count(*) filter (where m.start_time >= (NOW() at time zone 'utc' - '1 day'::interval)) ""count_day"",
+					count(*) filter (where at.won = true AND m.start_time >= (NOW() at time zone 'utc' - '1 day'::interval)) ""win_day""
 				FROM
 					first_lab fl
 					left join bar_match m ON fl.id = m.id

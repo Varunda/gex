@@ -2,8 +2,47 @@
 <template>
     <div>
         <collapsible header-text="Player stats" bg-color="bg-light" size-class="h1">
-            <div class="d-flex flex-row">
 
+            <div v-if="ShowMobile == true">
+                <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
+
+                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                        Show per sec
+                    </button>
+
+                    <div class="accordion accordion-flush" id="stat-accordion-parent">
+                        <div v-for="(group, index) of statGroups" class="accordion-item mb-2" :key="group.name">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button me-2" :class="{ 'collapsed': index != 0 }" type="button" data-bs-toggle="collapse" :data-bs-target="'#stats-group-' + group.id">
+                                    {{ group.name }}
+                                </button>
+                            </h2>
+
+                            <div :id="'stats-group-' + group.id" class="accordion-collapse collapse" :class="{ 'show': index == 0 }" data-bs-parent="#stat-accordion-parent">
+                                <div class="btn-group btn-group-vertical w-100 mb-2">
+                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn ms-0" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
+                                        {{ stat[1] }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1">
+                    <h2>Viewing {{ selectedStatName }}</h2>
+                    <div style="height: 600px">
+                        <canvas id="team-stats-chart" height="600"></canvas>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center flex-grow-0">
+                    <ul id="team-stat-legend" class="ps-0"></ul>
+                </div>
+
+            </div>
+
+            <div v-else class="d-flex flex-row">
                 <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
 
                     <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
@@ -317,6 +356,7 @@
         props: {
             stats: { type: Array as PropType<MergedStats[]>, required: true },
             match: { type: Object as PropType<BarMatch>, required: true },
+            ShowMobile: { type: Boolean, required: true }
         },
 
         data: function() {

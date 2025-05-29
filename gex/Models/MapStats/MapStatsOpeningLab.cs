@@ -23,8 +23,26 @@ namespace gex.Models.MapStats {
 		[ColumnMapping("count_total")]
 		public int CountTotal { get; set; }
 
-		[ColumnMapping("count_win")]
-		public int CountWin { get; set; }
+		[ColumnMapping("win_total")]
+		public int WinTotal { get; set; }
+
+		[ColumnMapping("count_month")]
+		public int CountMonth { get; set; }
+
+		[ColumnMapping("win_month")]
+		public int WinMonth { get; set; }
+
+		[ColumnMapping("count_week")]
+		public int CountWeek { get; set; }
+
+		[ColumnMapping("win_week")]
+		public int WinWeek { get; set; }
+
+		[ColumnMapping("count_day")]
+		public int CountDay { get; set; }
+
+		[ColumnMapping("win_day")]
+		public int WinDay { get; set; }
 
 	}
 }

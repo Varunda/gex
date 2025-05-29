@@ -13,7 +13,23 @@
                 </div>
 
                 <div v-else style="max-height: 400px; overflow-y: scroll;">
-                    <div class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
+
+                    <div v-if="ShowMobile == true">
+                        <div v-for="msg in messages" :key="msg.id" class="mb-3">
+                            <div>
+                                [<span class="font-monospace">{{ msg.timestamp }}</span>]
+                                <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
+                                &rarr;
+                                <b :style="{ 'color': msg.color }">{{ msg.to }}</b>
+                            </div>
+
+                            <div>
+                                {{ msg.message }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
                         <template v-for="msg in messages">
                             <div style="grid-column: 1;" class="text-nowrap my-2">
                                 [<span class="font-monospace">{{ msg.timestamp }}</span>]
@@ -54,7 +70,8 @@
 
     export const MatchChat = Vue.extend({
         props: {
-            match: { type: Object as PropType<BarMatch>, required: true }
+            match: { type: Object as PropType<BarMatch>, required: true },
+            ShowMobile: { type: Boolean, required: true }
         },
 
         data: function() {
@@ -73,7 +90,11 @@
                 } else if (id == 253) {
                     return "Spec";
                 } else if (id == 252) {
-                    return `Allies [Team ${allyTeamID + 1}]`;
+                    if (this.ShowMobile == true) {
+                        return `Team ${allyTeamID + 1}`;
+                    } else {
+                        return `Allies [Team ${allyTeamID + 1}]`;
+                    }
                 } else {
                     return this.match.players.find(iter => iter.teamID == id)?.username
                         ?? this.match.spectators.find(iter => iter.playerID == id)?.username

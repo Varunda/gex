@@ -140,7 +140,7 @@
             </div>
 
             <div class="d-flex flex-wrap mb-5" style="gap: 1rem;">
-                <div class="flex-grow-1" style="flex-basis: 50%">
+                <div class="flex-grow-1" style="flex-basis: 48%">
                     <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
@@ -197,7 +197,7 @@
                     </a-table>
                 </div>
 
-                <div class="flex-grow-1" style="flex-basis: 50%">
+                <div class="flex-grow-1" style="flex-basis: 48%">
                     <a-table :entries="energyProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
@@ -246,7 +246,7 @@
             </div>
 
             <div class="d-flex flex-wrap" style="gap: 1rem;">
-                <div class="flex-grow-1" style="flex-basis: 50%">
+                <div class="flex-grow-1" style="flex-basis: 48%">
                     <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
                         <a-col sort-field="name">
                             <a-header>
@@ -303,7 +303,7 @@
                     </a-table>
                 </div>
 
-                <div class="flex-grow-1" style="flex-basis: 50%">
+                <div class="flex-grow-1" style="flex-basis: 48%">
                     <match-wind-graph :updates="output.windUpdates" :map="match.mapData"></match-wind-graph>
                 </div>
             </div>

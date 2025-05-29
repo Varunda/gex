@@ -96,7 +96,7 @@
                     </div>
 
                     <div v-if="match.data.processing" class="flex-grow-0">
-                        <collapsible header-text="Gex processing metadata" size-class="h6" :show="screenWidth > 1200">
+                        <collapsible header-text="Gex processing metadata" size-class="h6" :show="!showMobile">
                             <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
                                 <tbody>
                                     <template v-if="match.data.processing">
@@ -164,7 +164,7 @@
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
-                        <team-stats-chart :stats="computedData.merged" :match="match.data" class="my-4"></team-stats-chart>
+                        <team-stats-chart :stats="computedData.merged" :match="match.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
 
                         <hr class="border">
 
@@ -203,7 +203,7 @@
                         </match-eco-stats>
                     </div>
 
-                    <match-chat :match="match.data"></match-chat>
+                    <match-chat :match="match.data" :show-mobile="showMobile" class="mb-4"></match-chat>
 
                     <small class="text-muted">
                         {{ 
@@ -379,8 +379,11 @@
                     status: null as HeadlessRunStatus | null
                 },
 
-                connection: null as sR.HubConnection | null
+                connection: null as sR.HubConnection | null,
 
+                containerWidth: 0 as number,
+                containerHeight: 0 as number,
+                showMobile: false as boolean
             };
         },
 
@@ -391,6 +394,22 @@
 
         beforeMount: function(): void {
             this.loadBoth();
+        },
+
+        mounted: function(): void {
+            const obs = new ResizeObserver((mutations: ResizeObserverEntry[], observer: ResizeObserver) => {
+                for (const mut of mutations) {
+                    this.containerWidth = mut.contentRect.width;
+                    //this.containerHeight = mut.contentRect.height - 100;
+                    this.containerHeight = mut.contentRect.height;
+                    console.log(`Match> parent container changed sized to: ${this.containerWidth}x${this.containerHeight}`);
+
+                    this.showMobile = this.containerWidth <= 768;
+                }
+            });
+
+            obs.observe(document.body);
+
         },
 
         methods: {
@@ -648,9 +667,6 @@
 
         computed: {
 
-            screenWidth: function(): number {
-                return window.screen.width;
-            },
 
             unitTweaks: function(): string {
                 if (this.match.state != "loaded") {

@@ -49,23 +49,23 @@
                     </tbody>
                 </table>
             </div>
-            <div v-if="match.spectators.length > 0" class="mt-2">
-                <h5>
-                    Spectators ({{ match.spectators.length }})
-                </h5>
-
-                <div class="d-flex flex-wrap">
-                    <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
-                        <a :href="'/user/' + spec.userID">
-                            {{ spec.username }}
-                        </a>
-                    </span>
-                </div>
-            </div>
 
             <toggle-button class="btn-small" v-model="showWinner">
                 Show winner
             </toggle-button>
+
+            <div v-if="match.spectators.length > 0" class="mt-2">
+                <collapsible header-text="Spectators" size-class="h5" :show="false">
+                    <div class="d-flex flex-wrap">
+                        <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
+                            <a :href="'/user/' + spec.userID">
+                                {{ spec.username }}
+                            </a>
+                        </span>
+                    </div>
+                </collapsible>
+            </div>
+
         </collapsible>
     </div>
 </template>

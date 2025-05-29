@@ -160,7 +160,14 @@
 
                             <tbody>
                                 <tr v-for="faction in factionStats" :key="faction.faction">
-                                    <td>{{ faction.faction | faction }}</td>
+                                    <td>
+                                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24" height="24">
+                                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24" height="24">
+                                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24" height="24">
+                                        <span v-else-if="faction.faction == 4">?</span>
+                                        <span v-else>unchecked faction {{ faction.faction }}</span>
+                                        {{ faction.faction | faction }}
+                                    </td>
                                     <td>
                                         {{ faction.winCountAllTime / Math.max(faction.playCountAllTime, 1) * 100 | locale(2) }}%
                                         ({{ faction.winCountAllTime }} / {{ faction.playCountAllTime }})
@@ -180,6 +187,8 @@
                                 </tr>
                             </tbody>
                         </table>
+                        
+                        <h2 class="wt-header">Opening lab stats</h2>
 
                         <table class="table">
                             <thead>
@@ -187,16 +196,41 @@
                                     <th>Lab</th>
                                     <th>Play rate</th>
                                     <th>Win count</th>
-                                    <th>Win rate</th>
+                                    <th>Play rate (month)</th>
+                                    <th>Win rate (month)</th>
+                                    <th>Play rate (week)</th>
+                                    <th>Win rate (week)</th>
+                                    <th>Play rate (day)</th>
+                                    <th>Win rate (day)</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 <tr v-for="lab in openingLabs" :key="lab.defName">
-                                    <td>{{ lab.defName | defName }}</td>
+                                    <td>
+                                        <img :src="'/image-proxy/UnitIcon?defName=' + lab.defName + '&color=' + factionColor(lab.defName)" height="24" width="24">
+                                        {{ lab.defName | defName }}
+                                    </td>
                                     <td>{{ lab.countTotal }}</td>
-                                    <td>{{ lab.countWin }}</td>
-                                    <td>{{ lab.countWin / lab.countTotal * 100 | locale(2) }}%</td>
+                                    <td>
+                                        {{ lab.winTotal }}
+                                        ({{ lab.winTotal / Math.max(1, lab.countTotal) * 100 | locale(2) }}%)
+                                    </td>
+                                    <td>{{ lab.countMonth }}</td>
+                                    <td>
+                                        {{ lab.winMonth }}
+                                        ({{ lab.winMonth / Math.max(1, lab.countMonth) * 100 | locale(2) }}%)
+                                    </td>
+                                    <td>{{ lab.countWeek }}</td>
+                                    <td>
+                                        {{ lab.winWeek }}
+                                        ({{ lab.winWeek / Math.max(1, lab.countWeek) * 100 | locale(2) }}%)
+                                    </td>
+                                    <td>{{ lab.countDay }}</td>
+                                    <td>
+                                        {{ lab.winDay }}
+                                        ({{ lab.winDay / Math.max(1, lab.countDay) * 100 | locale(2) }}%)
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -314,6 +348,18 @@
 
             toImgX(x: number): number { return x / this.mapW * this.imgW; },
             toImgZ(z: number): number { return z / this.mapH * this.imgH; },
+
+            factionColor: function(defName: string): string {
+                if (defName.startsWith("arm")) {
+                    return "4751067";
+                } else if (defName.startsWith("cor")) {
+                    return "12139826";
+                } else if (defName.startsWith("leg")) {
+                    return "9682996";
+                }
+
+                return "";
+            },
 
             setupMap: function(): void {
                 if (this.barMap.state != "loaded") {
@@ -668,7 +714,7 @@
                     return [];
                 }
 
-                return this.stats.data.openingLabs.filter((iter) => iter.gamemode == this.selectedGamemode);
+                return [...this.stats.data.openingLabs.filter((iter) => iter.gamemode == this.selectedGamemode)].sort((a, b) => a.defName.localeCompare(b.defName));
             },
 
             openingLabSum: function(): number {
