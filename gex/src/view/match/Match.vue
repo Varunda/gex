@@ -35,7 +35,9 @@
                 <h3>This match is currently being replayed on Gex to collect stats</h3>
 
                 <h5>
-                    Estimated time left:
+                    <span>
+                        Estimated time left:
+                    </span>
                     <span v-if="replay.status.simulating == true">
                         {{ (replay.status.durationFrames - replay.status.frame) / replay.status.fps | mduration }}
                     </span>
@@ -76,9 +78,12 @@
 
                 <div class="d-flex flex-wrap">
                     <div class="flex-grow-1">
-                        <h1>
+                        <h1 class="d-flex flex-wrap">
                             <a :href="'/map/' + match.data.mapName">{{ match.data.map }}</a>
-                            ({{ match.data.gamemode | gamemode }})
+                            &nbsp;
+                            <span>
+                                ({{ match.data.gamemode | gamemode }})
+                            </span>
                         </h1>
 
                         <h2>played on {{ match.data.startTime | moment }}</h2>
@@ -123,7 +128,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex" style="gap: 0.5rem;">
+                <div class="d-flex flex-wrap" style="gap: 0.5rem;">
                     <match-option name="Game settings" :options="match.data.gameSettings"></match-option>
                     <match-option name="Map settings" :options="match.data.mapSettings"></match-option>
                     <match-option name="Lobby settings" :options="match.data.spadsSettings"></match-option>

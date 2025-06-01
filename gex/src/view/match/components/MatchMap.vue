@@ -99,7 +99,7 @@
             </div>
 
             <span v-if="!hasEvents" class="text-info text-center">
-                Gex has not ran this game, so unit positions are not available
+                Gex has not replayed this game, so unit positions are not available
             </span>
         </div>
 
