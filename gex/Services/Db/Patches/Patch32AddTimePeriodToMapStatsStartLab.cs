@@ -36,6 +36,9 @@ namespace gex.Services.Db.Patches {
 				ALTER TABLE map_stats_opening_lab
 					ADD COLUMN IF NOT EXISTS win_day int NOT NULL DEFAULT 0;
 			");
+
+			await cmd.ExecuteNonQueryAsync();
+			await conn.CloseAsync();
 		}
 
 	}

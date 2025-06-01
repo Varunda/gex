@@ -2,6 +2,8 @@
 using gex.Services.Db.MapStats;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +16,13 @@ namespace gex.Services.Hosted.QueueProcessor {
 		private readonly MapStatsStartSpotDb _StartSpotDb;
 		private readonly MapStatsByFactionDb _FactionStatsDb;
 		private readonly MapStatsOpeningLabDb _OpeningLabDb;
+
+		/// <summary>
+		///		timeout for map updates, don't allow maps to update quicker than once every 5 minutes
+		/// </summary>
+		private static readonly Dictionary<string, DateTime> _LastUpdated = new();
+
+		private static readonly TimeSpan _MapUpdateMinimumSpan = TimeSpan.FromMinutes(5);
 
 		public MapStatUpdateQueueProcessor(ILoggerFactory factory,
 			BaseQueue<MapStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -28,6 +37,15 @@ namespace gex.Services.Hosted.QueueProcessor {
 		}
 
 		protected override async Task<bool> _ProcessQueueEntry(MapStatUpdateQueueEntry entry, CancellationToken cancel) {
+
+			if (_LastUpdated.ContainsKey(entry.MapFilename) == true) {
+				TimeSpan diff = DateTime.UtcNow - _LastUpdated.GetValueOrDefault(entry.MapFilename);
+				if (diff <= _MapUpdateMinimumSpan) {
+					_Logger.LogDebug($"map was recently updated, not updating again [mapFilename={entry.MapFilename}] [diff={diff}]");
+					return false;
+				}
+			}
+
 			_Logger.LogDebug($"updating map stats [mapFilename={entry.MapFilename}]");
 
 			Stopwatch overAllTimer = Stopwatch.StartNew();
@@ -46,6 +64,8 @@ namespace gex.Services.Hosted.QueueProcessor {
 
 			_Logger.LogInformation($"updated map stats [mapFilename={entry.MapFilename}] [timer={overAllTimer.ElapsedMilliseconds}ms] "
 				+ $"[stats={statsMs}ms] [start spots={startMs}ms] [faction={factionMs}ms] [opening lab={openingLabMs}ms]");
+
+			_LastUpdated[entry.MapFilename] = DateTime.UtcNow;
 
 			return true;
 		}
