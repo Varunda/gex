@@ -45,8 +45,9 @@ namespace gex.Controllers.Api {
 		/// <param name="includeOpeningLabs">will lab opener stats be included? defaults to false</param>
 		/// <param name="cancel">cancellation token</param>
 		/// <response code="200">
-		///		the response will contain a list of <see cref="MapStatsByGamemode"/>s
-		///		with <see cref="MapStatsByGamemode.MapFileName"/> of <paramref name="mapFilename"/>
+		///		the response will contain a <see cref="MapStats"/>, where each stat is populated
+		///		depending on the include parameters passed, with the
+		///		<see cref="MapStatsByGamemode.MapFileName"/> of <paramref name="mapFilename"/>
 		/// </response>
 		[HttpGet("{mapFilename}")]
 		public async Task<ApiResponse<MapStats>> GetByMap(string mapFilename,

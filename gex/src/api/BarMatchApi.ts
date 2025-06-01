@@ -33,13 +33,13 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         search.set("limit", encodeURIComponent(limit));
 
         if (options.engine != undefined) {
-            search.set("engine", options.engine);
+            search.set("engine", options.engine.trim());
         }
         if (options.gameVersion != undefined) {
-            search.set("gameVersion", options.gameVersion);
+            search.set("gameVersion", options.gameVersion.trim());
         }
         if (options.map != undefined) {
-            search.set("map", options.map);
+            search.set("map", options.map.trim());
         }
         if (options.startTimeAfter != undefined) {
             search.set("startTimeAfter", options.startTimeAfter.toISOString());

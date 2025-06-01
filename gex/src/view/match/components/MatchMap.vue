@@ -14,48 +14,57 @@
                 Starting positions
             </toggle-button>
 
-            <div class="btn-group border border-light">
-                <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap" :disabled="!hasEvents">
+            <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" class="d-flex justify-content-lg-center flex-wrap" style="gap: 0.5rem;">
+                <toggle-button v-model="map.deathHeatmap" :disabled="!hasEvents">
                     Unit death heatmap
-                </button>
-                <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" :disabled="!hasEvents">
-                    <span class="visually-hidden">toggle dropdown</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li v-for="player in match.players" :key="player.teamID">
-                        <a class="dropdown-item" :style="{ 'color': player.hexColor, 'user-select': 'none' }" @click.stop>
-                            <input class="form-check-input" type="checkbox" :id="'unit-death-' + player.teamID">
-                            <label class="form-check-label w-100" :for="'unit-death-' + player.teamID">
-                                {{ player.username }}
-                            </label>
-                        </a>
-                    </li>
-                </ul>
+                </toggle-button>
+
+                <!--
+                <div class="btn-group border border-light">
+                    <button type="button" class="btn" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" @click="map.deathHeatmap = !map.deathHeatmap" :disabled="!hasEvents">
+                        Unit death heatmap
+                    </button>
+                    <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ map.deathHeatmap ? 'btn-primary' : 'btn-dark' ]" :disabled="!hasEvents">
+                        <span class="visually-hidden">toggle dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li v-for="player in match.players" :key="player.teamID">
+                            <a class="dropdown-item" :style="{ 'color': player.hexColor, 'user-select': 'none' }" @click.stop>
+                                <input class="form-check-input" type="checkbox" :id="'unit-death-' + player.teamID">
+                                <label class="form-check-label w-100" :for="'unit-death-' + player.teamID">
+                                    {{ player.username }}
+                                </label>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                -->
+
+                <toggle-button v-model="map.commanderPositions" :disabled="!hasEvents">
+                    Com positions
+                </toggle-button>
+
+                <toggle-button v-model="map.commanderHeatmap" :disabled="!hasEvents">
+                    Com heatmap
+                </toggle-button>
+
+                <toggle-button v-model="map.factories" :disabled="!hasEvents">
+                    Factories
+                </toggle-button>
+
+                <toggle-button v-model="map.radars" :disabled="!hasEvents">
+                    Radars
+                </toggle-button>
+
+                <toggle-button v-model="map.staticDefense" :disabled="!hasEvents">
+                    Static defense
+                </toggle-button>
+
+                <toggle-button v-model="map.buildingHeatmap" :disabled="!hasEvents">
+                    Building heatmap
+                </toggle-button>
+
             </div>
-
-            <toggle-button v-model="map.commanderPositions" :disabled="!hasEvents">
-                Com positions
-            </toggle-button>
-
-            <toggle-button v-model="map.commanderHeatmap" :disabled="!hasEvents">
-                Com heatmap
-            </toggle-button>
-
-            <toggle-button v-model="map.factories" :disabled="!hasEvents">
-                Factories
-            </toggle-button>
-
-            <toggle-button v-model="map.radars" :disabled="!hasEvents">
-                Radars
-            </toggle-button>
-
-            <toggle-button v-model="map.staticDefense" :disabled="!hasEvents">
-                Static defense
-            </toggle-button>
-
-            <toggle-button v-model="map.buildingHeatmap" :disabled="!hasEvents">
-                Building heatmap
-            </toggle-button>
         </div>
 
         <div class="d-flex justify-content-center">
@@ -88,6 +97,10 @@
             <div class="mt-1">
                 <input type="range" min="0" :max="unitPositionFrames[unitPositionFrames.length - 1]" step="900" class="form-range" v-model.number="playback.frame" :disabled="!hasEvents">
             </div>
+
+            <span v-if="!hasEvents" class="text-info text-center">
+                Gex has not ran this game, so unit positions are not available
+            </span>
         </div>
 
     </div>
@@ -161,7 +174,8 @@
     export const MatchMap = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
-            output: { type: Object as PropType<GameOutput>, required: true }
+            output: { type: Object as PropType<GameOutput>, required: true },
+            ScreenWidth: { type: Number, required: true }
         },
 
         data: function() {
@@ -245,7 +259,16 @@
 
                     this.imgH = (img as HTMLImageElement).naturalHeight;
                     this.imgW = (img as HTMLImageElement).naturalWidth;
-                    console.log(`image is ${this.imgW} x ${this.imgH}`);
+                    const ratio: number = this.imgW / this.imgH;
+                    console.log(`MatchMap> image is ${this.imgW} x ${this.imgH}, ratio=${ratio}`);
+
+                    if (this.imgW > this.ScreenWidth) {
+                        console.log(`MatchMap> screen is only ${this.ScreenWidth}px, image is ${this.imgW}, capping`);
+
+                        this.imgH = this.imgH / (this.imgW / this.ScreenWidth);
+                        this.imgW = this.ScreenWidth;
+                        console.log(`MatchMap> image is now ${this.imgW} x ${this.imgH}, ratio=${ratio}`);
+                    }
 
                     this.svg.attr("height", this.imgH);
                     this.svg.attr("width", this.imgW);

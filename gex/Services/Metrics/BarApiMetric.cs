@@ -12,7 +12,6 @@ namespace gex.Services.Metrics {
 		private readonly Meter _Meter;
 
 		private readonly Counter<long> _Uses;
-
 		private readonly Histogram<double> _Duration;
 
 		public BarApiMetric(IMeterFactory factory) {
@@ -40,7 +39,6 @@ namespace gex.Services.Metrics {
 				new KeyValuePair<string, object?>("type", type)
 			);
 		}
-
 
 	}
 }

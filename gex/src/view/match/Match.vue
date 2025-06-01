@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <div class="container">
+        <div class="container" id="main">
             <div v-if="queue.show == true" class="mb-3">
                 <div v-if="queue.index > -1" class="alert alert-info">
                     <h3 class="text-info text-center">
@@ -160,7 +160,7 @@
                 </div>
 
                 <div v-if="output.state == 'loaded'">
-                    <match-map :match="match.data" :output="output.data" class="my-3"></match-map>
+                    <match-map :match="match.data" :output="output.data" :screen-width="containerWidth" class="my-3"></match-map>
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
@@ -389,6 +389,7 @@
 
         created: function(): void {
             this.gameID = location.pathname.split("/")[2];
+            console.log(`Match> game ID ${this.gameID}`);
             document.title = "Gex / Match";
         },
 
@@ -408,8 +409,12 @@
                 }
             });
 
-            obs.observe(document.body);
-
+            const container = document.getElementById("main");
+            if (container == null) {
+                console.error(`Match> failed to find container #main, this will break mobile view`);
+            } else {
+                obs.observe(container);
+            }
         },
 
         methods: {
