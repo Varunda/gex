@@ -88,7 +88,7 @@ namespace gex.Services.BarApi {
                         GameEventTeamDied e = Serialize<GameEventTeamDied>(json)!;
                         e.Frame = frame;
                         if (output.TeamDiedEvents.FirstOrDefault(iter => iter.Frame == e.Frame && iter.TeamID == e.TeamID) != null) {
-                            _Logger.LogWarning($"duplicate TEamDied event found [gameID={gameID}] [frame={e.Frame}] [teamID={e.TeamID}]");
+                            _Logger.LogWarning($"duplicate {nameof(GameEventTeamDied)} found [gameID={gameID}] [frame={e.Frame}] [teamID={e.TeamID}]");
                         } else {
                             output.TeamDiedEvents.Add(e);
                         }
