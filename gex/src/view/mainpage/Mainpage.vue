@@ -117,6 +117,22 @@
 
             <div v-else-if="recent.state == 'loaded'">
 
+                <div class="d-flex flex-wrap d-md-none mb-3 pb-3 border-bottom">
+                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
+                        First
+                    </a>
+
+                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
+                        Newer
+                    </a>
+
+                    <div class="flex-grow-1"></div>
+
+                    <a v-if="recent.data.length > 0" :href="'/?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
+                        Older
+                    </a>
+                </div>
+
                 <match-list :matches="recent.data"></match-list>
 
                 <div v-if="recent.data.length == 0">
@@ -125,18 +141,18 @@
 
                 <hr class="border">
 
-                <div class="d-flex">
-                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2">
+                <div class="d-flex flex-wrap">
+                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
                         First
                     </a>
 
-                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary">
+                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
                         Newer
                     </a>
 
                     <div class="flex-grow-1"></div>
 
-                    <span class="text-center">Matches are fetched every 5 minutes. Only public matches without AI are included</span>
+                    <span class="text-center fetch-interval">Matches are fetched every 5 minutes. Only public matches without AI are included</span>
 
                     <div class="flex-grow-1"></div>
 
@@ -153,6 +169,16 @@
     </div>
 </template>
 
+<style scoped>
+
+    @media (max-width: 768px) {
+        .fetch-interval {
+            order: 99;
+        }
+    }
+
+</style>
+
 <script lang="ts">
     import Vue from "vue";
     import { Loading, Loadable } from "Loading";
@@ -162,13 +188,13 @@
     import MatchList from "components/app/MatchList.vue";
     import DropdownSearch from "components/DropdownSearch.vue";
     import ToggleButton from "components/ToggleButton";
+    import ApiError from "components/ApiError";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
     import { MatchSearchApi } from "api/MatchSearchApi";
 
     import "filters/MomentFilter";
-import ApiError from "components/ApiError";
 
     export const Mainpage = Vue.extend({
         props: {

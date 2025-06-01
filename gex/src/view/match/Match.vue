@@ -21,7 +21,7 @@
 
             <div v-if="showWaitForActions">
                 <h4 class="alert alert-warning text-center">
-                    Gex is currently parsing the output after replaying the game, please refresh in a minute!
+                    Gex is currently parsing the output after replaying the match, please refresh in a minute!
                 </h4>
             </div>
 
@@ -32,7 +32,7 @@
             </div>
 
             <div v-if="replay.status != null && showHeadlessStatus" class="alert alert-info text-center">
-                <h3>This game is currently being replayed on Gex to collect stats</h3>
+                <h3>This match is currently being replayed on Gex to collect stats</h3>
 
                 <h5>
                     Estimated time left:
@@ -156,7 +156,7 @@
                 <match-teams :match="match.data" class="my-3"></match-teams>
 
                 <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
-                    This game has not been replayed on Gex, and in-depth stats are not available. <a href="/faq">More info</a>
+                    This match has not been replayed on Gex, and in-depth stats are not available. <a href="/faq">More info</a>
                 </div>
 
                 <div v-if="output.state == 'loaded'">

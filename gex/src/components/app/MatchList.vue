@@ -36,10 +36,16 @@
             </div>
 
             <div class="tile-time-ago">
-                Ended {{ match.endTime | compactTimeAgo }} ago
-                &middot;
-                <span :title="match.endTime | moment('YYYY-MM-DD hh:mm:ss A')">
-                    {{ match.endTime | moment("hh:mm A")}}
+                <span v-if="(new Date().getTime()) - match.endTime.getTime() > (1000 * 60 * 60 * 12)">
+                    Ended at {{ match.endTime | moment('YYYY-MM-DD hh:mm:ss A') }}
+                </span>
+
+                <span v-else>
+                    Ended {{ match.endTime | compactTimeAgo }} ago
+                    &middot;
+                    <span :title="match.endTime | moment('YYYY-MM-DD hh:mm:ss A')">
+                        {{ match.endTime | moment("hh:mm A")}}
+                    </span>
                 </span>
 
                 <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
