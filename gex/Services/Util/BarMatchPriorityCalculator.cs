@@ -26,9 +26,9 @@ namespace gex.Services.Util {
 
 			MapPriorityMod? mapPrioMod = await _MapPriorityModDb.GetByName(match.MapName, cancel);
 
-			// 6 player games that are not on maps with prio changes (metal maps)
+			// <6 player games that are not on maps with prio changes (metal maps) and shorter than an hour
 			// are given prio and put into a different queue
-			if (match.Players.Count <= 6 && mapPrioMod == null) {
+			if (match.Players.Count <= 6 && mapPrioMod == null && match.DurationMs <= (1000 * 60 * 60)) {
 				return priority;
 			}
 
