@@ -35,6 +35,49 @@ export class GameOutput {
             map.set(ud.definitionID, ud);
         }
 
+        const mapName: Map<string, number[]> = new Map();
+        for (const ud of unitDefs) {
+            let name: number[] = mapName.get(ud.name) ?? [];
+            name.push(ud.definitionID);
+
+            mapName.set(ud.name, name);
+        }
+
+        for (const kvp of Array.from(mapName.entries())) {
+            const key: string = kvp[0];
+            const value: number[] = kvp[1];
+
+            if (value.length == 1) {
+                continue;
+            }
+
+            console.log(`GameOutput> clashing name found '${key}' between [${value}]`);
+
+            for (const defID of value) {
+                const entry: GameEventUnitDef | undefined = map.get(defID);
+                if (entry == undefined) {
+                    console.error(`GameOutput> missing unit definition ${defID}, but it clashes with name '${key}'?`);
+                    continue;
+                }
+
+                if (entry.definitionName.startsWith("arm")) {
+                    entry.disambiguatedName += " (Armada)";
+                } else if (entry.definitionName.startsWith("cor")) {
+                    entry.disambiguatedName += " (Cortex)";
+                } else if (entry.definitionName.startsWith("leg")) {
+                    entry.disambiguatedName += " (Legion)";
+                } else if (entry.definitionName.startsWith("lootbox")
+                    || entry.definitionName.startsWith("critter")
+                    || entry.definitionName.startsWith("dbg")
+                    || entry.definitionName.startsWith("xmasball")) {
+
+                    continue;
+                } else {
+                    console.warn(`GameOutput> unchecked definition name '${entry.definitionName}' does not start with arm|cor|leg`);
+                }
+            }
+        }
+
         return {
             gameID: elem.gameID,
             unitDefinitions: map,

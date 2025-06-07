@@ -62,7 +62,7 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                            <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                             {{ entry.name }}
                         </a-body>
                     </a-col>
@@ -150,7 +150,7 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -217,7 +217,7 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -276,7 +276,7 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                                 {{ entry.name }}
                             </a-body>
                         </a-col>
@@ -348,6 +348,7 @@
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol, ARank, ATableType } from "components/ATable";
     import Collapsible from "components/Collapsible.vue";
     import InfoHover from "components/InfoHover.vue";
+    import UnitIcon from "components/app/UnitIcon.vue";
 
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
     import MatchWindGraph from "./MatchWindGraph.vue";
@@ -617,7 +618,7 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover, MatchWindGraph
+            Collapsible, InfoHover, MatchWindGraph, UnitIcon
         }
 
     });

@@ -64,7 +64,7 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                            <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                             {{ entry.name }}
                             <info-hover :text="entry.definition.tooltip"></info-hover>
                         </a-body>
@@ -170,7 +170,7 @@
                     </a-header>
 
                     <a-body v-slot="entry">
-                        <img :src="'/image-proxy/UnitIcon?defName=' + entry.defName" height="24" width="24">
+                        <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
                         {{ entry.name }}
                         <info-hover :text="entry.definition.tooltip"></info-hover>
                     </a-body>
@@ -277,6 +277,7 @@
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol, ARank, ATableType } from "components/ATable";
     import Collapsible from "components/Collapsible.vue";
     import InfoHover from "components/InfoHover.vue";
+    import UnitIcon from "components/app/UnitIcon.vue";
 
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
 
@@ -525,7 +526,7 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover
+            Collapsible, InfoHover, UnitIcon
         }
 
     });

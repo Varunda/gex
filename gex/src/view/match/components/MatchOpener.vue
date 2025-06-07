@@ -10,6 +10,7 @@
                 <div v-for="player in sorted" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
                     <h3 :style="{ 'color': player.color }">
                         {{ player.playerName }}
+                        ({{ player.playerFaction }})
                     </h3>
 
                     <div>
@@ -20,7 +21,7 @@
                                 {{b.amount}}x
                             </span>
 
-                            <img :src="'/image-proxy/UnitIcon?defName=' + b.defName" height="16">
+                            <unit-icon :name="b.defName" size="16"></unit-icon>
                             <strong v-if="b.isFactory">
                                 {{ b.name }}
                             </strong>
@@ -45,6 +46,7 @@
     import Vue, { PropType } from "vue";
     import InfoHover from "components/InfoHover.vue";
     import Collapsible from "components/Collapsible.vue";
+    import UnitIcon from "components/app/UnitIcon.vue";
 
     import { PlayerOpener } from "../compute/PlayerOpenerData";
 
@@ -79,7 +81,7 @@
         },
 
         components: {
-            InfoHover, Collapsible
+            InfoHover, Collapsible, UnitIcon
         }
     });
     export default MatchOpener;

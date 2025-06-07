@@ -1,15 +1,21 @@
+import ColorUtils from "util/Color";
 
 export class GameEventUnitDef {
     public definitionID: number = 0;
     public definitionName: string = "";
     public name: string = "";
+    public disambiguatedName: string = "";
     public tooltip: string = "";
+    public color: string = "";
+
     public metalCost: number = 0;
     public energyCost: number = 0;
+
     public health: number = 0;
     public speed: number = 0;
     public sizeX: number = 0;
     public sizeZ: number = 0;
+
     public buildTime: number = 0;
     public unitGroup: string = "";
     public buildPower: number = 0;
@@ -28,6 +34,7 @@ export class GameEventUnitDef {
     public airSightDistance: number = 0;
     public radarDistance: number = 0;
     public attackRange: number = 0;
+
     public isCommander: boolean = false;
     public isReclaimer: boolean = false;
     public isFactory: boolean = false;
@@ -39,6 +46,8 @@ export class GameEventUnitDef {
         const ret: GameEventUnitDef = {
             ...elem
         };
+
+        ret.disambiguatedName = ret.name;
 
         ret.category = `unknown ${ret.unitGroup}`;
 
@@ -62,6 +71,16 @@ export class GameEventUnitDef {
             ret.category = "util";
         } else if (ret.weaponCount == 0 && ret.speed > 0) {
             ret.category = "trans";
+        }
+
+        if (ret.definitionName.startsWith("arm")) {
+            ret.color = ColorUtils.Armada;
+        } else if (ret.definitionName.startsWith("cor")) {
+            ret.color = ColorUtils.Cortex;
+        } else if (ret.definitionName.startsWith("leg")) {
+            ret.color = ColorUtils.Legion;
+        } else {
+
         }
 
         return ret;
