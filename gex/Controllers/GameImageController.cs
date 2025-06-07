@@ -173,7 +173,8 @@ namespace gex.Controllers {
                             byte ng = (byte)(g * (pixel.Red / (double)255));
                             byte nb = (byte)(b * (pixel.Red / (double)255));
 
-                            bp.SetPixel(col, row, new SKColor(nr, ng, nb));
+							// fix #41: copy pixel alpha to new image
+                            bp.SetPixel(col, row, new SKColor(nr, ng, nb, pixel.Alpha));
                         }
                     }
 
