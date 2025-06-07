@@ -7,7 +7,7 @@
             </template>
 
             <template v-slot:default>
-                <div v-for="player in openers" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
+                <div v-for="player in sorted" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
                     <h3 :style="{ 'color': player.color }">
                         {{ player.playerName }}
                     </h3>
@@ -62,11 +62,20 @@
         methods: {
             playerStyle: function(color: string): object {
                 return {
-                    //"background-color": color + "22",
+                    "background-color": color + "11",
                     "border": `${color} solid 1px`,
-                    "border-radius": "0.25rem"
+                    "border-radius": "0.25rem",
                 };
             }
+        },
+
+        computed: {
+            sorted: function(): PlayerOpener[] {
+                return [...this.openers].sort((a, b) => {
+                    return a.teamID - b.teamID;
+                });
+            }
+
         },
 
         components: {

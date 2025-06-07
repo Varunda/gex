@@ -9,6 +9,7 @@ export class ResourceProductionEntry {
     public count: number = 0;
     public rank: number = 0;
     public lost: number = 0;
+    public reclaimed: number = 0;
 
     public definition: GameEventUnitDef | undefined = undefined;
 
@@ -58,6 +59,7 @@ export class ResourceProductionData {
                     count: 0,
                     rank: 0,
                     lost: 0,
+                    reclaimed: 0,
                     metalMade: 0,
                     metalUsed: 0,
                     energyMade: 0,
@@ -92,7 +94,13 @@ export class ResourceProductionData {
                 continue;
             }
 
-            unit.lost += 1;
+            // -12 is reclaim
+            // https://github.com/beyond-all-reason/RecoilEngine/blob/cdfc9d7b872c3d890fc7c77bcb645a23cd9ec8e5/rts/Sim/Objects/SolidObject.h#L93-L123
+            if (ev.teamID == ev.attackerTeam && ev.weaponDefinitionID == -12) {
+                unit.reclaimed += 1;
+            } else {
+                unit.lost += 1;
+            }
         }
 
         const ret: ResourceProductionData[] = Array.from(map.values());

@@ -175,9 +175,19 @@
                             </a-body>
                         </a-col>
 
+                        <a-col sort-field="reclaimed">
+                            <a-header>
+                                <b>Reclaimed</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.reclaimed | locale(0) }}
+                            </a-body>
+                        </a-col>
+
                         <a-col sort-field="metalMade">
                             <a-header>
-                                <b>Metal made</b>
+                                <b>M made</b>
                             </a-header>
 
                             <a-body v-slot="entry">
@@ -187,7 +197,7 @@
 
                         <a-col sort-field="energyUsed">
                             <a-header>
-                                <b>Energy used</b>
+                                <b>E used</b>
                             </a-header>
 
                             <a-body v-slot="entry">
@@ -229,6 +239,16 @@
 
                             <a-body v-slot="entry">
                                 {{ entry.lost }}
+                            </a-body>
+                        </a-col>
+
+                        <a-col sort-field="reclaimed">
+                            <a-header>
+                                <b>Reclaimed</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.reclaimed | locale(0) }}
                             </a-body>
                         </a-col>
 
@@ -281,9 +301,19 @@
                             </a-body>
                         </a-col>
 
+                        <a-col sort-field="reclaimed">
+                            <a-header>
+                                <b>Reclaimed</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.reclaimed | locale(0) }}
+                            </a-body>
+                        </a-col>
+
                         <a-col sort-field="metalUsed">
                             <a-header>
-                                <b>Metal used</b>
+                                <b>M used</b>
                             </a-header>
 
                             <a-body v-slot="entry">
@@ -293,7 +323,7 @@
 
                         <a-col sort-field="energyUsed">
                             <a-header>
-                                <b>Energy used</b>
+                                <b>E used</b>
                             </a-header>
 
                             <a-body v-slot="entry">
