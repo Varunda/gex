@@ -110,7 +110,8 @@
                             {
                                 data: this.updates.map(iter => { return { x: iter.frame, y: iter.value }}),
                                 fill: true,
-                                backgroundColor: "#FFFFFFAA"
+                                backgroundColor: "#FFFFFFAA",
+                                pointRadius: 0
                             }
                         ]
                     },
