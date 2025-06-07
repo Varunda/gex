@@ -83,5 +83,10 @@ namespace gex.Models.Db {
 		/// </summary>
 		public int? PlayerCountMaximum { get; set; }
 
+		/// <summary>
+		///		is legion enabled or disdabled
+		/// </summary>
+		public bool? LegionEnabled { get; set; }
+
 	}
 }

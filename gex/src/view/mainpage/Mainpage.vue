@@ -94,6 +94,15 @@
             </div>
 
             <div class="col-lg-4 col-12">
+                <label>Legion enabled</label>
+                <select v-model="search.legionEnabled" class="form-control">
+                    <option :value="null">Unset</option>
+                    <option :value="false">No</option>
+                    <option :value="true">Yes</option>
+                </select>
+            </div>
+
+            <div class="col-lg-4 col-12">
                 <label>Game link</label>
                 <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
             </div>
@@ -224,6 +233,7 @@
                     gamemode: 0 as number,
                     playerCountMinimum: 0 as number,
                     playerCountMaximum: 0 as number,
+                    legionEnabled: null as boolean | null,
                     processingDownloaded: null as boolean | null,
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
@@ -350,6 +360,9 @@
                 }
                 if (this.search.playerCountMaximum != 0) {
                     options.playerCountMaximum = this.search.playerCountMaximum;
+                }
+                if (this.search.legionEnabled != null) {
+                    options.legionEnabled = this.search.legionEnabled;
                 }
                 if (this.search.processingDownloaded != null) {
                     options.processingDownloaded = this.search.processingDownloaded;

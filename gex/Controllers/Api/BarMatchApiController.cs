@@ -153,6 +153,7 @@ namespace gex.Controllers.Api {
 		/// <param name="processingAction"></param>
 		/// <param name="playerCountMinimum"></param>
 		/// <param name="playerCountMaximum"></param>
+		/// <param name="legionEnabled"></param>
 		/// <param name="offset"></param>
 		/// <param name="limit"></param>
 		/// <param name="cancel"></param>
@@ -174,6 +175,7 @@ namespace gex.Controllers.Api {
 			[FromQuery] bool? processingAction = null,
 			[FromQuery] int? playerCountMinimum = null,
 			[FromQuery] int? playerCountMaximum = null,
+			[FromQuery] bool? legionEnabled = null,
 
 			[FromQuery] int offset = 0,
 			[FromQuery] int limit = 24,
@@ -204,6 +206,7 @@ namespace gex.Controllers.Api {
 			parms.ProcessingParsed = processingParsed;
 			parms.ProcessingReplayed = processingReplayed;
 			parms.ProcessingAction = processingAction;
+			parms.LegionEnabled = legionEnabled;
 
             List<ApiMatch> ret = [];
             List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, cancel);

@@ -23,7 +23,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         options: { 
             engine?: string, gameVersion?: string, map?: string, startTimeAfter?: Date, startTimeBefore?: Date,
             durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
-            playerCountMinimum?: number, playerCountMaximum?: number,
+            playerCountMinimum?: number, playerCountMaximum?: number, legionEnabled?: boolean,
             processingDownloaded?: boolean, processingParsed?: boolean, processingReplayed?: boolean, processingAction?: boolean
         }
     ) {
@@ -64,6 +64,9 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         }
         if (options.playerCountMaximum != undefined) {
             search.set("playerCountMaximum", options.playerCountMaximum.toString());
+        }
+        if (options.legionEnabled != undefined) {
+            search.set("legionEnabled", options.legionEnabled ? "true" : "false");
         }
         if (options.processingDownloaded != undefined) {
             search.set("processingDownloaded", options.processingDownloaded ? "true" : "false");
