@@ -36,10 +36,12 @@ namespace gex.Services.Hosted.Startup {
 		protected override Task ExecuteAsync(CancellationToken cancel) {
             return Task.Run(async () => {
 
+				/*
 				Result<BarMap, string> r = await _MapParser.Parse(@"F:\Gex\Engines\2025.04.01-win\maps\maps\eye_of_horus_1.7.1.sd7", cancel);
 				if (r.IsOk == false) {
 					_Logger.LogError($"failed to parse map: {r.Error}");
 				}
+				*/
 
 				//byte[] input = await File.ReadAllBytesAsync("F:/Gex/Work/bomb.gzip", cancel);
 				//await _DemofileParser.Parse("aaa", input, cancel);

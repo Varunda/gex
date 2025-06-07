@@ -60,6 +60,7 @@ namespace gex {
                 .AddSource(AppActivitySource.ActivitySourceName)
                 .Build();
 
+			// add meters
 			MeterProviderBuilder meterProvider = Sdk.CreateMeterProviderBuilder()
 				.AddAspNetCoreInstrumentation()
 				.AddMeter("System.Runtime")

@@ -365,7 +365,7 @@ namespace gex {
                     defaults: new { controller = "Home", action = "DownloadMatch" }
                 );
 
-				endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run");
+				endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run").DisableHttpMetrics();
 
                 endpoints.MapSwagger();
             });

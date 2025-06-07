@@ -222,6 +222,10 @@ namespace gex.Services.Db.Match {
 				cmd.AddParameter("PlayerCountMax", parms.PlayerCountMaximum.Value);
 			}
 
+			if (parms.LegionEnabled != null) {
+				conditions.Add($"m.game_settings->>'experimentallegionfaction' = {(parms.LegionEnabled.Value == true ? "'1'" : "'0'")}");
+			}
+
             cmd.CommandText = $@"
                 SELECT *
                     FROM bar_match m
