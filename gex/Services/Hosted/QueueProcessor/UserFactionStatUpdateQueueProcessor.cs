@@ -56,7 +56,6 @@ namespace gex.Services.Hosted.QueueProcessor {
             stats.UserID = entry.UserID;
             stats.Faction = entry.Faction;
             stats.Gamemode = entry.Gamemode;
-            stats.PlayCount = matches.Count;
 
             // for each match, check if there was a winning ally team (else it was a tie), then check
             //      what ally team the player was on, and if they won or not
@@ -72,6 +71,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                 if (player.Faction != facName) {
                     continue;
                 }
+
+				stats.PlayCount += 1;
 
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);
                 if (allyTeams.FirstOrDefault(iter => iter.Won == true) == null) {
