@@ -15,7 +15,7 @@
 
         computed: {
             url: function(): string {
-                let str: string = `/image-proxy/UnitIcon?defName=${this.name}`;
+                let str: string = `/image-proxy/UnitIcon?defName=${encodeURIComponent(this.name)}`;
 
                 if (this.color) {
                     let c: string = this.color;

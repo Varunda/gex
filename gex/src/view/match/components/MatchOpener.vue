@@ -21,7 +21,7 @@
                                 {{b.amount}}x
                             </span>
 
-                            <unit-icon :name="b.defName" size="16"></unit-icon>
+                            <unit-icon :name="b.defName" :size="16"></unit-icon>
                             <strong v-if="b.isFactory">
                                 {{ b.name }}
                             </strong>

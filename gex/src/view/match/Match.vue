@@ -208,7 +208,11 @@
                         </match-eco-stats>
                     </div>
 
-                    <match-chat :match="match.data" :show-mobile="showMobile" class="mb-4"></match-chat>
+                    <match-chat :match="match.data" :show-mobile="showMobile" class="mb-5"></match-chat>
+
+                    <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
+                        <match-action-log :match="match.data" :output="output.data"></match-action-log>
+                    </div>
 
                     <small class="text-muted">
                         {{ 
@@ -287,6 +291,7 @@
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
     import Collapsible from "components/Collapsible.vue";
+    import Busy from "components/Busy.vue";
 
     import { MatchOpener } from "./components/MatchOpener.vue";
     import MatchFactories from "./components/MatchFactories.vue";
@@ -301,7 +306,7 @@
     import MatchOption from "./components/MatchOption.vue";
     import MatchCombatStats from "./components/MatchCombatStats.vue";
     import MatchEcoStats from "./components/MatchEcoStats.vue";
-    import Busy from "components/Busy.vue";
+    import MatchActionLog from "./components/MatchActionLog.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -734,7 +739,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog,
             ProcessingStep, Collapsible, Busy
         }
     });

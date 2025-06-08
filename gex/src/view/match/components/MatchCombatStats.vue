@@ -526,7 +526,8 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover, UnitIcon
+            Collapsible,
+             InfoHover, UnitIcon
         }
 
     });
