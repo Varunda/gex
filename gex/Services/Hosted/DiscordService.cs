@@ -1,25 +1,19 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using gex.Code.ExtensionMethods;
+using gex.Models.Discord;
+using gex.Models.Options;
+using gex.Services.Queues;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Services.Queues;
-using DSharpPlus.SlashCommands;
-using DSharpPlus.SlashCommands.EventArgs;
-using gex.Code.ExtensionMethods;
-using gex.Models.Discord;
 using static gex.Models.Discord.AppDiscordMessage;
-using DSharpPlus.Exceptions;
-using DSharpPlus.ButtonCommands.Extensions;
-using DSharpPlus.ButtonCommands;
-using DSharpPlus.ButtonCommands.EventArgs;
-using System.Diagnostics;
-using gex.Models.Options;
 
 namespace gex.Services.Hosted {
 
@@ -40,7 +34,7 @@ namespace gex.Services.Hosted {
 
         public DiscordService(ILogger<DiscordService> logger, ILoggerFactory loggerFactory,
             DiscordMessageQueue msgQueue, IOptions<DiscordOptions> discordOptions, IServiceProvider services,
-            DiscordWrapper discord) { 
+            DiscordWrapper discord) {
 
             _Logger = logger;
             _MessageQueue = msgQueue ?? throw new ArgumentNullException(nameof(msgQueue));

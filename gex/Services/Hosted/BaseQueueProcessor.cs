@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using gex.Models;
+using gex.Services.Queues;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Models;
-using gex.Services.Queues;
 
 namespace gex.Services.Hosted {
 

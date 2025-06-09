@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace gex.Controllers.Api.Account {
 
-	[ApiController]
+    [ApiController]
     [Route("/api/permission")]
     public class AppPermissionApiController : ApiControllerBase {
 
@@ -23,7 +23,7 @@ namespace gex.Controllers.Api.Account {
         ///     A list of <see cref="AppPermission"/>s
         /// </response>
         [HttpGet]
-		public ApiResponse<List<AppPermission>> GetAll() {
+        public ApiResponse<List<AppPermission>> GetAll() {
             return ApiOk(AppPermission.All);
         }
 

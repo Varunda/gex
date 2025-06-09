@@ -1,12 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using gex.Models.Discord;
+﻿using gex.Models.Discord;
 using gex.Services.Metrics;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace gex.Services.Queues {
 

@@ -2,8 +2,6 @@
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using System.Runtime.InteropServices.ObjectiveC;
-using System.Threading.Tasks;
 
 namespace gex.Services.Db.Event {
 

@@ -4,14 +4,14 @@ using System;
 
 namespace gex.Models.Db {
 
-	[DapperColumnsMapped]
-	public class UnitTweakPriorityExemption {
+    [DapperColumnsMapped]
+    public class UnitTweakPriorityExemption {
 
-		[ColumnMapping("unit_tweak")]
-		public string UnitTweak { get; set; } = "";
+        [ColumnMapping("unit_tweak")]
+        public string UnitTweak { get; set; } = "";
 
-		[ColumnMapping("timestamp")]
-		public DateTime Timestamp { get; set; }
+        [ColumnMapping("timestamp")]
+        public DateTime Timestamp { get; set; }
 
-	}
+    }
 }

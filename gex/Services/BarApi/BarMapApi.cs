@@ -14,7 +14,7 @@ namespace gex.Services.BarApi {
     public class BarMapApi {
 
         private readonly ILogger<BarMapApi> _Logger;
-		private readonly BarApiMetric _Metric;
+        private readonly BarApiMetric _Metric;
 
         private const string BASE_URL = "https://api.bar-rts.com/maps";
 
@@ -23,33 +23,33 @@ namespace gex.Services.BarApi {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
 
-		public BarMapApi(ILogger<BarMapApi> logger,
-			BarApiMetric metric) {
+        public BarMapApi(ILogger<BarMapApi> logger,
+            BarApiMetric metric) {
 
-			_Logger = logger;
-			_Metric = metric;
-		}
+            _Logger = logger;
+            _Metric = metric;
+        }
 
-		/// <summary>
-		///     load a <see cref="BarMap"/> from the BAR api
-		/// </summary>
-		/// <param name="filename">name of the map. this is normalized to replace spaces with underscores</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns>
-		///     a <see cref="Result{T, E}"/> that indicates the success of loading a <see cref="BarMap"/>
-		///     from the BAR api
-		/// </returns>
-		public async Task<Result<BarMap, string>> GetByName(string filename, CancellationToken cancel) {
+        /// <summary>
+        ///     load a <see cref="BarMap"/> from the BAR api
+        /// </summary>
+        /// <param name="filename">name of the map. this is normalized to replace spaces with underscores</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a <see cref="Result{T, E}"/> that indicates the success of loading a <see cref="BarMap"/>
+        ///     from the BAR api
+        /// </returns>
+        public async Task<Result<BarMap, string>> GetByName(string filename, CancellationToken cancel) {
 
             string url = BASE_URL + "/" + filename;
             _Logger.LogTrace($"attempting map load [filename={filename}] [url={url}]");
-			Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch timer = Stopwatch.StartNew();
 
             HttpResponseMessage response = await _Http.GetAsync(url);
 
-			double durationSec = timer.ElapsedMilliseconds / 1000d;
-			_Metric.RecordUse("map");
-			_Metric.RecordDuration("map", durationSec);
+            double durationSec = timer.ElapsedMilliseconds / 1000d;
+            _Metric.RecordUse("map");
+            _Metric.RecordDuration("map", durationSec);
 
             if (response.IsSuccessStatusCode == false) {
                 return $"failed to call bar API [status code={response.StatusCode}]";

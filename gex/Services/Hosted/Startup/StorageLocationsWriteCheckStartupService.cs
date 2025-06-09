@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Hosted.Startup {
 
-	/// <summary>
-	///		startup check to ensure that all storage locations are set and writable
-	/// </summary>
+    /// <summary>
+    ///		startup check to ensure that all storage locations are set and writable
+    /// </summary>
     public class StorageLocationsWriteCheckStartupService : IHostedService {
 
         private readonly ILogger<StorageLocationsWriteCheckStartupService> _Logger;
@@ -28,36 +28,36 @@ namespace gex.Services.Hosted.Startup {
         public async Task StartAsync(CancellationToken cancel) {
             _Logger.LogInformation($"ensuring process can write to locations");
 
-			bool error = false;
+            bool error = false;
 
-			if (string.IsNullOrEmpty(_Options.Value.ReplayLocation)) {
-				_Logger.LogError("The option 'ReplayLocation' was an empty string or unset. Is this set in env.json?");
-				error = true;
-			}
+            if (string.IsNullOrEmpty(_Options.Value.ReplayLocation)) {
+                _Logger.LogError("The option 'ReplayLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
 
-			if (string.IsNullOrEmpty(_Options.Value.TempWorkLocation)) {
-				_Logger.LogError("The option 'TempWorkLocation' was an empty string or unset. Is this set in env.json?");
-				error = true;
-			}
+            if (string.IsNullOrEmpty(_Options.Value.TempWorkLocation)) {
+                _Logger.LogError("The option 'TempWorkLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
 
-			if (string.IsNullOrEmpty(_Options.Value.EngineLocation)) {
-				_Logger.LogError("The option 'EngineLocation' was an empty string or unset. Is this set in env.json?");
-				error = true;
-			}
+            if (string.IsNullOrEmpty(_Options.Value.EngineLocation)) {
+                _Logger.LogError("The option 'EngineLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
 
-			if (string.IsNullOrEmpty(_Options.Value.GameLogLocation)) {
-				_Logger.LogError("The option 'GameLocLocation' was an empty string or unset. Is this set in env.json?");
-				error = true;
-			}
+            if (string.IsNullOrEmpty(_Options.Value.GameLogLocation)) {
+                _Logger.LogError("The option 'GameLocLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
 
-			if (string.IsNullOrEmpty(_Options.Value.WebImageLocation)) {
-				_Logger.LogError("The option 'WebImageLocation' was an empty string or unset. Is this set in env.json?");
-				error = true;
-			}
+            if (string.IsNullOrEmpty(_Options.Value.WebImageLocation)) {
+                _Logger.LogError("The option 'WebImageLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
 
-			if (error == true) {
-				throw new Exception($"one or more storage locations were not set. logs above will contain more info");
-			}
+            if (error == true) {
+                throw new Exception($"one or more storage locations were not set. logs above will contain more info");
+            }
 
             await _TestFile(_Options.Value.ReplayLocation, cancel);
             await _TestFile(_Options.Value.TempWorkLocation, cancel);
@@ -81,7 +81,7 @@ namespace gex.Services.Hosted.Startup {
 
             string filePath = path + Path.DirectorySeparatorChar + "test_write.txt";
 
-			// this is not collapsed, as the stream would need to be closed in order for File.Delete to work
+            // this is not collapsed, as the stream would need to be closed in order for File.Delete to work
             using (FileStream testFile = File.OpenWrite(filePath)) {
                 await testFile.WriteAsync(Encoding.UTF8.GetBytes("hello!"), cancel);
             }

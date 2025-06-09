@@ -24,10 +24,10 @@ namespace gex.Models.Db {
 
         public long DurationMs { get; set; }
 
-		/// <summary>
-		///		how many frames long this game is. IS NOT 100% ACCURATE, as it only updates on key frames
-		/// </summary>
-		public long DurationFrameCount { get; set; }
+        /// <summary>
+        ///		how many frames long this game is. IS NOT 100% ACCURATE, as it only updates on key frames
+        /// </summary>
+        public long DurationFrameCount { get; set; }
 
         public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
 
@@ -47,16 +47,16 @@ namespace gex.Models.Db {
 
         public List<BarMatchSpectator> Spectators { get; set; } = [];
 
-		/// <summary>
-		///		not currently saved in the DB, only returned from parsing
-		/// </summary>
-		public List<BarMatchAiPlayer> AiPlayers { get; set; } = [];
+        /// <summary>
+        ///		not currently saved in the DB, only returned from parsing
+        /// </summary>
+        public List<BarMatchAiPlayer> AiPlayers { get; set; } = [];
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
-		public int PlayerCount { get; set; }
+        public int PlayerCount { get; set; }
 
-		public long? UploadedBy { get; set; }
+        public long? UploadedBy { get; set; }
 
         public BarMap? MapData { get; set; }
 

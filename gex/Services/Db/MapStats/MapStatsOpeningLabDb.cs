@@ -8,30 +8,30 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.MapStats {
 
-	public class MapStatsOpeningLabDb {
+    public class MapStatsOpeningLabDb {
 
-		private readonly ILogger<MapStatsOpeningLabDb> _Logger;
-		private readonly IDbHelper _DbHelper;
+        private readonly ILogger<MapStatsOpeningLabDb> _Logger;
+        private readonly IDbHelper _DbHelper;
 
-		public MapStatsOpeningLabDb(ILogger<MapStatsOpeningLabDb> logger,
-			IDbHelper dbHelper) {
+        public MapStatsOpeningLabDb(ILogger<MapStatsOpeningLabDb> logger,
+            IDbHelper dbHelper) {
 
-			_Logger = logger;
-			_DbHelper = dbHelper;
-		}
+            _Logger = logger;
+            _DbHelper = dbHelper;
+        }
 
-		public async Task<List<MapStatsOpeningLab>> GetByMap(string mapFilename, CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			return await conn.QueryListAsync<MapStatsOpeningLab>(
-				"SELECT * FROM map_stats_opening_lab WHERE map_file_name = @MapFilename",
-				new { MapFilename = mapFilename },
-				cancel
-			);
-		}
+        public async Task<List<MapStatsOpeningLab>> GetByMap(string mapFilename, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<MapStatsOpeningLab>(
+                "SELECT * FROM map_stats_opening_lab WHERE map_file_name = @MapFilename",
+                new { MapFilename = mapFilename },
+                cancel
+            );
+        }
 
-		public async Task Generate(string mapFilename, CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+        public async Task Generate(string mapFilename, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats_opening_lab WHERE map_file_name = @MapFileName;
@@ -89,14 +89,14 @@ namespace gex.Services.Db.MapStats {
 				COMMIT TRANSACTION;
 			", cancel);
 
-			cmd.CommandTimeout = 60 * 5; // 5 minutes
+            cmd.CommandTimeout = 60 * 5; // 5 minutes
 
-			cmd.AddParameter("MapFileName", mapFilename);
-			await cmd.PrepareAsync(cancel);
+            cmd.AddParameter("MapFileName", mapFilename);
+            await cmd.PrepareAsync(cancel);
 
-			await cmd.ExecuteNonQueryAsync(cancel);
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

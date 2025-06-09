@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using gex.Models.Options;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Net;
-using gex.Models.Options;
 
 namespace gex.Services {
 

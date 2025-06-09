@@ -34,7 +34,7 @@ namespace gex.Models.Event {
 
         public List<GameEventUnitDamage> UnitDamage { get; set; } = [];
 
-		public List<GameEventUnitPosition> UnitPosition { get; set; } = [];
+        public List<GameEventUnitPosition> UnitPosition { get; set; } = [];
 
         public List<GameEventTeamStats> TeamStats { get; set; } = [];
 

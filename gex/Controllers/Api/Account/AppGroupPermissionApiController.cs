@@ -39,17 +39,17 @@ namespace gex.Controllers.Api.Account {
         }
 
 
-		/// <summary>
-		///		get the permissions of an account
-		/// </summary>
-		/// <param name="accountID">ID of the account</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns></returns>
+        /// <summary>
+        ///		get the permissions of an account
+        /// </summary>
+        /// <param name="accountID">ID of the account</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         [HttpGet("account/{accountID}")]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
-		[Authorize]
+        [Authorize]
         public async Task<ApiResponse<List<AppGroupPermission>>> GetByAccountID(long accountID,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             List<AppGroupPermission> perms = await _PermissionRepository.GetByAccountID(accountID, cancel);
 
@@ -60,7 +60,7 @@ namespace gex.Controllers.Api.Account {
         ///     Get the permissions an account has
         /// </summary>
         /// <param name="groupID">ID of the group</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     The response will contain a list of permissions an account has
         /// </response>
@@ -70,8 +70,8 @@ namespace gex.Controllers.Api.Account {
         [HttpGet("{groupID}")]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         [Authorize]
-        public async Task<ApiResponse<List<AppGroupPermission>>> GetByGroupID(long groupID, 
-			CancellationToken cancel) {
+        public async Task<ApiResponse<List<AppGroupPermission>>> GetByGroupID(long groupID,
+            CancellationToken cancel) {
 
             AppGroup? group = await _GroupDb.GetByID(groupID, cancel);
             if (group == null) {
@@ -87,7 +87,7 @@ namespace gex.Controllers.Api.Account {
         ///     Remove a permission from an account
         /// </summary>
         /// <param name="accPermID">ID of the <see cref="AppGroupPermission"/> to remove</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     The <see cref="AppGroupPermission"/> with <see cref="AppGroupPermission.ID"/>
         ///     of <paramref name="accPermID"/> was successfully deleted
@@ -115,7 +115,7 @@ namespace gex.Controllers.Api.Account {
         /// </summary>
         /// <param name="groupID">ID of the group to add the permission to</param>
         /// <param name="permission">Permission to be added to the account</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     The reponse will contain the ID of the <see cref="AppGroupPermission"/> that was just created
         ///     using the parameters passed
@@ -135,7 +135,7 @@ namespace gex.Controllers.Api.Account {
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         [Authorize]
         public async Task<ApiResponse<ulong>> AddPermission(long groupID, [FromQuery] string permission,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             AppGroup? group = await _GroupDb.GetByID(groupID, cancel);
             if (group == null) {

@@ -1,10 +1,10 @@
+using gex.Code.ExtensionMethods;
+using gex.Models;
+using gex.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using gex.Code.ExtensionMethods;
-using gex.Models;
-using gex.Services;
 
 namespace gex.Commands {
 
@@ -60,13 +60,13 @@ namespace gex.Commands {
             _Logger.LogInformation($"disabled service '{serviceName}'");
         }
 
-		public void Count(string serviceName, int count) {
-			ServiceHealthEntry entry = _ServiceHealthMonitor.GetOrCreate(serviceName);
-			entry.MaxCount = count;
+        public void Count(string serviceName, int count) {
+            ServiceHealthEntry entry = _ServiceHealthMonitor.GetOrCreate(serviceName);
+            entry.MaxCount = count;
             _ServiceHealthMonitor.Set(serviceName, entry);
 
             _Logger.LogInformation($"set instance count of service '{serviceName}' to {count}");
-		}
+        }
 
     }
 

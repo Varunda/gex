@@ -1,17 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using gex.Code.Converters;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using gex.Code.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 
 namespace gex.Models {
 
@@ -93,7 +91,7 @@ namespace gex.Models {
             _JsonOptions.Converters.Add(new Vector3JsonConverter());
         }
 
-        public ApiResponseExecutor(ILoggerFactory logger, IHttpResponseStreamWriterFactory writerFactory) { 
+        public ApiResponseExecutor(ILoggerFactory logger, IHttpResponseStreamWriterFactory writerFactory) {
             _Logger = logger.CreateLogger<ApiResponseExecutor>();
 
             _Writer = writerFactory.CreateWriter;

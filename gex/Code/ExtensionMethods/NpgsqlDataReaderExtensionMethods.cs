@@ -1,10 +1,7 @@
 ﻿using Npgsql;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace gex.Code.ExtensionMethods {
 
@@ -34,7 +31,7 @@ namespace gex.Code.ExtensionMethods {
             if (reader.IsDBNull(field)) {
                 return null;
             }
-            return (decimal?) reader.GetFloat(field);
+            return (decimal?)reader.GetFloat(field);
         }
 
         public static short? GetNullableInt16(this NpgsqlDataReader reader, string field) {

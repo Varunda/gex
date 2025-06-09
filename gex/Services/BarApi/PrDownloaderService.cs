@@ -1,10 +1,8 @@
 ﻿using gex.Code;
 using gex.Code.ExtensionMethods;
 using gex.Models.Db;
-using gex.Models.Options;
 using gex.Services.Db;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -16,26 +14,26 @@ namespace gex.Services.BarApi {
     public class PrDownloaderService {
 
         private readonly ILogger<PrDownloaderService> _Logger;
-		private readonly EnginePathUtil _EnginePathUtil;
-		private readonly GameVersionUsageDb _VersionUsageDb;
+        private readonly EnginePathUtil _EnginePathUtil;
+        private readonly GameVersionUsageDb _VersionUsageDb;
 
-		public PrDownloaderService(ILogger<PrDownloaderService> logger,
-			GameVersionUsageDb versionUsageDb, EnginePathUtil enginePathUtil) {
+        public PrDownloaderService(ILogger<PrDownloaderService> logger,
+            GameVersionUsageDb versionUsageDb, EnginePathUtil enginePathUtil) {
 
-			_Logger = logger;
-			_VersionUsageDb = versionUsageDb;
-			_EnginePathUtil = enginePathUtil;
-		}
+            _Logger = logger;
+            _VersionUsageDb = versionUsageDb;
+            _EnginePathUtil = enginePathUtil;
+        }
 
-		/// <summary>
-		///     check if a game version for a specific engine has been downloaded
-		/// </summary>
-		/// <param name="engine">version of the engine</param>
-		/// <param name="version">game version</param>
-		/// <returns>
-		///     a boolean value indicating if the game version has already been downloaded for the specified engine
-		/// </returns>
-		public bool HasGameVersion(string engine, string version) {
+        /// <summary>
+        ///     check if a game version for a specific engine has been downloaded
+        /// </summary>
+        /// <param name="engine">version of the engine</param>
+        /// <param name="version">game version</param>
+        /// <returns>
+        ///     a boolean value indicating if the game version has already been downloaded for the specified engine
+        /// </returns>
+        public bool HasGameVersion(string engine, string version) {
             string gameVersionOutput = Path.Join(_EnginePathUtil.Get(engine), "games", version, "done.txt");
             return File.Exists(gameVersionOutput);
         }
@@ -86,11 +84,11 @@ namespace gex.Services.BarApi {
 
             _Logger.LogInformation($"game version fetched [version={version}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms] [exit code={exitCode}]");
 
-			await _VersionUsageDb.Upsert(new GameVersionUsage() {
-				Engine = engine,
-				Version = version,
-				LastUsed = DateTime.UtcNow
-			}, cancel);
+            await _VersionUsageDb.Upsert(new GameVersionUsage() {
+                Engine = engine,
+                Version = version,
+                LastUsed = DateTime.UtcNow
+            }, cancel);
 
             return true;
         }
@@ -154,7 +152,7 @@ namespace gex.Services.BarApi {
             ProcessStartInfo startInfo = new();
             startInfo.FileName = path;
             startInfo.WorkingDirectory = _EnginePathUtil.Get(engine);
-			startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_USE_STREAMER", "false");
+            startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_USE_STREAMER", "false");
             startInfo.EnvironmentVariables.AddOrUpdate("PRD_HTTP_SEARCH_URL", "https://files-cdn.beyondallreason.dev/find");
             startInfo.EnvironmentVariables.AddOrUpdate("PRD_RAPID_REPO_MASTER", "https://repos-cdn.beyondallreason.dev/repos.gz");
             startInfo.Arguments = arguments;

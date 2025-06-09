@@ -1,7 +1,7 @@
-﻿using Npgsql;
-using System.Data;
-using gex.Code.ExtensionMethods;
+﻿using gex.Code.ExtensionMethods;
 using gex.Models;
+using Npgsql;
+using System.Data;
 
 namespace gex.Services.Db.Readers {
 

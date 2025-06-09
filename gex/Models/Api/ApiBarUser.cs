@@ -10,7 +10,7 @@ namespace gex.Models.Api {
 
         public string Username { get; set; } = "";
 
-		public DateTime LastUpdated { get; set; }
+        public DateTime LastUpdated { get; set; }
 
         public List<BarUserSkill> Skill { get; set; } = [];
 

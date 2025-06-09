@@ -4,8 +4,6 @@ using gex.Models.Db;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
-using gex.Services.Db.Match;
-using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;

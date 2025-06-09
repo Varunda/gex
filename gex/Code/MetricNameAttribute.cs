@@ -2,18 +2,18 @@
 
 namespace gex.Code {
 
-	/// <summary>
-	///		attribute to automatically register metrics to OTel
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Class)]
-	public class MetricNameAttribute : Attribute {
+    /// <summary>
+    ///		attribute to automatically register metrics to OTel
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public class MetricNameAttribute : Attribute {
 
-		public string Name;
+        public string Name;
 
-		public MetricNameAttribute(string name) {
-			Name = name;
-		}
-	
-	}
+        public MetricNameAttribute(string name) {
+            Name = name;
+        }
+
+    }
 
 }

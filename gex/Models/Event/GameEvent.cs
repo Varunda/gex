@@ -54,7 +54,7 @@ namespace gex.Models.Event {
 
         public const string UNIT_DAMAGE = "unit_damage";
 
-		public const string UNIT_POSITION = "unit_position";
+        public const string UNIT_POSITION = "unit_position";
 
         public const string END = "end";
 

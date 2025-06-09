@@ -6,7 +6,6 @@ using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Event;
-using gex.Services.Db.Match;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
@@ -43,48 +42,48 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameEventTeamDiedDb _TeamDiedDb;
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
         private readonly GameEventUnitDamageDb _UnitDamageDb;
-		private readonly GameEventUnitPositionDb _UnitPositionDb;
+        private readonly GameEventUnitPositionDb _UnitPositionDb;
 
-		public ActionLogParseQueueProcessor(ILoggerFactory factory,
-			BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-			BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayParseQueueEntry> parseQueue,
-			IOptions<FileStorageOptions> options, ActionLogParser actionLogParser,
-			GameEventUnitCreatedDb unitCreatedDb, GameEventUnitKilledDb unitKilledDb,
-			GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb unitHashDb,
-			GameEventTeamStatsDb teamStatsDb, GameEventWindUpdateDb windUpdateDb,
-			GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventUnitTakenDb unitTakenDb,
-			GameEventUnitGivenDb unitGivenDb, GameEventTransportLoadedDb transportLoaded,
-			GameEventTransportUnloadedDb transportUnloaded, GameEventExtraStatsDb extraStatDb,
-			GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
-			GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
-			GameEventUnitPositionDb unitPositionDb)
+        public ActionLogParseQueueProcessor(ILoggerFactory factory,
+            BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
+            BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayParseQueueEntry> parseQueue,
+            IOptions<FileStorageOptions> options, ActionLogParser actionLogParser,
+            GameEventUnitCreatedDb unitCreatedDb, GameEventUnitKilledDb unitKilledDb,
+            GameEventUnitDefDb unitDefDb, UnitSetToGameIdDb unitHashDb,
+            GameEventTeamStatsDb teamStatsDb, GameEventWindUpdateDb windUpdateDb,
+            GameEventCommanderPositionUpdateDb commanderPositionDb, GameEventUnitTakenDb unitTakenDb,
+            GameEventUnitGivenDb unitGivenDb, GameEventTransportLoadedDb transportLoaded,
+            GameEventTransportUnloadedDb transportUnloaded, GameEventExtraStatsDb extraStatDb,
+            GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
+            GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
+            GameEventUnitPositionDb unitPositionDb)
 
-		: base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
+        : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
-			_ProcessingRepository = processingRepository;
-			_ParseQueue = parseQueue;
-			_Options = options;
-			_ActionLogParser = actionLogParser;
-			_UnitCreatedDb = unitCreatedDb;
-			_UnitKilledDb = unitKilledDb;
-			_UnitDefDb = unitDefDb;
-			_UnitHashDb = unitHashDb;
-			_TeamStatsDb = teamStatsDb;
-			_WindUpdateDb = windUpdateDb;
-			_CommanderPositionDb = commanderPositionDb;
-			_UnitTakenDb = unitTakenDb;
-			_UnitGivenDb = unitGivenDb;
-			_TransportLoadedDb = transportLoaded;
-			_TransportUnloadedDb = transportUnloaded;
-			_ExtraStatsDb = extraStatDb;
-			_FactoryCreateDb = factoryCreateDb;
-			_TeamDiedDb = teamDiedDb;
-			_UnitResourcesDb = unitResourcesDb;
-			_UnitDamageDb = unitDamageDb;
-			_UnitPositionDb = unitPositionDb;
-		}
+            _ProcessingRepository = processingRepository;
+            _ParseQueue = parseQueue;
+            _Options = options;
+            _ActionLogParser = actionLogParser;
+            _UnitCreatedDb = unitCreatedDb;
+            _UnitKilledDb = unitKilledDb;
+            _UnitDefDb = unitDefDb;
+            _UnitHashDb = unitHashDb;
+            _TeamStatsDb = teamStatsDb;
+            _WindUpdateDb = windUpdateDb;
+            _CommanderPositionDb = commanderPositionDb;
+            _UnitTakenDb = unitTakenDb;
+            _UnitGivenDb = unitGivenDb;
+            _TransportLoadedDb = transportLoaded;
+            _TransportUnloadedDb = transportUnloaded;
+            _ExtraStatsDb = extraStatDb;
+            _FactoryCreateDb = factoryCreateDb;
+            _TeamDiedDb = teamDiedDb;
+            _UnitResourcesDb = unitResourcesDb;
+            _UnitDamageDb = unitDamageDb;
+            _UnitPositionDb = unitPositionDb;
+        }
 
-		protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
+        protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
 
             Stopwatch timer = Stopwatch.StartNew();
             _Logger.LogInformation($"processing action log [gameID={entry.GameID}] [force={entry.Force}]");
@@ -117,12 +116,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _UnitGivenDb.DeleteByGameID(entry.GameID, cancel);
                 await _UnitTakenDb.DeleteByGameID(entry.GameID, cancel);
                 await _UnitResourcesDb.DeleteByGameID(entry.GameID, cancel);
-				await _UnitPositionDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitPositionDb.DeleteByGameID(entry.GameID, cancel);
                 await _WindUpdateDb.DeleteByGameID(entry.GameID, cancel);
                 _Logger.LogInformation($"deleted old game events due to force [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
             }
 
-			_Logger.LogDebug($"inserting game events to DB [gameID={entry.GameID}]");
+            _Logger.LogDebug($"inserting game events to DB [gameID={entry.GameID}]");
             await _CommanderPositionDb.InsertMany(game.Value.CommanderPositionUpdates, cancel);
             await _ExtraStatsDb.InsertMany(game.Value.ExtraStats, cancel);
             await _FactoryCreateDb.InsertMany(game.Value.FactoryUnitCreated, cancel);
@@ -135,7 +134,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _UnitKilledDb.InsertMany(game.Value.UnitsKilled, cancel);
             await _UnitGivenDb.InsertMany(game.Value.UnitsGiven, cancel);
             await _UnitTakenDb.InsertMany(game.Value.UnitsTaken, cancel);
-			await _UnitPositionDb.InsertMany(game.Value.UnitPosition, cancel);
+            await _UnitPositionDb.InsertMany(game.Value.UnitPosition, cancel);
             await _UnitResourcesDb.InsertMany(game.Value.UnitResources, cancel);
             await _WindUpdateDb.InsertMany(game.Value.WindUpdates, cancel);
 

@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
-	[Patch]
-	public class Patch26AddAccountGroupsAndPermissions : IDbPatch {
-		public int MinVersion => 26;
-		public string Name => "add account groups and permissions";
+    [Patch]
+    public class Patch26AddAccountGroupsAndPermissions : IDbPatch {
+        public int MinVersion => 26;
+        public string Name => "add account groups and permissions";
 
-		public async Task Execute(IDbHelper helper) {
+        public async Task Execute(IDbHelper helper) {
             using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using NpgsqlCommand cmd = await helper.Command(conn, @"
                 CREATE TABLE IF NOT EXISTS app_account (
                     id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                     name varchar NOT NULL,
@@ -80,7 +80,7 @@ namespace gex.Services.Db.Patches {
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
-		}
+        }
 
-	}
+    }
 }

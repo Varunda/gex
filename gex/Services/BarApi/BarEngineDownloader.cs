@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +16,7 @@ namespace gex.Services.BarApi {
         private readonly ILogger<BarEngineDownloader> _Logger;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly PathEnvironmentService _PathUtil;
-		private readonly EnginePathUtil _EnginePathUtil;
+        private readonly EnginePathUtil _EnginePathUtil;
 
         private static readonly HttpClient _Http = new HttpClient();
 
@@ -32,17 +31,17 @@ namespace gex.Services.BarApi {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
 
-		public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
-			IOptions<FileStorageOptions> options, PathEnvironmentService pathUtil,
-			EnginePathUtil enginePathUtil) {
+        public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
+            IOptions<FileStorageOptions> options, PathEnvironmentService pathUtil,
+            EnginePathUtil enginePathUtil) {
 
-			_Logger = logger;
-			_Options = options;
-			_PathUtil = pathUtil;
-			_EnginePathUtil = enginePathUtil;
-		}
+            _Logger = logger;
+            _Options = options;
+            _PathUtil = pathUtil;
+            _EnginePathUtil = enginePathUtil;
+        }
 
-		public bool HasEngine(string version) {
+        public bool HasEngine(string version) {
             string path = _EnginePathUtil.Get(version);
             return Directory.Exists(path);
         }

@@ -8,15 +8,15 @@ namespace gex.Services {
     /// <summary>
     ///     util service to get the path of an engine version (which is specific if running on linux or windows)
     /// </summary>
-	public class EnginePathUtil {
+    public class EnginePathUtil {
 
-		private readonly IOptions<FileStorageOptions> _Options;
+        private readonly IOptions<FileStorageOptions> _Options;
 
-		public EnginePathUtil(IOptions<FileStorageOptions> options) {
-			_Options = options;
-		}
+        public EnginePathUtil(IOptions<FileStorageOptions> options) {
+            _Options = options;
+        }
 
-		public string Get(string version) {
+        public string Get(string version) {
             string path = Path.GetFullPath(Path.Join(_Options.Value.EngineLocation, version));
 
             if (OperatingSystem.IsWindows() == true) {
@@ -28,7 +28,7 @@ namespace gex.Services {
             }
 
             return path;
-		}
+        }
 
-	}
+    }
 }

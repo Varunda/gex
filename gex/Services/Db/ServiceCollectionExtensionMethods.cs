@@ -7,17 +7,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Db {
 
-	public static class ServiceCollectionExtensionMethods {
+    public static class ServiceCollectionExtensionMethods {
 
         public static void AddDatabasesServices(this IServiceCollection services) {
-			// internal
+            // internal
             services.AddSingleton<AppMetadataDbStore>();
 
-			// account
+            // account
             services.AddSingleton<AppAccountDbStore>();
-			services.AddSingleton<AppAccountGroupMembershipDb>();
-			services.AddSingleton<AppGroupDb>();
-			services.AddSingleton<AppGroupPermissionDb>();
+            services.AddSingleton<AppAccountGroupMembershipDb>();
+            services.AddSingleton<AppGroupDb>();
+            services.AddSingleton<AppGroupPermissionDb>();
 
             // bar match
             services.AddSingleton<BarReplayDb>();
@@ -45,7 +45,7 @@ namespace gex.Services.Db {
             services.AddSingleton<GameEventTeamDiedDb>();
             services.AddSingleton<GameEventUnitResourcesDb>();
             services.AddSingleton<GameEventUnitDamageDb>();
-			services.AddSingleton<GameEventUnitPositionDb>();
+            services.AddSingleton<GameEventUnitPositionDb>();
 
             // user stats
             services.AddSingleton<BarUserDb>();
@@ -53,20 +53,20 @@ namespace gex.Services.Db {
             services.AddSingleton<BarUserMapStatsDb>();
             services.AddSingleton<BarUserFactionStatsDb>();
 
-			// map stats
-			services.AddSingleton<MapStatsDb>();
-			services.AddSingleton<MapStatsStartSpotDb>();
-			services.AddSingleton<MapStatsByFactionDb>();
-			services.AddSingleton<MapStatsOpeningLabDb>();
+            // map stats
+            services.AddSingleton<MapStatsDb>();
+            services.AddSingleton<MapStatsStartSpotDb>();
+            services.AddSingleton<MapStatsByFactionDb>();
+            services.AddSingleton<MapStatsOpeningLabDb>();
 
             // other
             services.AddSingleton<BarMapDb>();
             services.AddSingleton<GameVersionUsageDb>();
-			services.AddSingleton<MapPriorityModDb>();
-			services.AddSingleton<BarSkillLeaderboardDb>();
-			services.AddSingleton<SkillHistogramDb>();
-			services.AddSingleton<BarMapPlayCountDb>();
-			services.AddSingleton<UnitTweakPriorityExemptionDb>();
+            services.AddSingleton<MapPriorityModDb>();
+            services.AddSingleton<BarSkillLeaderboardDb>();
+            services.AddSingleton<SkillHistogramDb>();
+            services.AddSingleton<BarMapPlayCountDb>();
+            services.AddSingleton<UnitTweakPriorityExemptionDb>();
         }
 
     }

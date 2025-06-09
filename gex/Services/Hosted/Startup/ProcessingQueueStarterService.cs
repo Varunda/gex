@@ -1,6 +1,5 @@
 ﻿using gex.Models.Db;
 using gex.Models.Queues;
-using gex.Services.Db.Match;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
@@ -11,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Hosted.Startup {
 
-	/// <summary>
-	///		startup service that gets all matches stored in the DB that still need further processing
-	/// </summary>
+    /// <summary>
+    ///		startup service that gets all matches stored in the DB that still need further processing
+    /// </summary>
     public class ProcessingQueueStarterService : IHostedService {
 
         private readonly ILogger<ProcessingQueueStarterService> _Logger;
@@ -69,7 +68,8 @@ namespace gex.Services.Hosted.Startup {
                         _DownloadQueue.Queue(new GameReplayDownloadQueueEntry() { GameID = proc.GameID, Force = true });
                     } else {
                         _ParseQueue.Queue(new GameReplayParseQueueEntry() {
-                            GameID = proc.GameID, Force = true
+                            GameID = proc.GameID,
+                            Force = true
                         });
                     }
 

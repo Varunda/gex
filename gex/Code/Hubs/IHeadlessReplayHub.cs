@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 
 namespace gex.Code.Hubs {
 
-	public interface IHeadlessReplayHub {
+    public interface IHeadlessReplayHub {
 
-		Task UpdateProgress(HeadlessRunStatus status);
+        Task UpdateProgress(HeadlessRunStatus status);
 
-		Task Finish();
+        Task Finish();
 
-	}
+    }
 }

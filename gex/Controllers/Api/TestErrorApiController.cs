@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using gex.Code;
+using gex.Models;
+using gex.Models.Internal;
+using gex.Services.Db;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Threading.Tasks;
-using gex.Models;
-using gex.Services.Db;
-using gex.Code;
-using gex.Models.Internal;
 
 namespace gex.Controllers.Api {
 

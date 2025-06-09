@@ -1,12 +1,7 @@
-using System;
+using gex.Models;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using gex.Models;
 
 namespace gex.Services {
 

@@ -3,7 +3,6 @@ using gex.Code.ExtensionMethods;
 using gex.Models.Bar;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 

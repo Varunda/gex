@@ -7,6 +7,6 @@ namespace gex.Models.Api {
         public DateTime MostRecentEvent { get; set; }
 
         public int ProcessLag { get; set; } = 0;
-        
+
     }
 }

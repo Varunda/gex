@@ -27,7 +27,7 @@ namespace gex.Services.Db.Match {
                 throw new System.Exception($"missing GameID from bar match processing entry");
             }
 
-			_Logger.LogTrace($"upserting match processing [gameID={proc.GameID}] [priority={proc.Priority}]");
+            _Logger.LogTrace($"upserting match processing [gameID={proc.GameID}] [priority={proc.Priority}]");
 
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
@@ -61,22 +61,22 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("ParseMs", proc.ReplayParsedMs);
             cmd.AddParameter("ReplayMs", proc.ReplaySimulatedMs);
             cmd.AddParameter("ActionMs", proc.ActionsParsedMs);
-			cmd.AddParameter("Priority", proc.Priority);
+            cmd.AddParameter("Priority", proc.Priority);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
         }
 
-		/// <summary>
-		///		load the <see cref="BarMatchProcessing"/> for a specific game
-		/// </summary>
-		/// <param name="gameID">ID of the game</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns>
-		///		the <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/> of <paramref name="gameID"/>,
-		///		or <c>null</c> if it does not exist in the database
-		/// </returns>
+        /// <summary>
+        ///		load the <see cref="BarMatchProcessing"/> for a specific game
+        /// </summary>
+        /// <param name="gameID">ID of the game</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		the <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/> of <paramref name="gameID"/>,
+        ///		or <c>null</c> if it does not exist in the database
+        /// </returns>
         public async Task<BarMatchProcessing?> GetByGameID(string gameID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
@@ -123,11 +123,11 @@ namespace gex.Services.Db.Match {
             ))).ToList();
         }
 
-		public async Task<BarMatchProcessing?> GetLowestPriority(CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+        public async Task<BarMatchProcessing?> GetLowestPriority(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-			return await conn.QueryFirstOrDefaultAsync<BarMatchProcessing>(new CommandDefinition(
-				@"
+            return await conn.QueryFirstOrDefaultAsync<BarMatchProcessing>(new CommandDefinition(
+                @"
                     SELECT
                         mp.* 
                     FROM 
@@ -142,23 +142,23 @@ namespace gex.Services.Db.Match {
 						priority ASC, m.start_time DESC
 					LIMIT 1;
                 ",
-				cancellationToken: cancel
-			));
-		}
+                cancellationToken: cancel
+            ));
+        }
 
-		/// <summary>
-		///		get a list of priority processing games
-		/// </summary>
-		/// <param name="count">how many games to list. anything above 1'000 will throw an exception</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns></returns>
-		/// <exception cref="System.Exception"></exception>
-		public async Task<List<BarMatchProcessing>> GetPriorityList(int count, CancellationToken cancel) {
+        /// <summary>
+        ///		get a list of priority processing games
+        /// </summary>
+        /// <param name="count">how many games to list. anything above 1'000 will throw an exception</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="System.Exception"></exception>
+        public async Task<List<BarMatchProcessing>> GetPriorityList(int count, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-			if (count > 1000) {
-				throw new System.Exception($"failsafe, only allowing a max of 1000 for count, got {count}");
-			}
+            if (count > 1000) {
+                throw new System.Exception($"failsafe, only allowing a max of 1000 for count, got {count}");
+            }
 
             return (await conn.QueryAsync<BarMatchProcessing>(new CommandDefinition(
                 @$"
@@ -178,7 +178,7 @@ namespace gex.Services.Db.Match {
                 ",
                 cancellationToken: cancel
             ))).ToList();
-		}
+        }
 
     }
 }

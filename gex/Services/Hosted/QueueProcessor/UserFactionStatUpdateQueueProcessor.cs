@@ -72,7 +72,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                     continue;
                 }
 
-				stats.PlayCount += 1;
+                stats.PlayCount += 1;
 
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);
                 if (allyTeams.FirstOrDefault(iter => iter.Won == true) == null) {

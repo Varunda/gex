@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
-	[Patch]
-	public class Patch18AddGameVersionUsage : IDbPatch {
-		public int MinVersion => 18;
-		public string Name => "add game_version_usage";
+    [Patch]
+    public class Patch18AddGameVersionUsage : IDbPatch {
+        public int MinVersion => 18;
+        public string Name => "add game_version_usage";
 
-		public async Task Execute(IDbHelper helper) {
-			using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await helper.Command(conn, @"
+        public async Task Execute(IDbHelper helper) {
+            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await helper.Command(conn, @"
 				CREATE TABLE IF NOT EXISTS game_version_usage (
 					engine varchar NOT NULL,
 					version varchar NOT NULL,
@@ -28,9 +28,9 @@ namespace gex.Services.Db.Patches {
                 ON CONFLICT (engine, version) DO NOTHING;
 			");
 
-			await cmd.ExecuteNonQueryAsync();
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

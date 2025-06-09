@@ -36,47 +36,47 @@ namespace gex.Controllers.Api.Account {
             _CurrentUser = currentUser;
         }
 
-		/// <summary>
-		///		get the groups of an account
-		/// </summary>
-		/// <param name="accountID"></param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		get the groups of an account
+        /// </summary>
+        /// <param name="accountID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpGet("account/{accountID}")]
         public async Task<ApiResponse<List<AppAccountGroupMembership>>> GetByAccountID(long accountID,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             List<AppAccountGroupMembership> membership = await _MembershipRepository.GetByAccountID(accountID, cancel);
 
             return ApiOk(membership);
         }
 
-		/// <summary>
-		///		get the accounts of a group
-		/// </summary>
-		/// <param name="groupID"></param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		get the accounts of a group
+        /// </summary>
+        /// <param name="groupID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpGet("group/{groupID}")]
         public async Task<ApiResponse<List<AppAccountGroupMembership>>> GetByGroupID(long groupID,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             List<AppAccountGroupMembership> membership = await _MembershipRepository.GetByGroupID(groupID, cancel);
 
             return ApiOk(membership);
         }
 
-		/// <summary>
-		///		add an account to a group
-		/// </summary>
-		/// <param name="groupID"></param>
-		/// <param name="accountID"></param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		add an account to a group
+        /// </summary>
+        /// <param name="groupID"></param>
+        /// <param name="accountID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpPost("{groupID}/{accountID}")]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse> AddUser(long groupID, long accountID,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             AppAccount? currentUser = await _CurrentUser.Get();
             if (currentUser == null) {
@@ -106,17 +106,17 @@ namespace gex.Controllers.Api.Account {
             return ApiOk();
         }
 
-		/// <summary>
-		///		remove an account from a <see cref="AppGroup"/>
-		/// </summary>
-		/// <param name="groupID">ID of the group to remove the user from</param>
-		/// <param name="accountID">ID of the account to be removed from the group</param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		remove an account from a <see cref="AppGroup"/>
+        /// </summary>
+        /// <param name="groupID">ID of the group to remove the user from</param>
+        /// <param name="accountID">ID of the account to be removed from the group</param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpDelete("{groupID}/{accountID}")]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse> RemoveUser(long groupID, long accountID,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             AppAccount? currentUser = await _CurrentUser.Get();
             if (currentUser == null) {

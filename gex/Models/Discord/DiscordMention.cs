@@ -10,7 +10,7 @@
         }
 
         public DiscordMentionType MentionType { get; set; } = DiscordMentionType.NONE;
-        
+
     }
 
     public class RoleDiscordMention : DiscordMention {

@@ -4,38 +4,38 @@ using System;
 
 namespace gex.Models.Internal {
 
-	[DapperColumnsMapped]
-	public class AppGroupPermission {
+    [DapperColumnsMapped]
+    public class AppGroupPermission {
 
-		/// <summary>
-		///     Unique ID of the permission
-		/// </summary>
-		[ColumnMapping("id")]
+        /// <summary>
+        ///     Unique ID of the permission
+        /// </summary>
+        [ColumnMapping("id")]
         public long ID { get; set; }
 
         /// <summary>
         ///     What <see cref="AppGroup"/> this permission is granted to
         /// </summary>
-		[ColumnMapping("group_id")]
+        [ColumnMapping("group_id")]
         public long GroupID { get; set; }
 
         /// <summary>
         ///     What the permission is
         /// </summary>
-		[ColumnMapping("permission")]
+        [ColumnMapping("permission")]
         public string Permission { get; set; } = "";
 
         /// <summary>
         ///     When this permission was added
         /// </summary>
-		[ColumnMapping("timestamp")]
+        [ColumnMapping("timestamp")]
         public DateTime Timestamp { get; set; }
 
         /// <summary>
         ///     What <see cref="AppAccount"/> granted this permission
         /// </summary>
-		[ColumnMapping("granted_by_id")]
+        [ColumnMapping("granted_by_id")]
         public long GrantedByID { get; set; }
 
-	}
+    }
 }

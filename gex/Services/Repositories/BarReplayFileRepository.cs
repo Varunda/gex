@@ -3,7 +3,6 @@ using gex.Models.Options;
 using gex.Services.BarApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;

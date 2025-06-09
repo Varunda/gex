@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using gex.Models.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using gex.Models.Options;
 
 namespace gex.Services {
 

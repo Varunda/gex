@@ -1,9 +1,8 @@
 ﻿
+using gex.Code.ExtensionMethods;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using System;
 using System.Threading.Tasks;
-using gex.Code.ExtensionMethods;
 
 namespace gex.Services.Db {
 

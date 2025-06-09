@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Repositories {
 
-	public class AppPermissionRepository {
+    public class AppPermissionRepository {
 
         private readonly ILogger<AppPermissionRepository> _Logger;
         private readonly IMemoryCache _Cache;
@@ -41,7 +41,7 @@ namespace gex.Services.Repositories {
 
         public async Task<List<AppGroupPermission>> GetByAccountID(long accountID, CancellationToken cancel) {
             _Logger.LogDebug($"getting permission of account [accountID={accountID}]");
-			Dictionary<string, AppGroupPermission> perms = new();
+            Dictionary<string, AppGroupPermission> perms = new();
 
             List<AppAccountGroupMembership> groups = await _MembershipRepository.GetByAccountID(accountID, cancel);
 
@@ -62,7 +62,7 @@ namespace gex.Services.Repositories {
         ///     Get the <see cref="AppGroupPermission"/>s of a group
         /// </summary>
         /// <param name="groupID">ID of the group</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         public async Task<List<AppGroupPermission>> GetByGroupID(long groupID, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, groupID);
 
@@ -80,8 +80,8 @@ namespace gex.Services.Repositories {
         /// <summary>
         ///     Insert a new <see cref="AppGroupPermission"/>, returning the ID it has after being inserted
         /// </summary>
-		/// <param name="perm">permission to insert</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="perm">permission to insert</param>
+        /// <param name="cancel">cancellation token</param>
         public Task<ulong> Insert(AppGroupPermission perm, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, perm.GroupID);
             _Cache.Remove(cacheKey);
@@ -93,7 +93,7 @@ namespace gex.Services.Repositories {
         ///     Delete a <see cref="AppGroupPermission"/>
         /// </summary>
         /// <param name="ID"></param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public async Task DeleteByID(long ID, CancellationToken cancel) {
             AppGroupPermission? perm = await GetByID(ID, cancel);
@@ -117,7 +117,7 @@ namespace gex.Services.Repositories {
         /// </summary>
         /// <param name="repo">Extension instance</param>
         /// <param name="group">group to get the permission of</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <param name="permissions">Permissions to return</param>
         /// <returns>
         ///     The first <see cref="AppGroupPermission"/> that the account <paramref name="group"/> has that matches
@@ -125,7 +125,7 @@ namespace gex.Services.Repositories {
         ///     Or <c>null</c> if the user does not have any of those permissions
         /// </returns>
         public static Task<AppGroupPermission?> GetPermissionByGroup(this AppPermissionRepository repo, AppGroup group,
-			CancellationToken cancel, params string[] permissions) {
+            CancellationToken cancel, params string[] permissions) {
             return repo.GetPermissionByGroupID(group.ID, cancel, permissions);
         }
 
@@ -134,7 +134,7 @@ namespace gex.Services.Repositories {
         /// </summary>
         /// <param name="repo">Extension instance</param>
         /// <param name="groupID">ID of the group to get the permission of</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <param name="permissions">Permissions to return</param>
         /// <returns>
         ///     The first <see cref="AppGroupPermission"/> that the account with <see cref="AppAccount.ID"/>
@@ -142,7 +142,7 @@ namespace gex.Services.Repositories {
         ///     Or <c>null</c> if the user does not have any of those permissions
         /// </returns>
         public static async Task<AppGroupPermission?> GetPermissionByGroupID(this AppPermissionRepository repo,
-			long groupID, CancellationToken cancel, params string[] permissions) {
+            long groupID, CancellationToken cancel, params string[] permissions) {
 
             List<AppGroupPermission> perms = await repo.GetByGroupID(groupID, cancel);
 

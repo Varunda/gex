@@ -7,20 +7,20 @@ using System.Threading.Tasks;
 namespace gex.Code.Commands {
 
     [Command]
-	public class MatchCommand {
+    public class MatchCommand {
 
         private readonly ILogger<MatchCommand> _Logger;
 
-		private static string _PendingGameDelete = "";
+        private static string _PendingGameDelete = "";
 
         public MatchCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<MatchCommand>>();
         }
 
-		public async Task Delete(string gameID) {
+        public async Task Delete(string gameID) {
 
-		}
+        }
 
 
-	}
+    }
 }

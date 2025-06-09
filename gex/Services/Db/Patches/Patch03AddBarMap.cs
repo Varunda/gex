@@ -1,5 +1,4 @@
 ﻿using Npgsql;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {

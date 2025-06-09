@@ -1,48 +1,43 @@
+using AspNet.Security.OAuth.Discord;
+using gex.Code;
+using gex.Code.Converters;
+using gex.Code.Hubs;
+using gex.Models;
+using gex.Models.Options;
+using gex.Services;
+using gex.Services.BarApi;
+using gex.Services.Db;
+using gex.Services.Db.Implementations;
+using gex.Services.Db.Readers;
+using gex.Services.Hosted;
+using gex.Services.Hosted.Startup;
+using gex.Services.Metrics;
+using gex.Services.Parser;
+using gex.Services.Queues;
+using gex.Services.Repositories;
+using gex.Services.Util;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using gex.Services;
-using gex.Services.Hosted;
-using gex.Services.Db;
-using gex.Services.Db.Implementations;
-using gex.Services.Repositories;
-using System.Text.Json;
-using gex.Models;
-using gex.Services.Hosted.Startup;
-using gex.Code.Converters;
-using Microsoft.OpenApi.Models;
-using System;
-using System.IO;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
-using System.Net;
-using gex.Code;
+using Microsoft.OpenApi.Models;
 using NReco.Logging.File;
-using Microsoft.Extensions.Caching.Memory;
-using AspNet.Security.OAuth.Discord;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
+using System;
 using System.Globalization;
-using gex.Services.Db.Readers;
-using gex.Models.Options;
-using gex.Services.BarApi;
-using gex.Services.Parser;
-using System.Reflection;
-using System.Linq;
-using System.Collections.Generic;
-using Dapper.ColumnMapper;
-using Dapper;
+using System.IO;
+using System.Net;
+using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
-using gex.Services.Metrics;
-using gex.Code.Hubs;
-using gex.Services.Util;
 
 namespace gex {
 
@@ -235,7 +230,7 @@ namespace gex {
 
             services.AddTransient<HttpUtilService>();
             services.AddSingleton<InstanceInfo>();
-			services.AddTransient<EnginePathUtil>();
+            services.AddTransient<EnginePathUtil>();
 
             services.AddTransient<IActionResultExecutor<ApiResponse>, ApiResponseExecutor>();
             services.AddSingleton<IDbHelper, DbHelper>();
@@ -251,17 +246,17 @@ namespace gex {
             services.AddGexRepositories();
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarDemofileParser>();
-			services.AddSingleton<BarMapParser>();
+            services.AddSingleton<BarMapParser>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist
             services.AddAppStartupServices(); // startup services
             services.AddQueueProcessors(); // Hosted queues
             services.AddPeriodicServices(); // periodic run services
-			services.AddBackgroundServices();
-			services.AddGexMetrics();
-			services.AddSingleton<BarMatchPriorityCalculator>();
-			services.AddSingleton<BarDemofileResultProcessor>();
+            services.AddBackgroundServices();
+            services.AddGexMetrics();
+            services.AddSingleton<BarMatchPriorityCalculator>();
+            services.AddSingleton<BarDemofileResultProcessor>();
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
                 //services.AddSingleton<DiscordWrapper>();
@@ -315,7 +310,7 @@ namespace gex {
                 endpoints.MapControllerRoute(
                     name: "unauth",
                     pattern: "/unauthorized/{*.}",
-                    defaults: new { controller = "Unauthorized", action = "Index"}
+                    defaults: new { controller = "Unauthorized", action = "Index" }
                 );
 
                 endpoints.MapControllerRoute(
@@ -365,7 +360,7 @@ namespace gex {
                     defaults: new { controller = "Home", action = "DownloadMatch" }
                 );
 
-				endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run").DisableHttpMetrics();
+                endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run").DisableHttpMetrics();
 
                 endpoints.MapSwagger();
             });

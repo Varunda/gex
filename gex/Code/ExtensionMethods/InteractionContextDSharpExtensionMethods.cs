@@ -3,8 +3,6 @@ using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using gex.Models;
-using gex.Services;
 
 namespace gex.Code.ExtensionMethods {
 

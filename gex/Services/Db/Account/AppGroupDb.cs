@@ -4,7 +4,6 @@ using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,19 +24,19 @@ namespace gex.Services.Db.Account {
 
         public async Task<List<AppGroup>> GetAll(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection();
-			return await conn.QueryListAsync<AppGroup>(
-				"SELECT * from app_group",
-				cancellationToken: cancel
-			);
+            return await conn.QueryListAsync<AppGroup>(
+                "SELECT * from app_group",
+                cancellationToken: cancel
+            );
         }
 
         public async Task<AppGroup?> GetByID(long groupID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection();
-			return await conn.QuerySingleAsync<AppGroup>(
-				"SELECT * FROM app_group WHERE id = @ID",
-				new { ID = groupID },
-				cancellationToken: cancel
-			);
+            return await conn.QuerySingleAsync<AppGroup>(
+                "SELECT * FROM app_group WHERE id = @ID",
+                new { ID = groupID },
+                cancellationToken: cancel
+            );
         }
 
         public async Task<long> Insert(AppGroup group, CancellationToken cancel) {

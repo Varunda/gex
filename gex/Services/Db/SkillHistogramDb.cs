@@ -8,21 +8,21 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db {
 
-	public class SkillHistogramDb {
+    public class SkillHistogramDb {
 
-		private readonly ILogger<SkillHistogramDb> _Logger;
-		private readonly IDbHelper _DbHelper;
+        private readonly ILogger<SkillHistogramDb> _Logger;
+        private readonly IDbHelper _DbHelper;
 
-		public SkillHistogramDb(ILogger<SkillHistogramDb> logger,
-			IDbHelper dbHelper) {
+        public SkillHistogramDb(ILogger<SkillHistogramDb> logger,
+            IDbHelper dbHelper) {
 
-			_Logger = logger;
-			_DbHelper = dbHelper;
-		}
+            _Logger = logger;
+            _DbHelper = dbHelper;
+        }
 
-		public async Task<List<SkillHistogramEntry>> Get(CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			return await conn.QueryListAsync<SkillHistogramEntry>(@"
+        public async Task<List<SkillHistogramEntry>> Get(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<SkillHistogramEntry>(@"
 				select 
 					trunc(skill) ""skill"",
 					count(distinct(s.user_id)) ""count""
@@ -36,7 +36,7 @@ namespace gex.Services.Db {
 				having sum(play_count) > 25
 				order by 1 asc;
 			", cancel);
-		}
+        }
 
-	}
+    }
 }

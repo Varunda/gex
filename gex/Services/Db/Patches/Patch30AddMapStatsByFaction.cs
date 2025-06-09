@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
-	[Patch]
-	public class Patch30AddMapStatsByFaction : IDbPatch {
-		public int MinVersion => 30;
-		public string Name => "add map_stats_by_faction";
+    [Patch]
+    public class Patch30AddMapStatsByFaction : IDbPatch {
+        public int MinVersion => 30;
+        public string Name => "add map_stats_by_faction";
 
-		public async Task Execute(IDbHelper helper) {
-			using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await helper.Command(conn, @"
+        public async Task Execute(IDbHelper helper) {
+            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await helper.Command(conn, @"
 				CREATE TABLE IF NOT EXISTS map_stats_by_faction (
 					map_file_name varchar NOT NULL,
 					gamemode smallint NOT NULL,
@@ -34,9 +34,9 @@ namespace gex.Services.Db.Patches {
 				);
 			");
 
-			await cmd.ExecuteNonQueryAsync();
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

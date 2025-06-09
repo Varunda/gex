@@ -1,10 +1,7 @@
-﻿using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using gex.Code.ExtensionMethods;
+﻿using gex.Code.ExtensionMethods;
+using Npgsql;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace gex.Services.Db {
 

@@ -1,16 +1,11 @@
 ﻿using gex.Models;
 using gex.Models.Db;
-using gex.Models.Demofile;
 using gex.Services.Parser;
 using gex.Tests.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 

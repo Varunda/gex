@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
-	[Patch]
-	public class Patch31AddMapStatsOpeningLab : IDbPatch {
-		public int MinVersion => 31;
-		public string Name => "add map_stats_opening_lab";
+    [Patch]
+    public class Patch31AddMapStatsOpeningLab : IDbPatch {
+        public int MinVersion => 31;
+        public string Name => "add map_stats_opening_lab";
 
-		public async Task Execute(IDbHelper helper) {
-			using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await helper.Command(conn, @"
+        public async Task Execute(IDbHelper helper) {
+            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await helper.Command(conn, @"
 				CREATE OR REPLACE VIEW game_event_unit_created_def AS (
 					SELECT uc.*, ud.definition_name 
 					FROM game_event_unit_created uc 
@@ -32,9 +32,9 @@ namespace gex.Services.Db.Patches {
 				);
 			");
 
-			await cmd.ExecuteNonQueryAsync();
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace gex.Services.Queues {
 
-	public class HeadlessRunStatusUpdateQueue : BaseQueue<HeadlessRunStatus> {
+    public class HeadlessRunStatusUpdateQueue : BaseQueue<HeadlessRunStatus> {
 
-		public HeadlessRunStatusUpdateQueue(ILoggerFactory factory, QueueMetric metrics) : base(factory, metrics) { }
+        public HeadlessRunStatusUpdateQueue(ILoggerFactory factory, QueueMetric metrics) : base(factory, metrics) { }
 
-	}
+    }
 }

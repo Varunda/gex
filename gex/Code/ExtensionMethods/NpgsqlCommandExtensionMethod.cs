@@ -1,13 +1,12 @@
-﻿using Npgsql;
+﻿using gex.Services.Db;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Services.Db;
-using System.Text.Json;
 
 namespace gex.Code.ExtensionMethods {
 
@@ -86,7 +85,7 @@ namespace gex.Code.ExtensionMethods {
         }
 
         public static string IterateUnboundGeneric<T>(object o) {
-            List<T> list = (List<T>) o;
+            List<T> list = (List<T>)o;
             return string.Join(", ", list);
         }
 

@@ -18,17 +18,17 @@ namespace gex.Controllers.Api.Account {
         private readonly AppGroupRepository _AppGroupRepository;
 
         public AppGroupApiController(ILogger<AppGroupApiController> logger,
-			AppGroupRepository appGroupRepository) {
+            AppGroupRepository appGroupRepository) {
 
             _Logger = logger;
             _AppGroupRepository = appGroupRepository;
         }
 
-		/// <summary>
-		///		get all <see cref="AppGroup"/>s within the app
-		/// </summary>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		get all <see cref="AppGroup"/>s within the app
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<ApiResponse<List<AppGroup>>> GetAll(CancellationToken cancel) {
             List<AppGroup> groups = await _AppGroupRepository.GetAll(cancel);
@@ -36,17 +36,17 @@ namespace gex.Controllers.Api.Account {
             return ApiOk(groups);
         }
 
-		/// <summary>
-		///		create a new <see cref="AppGroup"/>
-		/// </summary>
-		/// <param name="name"></param>
-		/// <param name="hex"></param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
+        /// <summary>
+        ///		create a new <see cref="AppGroup"/>
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="hex"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpPost]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse> Create([FromQuery] string name, [FromQuery] string hex,
-			CancellationToken cancel) {
+            CancellationToken cancel) {
 
             AppGroup group = new();
             group.Name = name;

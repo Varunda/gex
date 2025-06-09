@@ -1,8 +1,6 @@
-﻿using gex.Models.Api;
+﻿namespace gex.Models.Queues {
 
-namespace gex.Models.Queues {
+    public class HeadlessRunStatusQueueEntry {
 
-	public class HeadlessRunStatusQueueEntry {
-		
-	}
+    }
 }

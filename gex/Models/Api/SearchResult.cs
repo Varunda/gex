@@ -1,8 +1,8 @@
 ﻿namespace gex.Models.Api {
 
-	public class SearchResult {
+    public class SearchResult {
 
-		public string Value { get; set; } = "";
+        public string Value { get; set; } = "";
 
-	}
+    }
 }

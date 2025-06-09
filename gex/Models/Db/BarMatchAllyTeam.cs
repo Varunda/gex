@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace gex.Models.Db {
+﻿namespace gex.Models.Db {
 
     public class BarMatchAllyTeam {
 

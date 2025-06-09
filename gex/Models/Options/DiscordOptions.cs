@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using gex.Models.Discord;
-
-namespace gex.Models.Options {
+﻿namespace gex.Models.Options {
 
     public class DiscordOptions {
 

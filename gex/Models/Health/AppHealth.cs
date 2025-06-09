@@ -1,6 +1,6 @@
-﻿using System;
+﻿using gex.Models.Api;
+using System;
 using System.Collections.Generic;
-using gex.Models.Api;
 
 namespace gex.Models.Health {
 
@@ -16,7 +16,7 @@ namespace gex.Models.Health {
 
         public List<ServiceHealthEntry> Services { get; set; } = [];
 
-		public List<HeadlessRunStatus> HeadlessRuns { get; set; } = [];
+        public List<HeadlessRunStatus> HeadlessRuns { get; set; } = [];
 
         /// <summary>
         ///     When this data was created

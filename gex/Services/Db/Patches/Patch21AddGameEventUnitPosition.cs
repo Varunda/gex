@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
 
-	[Patch]
-	public class Patch21AddGameEventUnitPosition : IDbPatch {
-		public int MinVersion => 21;
-		public string Name => "add game_event_unit_position";
+    [Patch]
+    public class Patch21AddGameEventUnitPosition : IDbPatch {
+        public int MinVersion => 21;
+        public string Name => "add game_event_unit_position";
 
-		public async Task Execute(IDbHelper helper) {
-			using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await helper.Command(conn, @"
+        public async Task Execute(IDbHelper helper) {
+            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await helper.Command(conn, @"
 				CREATE TABLE IF NOT EXISTS game_event_unit_position (
                     id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                     game_id varchar NOT NULL,
@@ -27,9 +27,9 @@ namespace gex.Services.Db.Patches {
 				CREATE INDEX IF NOT EXISTS idx_event_unit_position ON game_event_unit_position (game_id);
 			");
 
-			await cmd.ExecuteNonQueryAsync();
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

@@ -1,10 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
 using System;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace gex.Models.Event {
 

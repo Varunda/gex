@@ -1,11 +1,7 @@
-﻿using Dapper;
-using gex.Code.ExtensionMethods;
+﻿using gex.Code.ExtensionMethods;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace gex.Services.Db.Event {
 

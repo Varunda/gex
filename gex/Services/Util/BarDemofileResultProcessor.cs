@@ -15,9 +15,9 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Util {
 
-	public class BarDemofileResultProcessor {
+    public class BarDemofileResultProcessor {
 
-		private readonly ILogger<BarDemofileResultProcessor> _Logger;
+        private readonly ILogger<BarDemofileResultProcessor> _Logger;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarReplayDb _ReplayDb;
         private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
@@ -28,118 +28,118 @@ namespace gex.Services.Util {
         private readonly BarUserDb _UserDb;
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
-		private readonly MapPriorityModDb _MapPriorityModDb;
-		private readonly BarMatchPriorityCalculator _PriorityCalculator;
+        private readonly MapPriorityModDb _MapPriorityModDb;
+        private readonly BarMatchPriorityCalculator _PriorityCalculator;
 
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
-		public BarDemofileResultProcessor(ILogger<BarDemofileResultProcessor> logger,
-			BarMatchRepository matchRepository, BarReplayDb replayDb,
-			BarMatchAllyTeamDb matchAllyTeamDb, BarMatchSpectatorDb matchSpectatorDb,
-			BarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
-			BarMapRepository barMapRepository, BarUserDb userDb,
-			BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
-			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
-			BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
-			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) {
+        public BarDemofileResultProcessor(ILogger<BarDemofileResultProcessor> logger,
+            BarMatchRepository matchRepository, BarReplayDb replayDb,
+            BarMatchAllyTeamDb matchAllyTeamDb, BarMatchSpectatorDb matchSpectatorDb,
+            BarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
+            BarMapRepository barMapRepository, BarUserDb userDb,
+            BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
+            MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
+            BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
+            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) {
 
-			_Logger = logger;
+            _Logger = logger;
 
-			_MatchRepository = matchRepository;
-			_ReplayDb = replayDb;
-			_MatchAllyTeamDb = matchAllyTeamDb;
-			_MatchSpectatorDb = matchSpectatorDb;
-			_MatchChatMessageDb = matchChatMessageDb;
-			_PlayerRepository = playerRepository;
-			_BarMapRepository = barMapRepository;
-			_UserDb = userDb;
-			_UserSkillDb = userSkillDb;
-			_GameVersionUsageDb = gameVersionUsageDb;
-			_MapPriorityModDb = mapPriorityModDb;
-			_PriorityCalculator = priorityCalculator;
-			_HeadlessRunQueue = headlessRunQueue;
-			_MapStatUpdateQueue = mapStatUpdateQueue;
-			_FactionStatUpdateQueue = factionStatUpdateQueue;
-		}
+            _MatchRepository = matchRepository;
+            _ReplayDb = replayDb;
+            _MatchAllyTeamDb = matchAllyTeamDb;
+            _MatchSpectatorDb = matchSpectatorDb;
+            _MatchChatMessageDb = matchChatMessageDb;
+            _PlayerRepository = playerRepository;
+            _BarMapRepository = barMapRepository;
+            _UserDb = userDb;
+            _UserSkillDb = userSkillDb;
+            _GameVersionUsageDb = gameVersionUsageDb;
+            _MapPriorityModDb = mapPriorityModDb;
+            _PriorityCalculator = priorityCalculator;
+            _HeadlessRunQueue = headlessRunQueue;
+            _MapStatUpdateQueue = mapStatUpdateQueue;
+            _FactionStatUpdateQueue = factionStatUpdateQueue;
+        }
 
-		public async Task Process(BarMatch match, CancellationToken cancel) {
+        public async Task Process(BarMatch match, CancellationToken cancel) {
 
-			BarMap? map = await _BarMapRepository.GetByFileName(match.MapName, cancel);
-			if (map == null) {
-				_Logger.LogWarning($"missing bar map! [map={match.MapName}] [gameID={match.ID}]");
-			}
+            BarMap? map = await _BarMapRepository.GetByFileName(match.MapName, cancel);
+            if (map == null) {
+                _Logger.LogWarning($"missing bar map! [map={match.MapName}] [gameID={match.ID}]");
+            }
 
             Stopwatch stepTimer = Stopwatch.StartNew();
-			foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
-				await _MatchAllyTeamDb.Insert(allyTeam);
-			}
-			long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+                await _MatchAllyTeamDb.Insert(allyTeam);
+            }
+            long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-			foreach (BarMatchPlayer player in match.Players) {
-				await _PlayerRepository.Insert(player);
-			}
-			long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            foreach (BarMatchPlayer player in match.Players) {
+                await _PlayerRepository.Insert(player);
+            }
+            long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-			foreach (BarMatchSpectator spec in match.Spectators) {
-				await _MatchSpectatorDb.Insert(spec);
-			}
-			long insertSpecMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            foreach (BarMatchSpectator spec in match.Spectators) {
+                await _MatchSpectatorDb.Insert(spec);
+            }
+            long insertSpecMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-			foreach (BarMatchChatMessage msg in match.ChatMessages) {
-				await _MatchChatMessageDb.Insert(msg);
-			}
-			long insertChatMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            foreach (BarMatchChatMessage msg in match.ChatMessages) {
+                await _MatchChatMessageDb.Insert(msg);
+            }
+            long insertChatMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-			await _MatchRepository.Insert(match, cancel);
-			long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            await _MatchRepository.Insert(match, cancel);
+            long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-			_Logger.LogInformation($"processed match [ID={match.ID}]"
-				+ $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
-				+ $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [match db={insertMatchMs}ms]");
+            _Logger.LogInformation($"processed match [ID={match.ID}]"
+                + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
+                + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [match db={insertMatchMs}ms]");
 
-			foreach (BarMatchPlayer player in match.Players) {
-				try {
-					_MapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
-						UserID = player.UserID,
-						Map = match.Map,
-						Gamemode = match.Gamemode
-					});
+            foreach (BarMatchPlayer player in match.Players) {
+                try {
+                    _MapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
+                        UserID = player.UserID,
+                        Map = match.Map,
+                        Gamemode = match.Gamemode
+                    });
 
-					_FactionStatUpdateQueue.Queue(new UserFactionStatUpdateQueueEntry() {
-						UserID = player.UserID,
-						Faction = BarFaction.GetId(player.Faction),
-						Gamemode = match.Gamemode
-					});
+                    _FactionStatUpdateQueue.Queue(new UserFactionStatUpdateQueueEntry() {
+                        UserID = player.UserID,
+                        Faction = BarFaction.GetId(player.Faction),
+                        Gamemode = match.Gamemode
+                    });
 
-					await _UserDb.Upsert(player.UserID, new Models.UserStats.BarUser() {
-						UserID = player.UserID,
-						Username = player.Name,
-						LastUpdated = DateTime.UtcNow
-					}, cancel);
+                    await _UserDb.Upsert(player.UserID, new Models.UserStats.BarUser() {
+                        UserID = player.UserID,
+                        Username = player.Name,
+                        LastUpdated = DateTime.UtcNow
+                    }, cancel);
 
-					if (match.Gamemode != BarGamemode.DEFAULT) {
-						await _UserSkillDb.Upsert(new Models.UserStats.BarUserSkill() {
-							UserID = player.UserID,
-							Gamemode = match.Gamemode,
-							Skill = player.Skill,
-							SkillUncertainty = player.SkillUncertainty,
-							LastUpdated = DateTime.UtcNow
-						}, cancel);
-					}
-				} catch (Exception ex) {
-					_Logger.LogError(ex, $"failed to upsert user after parse [gameID={match.ID}] [userID={player.UserID}]");
-				}
-			}
+                    if (match.Gamemode != BarGamemode.DEFAULT) {
+                        await _UserSkillDb.Upsert(new Models.UserStats.BarUserSkill() {
+                            UserID = player.UserID,
+                            Gamemode = match.Gamemode,
+                            Skill = player.Skill,
+                            SkillUncertainty = player.SkillUncertainty,
+                            LastUpdated = DateTime.UtcNow
+                        }, cancel);
+                    }
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to upsert user after parse [gameID={match.ID}] [userID={player.UserID}]");
+                }
+            }
 
-			await _GameVersionUsageDb.Upsert(new GameVersionUsage() {
-				Engine = match.Engine,
-				Version = match.GameVersion,
-				LastUsed = match.StartTime
-			}, cancel);
+            await _GameVersionUsageDb.Upsert(new GameVersionUsage() {
+                Engine = match.Engine,
+                Version = match.GameVersion,
+                LastUsed = match.StartTime
+            }, cancel);
 
-		}
+        }
 
-	}
+    }
 }

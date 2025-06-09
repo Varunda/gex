@@ -1,13 +1,12 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
-using Microsoft.Extensions.Caching.Memory;
+using gex.Code.ExtensionMethods;
+using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using gex.Code.ExtensionMethods;
-using gex.Models.Options;
 
 namespace gex.Services {
 

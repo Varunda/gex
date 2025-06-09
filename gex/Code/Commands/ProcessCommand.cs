@@ -23,9 +23,9 @@ namespace gex.Code.Commands {
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
-		private readonly BarReplayApi _ReplayApi;
-		private readonly BarReplayDb _ReplayDb;
-		private readonly BarMatchProcessingRepository _ProcessingRepository;
+        private readonly BarReplayApi _ReplayApi;
+        private readonly BarReplayDb _ReplayDb;
+        private readonly BarMatchProcessingRepository _ProcessingRepository;
 
         public ProcessCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<ProcessCommand>>();
@@ -33,50 +33,50 @@ namespace gex.Code.Commands {
             _ParseQueue = services.GetRequiredService<BaseQueue<GameReplayParseQueueEntry>>();
             _HeadlessRunQueue = services.GetRequiredService<BaseQueue<HeadlessRunQueueEntry>>();
             _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
-			_ReplayApi = services.GetRequiredService<BarReplayApi>();
-			_ReplayDb = services.GetRequiredService<BarReplayDb>();
-			_ProcessingRepository = services.GetRequiredService<BarMatchProcessingRepository>();
+            _ReplayApi = services.GetRequiredService<BarReplayApi>();
+            _ReplayDb = services.GetRequiredService<BarReplayDb>();
+            _ProcessingRepository = services.GetRequiredService<BarMatchProcessingRepository>();
         }
 
-		public async Task Recover(string gameID) {
-			_Logger.LogInformation($"recovering game ID so it can be processed [gameID={gameID}]");
+        public async Task Recover(string gameID) {
+            _Logger.LogInformation($"recovering game ID so it can be processed [gameID={gameID}]");
 
-			BarReplay? replay = await _ReplayDb.GetByID(gameID);
-			if (replay == null) {
-				_Logger.LogInformation($"replay does not exist in DB, fetching from BAR API [gameID={gameID}]");
-				Result<BarReplay, string> replayApi = await _ReplayApi.GetReplay(gameID, CancellationToken.None);
-				if (replayApi.IsOk == false) {
-					_Logger.LogError($"failed to recover match from BAR API, cannot recover match [gameID={gameID}]");
-					return;
-				}
+            BarReplay? replay = await _ReplayDb.GetByID(gameID);
+            if (replay == null) {
+                _Logger.LogInformation($"replay does not exist in DB, fetching from BAR API [gameID={gameID}]");
+                Result<BarReplay, string> replayApi = await _ReplayApi.GetReplay(gameID, CancellationToken.None);
+                if (replayApi.IsOk == false) {
+                    _Logger.LogError($"failed to recover match from BAR API, cannot recover match [gameID={gameID}]");
+                    return;
+                }
 
-				replay = replayApi.Value;
-				await _ReplayDb.Insert(replay, CancellationToken.None);
-				_Logger.LogInformation($"created replay info from BAR API [gameID={gameID}]");
-			}
+                replay = replayApi.Value;
+                await _ReplayDb.Insert(replay, CancellationToken.None);
+                _Logger.LogInformation($"created replay info from BAR API [gameID={gameID}]");
+            }
 
-			BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, CancellationToken.None);
-			if (proc == null) {
-				_Logger.LogInformation($"match lacks processsing info, recreating [gameID={gameID}]");
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, CancellationToken.None);
+            if (proc == null) {
+                _Logger.LogInformation($"match lacks processsing info, recreating [gameID={gameID}]");
 
-				proc = new BarMatchProcessing();
-				proc.GameID = gameID;
-				await _ProcessingRepository.Upsert(proc);
+                proc = new BarMatchProcessing();
+                proc.GameID = gameID;
+                await _ProcessingRepository.Upsert(proc);
 
-				_Logger.LogInformation($"created processing info [gameID={gameID}]");
-			}
+                _Logger.LogInformation($"created processing info [gameID={gameID}]");
+            }
 
-			_Logger.LogInformation($"recovered match, can now be processed further [gameID={gameID}]");
-		}
+            _Logger.LogInformation($"recovered match, can now be processed further [gameID={gameID}]");
+        }
 
-		public void Download(string gameID) {
+        public void Download(string gameID) {
             _Logger.LogInformation($"forcing download of game [gameID={gameID}]");
             _Queue.Queue(new GameReplayDownloadQueueEntry() {
                 GameID = gameID,
                 Force = true,
                 ForceForward = true
             });
-		}
+        }
 
         public void ForceRun(string gameID) {
             _Logger.LogInformation($"forcing a reprocess of game [gameID={gameID}]");

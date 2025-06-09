@@ -4,14 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Pfim;
 using SkiaSharp;
 using System;
-using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -50,7 +47,7 @@ namespace gex.Controllers {
         /// <param name="mapName">name of the map</param>
         /// <param name="size">size of the map, examples: texture-mq, texture-hq, texture-thumb</param>
         /// <returns></returns>
-        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["mapName", "size" ] )] // 24 hours
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["mapName", "size"])] // 24 hours
         public async Task<IActionResult> MapBackground([FromQuery] string mapName, [FromQuery] string size) {
 
             if (string.IsNullOrEmpty(mapName)) {
@@ -91,7 +88,7 @@ namespace gex.Controllers {
         /// <param name="defName">definition name of the unit</param>
         /// <param name="color">optional color to tint the icons with</param>
         /// <returns></returns>
-        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName", "color"] )] // 24 hours
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName", "color"])] // 24 hours
         public async Task<IActionResult> UnitIcon([FromQuery] string defName, [FromQuery] int? color) {
 
             string iconDir = Path.Join(_Options.Value.WebImageLocation, "icons");
@@ -173,7 +170,7 @@ namespace gex.Controllers {
                             byte ng = (byte)(g * (pixel.Red / (double)255));
                             byte nb = (byte)(b * (pixel.Red / (double)255));
 
-							// fix #41: copy pixel alpha to new image
+                            // fix #41: copy pixel alpha to new image
                             bp.SetPixel(col, row, new SKColor(nr, ng, nb, pixel.Alpha));
                         }
                     }
@@ -189,12 +186,12 @@ namespace gex.Controllers {
             return File(image, "image/png", false);
         }
 
-		/// <summary>
-		///		get the picture of a unit, first locally saved, otherwise load it from the github
-		/// </summary>
-		/// <param name="defName">definition name of the unit</param>
-		/// <returns></returns>
-        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName"] )] // 24 hours
+        /// <summary>
+        ///		get the picture of a unit, first locally saved, otherwise load it from the github
+        /// </summary>
+        /// <param name="defName">definition name of the unit</param>
+        /// <returns></returns>
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName"])] // 24 hours
         public async Task<IActionResult> UnitPic([FromQuery] string defName) {
 
             string cacheKey = string.Format(CACHE_KEY_PIC_MISSING, defName);

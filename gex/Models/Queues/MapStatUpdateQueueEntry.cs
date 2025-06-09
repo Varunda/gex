@@ -1,8 +1,8 @@
 ﻿namespace gex.Models.Queues {
 
-	public class MapStatUpdateQueueEntry {
+    public class MapStatUpdateQueueEntry {
 
-		public string MapFilename { get; set; } = "";
+        public string MapFilename { get; set; } = "";
 
-	}
+    }
 }

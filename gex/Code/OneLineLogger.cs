@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using gex.Code.ExtensionMethods;
+using gex.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using System;
 using System.IO;
-using gex.Code.ExtensionMethods;
-using gex.Models;
 
 
 /*

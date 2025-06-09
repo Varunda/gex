@@ -1,15 +1,15 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using gex.Commands;
+using gex.Models;
+using gex.Services.Db.Account;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Commands;
-using gex.Models;
-using gex.Services.Db.Account;
 
 namespace gex.Code.Commands {
 
-	[Command]
+    [Command]
     public class AccountCommand {
 
         private readonly ILogger<AccountCommand> _Logger;

@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace gex.Models {
 
@@ -35,10 +32,10 @@ namespace gex.Models {
         /// </summary>
         public string? Message { get; set; }
 
-		/// <summary>
-		///		maximum count of how many instances of this service are allowed to run. rarely used
-		/// </summary>
-		public int MaxCount { get; set; }
+        /// <summary>
+        ///		maximum count of how many instances of this service are allowed to run. rarely used
+        /// </summary>
+        public int MaxCount { get; set; }
 
     }
 

@@ -1,21 +1,20 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using gex.Code;
+using gex.Models;
+using gex.Models.Api;
+using gex.Models.Health;
+using gex.Models.Internal;
+using gex.Models.Queues;
+using gex.Services;
+using gex.Services.Queues;
+using gex.Services.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using gex.Models;
-using gex.Models.Api;
-using gex.Models.Health;
-using gex.Services.Queues;
-using gex.Code;
-using gex.Services;
-using gex.Models.Queues;
-using gex.Services.Repositories;
-using Microsoft.AspNetCore.RateLimiting;
-using gex.Models.Internal;
-using Microsoft.AspNetCore.Authorization;
 
 namespace gex.Controllers.Api {
 
@@ -27,7 +26,7 @@ namespace gex.Controllers.Api {
         private readonly IMemoryCache _Cache;
 
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
-		private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
+        private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
 
         private readonly DiscordMessageQueue _DiscordQueue;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
@@ -36,85 +35,85 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
-		private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
-		private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
+        private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
 
-		public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
-			DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-			ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
-			BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
-			BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
-			BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository,
-			BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) {
+        public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
+            DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
+            ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
+            BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
+            BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
+            BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository,
+            BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) {
 
-			_Logger = logger;
-			_Cache = cache;
+            _Logger = logger;
+            _Cache = cache;
 
-			_DiscordQueue = discordQueue;
-			_HeadlessRunQueue = headlessRunQueue;
-			_ServiceHealthMonitor = serviceHealthMonitor;
-			_DownloadQueue = downloadQueue;
-			_ParseQueue = parseQueue;
-			_ActionLogQueue = actionLogQueue;
-			_UserMapStatUpdateQueue = userMapStatUpdateQueue;
-			_MapStatUpdateQueue = mapStatUpdateQueue;
-			_FactionStatUpdateQueue = factionStatUpdateQueue;
-			_HeadlessRunStatusQueue = headlessRunStatusQueue;
-			_HeadlessRunStatusRepository = headlessRunStatusRepository;
-		}
+            _DiscordQueue = discordQueue;
+            _HeadlessRunQueue = headlessRunQueue;
+            _ServiceHealthMonitor = serviceHealthMonitor;
+            _DownloadQueue = downloadQueue;
+            _ParseQueue = parseQueue;
+            _ActionLogQueue = actionLogQueue;
+            _UserMapStatUpdateQueue = userMapStatUpdateQueue;
+            _MapStatUpdateQueue = mapStatUpdateQueue;
+            _FactionStatUpdateQueue = factionStatUpdateQueue;
+            _HeadlessRunStatusQueue = headlessRunStatusQueue;
+            _HeadlessRunStatusRepository = headlessRunStatusRepository;
+        }
 
-		/// <summary>
-		///		disable a service
-		/// </summary>
-		/// <param name="name">name of the service</param>
-		/// <returns></returns>
-		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
-		[HttpPost("disable/{name}")]
-		[Authorize]
-		public ApiResponse DisableService(string name) {
+        /// <summary>
+        ///		disable a service
+        /// </summary>
+        /// <param name="name">name of the service</param>
+        /// <returns></returns>
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+        [HttpPost("disable/{name}")]
+        [Authorize]
+        public ApiResponse DisableService(string name) {
 
-			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
-			if (entry == null) {
-				return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
-			}
+            ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
+            if (entry == null) {
+                return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
+            }
 
-			entry.Enabled = false;
+            entry.Enabled = false;
 
-			return ApiOk();
-		}
+            return ApiOk();
+        }
 
-		/// <summary>
-		///		enable a service
-		/// </summary>
-		/// <param name="name">name of the service</param>
-		/// <returns></returns>
-		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
-		[HttpPost("enable/{name}")]
-		[Authorize]
-		public ApiResponse EnableService(string name) {
+        /// <summary>
+        ///		enable a service
+        /// </summary>
+        /// <param name="name">name of the service</param>
+        /// <returns></returns>
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+        [HttpPost("enable/{name}")]
+        [Authorize]
+        public ApiResponse EnableService(string name) {
 
-			ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
-			if (entry == null) {
-				return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
-			}
+            ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
+            if (entry == null) {
+                return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
+            }
 
-			entry.Enabled = true;
+            entry.Enabled = true;
 
-			return ApiOk();
-		}
+            return ApiOk();
+        }
 
-		/// <summary>
-		///     Get an object that indicates how healthy Gex is in various metrics
-		/// </summary>
-		/// <remarks>
-		///     Feel free to hammer this endpoint as much as you'd like. The results are cached for 800ms, and it only takes like 2ms to
-		///     get all the data, so hitting this endpoint is not a burden
-		/// </remarks>
-		/// <response code="200">
-		///     The response will contain a <see cref="AppHealth"/> that represents the health of the app at the time of being called
-		/// </response>
-		[HttpGet]
-		[DisableRateLimiting]
+        /// <summary>
+        ///     Get an object that indicates how healthy Gex is in various metrics
+        /// </summary>
+        /// <remarks>
+        ///     Feel free to hammer this endpoint as much as you'd like. The results are cached for 800ms, and it only takes like 2ms to
+        ///     get all the data, so hitting this endpoint is not a burden
+        /// </remarks>
+        /// <response code="200">
+        ///     The response will contain a <see cref="AppHealth"/> that represents the health of the app at the time of being called
+        /// </response>
+        [HttpGet]
+        [DisableRateLimiting]
         public ApiResponse<AppHealth> GetRealtimeHealth() {
             if (_Cache.TryGetValue("App.Health", out AppHealth? health) == false || health == null) {
                 health = new AppHealth();
@@ -128,8 +127,8 @@ namespace gex.Controllers.Api {
                     _MakeCount("action_log_queue", _ActionLogQueue),
                     _MakeCount("user_map_stat_update_queue", _UserMapStatUpdateQueue),
                     _MakeCount("user_faction_stat_update_queue", _FactionStatUpdateQueue),
-					_MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue),
-					_MakeCount("map_stat_update_queue", _MapStatUpdateQueue)
+                    _MakeCount("headless_run_update_queue", _HeadlessRunStatusQueue),
+                    _MakeCount("map_stat_update_queue", _MapStatUpdateQueue)
                 };
 
                 foreach (string service in _ServiceHealthMonitor.GetServices()) {
@@ -139,7 +138,7 @@ namespace gex.Controllers.Api {
                     }
                 }
 
-				health.HeadlessRuns = _HeadlessRunStatusRepository.GetAll();
+                health.HeadlessRuns = _HeadlessRunStatusRepository.GetAll();
 
                 _Cache.Set("App.Health", health, new MemoryCacheEntryOptions() {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(800)
@@ -152,7 +151,7 @@ namespace gex.Controllers.Api {
         private ServiceQueueCount _MakeCount(string name, IProcessQueue queue) {
             ServiceQueueCount c = new() {
                 QueueName = name,
-                Count = queue.Count() ,
+                Count = queue.Count(),
                 Processed = queue.Processed()
             };
 

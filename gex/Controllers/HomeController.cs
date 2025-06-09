@@ -1,23 +1,22 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using gex.Code;
+using gex.Models.Db;
+using gex.Models.Internal;
+using gex.Models.Options;
+using gex.Services;
+using gex.Services.Db.Match;
+using gex.Services.Repositories;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using gex.Code;
-using gex.Services;
 using Microsoft.Extensions.Options;
-using gex.Models.Options;
-using System.IO;
-using gex.Services.Repositories;
-using gex.Models.Db;
-using System.Threading.Tasks;
-using System.Net.Mime;
-using System.Threading;
 using System;
-using gex.Services.Db.Match;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using gex.Models.Internal;
-using Microsoft.AspNetCore.Authentication;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace gex.Controllers {
 
@@ -33,26 +32,26 @@ namespace gex.Controllers {
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
 
-		public HomeController(ILogger<HomeController> logger,
-			IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
-			IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
-			BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository) {
+        public HomeController(ILogger<HomeController> logger,
+            IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
+            IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
+            BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository) {
 
-			_HttpContextAccessor = httpContextAccessor;
-			_HttpUtil = httpUtil;
-			_Logger = logger;
-			_Options = options;
-			_MatchRepository = matchRepository;
-			_AllyTeamDb = allyTeamDb;
-			_PlayerRepository = playerRepository;
-		}
+            _HttpContextAccessor = httpContextAccessor;
+            _HttpUtil = httpUtil;
+            _Logger = logger;
+            _Options = options;
+            _MatchRepository = matchRepository;
+            _AllyTeamDb = allyTeamDb;
+            _PlayerRepository = playerRepository;
+        }
 
-		public IActionResult Index() {
+        public IActionResult Index() {
             return View();
         }
 
         [Authorize]
-		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public IActionResult AccountManagement() {
             return View();
         }
@@ -62,52 +61,52 @@ namespace gex.Controllers {
         }
 
         [Authorize]
-		[PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public IActionResult Cache() {
             return View();
         }
 
         public async Task<IActionResult> Match(string gameID, CancellationToken cancel) {
-			try {
-				string? ogDesc = null;
-				await Task.Run(async () => {
-					BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
+            try {
+                string? ogDesc = null;
+                await Task.Run(async () => {
+                    BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
 
-					if (match == null) {
-						return;
-					}
+                    if (match == null) {
+                        return;
+                    }
 
-					if (match.PlayerCount == 2) {
-						List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(gameID, cancel);
-						if (players.Count != 2) {
-							_Logger.LogWarning($"expected 2 players from a match with a player count of 2 [gameID={gameID}] [player.Count={players.Count}]");
-							return;
-						}
+                    if (match.PlayerCount == 2) {
+                        List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(gameID, cancel);
+                        if (players.Count != 2) {
+                            _Logger.LogWarning($"expected 2 players from a match with a player count of 2 [gameID={gameID}] [player.Count={players.Count}]");
+                            return;
+                        }
 
-						ogDesc = $"Duel: {players[0].Name} / {players[1].Name}";
-					} else {
-						List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(gameID, cancel);
-						if (allyTeams.Count == 0) {
-							_Logger.LogWarning($"expected at least 1 ally team [gameID={gameID}]");
-							return;
-						}
+                        ogDesc = $"Duel: {players[0].Name} / {players[1].Name}";
+                    } else {
+                        List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(gameID, cancel);
+                        if (allyTeams.Count == 0) {
+                            _Logger.LogWarning($"expected at least 1 ally team [gameID={gameID}]");
+                            return;
+                        }
 
-						int biggestTeam = allyTeams.Select(iter => iter.PlayerCount).Max();
-						// FFA
-						if (biggestTeam == 1) {
-							ogDesc = $"{allyTeams.Count}-way FFA";
-						} else {
-							ogDesc = $"{(biggestTeam >= 4 ? "Large team" : "Small team")}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
-						}
-					}
+                        int biggestTeam = allyTeams.Select(iter => iter.PlayerCount).Max();
+                        // FFA
+                        if (biggestTeam == 1) {
+                            ogDesc = $"{allyTeams.Count}-way FFA";
+                        } else {
+                            ogDesc = $"{(biggestTeam >= 4 ? "Large team" : "Small team")}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
+                        }
+                    }
 
-					ogDesc += $" on {match.Map}";
-				}, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
+                    ogDesc += $" on {match.Map}";
+                }, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
 
-				ViewBag.OgDescription = ogDesc;
-			} catch (Exception) {
-				_Logger.LogWarning($"failed to generate og:description within 1s [gameID={gameID}]");
-			}
+                ViewBag.OgDescription = ogDesc;
+            } catch (Exception) {
+                _Logger.LogWarning($"failed to generate og:description within 1s [gameID={gameID}]");
+            }
 
             return View();
         }
@@ -120,34 +119,34 @@ namespace gex.Controllers {
             return View();
         }
 
-		public IActionResult Users() {
-			return View();
-		}
+        public IActionResult Users() {
+            return View();
+        }
 
-		public IActionResult Faq() {
-			return View();
-		}
+        public IActionResult Faq() {
+            return View();
+        }
 
-		[PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]
-		[Authorize]
-		public IActionResult Upload() {
-			return View();
-		}
+        [PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]
+        [Authorize]
+        public IActionResult Upload() {
+            return View();
+        }
 
-		[Authorize]
-		public IActionResult Login() {
-			return View("Index");
-		}
+        [Authorize]
+        public IActionResult Login() {
+            return View("Index");
+        }
 
-		public async Task<IActionResult> Logout(string? returnUrl = null) {
-			await HttpContext.SignOutAsync();
+        public async Task<IActionResult> Logout(string? returnUrl = null) {
+            await HttpContext.SignOutAsync();
 
-			if (returnUrl == null) {
-				return RedirectToAction("Index", "Home");
-			}
+            if (returnUrl == null) {
+                return RedirectToAction("Index", "Home");
+            }
 
-			return Redirect(returnUrl);
-		}
+            return Redirect(returnUrl);
+        }
 
         /// <summary>
         ///     action to download a replay file
@@ -166,13 +165,13 @@ namespace gex.Controllers {
             return File(fs, "application/octet-stream", fileDownloadName: match.FileName, false);
         }
 
-		public IActionResult Map(string filename) {
-			return View();
-		}
+        public IActionResult Map(string filename) {
+            return View();
+        }
 
-		public IActionResult Recent() {
-			return View();
-		}
+        public IActionResult Recent() {
+            return View();
+        }
 
     }
 }

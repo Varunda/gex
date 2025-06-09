@@ -18,8 +18,8 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<ActionLogParseQueueEntry>, ActionLogParseQueue>();
             services.AddSingleton<BaseQueue<UserMapStatUpdateQueueEntry>, UserMapStatUpdateQueue>();
             services.AddSingleton<BaseQueue<UserFactionStatUpdateQueueEntry>, UserFactionStatUpdateQueue>();
-			services.AddSingleton<BaseQueue<HeadlessRunStatus>, HeadlessRunStatusUpdateQueue>();
-			services.AddSingleton<BaseQueue<MapStatUpdateQueueEntry>, MapStatUpdateQueue>();
+            services.AddSingleton<BaseQueue<HeadlessRunStatus>, HeadlessRunStatusUpdateQueue>();
+            services.AddSingleton<BaseQueue<MapStatUpdateQueueEntry>, MapStatUpdateQueue>();
         }
 
     }

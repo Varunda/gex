@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace gex.Code.Converters {
- 
+
     /// <summary>
     /// Custom <c>DateTime</c> converter to avoid changing the format based on <see cref="DateTime.Kind"/>
     /// </summary>

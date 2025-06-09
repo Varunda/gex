@@ -1,13 +1,10 @@
-﻿using gex.Code.Constants;
-using gex.Code.ExtensionMethods;
-using gex.Models;
+﻿using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
 using gex.Services.Db.Match;
-using gex.Services.Db.Readers;
 using gex.Services.Db.UserStats;
 using gex.Services.Parser;
 using gex.Services.Queues;
@@ -19,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,55 +31,55 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarUserDb _UserDb;
-		private readonly MapPriorityModDb _MapPriorityModDb;
-		private readonly BarMatchPriorityCalculator _PriorityCalculator;
-		private readonly BarDemofileResultProcessor _ResultProcessor;
+        private readonly MapPriorityModDb _MapPriorityModDb;
+        private readonly BarMatchPriorityCalculator _PriorityCalculator;
+        private readonly BarDemofileResultProcessor _ResultProcessor;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarDemofileParser _Parser;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
-		private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
 
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
-		public GameReplayParseQueueProcessor(ILoggerFactory factory,
-			BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-			BarMatchProcessingRepository processingRepository, IOptions<FileStorageOptions> options,
-			BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-			BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
-			BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
-			BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-			BarReplayDb replayDb, BarUserDb userDb,
-			BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
-			BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
-			MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
-			BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) :
+        public GameReplayParseQueueProcessor(ILoggerFactory factory,
+            BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
+            BarMatchProcessingRepository processingRepository, IOptions<FileStorageOptions> options,
+            BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
+            BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
+            BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
+            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
+            BarReplayDb replayDb, BarUserDb userDb,
+            BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
+            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
+            MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
+            BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) :
 
-		base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
+        base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
-			_ProcessingRepository = processingRepository;
-			_Options = options;
-			_Parser = parser;
-			_HeadlessRunQueue = headlessRunQueue;
-			_MatchRepository = matchRepository;
-			_MatchAllyTeamDb = matchAllyTeamDb;
-			_MatchSpectatorDb = matchSpectatorDb;
-			_MatchChatMessageDb = matchChatMessageDb;
-			_PlayerRepository = playerRepository;
-			_BarMapRepository = barMapRepository;
-			_ReplayDb = replayDb;
-			_UserDb = userDb;
-			_UserMapStatUpdateQueue = userMapStatUpdateQueue;
-			_FactionStatUpdateQueue = factionStatUpdateQueue;
-			_MapPriorityModDb = mapPriorityModDb;
-			_PriorityCalculator = priorityCalculator;
-			_ResultProcessor = resultProcessor;
-			_MapStatUpdateQueue = mapStatUpdateQueue;
-		}
+            _ProcessingRepository = processingRepository;
+            _Options = options;
+            _Parser = parser;
+            _HeadlessRunQueue = headlessRunQueue;
+            _MatchRepository = matchRepository;
+            _MatchAllyTeamDb = matchAllyTeamDb;
+            _MatchSpectatorDb = matchSpectatorDb;
+            _MatchChatMessageDb = matchChatMessageDb;
+            _PlayerRepository = playerRepository;
+            _BarMapRepository = barMapRepository;
+            _ReplayDb = replayDb;
+            _UserDb = userDb;
+            _UserMapStatUpdateQueue = userMapStatUpdateQueue;
+            _FactionStatUpdateQueue = factionStatUpdateQueue;
+            _MapPriorityModDb = mapPriorityModDb;
+            _PriorityCalculator = priorityCalculator;
+            _ResultProcessor = resultProcessor;
+            _MapStatUpdateQueue = mapStatUpdateQueue;
+        }
 
-		protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
+        protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
 
             _Logger.LogInformation($"parsing game replay [gameID={entry.GameID}]");
             Stopwatch timer = Stopwatch.StartNew();
@@ -98,7 +94,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             bool runHeadless = entry.ForceForward;
 
-			short priority = -1;
+            short priority = -1;
 
             BarMatch? existingMatch = await _MatchRepository.GetByID(entry.GameID, cancel);
             if (existingMatch != null && entry.Force == false) {
@@ -124,11 +120,11 @@ namespace gex.Services.Hosted.QueueProcessor {
                     return false;
                 }
 
-				FileInfo fi = new(replayPath);
-				if (fi.Length > 1024 * 1024 * 64) {
-					_Logger.LogWarning($"demo file is much larger than expected, refusing to parse this [size={fi.Length}] [path={replayPath}]");
-					return false;
-				}
+                FileInfo fi = new(replayPath);
+                if (fi.Length > 1024 * 1024 * 64) {
+                    _Logger.LogWarning($"demo file is much larger than expected, refusing to parse this [size={fi.Length}] [path={replayPath}]");
+                    return false;
+                }
 
                 _Logger.LogDebug($"opening game replay [gameID={entry.GameID}] [path={replayPath}]");
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
@@ -146,19 +142,19 @@ namespace gex.Services.Hosted.QueueProcessor {
                 BarMatch parsed = match.Value;
                 parsed.MapName = replay.MapName;
 
-				await _ResultProcessor.Process(parsed, cancel);
-				priority = await _PriorityCalculator.Calculate(parsed, cancel);
+                await _ResultProcessor.Process(parsed, cancel);
+                priority = await _PriorityCalculator.Calculate(parsed, cancel);
                 runHeadless |= (priority == -1);
 
-				_MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
-					MapFilename = parsed.MapName
-				});
+                _MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
+                    MapFilename = parsed.MapName
+                });
             }
 
             BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
-			processing.Priority = priority;
+            processing.Priority = priority;
             processing.ReplayParsed = DateTime.UtcNow;
             processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingRepository.Upsert(processing);

@@ -1,6 +1,5 @@
 ﻿using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +38,7 @@ namespace gex.Services.Queues {
         public BaseQueue(ILoggerFactory factory, QueueMetric metrics) {
             _Logger = factory.CreateLogger($"watchtower.Services.Queues.BaseQueue<{_QueueName}>");
 
-			_Metrics = metrics;
+            _Metrics = metrics;
         }
 
         /// <summary>
@@ -101,7 +100,7 @@ namespace gex.Services.Queues {
         ///     Queue a new entry into the queue
         /// </summary>
         public void Queue(T entry) {
-			_Metrics.RecordCount(_QueueName);
+            _Metrics.RecordCount(_QueueName);
             _Items.Enqueue(entry);
             _Signal.Release();
         }
@@ -152,11 +151,11 @@ namespace gex.Services.Queues {
         /// </summary>
         /// <returns>A newly allocated list that contains a shallow-reference to the items in the list</returns>
         public List<T> ToList() {
-			lock (_Items) {
-				//T[] arr = new T[Count()];
-				//_Items.CopyTo(arr, 0);
-				return _Items.ToArray().ToList();
-			}
+            lock (_Items) {
+                //T[] arr = new T[Count()];
+                //_Items.CopyTo(arr, 0);
+                return _Items.ToArray().ToList();
+            }
         }
 
     }

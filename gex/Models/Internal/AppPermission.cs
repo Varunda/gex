@@ -2,7 +2,7 @@
 
 namespace gex.Models.Internal {
 
-	public class AppPermission {
+    public class AppPermission {
 
         /// <summary>
         ///     List of all <see cref="AppPermission"/>s that exist
@@ -35,8 +35,8 @@ namespace gex.Models.Internal {
         public const string APP_ACCOUNT_GETALL = "App.Account.GetAll";
         public readonly static AppPermission AppAccountGetAll = new(APP_ACCOUNT_GETALL, "Get all accounts");
 
-		public const string GEX_MATCH_UPLOAD = "Gex.Match.Upload";
-		public readonly static AppPermission GexMatchUpload = new(GEX_MATCH_UPLOAD, "Upload a match to Gex");
+        public const string GEX_MATCH_UPLOAD = "Gex.Match.Upload";
+        public readonly static AppPermission GexMatchUpload = new(GEX_MATCH_UPLOAD, "Upload a match to Gex");
 
-	}
+    }
 }

@@ -1,5 +1,4 @@
-﻿using DSharpPlus;
-using gex.Code.ExtensionMethods;
+﻿using gex.Code.ExtensionMethods;
 using gex.Models;
 using gex.Models.Db;
 using gex.Models.Options;

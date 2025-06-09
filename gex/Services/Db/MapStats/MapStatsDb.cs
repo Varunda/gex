@@ -8,37 +8,37 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db.MapStats {
 
-	public class MapStatsDb {
+    public class MapStatsDb {
 
-		private readonly ILogger<MapStatsDb> _Logger;
-		private readonly IDbHelper _DbHelper;
+        private readonly ILogger<MapStatsDb> _Logger;
+        private readonly IDbHelper _DbHelper;
 
-		public MapStatsDb(ILogger<MapStatsDb> logger,
-			IDbHelper dbHelper) {
+        public MapStatsDb(ILogger<MapStatsDb> logger,
+            IDbHelper dbHelper) {
 
-			_Logger = logger;
-			_DbHelper = dbHelper;
-		}
+            _Logger = logger;
+            _DbHelper = dbHelper;
+        }
 
-		/// <summary>
-		///		get the <see cref="MapStatsByGamemode"/> by a map
-		/// </summary>
-		/// <param name="mapFilename"></param>
-		/// <param name="cancel"></param>
-		/// <returns></returns>
-		public async Task<List<MapStatsByGamemode>> GetByMap(string mapFilename, CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			return await conn.QueryListAsync<MapStatsByGamemode>(
-				"SELECT * FROM map_stats WHERE map_file_name = @MapFileName ORDER BY gamemode ASC;",
-				new { MapFileName = mapFilename },
-				cancel
-			);
-		}
+        /// <summary>
+        ///		get the <see cref="MapStatsByGamemode"/> by a map
+        /// </summary>
+        /// <param name="mapFilename"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<List<MapStatsByGamemode>> GetByMap(string mapFilename, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<MapStatsByGamemode>(
+                "SELECT * FROM map_stats WHERE map_file_name = @MapFileName ORDER BY gamemode ASC;",
+                new { MapFileName = mapFilename },
+                cancel
+            );
+        }
 
-		public async Task Generate(string mapFilename, CancellationToken cancel) {
+        public async Task Generate(string mapFilename, CancellationToken cancel) {
 
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats WHERE map_file_name = @MapFileName;
@@ -68,12 +68,12 @@ namespace gex.Services.Db.MapStats {
 				COMMIT TRANSACTION;
 			", cancel);
 
-			cmd.AddParameter("MapFileName", mapFilename);
-			await cmd.PrepareAsync(cancel);
+            cmd.AddParameter("MapFileName", mapFilename);
+            await cmd.PrepareAsync(cancel);
 
-			await cmd.ExecuteNonQueryAsync(cancel);
-			await conn.CloseAsync();
-		}
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
 
-	}
+    }
 }

@@ -1,13 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using gex.Models;
+using gex.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using gex.Models;
-using gex.Services;
 
 namespace gex.Code {
 

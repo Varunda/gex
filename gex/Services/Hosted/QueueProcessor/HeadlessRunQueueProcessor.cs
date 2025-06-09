@@ -4,16 +4,12 @@ using gex.Models.Event;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
-using gex.Services.Db.Match;
 using gex.Services.Queues;
 using gex.Services.Repositories;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 

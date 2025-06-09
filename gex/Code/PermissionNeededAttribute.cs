@@ -16,11 +16,11 @@ using System.Threading.Tasks;
 
 namespace gex.Code {
 
-	/// <summary>
-	///     Attribute to add to actions to require a user to have a <see cref="AppAccount"/>,
-	///     and that account has the necessary permissions
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    /// <summary>
+    ///     Attribute to add to actions to require a user to have a <see cref="AppAccount"/>,
+    ///     and that account has the necessary permissions
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class PermissionNeededAttribute : TypeFilterAttribute {
 
         public PermissionNeededAttribute(params string[] perms) : base(typeof(PermissionNeededFilter)) {
@@ -42,7 +42,7 @@ namespace gex.Code {
         public PermissionNeededFilter(ILogger<PermissionNeededFilter> logger,
             IHttpContextAccessor context, AppAccountDbStore appAccountDb,
             AppPermissionRepository permissionRepository, AppCurrentAccount currentAccount,
-            string[] perms) { 
+            string[] perms) {
 
             Permissions = perms.ToList();
 

@@ -4,10 +4,10 @@ using Microsoft.Extensions.Logging;
 
 namespace gex.Services.Queues {
 
-	public class MapStatUpdateQueue : BaseQueue<MapStatUpdateQueueEntry> {
+    public class MapStatUpdateQueue : BaseQueue<MapStatUpdateQueueEntry> {
 
-		public MapStatUpdateQueue(ILoggerFactory factory, QueueMetric metrics)
-			: base(factory, metrics) { }
+        public MapStatUpdateQueue(ILoggerFactory factory, QueueMetric metrics)
+            : base(factory, metrics) { }
 
-	}
+    }
 }

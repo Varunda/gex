@@ -63,7 +63,7 @@ namespace gex.Models.Discord {
         /// <summary>
         ///     Get the <see cref="TargetType"/> of this message
         /// </summary>
-        public TargetType Type { 
+        public TargetType Type {
             get {
                 if (TargetUserID != null) {
                     return TargetType.USER;

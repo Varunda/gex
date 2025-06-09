@@ -1,13 +1,12 @@
 ﻿using DSharpPlus.Entities;
+using gex.Code.ExtensionMethods;
+using gex.Commands;
+using gex.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using gex.Code.ExtensionMethods;
-using gex.Commands;
-using gex.Services;
-using gex.Services.Hosted;
 
 namespace gex.Code.Commands {
 

@@ -1,16 +1,14 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Npgsql;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Models.Db;
-using System.Collections.Concurrent;
 
 namespace gex.Services.Db.Implementations {
 
@@ -39,8 +37,8 @@ namespace gex.Services.Db.Implementations {
                 }.Build();
 
                 if (_DataSources.TryAdd(dbName, ds) == false) {
-					_Logger.LogError($"failed to add datasource to dict [dbName={dbName}]");
-				}
+                    _Logger.LogError($"failed to add datasource to dict [dbName={dbName}]");
+                }
             }
         }
 

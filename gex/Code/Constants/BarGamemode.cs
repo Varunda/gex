@@ -1,6 +1,4 @@
-﻿using OpenTelemetry.Metrics;
-
-namespace gex.Code.Constants {
+﻿namespace gex.Code.Constants {
 
     public class BarGamemode {
 
@@ -14,7 +12,7 @@ namespace gex.Code.Constants {
 
         public const byte FFA = 4;
 
-		public const byte TEAM_FFA = 5;
+        public const byte TEAM_FFA = 5;
 
     }
 }

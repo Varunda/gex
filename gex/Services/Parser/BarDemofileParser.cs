@@ -14,7 +14,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,27 +49,27 @@ namespace gex.Services.Parser {
             using GZipStream zlib = new(stream, CompressionMode.Decompress);
             using MemoryStream output = new();
 
-			// this is copied from CopyToAsync, but includes a failsafe where if the demofile 
-			// gets too large when unzipping, processing exits (anti-zip-bomb)
+            // this is copied from CopyToAsync, but includes a failsafe where if the demofile 
+            // gets too large when unzipping, processing exits (anti-zip-bomb)
             //await zlib.CopyToAsync(output, cancel);
-			byte[] buffer = ArrayPool<byte>.Shared.Rent(1024 * 1024);
-			try {
-				int totalRead = 0;
-				int bytesRead;
-				while ((bytesRead = await zlib.ReadAsync(new Memory<byte>(buffer), cancel).ConfigureAwait(false)) != 0) {
-					totalRead += bytesRead;
-					await output.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancel).ConfigureAwait(false);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024 * 1024);
+            try {
+                int totalRead = 0;
+                int bytesRead;
+                while ((bytesRead = await zlib.ReadAsync(new Memory<byte>(buffer), cancel).ConfigureAwait(false)) != 0) {
+                    totalRead += bytesRead;
+                    await output.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancel).ConfigureAwait(false);
 
-					// if the demofile uncompressed is over 256MB, something is very wrong :tm:
-					// largest demo file i have is 20MB compressed, 56MB uncompressed 
-					if (totalRead > 1024 * 1024 * 256) {
-						_Logger.LogError($"uncompressed demofile reached unsafe size, exiting [filename={filename}]");
-						return $"demofile uncompression reached unsafe size";
-					}
-				}
-			} finally {
-				ArrayPool<byte>.Shared.Return(buffer);
-			}
+                    // if the demofile uncompressed is over 256MB, something is very wrong :tm:
+                    // largest demo file i have is 20MB compressed, 56MB uncompressed 
+                    if (totalRead > 1024 * 1024 * 256) {
+                        _Logger.LogError($"uncompressed demofile reached unsafe size, exiting [filename={filename}]");
+                        return $"demofile uncompression reached unsafe size";
+                    }
+                }
+            } finally {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
             byte[] data = output.ToArray();
             _Logger.LogDebug($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
 
@@ -151,7 +150,7 @@ namespace gex.Services.Parser {
 
                         players[player.TeamID] = player;
                     }
-                    
+
                     // ally team parsing
                     else if (iter.Name.StartsWith("ally")) {
                         int allyTeamID = int.Parse(iter.Name.Split("allyteam")[1]);
@@ -170,7 +169,7 @@ namespace gex.Services.Parser {
                             match.AllyTeams.Add(allyTeam);
                         }
                     }
-                    
+
                     // player parsing, also spectator
                     else if (iter.Name.StartsWith("player")) {
 
@@ -199,18 +198,16 @@ namespace gex.Services.Parser {
 
                             players[player.TeamID] = player;
                         }
-                    }
-                    
-                    else if (iter.Name.StartsWith("ai")) {
-						// [ai0]
+                    } else if (iter.Name.StartsWith("ai")) {
+                        // [ai0]
                         int aiID = int.Parse(iter.Name.Split("ai")[1]);
-						int teamID = iter.Value.GetRequiredInt32("team");
+                        int teamID = iter.Value.GetRequiredInt32("team");
 
-						BarMatchAiPlayer ai = new();
-						ai.AiID = aiID;
-						ai.TeamID = teamID;
-						ai.Name = iter.Value.GetRequiredString("name");
-						match.AiPlayers.Add(ai);
+                        BarMatchAiPlayer ai = new();
+                        ai.AiID = aiID;
+                        ai.TeamID = teamID;
+                        ai.Name = iter.Value.GetRequiredString("name");
+                        match.AiPlayers.Add(ai);
                     }
 
                 }
@@ -238,8 +235,8 @@ namespace gex.Services.Parser {
             byte[] winningAllyTeams = [];
 
             int packetCount = 0;
-			int frameCount = 0;
-			int maxFrame = 0;
+            int frameCount = 0;
+            int maxFrame = 0;
             while (reader.Index < header.StatOffset) {
                 DemofilePacket packet = new();
                 packet.GameTime = reader.ReadFloat32LE();
@@ -250,128 +247,128 @@ namespace gex.Services.Parser {
                 packet.Data = packetData.ToArray();
                 ++packetCount;
 
-				if (packet.PacketType == BarPacketType.CHAT) {
-					ByteArrayReader packetReader = new(packet.Data);
+                if (packet.PacketType == BarPacketType.CHAT) {
+                    ByteArrayReader packetReader = new(packet.Data);
 
-					BarMatchChatMessage msg = new();
-					msg.Size = packetReader.ReadByte();
-					msg.FromId = packetReader.ReadByte();
-					msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
-					msg.Message = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
-					msg.GameID = match.ID;
-					msg.GameTimestamp = packet.GameTime;
+                    BarMatchChatMessage msg = new();
+                    msg.Size = packetReader.ReadByte();
+                    msg.FromId = packetReader.ReadByte();
+                    msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
+                    msg.Message = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+                    msg.GameID = match.ID;
+                    msg.GameTimestamp = packet.GameTime;
 
-					match.ChatMessages.Add(msg);
-				} else if (packet.PacketType == BarPacketType.GAME_ID) {
-					ByteArrayReader packetReader = new(packet.Data);
-					string packetGameID = BitConverter.ToString(packetReader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
+                    match.ChatMessages.Add(msg);
+                } else if (packet.PacketType == BarPacketType.GAME_ID) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    string packetGameID = BitConverter.ToString(packetReader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
 
-					if (packetGameID != header.GameID) {
-						return $"inconsistent gameID found, refusing to process further";
-					}
+                    if (packetGameID != header.GameID) {
+                        return $"inconsistent gameID found, refusing to process further";
+                    }
 
-				} else if (packet.PacketType == BarPacketType.START_POS) {
-					ByteArrayReader packetReader = new(packet.Data);
-					byte playerID = packetReader.ReadByte();
-					byte teamID = packetReader.ReadByte();
-					byte readyState = packetReader.ReadByte();
-					float x = packetReader.ReadFloat32LE();
-					float y = packetReader.ReadFloat32LE();
-					float z = packetReader.ReadFloat32LE();
+                } else if (packet.PacketType == BarPacketType.START_POS) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte playerID = packetReader.ReadByte();
+                    byte teamID = packetReader.ReadByte();
+                    byte readyState = packetReader.ReadByte();
+                    float x = packetReader.ReadFloat32LE();
+                    float y = packetReader.ReadFloat32LE();
+                    float z = packetReader.ReadFloat32LE();
 
-					BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-					if (player == null) {
-						_Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
-					} else {
-						player.StartingPosition = new System.Numerics.Vector3() {
-							X = x,
-							Y = y,
-							Z = z
-						};
-					}
+                    BarMatchPlayer? player = players.GetValueOrDefault(teamID);
+                    if (player == null) {
+                        _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
+                    } else {
+                        player.StartingPosition = new System.Numerics.Vector3() {
+                            X = x,
+                            Y = y,
+                            Z = z
+                        };
+                    }
 
-				} else if (packet.PacketType == BarPacketType.LUA_MSG) {
-					ByteArrayReader packetReader = new(packet.Data);
-					short size = packetReader.ReadInt16LE();
-					byte playerNum = packetReader.ReadByte();
-					short script = packetReader.ReadInt16LE();
-					byte mode = packetReader.ReadByte();
+                } else if (packet.PacketType == BarPacketType.LUA_MSG) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    short size = packetReader.ReadInt16LE();
+                    byte playerNum = packetReader.ReadByte();
+                    short script = packetReader.ReadInt16LE();
+                    byte mode = packetReader.ReadByte();
 
-					byte[] bytes = packetReader.ReadAll();
-					string msg = Encoding.ASCII.GetString(bytes);
+                    byte[] bytes = packetReader.ReadAll();
+                    string msg = Encoding.ASCII.GetString(bytes);
 
-					if (msg.StartsWith("AutoColors")) {
-						JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg.Substring(10));
+                    if (msg.StartsWith("AutoColors")) {
+                        JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg.Substring(10));
 
-						foreach (JsonElement iter in colors.EnumerateArray()) {
-							int teamID = iter.GetProperty("teamID").GetInt32();
+                        foreach (JsonElement iter in colors.EnumerateArray()) {
+                            int teamID = iter.GetProperty("teamID").GetInt32();
 
-							// TODO: why can these values go can over 255 and below 0 
-							byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
-							byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
-							byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
+                            // TODO: why can these values go can over 255 and below 0 
+                            byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
+                            byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
+                            byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
 
-							BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-							if (player != null) {
-								player.Color = (r << 16) | (g << 8) | b;
-							}
-						}
-					} else if (msg.StartsWith("changeStartUnit")) {
-						int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
-						_Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
+                            BarMatchPlayer? player = players.GetValueOrDefault(teamID);
+                            if (player != null) {
+                                player.Color = (r << 16) | (g << 8) | b;
+                            }
+                        }
+                    } else if (msg.StartsWith("changeStartUnit")) {
+                        int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
+                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
 
-						string? defName = unitDefDict.GetValueOrDefault(unitDefID);
-						if (defName == null) {
-							_Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
-						} else {
-							BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
-							if (player != null) {
-								if (defName == "armcom") {
-									player.Faction = "Armada";
-								} else if (defName == "corcom") {
-									player.Faction = "Cortex";
-								} else if (defName == "legcom") {
-									player.Faction = "Legion";
-								} else if (defName == "dummycom") {
-									player.Faction = "Random";
-								} else {
-									_Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
-								}
-								_Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
-							}
-						}
+                        string? defName = unitDefDict.GetValueOrDefault(unitDefID);
+                        if (defName == null) {
+                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
+                        } else {
+                            BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
+                            if (player != null) {
+                                if (defName == "armcom") {
+                                    player.Faction = "Armada";
+                                } else if (defName == "corcom") {
+                                    player.Faction = "Cortex";
+                                } else if (defName == "legcom") {
+                                    player.Faction = "Legion";
+                                } else if (defName == "dummycom") {
+                                    player.Faction = "Random";
+                                } else {
+                                    _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+                                }
+                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
+                            }
+                        }
 
-					} else if (msg.StartsWith("unitdefs:")) {
-						Span<byte> input = bytes.AsSpan("unitdefs:".Length);
-						using MemoryStream stream = new(input.ToArray());
-						using ZLibStream zlib = new(stream, CompressionMode.Decompress);
-						using MemoryStream output = new();
-						zlib.CopyTo(output);
-						byte[] unitDefs = output.ToArray();
+                    } else if (msg.StartsWith("unitdefs:")) {
+                        Span<byte> input = bytes.AsSpan("unitdefs:".Length);
+                        using MemoryStream stream = new(input.ToArray());
+                        using ZLibStream zlib = new(stream, CompressionMode.Decompress);
+                        using MemoryStream output = new();
+                        zlib.CopyTo(output);
+                        byte[] unitDefs = output.ToArray();
 
-						JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
+                        JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
 
-						int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
-						foreach (JsonElement iter in json.EnumerateArray()) {
-							string defName = iter.GetString()!;
-							if (unitDefDict.ContainsKey(index)) {
-								if (unitDefDict[index] != defName) {
-									_Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
-								}
-							} else {
-								unitDefDict.Add(index, iter.GetString()!);
-							}
-							index += 1;
-						}
-					}
-				} else if (packet.PacketType == BarPacketType.KEYFRAME) {
-					ByteArrayReader packetReader = new(packet.Data);
-					int frame = packetReader.ReadInt32LE();
+                        int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
+                        foreach (JsonElement iter in json.EnumerateArray()) {
+                            string defName = iter.GetString()!;
+                            if (unitDefDict.ContainsKey(index)) {
+                                if (unitDefDict[index] != defName) {
+                                    _Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+                                }
+                            } else {
+                                unitDefDict.Add(index, iter.GetString()!);
+                            }
+                            index += 1;
+                        }
+                    }
+                } else if (packet.PacketType == BarPacketType.KEYFRAME) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    int frame = packetReader.ReadInt32LE();
 
-					maxFrame = Math.Max(frameCount, frame);
-				} else if (packet.PacketType == BarPacketType.NEW_FRAME) {
-					// it seems like this isn't accurate
-					++frameCount;
+                    maxFrame = Math.Max(frameCount, frame);
+                } else if (packet.PacketType == BarPacketType.NEW_FRAME) {
+                    // it seems like this isn't accurate
+                    ++frameCount;
                 } else if (packet.PacketType == BarPacketType.GAME_OVER) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte size = packetReader.ReadByte();
@@ -387,8 +384,8 @@ namespace gex.Services.Parser {
                 return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
             }
 
-			_Logger.LogDebug($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
-			match.DurationFrameCount = maxFrame;
+            _Logger.LogDebug($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
+            match.DurationFrameCount = maxFrame;
 
             // player stat parsing
             DemofileStatistics playerStats = new();
@@ -458,7 +455,7 @@ namespace gex.Services.Parser {
                     allyTeam.Won = true;
                 }
                 allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
-				match.PlayerCount += allyTeam.PlayerCount;
+                match.PlayerCount += allyTeam.PlayerCount;
             }
 
             int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();

@@ -25,35 +25,35 @@ namespace gex.Services.Db.Account {
         ///     Get a single group permission by its ID
         /// </summary>
         /// <param name="ID">ID of the specific permission to get</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         public async Task<AppGroupPermission?> GetByID(long ID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection();
-			return await conn.QuerySingleAsync<AppGroupPermission>(
-				"SELECT * FROM app_group_permission WHERE id = @ID",
-				new { ID = ID },
-				cancel
-			);
+            return await conn.QuerySingleAsync<AppGroupPermission>(
+                "SELECT * FROM app_group_permission WHERE id = @ID",
+                new { ID = ID },
+                cancel
+            );
         }
 
         /// <summary>
         ///     Get the account permissions of a group
         /// </summary>
         /// <param name="groupID">ID of the group</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         public async Task<List<AppGroupPermission>> GetByGroupID(long groupID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection();
-			return await conn.QueryListAsync<AppGroupPermission>(
-				"SELECT * FROM app_group_permission WHERE group_id = @GroupID",
-				new { GroupID = groupID },
-				cancel
-			);
+            return await conn.QueryListAsync<AppGroupPermission>(
+                "SELECT * FROM app_group_permission WHERE group_id = @GroupID",
+                new { GroupID = groupID },
+                cancel
+            );
         }
 
         /// <summary>
         ///     Insert a new <see cref="AppGroupPermission"/>
         /// </summary>
         /// <param name="perm">Parameters used to insert</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>The ID the row was given in the table</returns>
         /// <exception cref="ArgumentException">If one of the fields in <paramref name="perm"/> was invalid</exception>
         public async Task<ulong> Insert(AppGroupPermission perm, CancellationToken cancel) {
@@ -77,7 +77,7 @@ namespace gex.Services.Db.Account {
             cmd.AddParameter("Permission", perm.Permission);
             cmd.AddParameter("Timestamp", DateTime.UtcNow);
             cmd.AddParameter("GrantedByID", perm.GrantedByID);
-			await cmd.PrepareAsync(cancel);
+            await cmd.PrepareAsync(cancel);
 
             ulong id = await cmd.ExecuteUInt64(cancel);
 
@@ -88,7 +88,7 @@ namespace gex.Services.Db.Account {
         ///     Delete a specific <see cref="AppGroupPermission"/> by its ID
         /// </summary>
         /// <param name="ID">ID of the permission to delete</param>
-		/// <param name="cancel">cancellation token</param>
+        /// <param name="cancel">cancellation token</param>
         public async Task DeleteByID(long ID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection();
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
@@ -98,7 +98,7 @@ namespace gex.Services.Db.Account {
             ");
 
             cmd.AddParameter("ID", ID);
-			await cmd.PrepareAsync(cancel);
+            await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);
             await conn.CloseAsync();

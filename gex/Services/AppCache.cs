@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using gex.Models.Internal;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using gex.Models.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -90,17 +90,17 @@ namespace gex.Services {
             string key = objKey.ToString()
                 ?? throw new ArgumentNullException($"{objKey} does not turn into a non-null string when calling .ToString()");
 
-			lock (_Metadata) {
-				if (_Metadata.ContainsKey(key) == true) {
-					++_Metadata[key].Uses;
-					_Metadata[key].LastAccessed = DateTime.UtcNow;
-				}
-			}
+            lock (_Metadata) {
+                if (_Metadata.ContainsKey(key) == true) {
+                    ++_Metadata[key].Uses;
+                    _Metadata[key].LastAccessed = DateTime.UtcNow;
+                }
+            }
 
             return _BackingCache.TryGetValue(key, out value);
         }
 
-        public CacheEntryMetadata? GetMetadata(string key) { 
+        public CacheEntryMetadata? GetMetadata(string key) {
             if (_Metadata.ContainsKey(key)) {
                 return _Metadata[key];
             }

@@ -11,14 +11,14 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMatchPlayerRepository>();
             services.AddSingleton<BarMapRepository>();
             services.AddSingleton<BarMatchProcessingRepository>();
-			services.AddSingleton<HeadlessRunStatusRepository>();
+            services.AddSingleton<HeadlessRunStatusRepository>();
 
-			services.AddSingleton<AppPermissionRepository>();
-			services.AddSingleton<AppGroupRepository>();
-			services.AddSingleton<AppAccountGroupMembershipRepository>();
-			services.AddSingleton<BarSkillLeaderboardRepository>();
-			services.AddSingleton<SkillHistogramRepository>();
-			services.AddSingleton<BarMapPlayCountRepository>();
+            services.AddSingleton<AppPermissionRepository>();
+            services.AddSingleton<AppGroupRepository>();
+            services.AddSingleton<AppAccountGroupMembershipRepository>();
+            services.AddSingleton<BarSkillLeaderboardRepository>();
+            services.AddSingleton<SkillHistogramRepository>();
+            services.AddSingleton<BarMapPlayCountRepository>();
         }
 
     }

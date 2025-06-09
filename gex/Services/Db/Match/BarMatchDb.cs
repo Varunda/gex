@@ -25,13 +25,13 @@ namespace gex.Services.Db.Match {
             _Reader = reader;
         }
 
-		/// <summary>
-		///		insert a new <see cref="BarMatch"/>
-		/// </summary>
-		/// <param name="match">match to insert. <see cref="BarMatch.ID"/> must be populated</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns></returns>
-		/// <exception cref="ArgumentException"></exception>
+        /// <summary>
+        ///		insert a new <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to insert. <see cref="BarMatch.ID"/> must be populated</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public async Task Insert(BarMatch match, CancellationToken cancel) {
             if (string.IsNullOrEmpty(match.ID)) {
                 throw new ArgumentException($"ID of match is empty!");
@@ -60,8 +60,8 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("FileName", match.FileName);
             cmd.AddParameter("MapName", match.MapName);
             cmd.AddParameter("Gamemode", match.Gamemode);
-			cmd.AddParameter("PlayerCount", match.PlayerCount);
-			cmd.AddParameter("UploadedBy", match.UploadedBy);
+            cmd.AddParameter("PlayerCount", match.PlayerCount);
+            cmd.AddParameter("UploadedBy", match.UploadedBy);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
@@ -122,109 +122,109 @@ namespace gex.Services.Db.Match {
             return matches;
         }
 
-		/// <summary>
-		///		perform a search in the DB based on the parameters passed in <paramref name="parms"/>
-		/// </summary>
-		/// <param name="parms">parameters used to search</param>
-		/// <param name="offset">offset into the search</param>
-		/// <param name="limit">limit the returned results</param>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns>
-		///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
-		/// </returns>
-		public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
+        /// <summary>
+        ///		perform a search in the DB based on the parameters passed in <paramref name="parms"/>
+        /// </summary>
+        /// <param name="parms">parameters used to search</param>
+        /// <param name="offset">offset into the search</param>
+        /// <param name="limit">limit the returned results</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
+        /// </returns>
+        public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
 
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-			using NpgsqlCommand cmd = await _DbHelper.Command(conn, "");
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, "");
 
-			List<string> conditions = [];
+            List<string> conditions = [];
 
-			bool joinProcessing = false;
+            bool joinProcessing = false;
 
-			if (parms.EngineVersion != null) {
-				conditions.Add("m.engine = @Engine");
-				cmd.AddParameter("Engine", parms.EngineVersion);
-			}
+            if (parms.EngineVersion != null) {
+                conditions.Add("m.engine = @Engine");
+                cmd.AddParameter("Engine", parms.EngineVersion);
+            }
 
-			if (parms.GameVersion != null) {
-				conditions.Add("m.game_version = @GameVersion");
-				cmd.AddParameter("GameVersion", parms.GameVersion);
-			}
+            if (parms.GameVersion != null) {
+                conditions.Add("m.game_version = @GameVersion");
+                cmd.AddParameter("GameVersion", parms.GameVersion);
+            }
 
-			if (parms.Map != null) {
-				conditions.Add("m.map = @Map");
-				cmd.AddParameter("Map", parms.Map);
-			}
+            if (parms.Map != null) {
+                conditions.Add("m.map = @Map");
+                cmd.AddParameter("Map", parms.Map);
+            }
 
-			if (parms.StartTimeAfter != null) {
-				conditions.Add("m.start_time > @StartTime");
-				cmd.AddParameter("StartTime", parms.StartTimeAfter.Value);
-			}
+            if (parms.StartTimeAfter != null) {
+                conditions.Add("m.start_time > @StartTime");
+                cmd.AddParameter("StartTime", parms.StartTimeAfter.Value);
+            }
 
-			if (parms.StartTimeBefore != null) {
-				conditions.Add("m.start_time <= @EndTime");
-				cmd.AddParameter("EndTime", parms.StartTimeBefore.Value);
-			}
+            if (parms.StartTimeBefore != null) {
+                conditions.Add("m.start_time <= @EndTime");
+                cmd.AddParameter("EndTime", parms.StartTimeBefore.Value);
+            }
 
-			if (parms.DurationMinimum != null) {
-				conditions.Add("m.duration_ms > @DurationMin");
-				cmd.AddParameter("DurationMin", parms.DurationMinimum.Value);
-			}
+            if (parms.DurationMinimum != null) {
+                conditions.Add("m.duration_ms > @DurationMin");
+                cmd.AddParameter("DurationMin", parms.DurationMinimum.Value);
+            }
 
-			if (parms.DurationMaximum != null) {
-				conditions.Add("m.duration_ms <= @DurationMax");
-				cmd.AddParameter("DurationMax", parms.DurationMaximum.Value);
-			}
+            if (parms.DurationMaximum != null) {
+                conditions.Add("m.duration_ms <= @DurationMax");
+                cmd.AddParameter("DurationMax", parms.DurationMaximum.Value);
+            }
 
-			if (parms.Ranked != null) {
-				// 2025-05-09 TODO: why does this return 0 results when used as a query parameter?
-				//conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
-				//cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
-				conditions.Add($"m.game_settings->>'ranked_game' = {(parms.Ranked.Value == true ? "'1'" : "'0'")}");
-			}
+            if (parms.Ranked != null) {
+                // 2025-05-09 TODO: why does this return 0 results when used as a query parameter?
+                //conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
+                //cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
+                conditions.Add($"m.game_settings->>'ranked_game' = {(parms.Ranked.Value == true ? "'1'" : "'0'")}");
+            }
 
-			if (parms.Gamemode != null) {
-				conditions.Add("m.gamemode = @Gamemode");
-				cmd.AddParameter("Gamemode", parms.Gamemode.Value);
-			}
+            if (parms.Gamemode != null) {
+                conditions.Add("m.gamemode = @Gamemode");
+                cmd.AddParameter("Gamemode", parms.Gamemode.Value);
+            }
 
-			if (parms.ProcessingDownloaded != null) {
-				joinProcessing = true;
-				conditions.Add("p.demofile_fetched is "
-					+ ((parms.ProcessingDownloaded.Value == true) ? "not null" : "null"));
-			}
+            if (parms.ProcessingDownloaded != null) {
+                joinProcessing = true;
+                conditions.Add("p.demofile_fetched is "
+                    + ((parms.ProcessingDownloaded.Value == true) ? "not null" : "null"));
+            }
 
-			if (parms.ProcessingParsed != null) {
-				joinProcessing = true;
-				conditions.Add("p.demofile_parsed is "
-					+ ((parms.ProcessingParsed.Value == true) ? "not null" : "null"));
-			}
+            if (parms.ProcessingParsed != null) {
+                joinProcessing = true;
+                conditions.Add("p.demofile_parsed is "
+                    + ((parms.ProcessingParsed.Value == true) ? "not null" : "null"));
+            }
 
-			if (parms.ProcessingReplayed != null) {
-				joinProcessing = true;
-				conditions.Add("p.headless_ran is "
-					+ ((parms.ProcessingReplayed.Value == true) ? "not null" : "null"));
-			}
+            if (parms.ProcessingReplayed != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran is "
+                    + ((parms.ProcessingReplayed.Value == true) ? "not null" : "null"));
+            }
 
-			if (parms.ProcessingAction != null) {
-				joinProcessing = true;
-				conditions.Add("p.actions_parsed is "
-					+ ((parms.ProcessingAction.Value == true) ? "not null" : "null"));
-			}
+            if (parms.ProcessingAction != null) {
+                joinProcessing = true;
+                conditions.Add("p.actions_parsed is "
+                    + ((parms.ProcessingAction.Value == true) ? "not null" : "null"));
+            }
 
-			if (parms.PlayerCountMinimum != null) {
-				conditions.Add("m.player_count > @PlayerCountMin");
-				cmd.AddParameter("PlayerCountMin", parms.PlayerCountMinimum.Value);
-			}
+            if (parms.PlayerCountMinimum != null) {
+                conditions.Add("m.player_count > @PlayerCountMin");
+                cmd.AddParameter("PlayerCountMin", parms.PlayerCountMinimum.Value);
+            }
 
-			if (parms.PlayerCountMaximum != null) {
-				conditions.Add("m.player_count <= @PlayerCountMax");
-				cmd.AddParameter("PlayerCountMax", parms.PlayerCountMaximum.Value);
-			}
+            if (parms.PlayerCountMaximum != null) {
+                conditions.Add("m.player_count <= @PlayerCountMax");
+                cmd.AddParameter("PlayerCountMax", parms.PlayerCountMaximum.Value);
+            }
 
-			if (parms.LegionEnabled != null) {
-				conditions.Add($"m.game_settings->>'experimentallegionfaction' = {(parms.LegionEnabled.Value == true ? "'1'" : "'0'")}");
-			}
+            if (parms.LegionEnabled != null) {
+                conditions.Add($"m.game_settings->>'experimentallegionfaction' = {(parms.LegionEnabled.Value == true ? "'1'" : "'0'")}");
+            }
 
             cmd.CommandText = $@"
                 SELECT *
@@ -237,7 +237,7 @@ namespace gex.Services.Db.Match {
                     OFFSET {offset}
             ";
 
-			_Logger.LogDebug($"performing DB search: " + cmd.Print());
+            _Logger.LogDebug($"performing DB search: " + cmd.Print());
 
             await cmd.PrepareAsync(cancel);
 
@@ -245,7 +245,7 @@ namespace gex.Services.Db.Match {
             await conn.CloseAsync();
 
             return matches;
-		}
+        }
 
         /// <summary>
         ///     get a list of <see cref="BarMatch"/>s that took place between a period of time
@@ -296,37 +296,37 @@ namespace gex.Services.Db.Match {
             return matches;
         }
 
-		/// <summary>
-		///		get all unique engine versions stored in the DB
-		/// </summary>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns>
-		///		a string of all unique values of <see cref="BarMatch.Engine"/> stored in the DB
-		/// </returns>
-		public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+        /// <summary>
+        ///		get all unique engine versions stored in the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a string of all unique values of <see cref="BarMatch.Engine"/> stored in the DB
+        /// </returns>
+        public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-			return (await conn.QueryAsync<string>(new CommandDefinition(
-				"SELECT distinct(engine) FROM bar_match",
-				cancellationToken: cancel
-			))).ToList();
-		}
+            return (await conn.QueryAsync<string>(new CommandDefinition(
+                "SELECT distinct(engine) FROM bar_match",
+                cancellationToken: cancel
+            ))).ToList();
+        }
 
-		/// <summary>
-		///		get all unique <see cref="BarMatch.GameVersion"/>s stored in the DB
-		/// </summary>
-		/// <param name="cancel">cancellation token</param>
-		/// <returns>
-		///		a list of all unique values of <see cref="BarMatch.GameVersion"/> stored in the DB
-		/// </returns>
-		public async Task<List<string>> GetUniqueGameVersions(CancellationToken cancel) {
-			using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+        /// <summary>
+        ///		get all unique <see cref="BarMatch.GameVersion"/>s stored in the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a list of all unique values of <see cref="BarMatch.GameVersion"/> stored in the DB
+        /// </returns>
+        public async Task<List<string>> GetUniqueGameVersions(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-			return (await conn.QueryAsync<string>(new CommandDefinition(
-				"SELECT distinct(game_version) FROM bar_match",
-				cancellationToken: cancel
-			))).ToList();
-		}
+            return (await conn.QueryAsync<string>(new CommandDefinition(
+                "SELECT distinct(game_version) FROM bar_match",
+                cancellationToken: cancel
+            ))).ToList();
+        }
 
         /// <summary>
         ///     delete a <see cref="BarMatch"/> from the DB

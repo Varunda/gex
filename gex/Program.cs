@@ -1,35 +1,25 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
+using Dapper;
+using Dapper.ColumnMapper;
+using gex.Code;
+using gex.Code.Tracking;
+using gex.Models;
+using gex.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-using Npgsql;
 using OpenTelemetry;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using gex.Code;
-using gex.Code.ExtensionMethods;
-using gex.Code.Tracking;
-using gex.Models;
-using gex.Services;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
-using Dapper;
-using Dapper.ColumnMapper;
-using OpenTelemetry.Metrics;
-using gex.Services.Metrics;
-using gex.Models.Internal;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace gex {
 
@@ -60,20 +50,20 @@ namespace gex {
                 .AddSource(AppActivitySource.ActivitySourceName)
                 .Build();
 
-			// add meters
-			MeterProviderBuilder meterProvider = Sdk.CreateMeterProviderBuilder()
-				.AddAspNetCoreInstrumentation()
-				.AddMeter("System.Runtime")
-				.AddMeter("Npgsql");
+            // add meters
+            MeterProviderBuilder meterProvider = Sdk.CreateMeterProviderBuilder()
+                .AddAspNetCoreInstrumentation()
+                .AddMeter("System.Runtime")
+                .AddMeter("Npgsql");
 
-			foreach (string metricName in GetMetricNames()) {
-				meterProvider.AddMeter(metricName);
-			}
+            foreach (string metricName in GetMetricNames()) {
+                meterProvider.AddMeter(metricName);
+            }
 
-			meterProvider.AddPrometheusHttpListener(opt => {
-				// exposes prometheus metrics on 9184
-				opt.UriPrefixes = [ "http://localhost:9184" ];
-			}).Build();
+            meterProvider.AddPrometheusHttpListener(opt => {
+                // exposes prometheus metrics on 9184
+                opt.UriPrefixes = ["http://localhost:9184"];
+            }).Build();
 
             // Gex must be started in a background thread, as _Host.RunAsync will block until the whole server
             //      shuts down. If we were to await this Task, then it would be blocked until the server is done
@@ -192,10 +182,10 @@ namespace gex {
             return host;
         }
 
-		/// <summary>
-		///		automatically perform Dapper mapping using an attribute
-		/// </summary>
-		/// <param name="logger"></param>
+        /// <summary>
+        ///		automatically perform Dapper mapping using an attribute
+        /// </summary>
+        /// <param name="logger"></param>
         private static void MapDapperTypes(ILogger<Program> logger) {
 
             Type[] types = Assembly.GetExecutingAssembly().GetTypes()
@@ -206,33 +196,33 @@ namespace gex {
                 SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
             }
 
-			SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.UIntHandler());
-			SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.ULongHandler());
+            SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.UIntHandler());
+            SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.ULongHandler());
         }
 
-		/// <summary>
-		///		automatically get all metric names used within the program. uses the <see cref="MetricNameAttribute"/>
-		/// </summary>
-		/// <returns></returns>
-		private static List<string> GetMetricNames() {
-			Type[] types = Assembly.GetExecutingAssembly().GetTypes()
-				.Where(iter => iter.GetCustomAttribute<MetricNameAttribute>() != null).ToArray();
+        /// <summary>
+        ///		automatically get all metric names used within the program. uses the <see cref="MetricNameAttribute"/>
+        /// </summary>
+        /// <returns></returns>
+        private static List<string> GetMetricNames() {
+            Type[] types = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(iter => iter.GetCustomAttribute<MetricNameAttribute>() != null).ToArray();
 
-			List<string> metricNames = [];
+            List<string> metricNames = [];
 
-			foreach (Type t in types) {
-				MetricNameAttribute? attr = t.GetCustomAttribute<MetricNameAttribute>();
-				if (attr == null) {
-					continue;
-				}
+            foreach (Type t in types) {
+                MetricNameAttribute? attr = t.GetCustomAttribute<MetricNameAttribute>();
+                if (attr == null) {
+                    continue;
+                }
 
-				Console.WriteLine($"adding metric service [type={t.FullName}] [metric name={attr.Name}]");
+                Console.WriteLine($"adding metric service [type={t.FullName}] [metric name={attr.Name}]");
 
-				metricNames.Add(attr.Name);
-			}
+                metricNames.Add(attr.Name);
+            }
 
-			return metricNames;
-		}
+            return metricNames;
+        }
 
     }
 }
