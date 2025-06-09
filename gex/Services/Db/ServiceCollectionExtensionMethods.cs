@@ -63,6 +63,9 @@ namespace gex.Services.Db {
             services.AddSingleton<BarMapDb>();
             services.AddSingleton<GameVersionUsageDb>();
 			services.AddSingleton<MapPriorityModDb>();
+			services.AddSingleton<BarSkillLeaderboardDb>();
+			services.AddSingleton<SkillHistogramDb>();
+			services.AddSingleton<BarMapPlayCountDb>();
         }
 
     }

@@ -16,6 +16,9 @@ namespace gex.Services.Repositories {
 			services.AddSingleton<AppPermissionRepository>();
 			services.AddSingleton<AppGroupRepository>();
 			services.AddSingleton<AppAccountGroupMembershipRepository>();
+			services.AddSingleton<BarSkillLeaderboardRepository>();
+			services.AddSingleton<SkillHistogramRepository>();
+			services.AddSingleton<BarMapPlayCountRepository>();
         }
 
     }

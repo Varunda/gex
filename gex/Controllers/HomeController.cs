@@ -170,5 +170,9 @@ namespace gex.Controllers {
 			return View();
 		}
 
+		public IActionResult Recent() {
+			return View();
+		}
+
     }
 }
