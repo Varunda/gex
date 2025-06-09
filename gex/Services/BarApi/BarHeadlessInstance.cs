@@ -218,8 +218,13 @@ namespace gex.Services.BarApi {
             // cap replay time to 10 minutes, unless execution was forced, in which case cap at the runtime of the match
             TimeSpan processingTimeout = force == true ? TimeSpan.FromMilliseconds(match.DurationMs) : TimeSpan.FromMinutes(10);
 
+			// if gex thinks the game will take longer to replay than is left in the timeout, it will kill the game early
+			int etaFailedCheck = 0; 
+			DateTime playbackStarted = DateTime.UtcNow;
+			DateTime timeEnd = playbackStarted + processingTimeout;
+
             _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] "
-                + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}]");
+                + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}] [end={timeEnd:u}]");
 
 			HeadlessRunStatus status = new();
 			status.GameID = gameID;
@@ -233,6 +238,8 @@ namespace gex.Services.BarApi {
 
 			long previousTimerUpdate = 0;
 			long previousFrame = 0;
+
+			bool increasePriority = false;
 
 			bool gameEnded = false;
             using AutoResetEvent outputWaitHandle = new(false);
@@ -294,6 +301,22 @@ namespace gex.Services.BarApi {
 						decimal eta = (match.DurationFrameCount - frame) / Math.Max(0.01m, fps);
 						_Logger.LogDebug($"game frame update sent [gameID={gameID}] [frame={frame}/{match.DurationFrameCount}] [eta={eta:F1}s] "
 							+ $"[timer={timer.ElapsedMilliseconds}ms] [speedup={fps/30m:F3}] [fps={fps:F3}]");
+
+						DateTime timeEta = DateTime.UtcNow + TimeSpan.FromSeconds((long)eta);
+						if (timeEta > timeEnd) {
+							++etaFailedCheck;
+							_Logger.LogWarning($"eta check failed [gameID={gameID}] [count={etaFailedCheck}] [eta={timeEta:u}] [end={timeEnd:u}]");
+
+							if (etaFailedCheck >= 10) {
+								_Logger.LogError($"this game will not complete before timeout occurs, killing the game [gameID={gameID}]");
+								increasePriority = true;
+								_HeadlessRunStatusRepository.Remove(gameID);
+								bar.Kill();
+							}
+						} else if (etaFailedCheck > 0) {
+							etaFailedCheck = 0;
+							_Logger.LogDebug($"eta check reset, game will finish in time [gameID={gameID}] [eta={timeEta:u}] [end={timeEnd:u}]");
+						}
 					}
 
 					_HeadlessRunStatusRepository.Upsert(gameID, status);
@@ -347,8 +370,13 @@ namespace gex.Services.BarApi {
             // doing it this way prevents hangs due to not reading stdout or stderr
             // https://stackoverflow.com/questions/139593/processstartinfo-hanging-on-waitforexit-why
             if (!(bar.WaitForExit(processingTimeout) && outputWaitHandle.WaitOne(processingTimeout) && errorWaitHandle.WaitOne(processingTimeout))) {
+				increasePriority = true;
 				_HeadlessRunStatusRepository.Remove(gameID);
                 _Logger.LogWarning($"hit game processing timeout, increasing priority by 100 [gameID={gameID}] [timeout={processingTimeout}]");
+            }
+
+			if (increasePriority == true) {
+				_HeadlessRunStatusRepository.Remove(gameID);
 
 				// if a game takes too long to process, de-prio it for future runs, as it is taking too much time
 				// away from other games that could be processed quicker
@@ -359,7 +387,7 @@ namespace gex.Services.BarApi {
 				}
 
                 return $"hit processing timeout for game [gameID={gameID}] [timeout={processingTimeout}]";
-            }
+			}
 
             // game successfully ran, good job gex!
             _Logger.LogInformation($"BAR match ran locally [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] "

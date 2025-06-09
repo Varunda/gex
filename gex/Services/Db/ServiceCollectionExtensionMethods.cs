@@ -66,6 +66,7 @@ namespace gex.Services.Db {
 			services.AddSingleton<BarSkillLeaderboardDb>();
 			services.AddSingleton<SkillHistogramDb>();
 			services.AddSingleton<BarMapPlayCountDb>();
+			services.AddSingleton<UnitTweakPriorityExemptionDb>();
         }
 
     }

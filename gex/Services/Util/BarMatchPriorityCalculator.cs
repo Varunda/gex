@@ -2,6 +2,7 @@
 using gex.Models.Db;
 using gex.Services.Db;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,12 +13,14 @@ namespace gex.Services.Util {
 
 		private readonly ILogger<BarMatchPriorityCalculator> _Logger;
 		private readonly MapPriorityModDb _MapPriorityModDb;
+		private readonly UnitTweakPriorityExemptionDb _UnitTweakExemptDb;
 
 		public BarMatchPriorityCalculator(ILogger<BarMatchPriorityCalculator> logger,
-			MapPriorityModDb priorityModDb) {
+			MapPriorityModDb priorityModDb, UnitTweakPriorityExemptionDb unitTweakExemptDb) {
 
 			_Logger = logger;
 			_MapPriorityModDb = priorityModDb;
+			_UnitTweakExemptDb = unitTweakExemptDb;
 		}
 
 		public async Task<short> Calculate(BarMatch match, CancellationToken cancel) {
@@ -61,8 +64,23 @@ namespace gex.Services.Util {
 
 			// games that tweak units are likely to last longer
 			if (match.GameSettings.GetString("tweakunits", "") != "") {
-				priority += 40;
-				why += $"tweaked units; ";
+				string tweakUnits = match.GameSettings.GetString("tweakunits", "");
+				string? exempt = null;
+
+				List<UnitTweakPriorityExemption> exemptions = await _UnitTweakExemptDb.GetAll(cancel);
+				foreach (UnitTweakPriorityExemption iter in exemptions) {
+					if (tweakUnits.StartsWith(iter.UnitTweak)) {
+						exempt = iter.UnitTweak;
+						break;
+					}
+				}
+
+				if (exempt != null) {
+					why += $"tweaked units ('{exempt}' is exempt!); ";
+				} else {
+					priority += 40;
+					why += $"tweaked units; ";
+				}
 			}
 			
 			// games that increase resource income
