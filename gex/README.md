@@ -12,7 +12,15 @@ Gex is a c# webserver that fetches public Beyond All Reason games, downloads the
 
 ## building
 
-1. setup a postgres version 13 or higher
+### preq software
+
+1. a postgresql 13 (or higher) server running
+1. 7zip on the PATH
+1. npm
+1. dotnet 9
+
+### build steps
+
 1. copy `secrets.template.json` to `secrets.json` and fill out the fields
 1. copy `env.template.json` to `env.json` and fill out the fields
 1. `dotnet build`
