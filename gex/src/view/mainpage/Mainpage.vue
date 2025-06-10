@@ -17,7 +17,7 @@
         <div class="mb-3">
             <h2 class="wt-header bg-light text-dark">Leaderboard</h2>
 
-            <div class="d-flex flex-wrap justify-content-around" style="gap: 2rem;">
+            <div class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
                 <div v-for="group in skillLeaderboardGrouped" :key="group.gamemode">
                     <h3 class="text-center mb-0">
                         {{ group.gamemode | gamemode }}
