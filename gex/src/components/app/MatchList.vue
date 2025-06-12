@@ -10,7 +10,7 @@
                         {{ mapNameWithoutVersion(match.map) }}
                     </h5>
 
-                    <div class="flex-grow-1 align-content-center w-100" style="z-index: 10;">
+                    <div class="flex-grow-1 align-content-center w-100 mh-100" style="z-index: 10;">
                         <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
                             <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
 

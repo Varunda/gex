@@ -127,17 +127,17 @@
             <div v-else-if="recent.state == 'loaded'">
 
                 <div class="d-flex flex-wrap d-md-none mb-3 pb-3 border-bottom">
-                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
+                    <a v-if="offset > 24" :href="'/recent?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
                         First
                     </a>
 
-                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
+                    <a :href="'/recent?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
                         Newer
                     </a>
 
                     <div class="flex-grow-1"></div>
 
-                    <a v-if="recent.data.length > 0" :href="'/?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
+                    <a v-if="recent.data.length > 0" :href="'/recent?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
                         Older
                     </a>
                 </div>
@@ -151,11 +151,11 @@
                 <hr class="border">
 
                 <div class="d-flex flex-wrap">
-                    <a v-if="offset > 24" :href="'/?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
+                    <a v-if="offset > 24" :href="'/recent?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
                         First
                     </a>
 
-                    <a :href="'/?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
+                    <a :href="'/recent?offset=' + (offset - 24) + searchParam" v-if="offset >= 24" class="btn btn-primary mobile-after">
                         Newer
                     </a>
 
@@ -165,7 +165,7 @@
 
                     <div class="flex-grow-1"></div>
 
-                    <a v-if="recent.data.length > 0" :href="'/?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
+                    <a v-if="recent.data.length > 0" :href="'/recent?offset=' + (offset + 24) + searchParam" class="btn btn-primary">
                         Older
                     </a>
                 </div>
@@ -292,7 +292,7 @@
                 this.search.use = true;
                 this.offset = 0;
                 const url = new URL(location.href);
-                history.pushState({ path: url.href }, "", `/?offset=0${this.searchParam}`);
+                history.pushState({ path: url.href }, "", `/recent?offset=0${this.searchParam}`);
 
                 this.performSearch();
             },

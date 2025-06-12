@@ -17,7 +17,12 @@
         <div class="mb-3">
             <h2 class="wt-header bg-light text-dark">Leaderboard</h2>
 
-            <div class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
+            <div v-if="skillLeaderboard.state == 'loading'" class="text-center">
+                <busy class="busy busy-sm"></busy>
+                Loading...
+            </div>
+
+            <div v-else-if="skillLeaderboard.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
                 <div v-for="group in skillLeaderboardGrouped" :key="group.gamemode">
                     <h3 class="text-center mb-0">
                         {{ group.gamemode | gamemode }}
@@ -58,7 +63,8 @@
 
             <div v-if="recent.state == 'idle'"></div>
 
-            <div v-else-if="recent.state == 'loading'">
+            <div v-else-if="recent.state == 'loading'" class="text-center">
+                <busy class="busy busy-sm"></busy>
                 Loading...
             </div>
 
@@ -78,7 +84,12 @@
         <div class="mb-3">
             <h2 class="wt-header bg-light text-dark">Recent maps played (24h)</h2>
 
-            <div class="d-flex flex-wrap justify-content-around" style="gap: 2rem;">
+            <div v-if="recentMaps.state == 'loading'" class="text-center">
+                <busy class="busy busy-sm"></busy>
+                Loading...
+            </div>
+
+            <div v-else-if="recentMaps.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 2rem;">
                 <div v-for="group in mapPlayRecentGroups" :key="group.gamemode">
                     <h3 class="text-center mb-0">
                         {{ group.gamemode | gamemode }}
@@ -112,6 +123,11 @@
                 OpenSkill distribution
                 <info-hover text="Excludes players with less than 5 games played, and exludes the default skill"></info-hover>
             </h2>
+
+            <div v-if="skillHistogram.state == 'loading'" class="text-center">
+                Loading...
+                <busy class="busy busy-sm"></busy>
+            </div>
 
             <div style="height: 200px; max-height: 200px" class="mw-100">
                 <canvas id="skill-histogram" height="200"></canvas>
@@ -155,6 +171,7 @@
     import "filters/MomentFilter";
     import "filters/LocaleFilter";
     import "filters/BarGamemodeFilter";
+import Busy from "components/Busy.vue";
 
     type GroupedSkillLeaderboard = {
         gamemode: number;
@@ -308,7 +325,7 @@
         },
 
         components: {
-            InfoHover, MatchList, ToggleButton, ApiError,
+            InfoHover, MatchList, ToggleButton, ApiError, Busy
         }
     });
 
