@@ -24,14 +24,16 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BarReplayApi _ReplayApi;
+        private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
+
         private readonly IOptions<FileStorageOptions> _Options;
 
         public GameReplayDownloadQueueProcessor(ILoggerFactory factory,
             BaseQueue<GameReplayDownloadQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             BarMatchProcessingRepository processingRepository, BarReplayFileApi replayFileApi,
             IOptions<FileStorageOptions> options, BarReplayDb replayDb,
-            BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayApi replayApi)
-
+            BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayApi replayApi,
+            BaseQueue<GameReplayDownloadQueueEntry> downloadQueue)
         : base("game_replay_download_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -40,6 +42,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _ReplayDb = replayDb;
             _ParseQueue = parseQueue;
             _ReplayApi = replayApi;
+            _DownloadQueue = downloadQueue;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayDownloadQueueEntry entry, CancellationToken cancel) {
@@ -64,6 +67,11 @@ namespace gex.Services.Hosted.QueueProcessor {
                 Result<byte[], string> result = await _ReplayFileApi.DownloadReplay(replay.FileName, cancel);
                 if (result.IsOk == false) {
                     _Logger.LogError($"failed to download replay file [FileName={replay.FileName}] [gameID={entry.GameID}] [error={result.Error}]");
+
+                    if (result.Error == BarReplayFileApi.ERROR_DOWNLOAD_TIMEOUT) {
+                        _Logger.LogWarning($"failed to download game, retrying [gameID={entry.GameID}]");
+                        _DownloadQueue.Queue(entry);
+                    }
                 } else {
                     using FileStream file = File.OpenWrite(outputPath);
                     await file.WriteAsync(result.Value, cancel);

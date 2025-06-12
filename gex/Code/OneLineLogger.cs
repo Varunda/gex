@@ -99,7 +99,7 @@ namespace gex.Code {
                 LogLevel.Debug => "dbug",
                 LogLevel.Information => "info",
                 LogLevel.Warning => "warn",
-                LogLevel.Error => "fail",
+                LogLevel.Error => "erro",
                 LogLevel.Critical => "crit",
                 _ => "unknown"
             };

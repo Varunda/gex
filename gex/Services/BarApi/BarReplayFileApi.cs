@@ -17,6 +17,8 @@ namespace gex.Services.BarApi {
 
         private const string BAR_REPLAY_URL = "https://storage.uk.cloud.ovh.net/v1/AUTH_10286efc0d334efd917d476d7183232e/BAR/demos";
 
+        public const string ERROR_DOWNLOAD_TIMEOUT = "got timeout when downloading the file";
+
         static BarReplayFileApi() {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
@@ -44,9 +46,16 @@ namespace gex.Services.BarApi {
             _Logger.LogDebug($"downloading replay file from BAR [filename={fileName}] [url={url}]");
 
             Stopwatch timer = Stopwatch.StartNew();
-            HttpResponseMessage response = await _Http.GetAsync(url, cancel);
-            _Metric.RecordDuration("download-replay", timer.ElapsedMilliseconds / 1000d);
-            _Metric.RecordUse("download-replay");
+            HttpResponseMessage response;
+            try {
+                response = await _Http.GetAsync(url, cancel);
+            } catch (TaskCanceledException) {
+                _Logger.LogWarning($"got timeout when downloading file [filename='{fileName}']");
+                return ERROR_DOWNLOAD_TIMEOUT;
+            } finally {
+                _Metric.RecordDuration("download-replay", timer.ElapsedMilliseconds / 1000d);
+                _Metric.RecordUse("download-replay");
+            }
 
             _Logger.LogDebug($"downloaded replay file from BAR [filename={fileName}] [url={url}] [duration={timer.ElapsedMilliseconds}ms]");
 
