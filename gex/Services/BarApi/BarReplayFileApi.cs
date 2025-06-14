@@ -50,6 +50,7 @@ namespace gex.Services.BarApi {
             try {
                 response = await _Http.GetAsync(url, cancel);
             } catch (TaskCanceledException) {
+                _Metric.RecordTimeout("download-replay");
                 _Logger.LogWarning($"got timeout when downloading file [filename='{fileName}']");
                 return ERROR_DOWNLOAD_TIMEOUT;
             } finally {

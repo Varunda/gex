@@ -12,6 +12,7 @@ namespace gex.Services.Metrics {
         private readonly Meter _Meter;
 
         private readonly Counter<long> _Uses;
+        private readonly Counter<long> _Timeout;
         private readonly Histogram<double> _Duration;
 
         public BarApiMetric(IMeterFactory factory) {
@@ -22,6 +23,11 @@ namespace gex.Services.Metrics {
                 description: "endpoints hit from the BAR API"
             );
 
+            _Timeout = _Meter.CreateCounter<long>(
+                name: "gex_bar_api_timeout",
+                description: "calls to endpoints that timeout from the BAR API"
+            );
+
             _Duration = _Meter.CreateHistogram<double>(
                 name: "gex_bar_api_duration",
                 description: "how long each endpoint is taking to hit"
@@ -30,6 +36,12 @@ namespace gex.Services.Metrics {
 
         public void RecordUse(string type) {
             _Uses.Add(1,
+                new KeyValuePair<string, object?>("type", type)
+            );
+        }
+
+        public void RecordTimeout(string type) {
+            _Timeout.Add(1,
                 new KeyValuePair<string, object?>("type", type)
             );
         }

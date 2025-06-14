@@ -89,7 +89,7 @@
                 Loading...
             </div>
 
-            <div v-else-if="recentMaps.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 2rem;">
+            <div v-else-if="recentMaps.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
                 <div v-for="group in mapPlayRecentGroups" :key="group.gamemode">
                     <h3 class="text-center mb-0">
                         {{ group.gamemode | gamemode }}

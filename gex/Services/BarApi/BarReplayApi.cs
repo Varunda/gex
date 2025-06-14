@@ -49,9 +49,17 @@ namespace gex.Services.BarApi {
         /// <returns></returns>
         public async Task<Result<List<BarRecentReplay>, string>> GetRecent(int page = 1, int limit = 50, CancellationToken cancel = default) {
             Stopwatch timer = Stopwatch.StartNew();
-            HttpResponseMessage response = await _Http.GetAsync(BAR_API_URL + $"/replays?page={page}&limit={limit}&hasBots=false&endedNormally=true", cancel);
-            _Metric.RecordDuration("recent", timer.ElapsedMilliseconds / 1000d);
-            _Metric.RecordUse("recent");
+            HttpResponseMessage response;
+            try {
+                response = await _Http.GetAsync(BAR_API_URL + $"/replays?page={page}&limit={limit}&hasBots=false&endedNormally=true", cancel);
+            } catch (TaskCanceledException ex) {
+                _Metric.RecordTimeout("recent");
+                _Logger.LogError(ex, $"got timeout when loading recent games from BAR API");
+                return $"got timeout when loading recent games from BAR API";
+            } finally {
+                _Metric.RecordDuration("recent", timer.ElapsedMilliseconds / 1000d);
+                _Metric.RecordUse("recent");
+            }
 
             if (response.IsSuccessStatusCode == false) {
                 return $"failed to call bar API [status code={response.StatusCode}]";

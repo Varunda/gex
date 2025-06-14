@@ -278,7 +278,7 @@ namespace gex.Services.Parser {
 
                     BarMatchPlayer? player = players.GetValueOrDefault(teamID);
                     if (player == null) {
-                        _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}");
+                        _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
                     } else {
                         player.StartingPosition = new System.Numerics.Vector3() {
                             X = x,
@@ -315,11 +315,11 @@ namespace gex.Services.Parser {
                         }
                     } else if (msg.StartsWith("changeStartUnit")) {
                         int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
-                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}]");
+                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
 
                         string? defName = unitDefDict.GetValueOrDefault(unitDefID);
                         if (defName == null) {
-                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [id={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
+                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [gameID={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
                         } else {
                             BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
                             if (player != null) {
@@ -334,7 +334,7 @@ namespace gex.Services.Parser {
                                 } else {
                                     _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
                                 }
-                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}]");
+                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
                             }
                         }
 
