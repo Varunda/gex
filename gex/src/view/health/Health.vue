@@ -4,7 +4,7 @@
             <h3 class="d-inline">
                 Latest update -
                 <span v-if="latestUpdate != null">
-                    {{latestUpdate | moment("YYYY-MM-DD hh:mm:ss A")}}
+                    {{latestUpdate | moment("yyyy-MM-dd hh:mm:ssa ZZZZ")}}
                     ::
                     {{latestUpdate | timeAgo}}
                 </span>
@@ -42,7 +42,7 @@
                                         </button>
                                     </span>
                                 </td>
-                                <td>{{service.lastRan | moment("YYYY-MM-DD hh:mm:ssA")}}</td>
+                                <td>{{service.lastRan | moment("yyyy-MM-dd hh:mm:ssa ZZZZ")}}</td>
                                 <td>{{service.runDuration / 1000 | mduration}}</td>
                                 <td>{{service.message}}</td>
                             </tr>

@@ -1,8 +1,6 @@
 
 <template>
     <div>
-        <h2 class="wt-header">User info</h2>
-
         <h2>
             {{ user.username }}
         </h2>
@@ -75,6 +73,29 @@
 
             </div>
 
+        </div>
+
+        <div v-if="user.previousNames.length > 1" class="mb-3">
+            <h4 class="wt-header mb-2">Previous names</h4>
+
+            <table class="table table-sm table-hover">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>User name</th>
+                        <th>
+                            Timestamp
+                            <info-hover text="When Gex first saw a game with this name"></info-hover>
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr v-for="name in user.previousNames" :key="name.userName">
+                        <td>{{ name.userName }}</td>
+                        <td>{{ name.timestamp | moment }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div>
@@ -165,6 +186,7 @@
     import { Loading, Loadable } from "Loading";
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
+    import InfoHover from "components/InfoHover.vue";
 
     import { BarUser } from "model/BarUser";
     import { BarUserMapStats } from "model/BarUserMapStats";
@@ -202,11 +224,16 @@
 
             totalPlays: function(): number {
                 return this.user.factionStats.reduce((acc, iter) => acc += iter.playCount, 0);
+            },
+
+            mapTotalPlays: function(): number {
+                return this.user.mapStats.reduce((acc, iter) => acc += iter.playCount, 0);
             }
         },
 
         components: {
-            ATable, AHeader, ABody, AFooter, AFilter, ACol
+            ATable, AHeader, ABody, AFooter, AFilter, ACol,
+            InfoHover
         }
     });
     export default UserInfo;

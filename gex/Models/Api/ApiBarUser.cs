@@ -1,4 +1,5 @@
-﻿using gex.Models.UserStats;
+﻿using gex.Models.Db;
+using gex.Models.UserStats;
 using System;
 using System.Collections.Generic;
 
@@ -17,6 +18,8 @@ namespace gex.Models.Api {
         public List<BarUserMapStats> MapStats { get; set; } = [];
 
         public List<BarUserFactionStats> FactionStats { get; set; } = [];
+
+        public List<UserPreviousName> PreviousNames { get; set; } = [];
 
     }
 }

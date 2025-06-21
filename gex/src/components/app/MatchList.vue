@@ -37,14 +37,14 @@
 
             <div class="tile-time-ago">
                 <span v-if="(new Date().getTime()) - match.endTime.getTime() > (1000 * 60 * 60 * 12)">
-                    Ended at {{ match.endTime | moment('YYYY-MM-DD hh:mm:ss A') }}
+                    Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mm:ssa ZZZZ") }}
                 </span>
 
                 <span v-else>
                     Ended {{ match.endTime | compactTimeAgo }} ago
                     &middot;
-                    <span :title="match.endTime | moment('YYYY-MM-DD hh:mm:ss A')">
-                        {{ match.endTime | moment("hh:mm A")}}
+                    <span :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
+                        {{ match.endTime | moment("hh:mma")}}
                     </span>
                 </span>
 

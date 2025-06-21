@@ -86,11 +86,9 @@ module.exports = {
     externals: {
         "jquery": "jQuery",
         "vue": "Vue",
-        //"moment": "moment",
         "signalR": "signalR",
         "file-saver": "saveAs",
         "chartjs-plugin-annotation": "chartjs-plugin-annotation",
-        //"d3": "d3",
         "bootstrap": "bootstrap"
     },
 

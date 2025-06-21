@@ -38,7 +38,8 @@ namespace gex.Controllers.Api {
         /// <param name="userID">ID of the user to get</param>
         /// <param name="includeSkill">if <see cref="ApiBarUser.Skill"/> is populated or not. defaults to false</param>
         /// <param name="includeMapStats">if <see cref="ApiBarUser.MapStats"/> is populated or not. defaults to false</param>
-        /// <param name="includeFactionStats">if <see cref="ApiBarUser.FactionStats"/> is populated or not. defauls to false</param>
+        /// <param name="includeFactionStats">if <see cref="ApiBarUser.FactionStats"/> is populated or not. defaults to false</param>
+        /// <param name="includePreviousNames">if <see cref="ApiBarUser.PreviousNames"/> will be populated or not. defaults to false</param>
         /// <param name="cancel"></param>
         /// <response code="200">
         ///		the response will contain the <see cref="ApiBarUser"/> with <see cref="ApiBarUser.UserID"/> of <paramref name="userID"/>
@@ -51,6 +52,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeSkill = false,
             [FromQuery] bool includeMapStats = false,
             [FromQuery] bool includeFactionStats = false,
+            [FromQuery] bool includePreviousNames = false,
             CancellationToken cancel = default
         ) {
 
@@ -73,6 +75,10 @@ namespace gex.Controllers.Api {
 
             if (includeFactionStats == true) {
                 response.FactionStats = await _FactionStatsDb.GetByUserID(userID, cancel);
+            }
+
+            if (includePreviousNames == true) {
+                response.PreviousNames = await _UserDb.GetUserNames(userID, cancel);
             }
 
             return ApiOk(response);

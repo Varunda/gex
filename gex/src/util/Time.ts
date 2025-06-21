@@ -1,46 +1,31 @@
-﻿import * as moment from "moment";
+﻿import * as luxon from "luxon";
 
 export default class TimeUtils {
 
-    private static _timezoneName: string = "";
-
     public static duration(seconds: number): string {
-        const dur: moment.Duration = moment.duration(seconds * 1000);
+        const dur: luxon.Duration = luxon.Duration.fromObject({ seconds: seconds });
 
-        if (dur.asDays() >= 1) {
-            return `${Math.floor(dur.asDays())}d ${dur.hours().toString().padStart(2, "0")}h`;
+        if (dur.as("days") >= 1) {
+            return `${Math.floor(dur.as("days"))}d ${(Math.floor(dur.as("hours")) % 24).toString().padStart(2, "0")}h`;
         }
 
-        if (dur.asHours() >= 1) {
-            return `${dur.hours()}h ${dur.minutes().toString().padStart(2, "0")}m`;
+        if (dur.as("hours") >= 1) {
+            return `${dur.as("hours")}h ${(dur.as("minutes") % 60).toString().padStart(2, "0")}m`;
         }
 
-        return `${dur.minutes().toString().padStart(2, "0")}m ${dur.seconds().toString().padStart(2, "0")}s`;
-    }
-
-    public static format(date: Date, format: string = "YYYY-MM-DD hh:mmA"): string {
-        return moment(date).format(format) + " " + TimeUtils.getTimezoneName();
-    }
-
-    public static formatNoTimezone(date: Date, format: string = "YYYY-MM-DD hh:mmA"): string {
-        return moment(date).format(format);
-    }
-
-    // https://stackoverflow.com/questions/9772955/how-can-i-get-the-timezone-name-in-javascript
-    public static getTimezoneName(): string {
-        if (TimeUtils._timezoneName == "") {
-            const today = new Date();
-            const short = today.toLocaleDateString();
-            const full = today.toLocaleDateString(undefined, { timeZoneName: "short" });
-
-            const shortIndex = full.indexOf(short);
-            if (shortIndex >= 0) {
-                const trimmed = full.substring(0, shortIndex) + full.substring(shortIndex + short.length);
-                TimeUtils._timezoneName  = trimmed.replace(/^[\s,.\-:;]+|[\s,.\-:;]+$/g, '');
-            }
+        if (dur.as("minutes") >= 1) {
+            return `${Math.floor(dur.as("minutes")).toString().padStart(2, "0")}m ${Math.floor(dur.as("seconds") % 60).toString().padStart(2, "0")}s`;
         }
 
-        return TimeUtils._timezoneName;
+        return `00m ${Math.floor(dur.as("seconds")).toString().padStart(2, "0")}s`;
+    }
+
+    public static format(date: Date, format: string = "yyyy-MM-dd hh:mma ZZZZ"): string {
+        return luxon.DateTime.fromJSDate(date).toFormat(format);
+    }
+
+    public static formatNoTimezone(date: Date, format: string = "yyyy-MM-dd hh:mmz"): string {
+        return luxon.DateTime.fromJSDate(date).toFormat(format);
     }
 
 }

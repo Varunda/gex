@@ -1,5 +1,4 @@
 ﻿import Vue from "vue";
-import * as moment from "moment";
 
 Vue.filter("duration", (data: number): string => {
 

@@ -1,9 +1,5 @@
-
-
 <template>
     <div>
-        <h2 class="wt-header">Recent matches</h2>
-
         <a-table :entries="matches"
             :show-filters="true"
             :default-page-size="10"

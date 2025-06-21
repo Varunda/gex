@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Models.Db;
 using gex.Models.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -78,6 +79,27 @@ namespace gex.Services.Db.UserStats {
                 new { Search = $"%{name}%" },
                 cancellationToken: cancel
             ))).ToList();
+        }
+
+        /// <summary>
+        ///     get all names that a user has used
+        /// </summary>
+        /// <param name="userID">ID of the user to get the previous names of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a list of <see cref="UserPreviousName"/>s that represent the past names of a user
+        /// </returns>
+        public async Task<List<UserPreviousName>> GetUserNames(long userID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<UserPreviousName>(
+                @"
+                    SELECT user_name, min(m.start_time) ""timestamp""
+                    FROM bar_match_player p LEFT JOIN bar_match m ON m.id = p.game_id
+                    WHERE p.user_id = @UserID group by p.user_name
+                ",
+                new { UserID = userID },
+                cancel
+            );
         }
 
     }

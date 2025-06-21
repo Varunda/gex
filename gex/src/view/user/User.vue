@@ -2,9 +2,12 @@
 <template>
     <div>
         <div class="container">
+            <h2 class="wt-header bg-light text-dark">User info</h2>
+
             <div v-if="user.state == 'idle'"></div>
 
             <div v-else-if="user.state == 'loading'">
+                <busy class="busy busy-sm"></busy>
                 Loading...
             </div>
 
@@ -12,9 +15,12 @@
                 <user-info :user="user.data"></user-info>
             </div>
 
+            <h2 class="wt-header bg-light text-dark">Recent matches</h2>
+
             <div v-if="matches.state == 'idle'"></div>
             
             <div v-else-if="matches.state == 'loading'">
+                <busy class="busy busy-sm"></busy>
                 Loading...
             </div>
 
@@ -45,6 +51,7 @@
     import ApiError from "components/ApiError";
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
+    import Busy from "components/Busy.vue";
 
     import UserMatches from "./components/UserMatches.vue";
     import UserInfo from "./components/UserInfo.vue";
@@ -131,7 +138,7 @@
         },
 
         components: {
-            GexMenu, InfoHover, ApiError, ToggleButton,
+            GexMenu, InfoHover, ApiError, ToggleButton, Busy,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             UserMatches, UserInfo
         }

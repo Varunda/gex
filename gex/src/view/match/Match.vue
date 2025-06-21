@@ -340,7 +340,7 @@
                 <td class="text-muted">{{step}}</td>
                 <td class="text-muted">
                     <span v-if="when != null">
-                        on {{ when | moment("YYYY-MM-DD hh:mm:ssA") }} (took {{ duration / 1000 | mduration }})
+                        on {{ when | moment("yyyy-MM-dd hh:mm:ssa ZZZZ") }} (took {{ duration / 1000 | mduration }})
                     </span>
                     <span v-else>
                         --

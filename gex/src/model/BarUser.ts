@@ -1,6 +1,7 @@
 import { BarUserFactionStats } from "./BarUserFactionStats";
 import { BarUserMapStats } from "./BarUserMapStats";
 import { BarUserSkill } from "./BarUserSkill";
+import { UserPreviousName } from "./UserPreviousName";
 
 
 export class BarUser {
@@ -11,6 +12,7 @@ export class BarUser {
     public skill: BarUserSkill[] = [];
     public mapStats: BarUserMapStats[] = [];
     public factionStats: BarUserFactionStats[] = [];
+    public previousNames: UserPreviousName[] = [];
 
     public static parse(elem: any): BarUser {
         return {
@@ -20,7 +22,8 @@ export class BarUser {
 
             skill: elem.skill.map((iter: any) => BarUserSkill.parse(iter)),
             mapStats: elem.mapStats.map((iter: any) => BarUserMapStats.parse(iter)),
-            factionStats: elem.factionStats.map((iter: any) => BarUserFactionStats.parse(iter))
+            factionStats: elem.factionStats.map((iter: any) => BarUserFactionStats.parse(iter)),
+            previousNames: elem.previousNames.map((iter: any) => UserPreviousName.parse(iter))
         };
     }
 

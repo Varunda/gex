@@ -1,49 +1,27 @@
 ﻿import Vue from "vue";
 
-import * as moment from "moment";
+import * as luxon from "luxon";
 
-function vueMoment(input: Date | string | number | null | undefined, format: string = "YYYY-MM-DD hh:mmA") {
-    // Who knew that you could assign properties to a function
-    if (typeof (vueMoment as any).tz == "undefined") {
-        (vueMoment as any).tz = new Date().getTimezoneOffset();
-    }
-    if (typeof (vueMoment as any).tzname == "undefined") {
-        const today = new Date();
-        const short = today.toLocaleDateString();
-        const full = today.toLocaleDateString(undefined, { timeZoneName: "short" });
-
-        const shortIndex = full.indexOf(short);
-        if (shortIndex >= 0) {
-            const trimmed = full.substring(0, shortIndex) + full.substring(shortIndex + short.length);
-            (vueMoment as any).tzname = trimmed.replace(/^[\s,.\-:;]+|[\s,.\-:;]+$/g, '');
-        }
-    }
-    if (input == null || input == undefined || input == "") {
+function vueLuxon(input: Date | string | number | null | undefined, format: string = "yyyy-MM-dd hh:mma ZZZZ"): string {
+    if (input == "" || input == undefined || input == null) {
         return "";
     }
 
-    const tzname: string = (vueMoment as any).tzname;
-
-    if (typeof input == "string") {
-        // Date strings ending with Z mean this ISO8601 date string is formatted in UTC time
-        //      without the Z, it means local time, and since all dates as passed as UTC, just force it
-        if (input.endsWith("Z") == false) {
-            input += "Z";
-        }
-        return moment(input).format(format) + " " + tzname;
+    let dt: luxon.DateTime;
+    if (input instanceof Date) {
+        dt = luxon.DateTime.fromJSDate(input);
+    } else if (typeof input == "string") {
+        dt = luxon.DateTime.fromJSDate(new Date(input));
     } else if (typeof input == "number") {
-        return moment(new Date(input)).format(format) + " " + tzname;
-    } else if (input instanceof Date) {
-        return moment(input).format(format) + " " + tzname;
-        //return moment(input).add(-(vueMoment as any).tz, "minutes").format(format);
-    } else if (typeof input == "number") {
-        return moment(new Date(input)).format(format) + " " + tzname;
+        dt = luxon.DateTime.fromJSDate(new Date(input));
     } else {
-        throw `Unknown type of input in moment filter, cannot parse to the format: ${input} (${typeof input})`;
+        throw `unchecked type of input`;
     }
+
+    return dt.toFormat(format);
 }
 
-Vue.filter("moment", vueMoment);
+Vue.filter("moment", vueLuxon);
 
 Vue.filter("duration", (input: string | number, format: string): string => {
     const val = (typeof(input) == "string") ? Number.parseInt(input) : input;
@@ -105,38 +83,19 @@ Vue.filter("mduration", (input: string | number): string => {
         return `NaN ${val}`;
     }
 
-    const dur: moment.Duration = moment.duration(val * 1000);
+    const dur: luxon.Duration = luxon.Duration.fromObject({ seconds: val });
 
-    if (dur.asDays() >= 1) {
-        return `${Math.floor(dur.asDays())}d ${dur.hours().toString().padStart(2, "0")}h`;
+    if (dur.as("days") >= 1) {
+        return `${Math.floor(dur.as("days"))}d ${(Math.floor(dur.as("hours")) % 24).toString().padStart(2, "0")}h`;
     }
 
-    if (dur.asHours() >= 1) {
-        return `${dur.hours()}h ${dur.minutes().toString().padStart(2, "0")}m`;
+    if (dur.as("hours") >= 1) {
+        return `${dur.as("hours")}h ${(dur.as("minutes") % 60).toString().padStart(2, "0")}m`;
     }
 
-    return `${dur.minutes().toString().padStart(2, "0")}m ${dur.seconds().toString().padStart(2, "0")}s`;
-});
-
-Vue.filter("tduration", (input: string | number): string => {
-    const val: number = (typeof (input) == "string") ? Number.parseInt(input) : input;
-    if (Number.isNaN(val)) {
-        return `NaN ${val}`;
+    if (dur.as("minutes") >= 1) {
+        return `${Math.floor(dur.as("minutes")).toString().padStart(2, "0")}m ${Math.floor(dur.as("seconds") % 60).toString().padStart(2, "0")}s`;
     }
 
-    const dur: moment.Duration = moment.duration(val * 1000);
-
-    if (dur.asDays() >= 1) {
-        return `${Math.floor(dur.asDays())} days, ${dur.hours()} hours`;
-    }
-
-    if (dur.asHours() >= 1) {
-        return `${dur.hours()} hours, ${dur.minutes()} minutes`;
-    }
-
-    return `${dur.minutes()} minutes, ${dur.seconds()} seconds`;
-});
-
-Vue.filter("til", (time: Date) => {
-    return moment(time).fromNow();
+    return `00m ${Math.floor(dur.as("seconds")).toString().padStart(2, "0")}s`;
 });

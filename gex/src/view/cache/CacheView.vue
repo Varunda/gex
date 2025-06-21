@@ -38,11 +38,11 @@
                         <span v-if="selected.meta.state == 'loaded'" class="fs-5">
                             <br />
                                 (created at
-                                {{selected.meta.data.created | moment("YYYY-MM-DD hh:mm:ss")}},
+                                {{selected.meta.data.created | moment("yyyy-MM-dd hh:mm:ssa ZZZZ")}},
                                 used 
                                 {{selected.meta.data.uses}} times,
                                 last accessed
-                                {{selected.meta.data.lastAccessed | moment("YYYY-MM-DD hh:mm:ss")}})
+                                {{selected.meta.data.lastAccessed | moment("yyyy-MM-dd hh:mm:ssa ZZZZ")}})
                         </span>
                     </span>
 

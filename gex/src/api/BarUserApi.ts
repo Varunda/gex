@@ -8,7 +8,7 @@ export class BarUserApi extends ApiWrapper<BarUser> {
     public static get(): BarUserApi { return BarUserApi._instance; }
 
     public static getByUserID(userID: number): Promise<Loading<BarUser>> {
-        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true`, BarUser.parse);
+        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true`, BarUser.parse);
     }
 
     public static search(text: string, includeSkill: boolean = true): Promise<Loading<BarUser[]>> {

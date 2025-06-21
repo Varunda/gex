@@ -1,36 +1,36 @@
 ﻿import Vue from "vue";
-import * as moment from "moment";
+import * as luxon from "luxon";
 
 Vue.filter("timeAgo", (date: Date | number): string => {
 	if (typeof date == "number") {
 		date = new Date(date);
     }
 
-	const m = moment(date);
-	const now = moment(Date.now()).utc();
+    const m = luxon.DateTime.fromJSDate(date);
+    const now = luxon.DateTime.fromJSDate(new Date(Date.now()));
 
-	const years = now.diff(m, "years");
-	const months = now.diff(m, "months") % 12;
+	const years = now.diff(m, "years").as("years");
+	const months = now.diff(m, "months").as("months") % 12;
 
-	if (years > 0) {
+	if (years >= 1) {
 		return `${years}Y ${months}M`;
 	}
 
-	const days = now.diff(m, "days");
-	if (months > 0) {
+	const days = Math.floor(now.diff(m, "days").as("days"));
+	if (months >= 1) {
 		return `${months}M ${days % 30}d`;
 	}
 
-	const hours = now.diff(m, "hours") % 24;
-	if (days > 0) {
+	const hours = Math.floor(now.diff(m, "hours").as("hours")) % 24;
+	if (days >= 1) {
 		return `${days}d ${hours}h`;
 	}
 
-	const mins = now.diff(m, "minutes") % 60;
-	if (hours > 0) {
+	const mins = Math.floor(now.diff(m, "minutes").as("minutes")) % 60;
+	if (hours >= 1) {
         return `${hours}h ${mins}m`;
     }
 
-	const secs = now.diff(m, "seconds") % 60;
+	const secs = Math.floor(now.diff(m, "seconds").as("seconds")) % 60;
 	return `${mins}m ${secs}s`;
 });
