@@ -40,10 +40,10 @@
                     Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mm:ssa ZZZZ") }}
                 </span>
 
-                <span v-else>
+                <span v-else :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
                     Ended {{ match.endTime | compactTimeAgo }} ago
                     &middot;
-                    <span :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
+                    <span>
                         {{ match.endTime | moment("hh:mma")}}
                     </span>
                 </span>

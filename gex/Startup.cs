@@ -344,7 +344,7 @@ namespace gex {
 
                 endpoints.MapControllerRoute(
                     name: "user",
-                    pattern: "/user/{*.}",
+                    pattern: "/user/{userID}",
                     defaults: new { controller = "Home", action = "User" }
                 );
 
@@ -352,6 +352,12 @@ namespace gex {
                     name: "map",
                     pattern: "/map/{*.}",
                     defaults: new { controller = "Home", action = "Map" }
+                );
+
+                endpoints.MapControllerRoute(
+                    name: "mapname",
+                    pattern: "/mapname/{mapName}",
+                    defaults: new { controller = "Home", action = "MapName" }
                 );
 
                 endpoints.MapControllerRoute(

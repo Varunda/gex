@@ -89,7 +89,7 @@
                 Loading...
             </div>
 
-            <div v-else-if="recentMaps.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
+            <div v-else-if="recentMaps.state == 'loaded'" class="d-flex flex-wrap justify-content-around" style="gap: 0.75rem;">
                 <div v-for="group in mapPlayRecentGroups" :key="group.gamemode">
                     <h3 class="text-center mb-0">
                         {{ group.gamemode | gamemode }}
@@ -106,7 +106,14 @@
                         <tbody>
                             <tr v-for="entry in group.entries" :key="entry.map">
                                 <td class="px-2">
-                                    {{ entry.map }}
+                                    <a :href="'/MapName/' + encodeURIComponent(entry.map)">
+                                        <span v-if="entry.map.length > 27">
+                                            {{ entry.map.slice(0, 24) }}...
+                                        </span>
+                                        <span v-else>
+                                            {{ entry.map }}
+                                        </span>
+                                    </a>
                                 </td>
                                 <td class="px-2">
                                     {{ entry.count | locale(0) }}

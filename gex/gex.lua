@@ -9,6 +9,8 @@ local frame = 0
 local timer
 local commanders = {}
 
+local units_died_in_frame = {}
+
 local CMD_RECLAIM = 90
 local CMD_RESTORE = 110
 local CMD_RESURRECT = 125
@@ -253,6 +255,10 @@ function widget:GameFrame(n)
     end
 end
 
+function widget:GameFramePost()
+    units_died_in_frame = {} -- reset back to nothing
+end
+
 function widget:TeamDied(teamID)
     writeJson("team_died", {
         { "teamID", teamID }
@@ -275,7 +281,7 @@ function widget:GameOver(winningAllyTeams)
     for unitID,v in pairs(UNIT_RESOURCE_PRODUCTION) do
         -- HACK: for some reason, the UnitKilled callin setting nil does not work,
         -- and they are still iterated thru in this loop. but, GetUnitTeam will return nil for these units
-        if (Spring.GetUnitTeam(unitID) ~= nil) then
+        if ((Spring.GetUnitTeam(unitID) ~= nil) and (units_died_in_frame[unitID] == nil)) then
 			writeJson("unit_resources", {
 				{ "unitID", unitID },
                 { "defID", Spring.GetUnitDefID(unitID) },
@@ -290,7 +296,7 @@ function widget:GameOver(winningAllyTeams)
     end
 
     for unitID,v in pairs(UNIT_DAMAGE) do
-        if (Spring.GetUnitTeam(unitID) ~= nil) then
+        if ((Spring.GetUnitTeam(unitID) ~= nil) and (units_died_in_frame[unitID] == nil)) then
 			writeJson("unit_damage", {
 				{ "unitID", unitID },
 				{ "defID", Spring.GetUnitDefID(unitID) },
@@ -311,7 +317,6 @@ function widget:GameOver(winningAllyTeams)
             local history = Spring.GetTeamStatsHistory(teamID, 0, range)
 
             if (history) then
-
                 for i = 1,range do
                     data = {
                         { "teamID", teamID }
@@ -371,6 +376,8 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
     if (commanders[unitID] ~= nil) then
         commanders[unitID] = nil
     end
+
+    units_died_in_frame[unitID] = unitID
 
     local kx, ky, kz = Spring.GetUnitPosition(unitID)
     local ax, ay, az = nil, nil, nil

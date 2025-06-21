@@ -1,9 +1,12 @@
 ﻿using gex.Code;
+using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Models.Options;
+using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db.Match;
+using gex.Services.Db.UserStats;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -31,11 +34,14 @@ namespace gex.Controllers {
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMapRepository _MapRepository;
+        private readonly BarUserDb _UserDb;
 
         public HomeController(ILogger<HomeController> logger,
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
-            BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository) {
+            BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
+            BarMapRepository mapRepository, BarUserDb userDb) {
 
             _HttpContextAccessor = httpContextAccessor;
             _HttpUtil = httpUtil;
@@ -44,6 +50,8 @@ namespace gex.Controllers {
             _MatchRepository = matchRepository;
             _AllyTeamDb = allyTeamDb;
             _PlayerRepository = playerRepository;
+            _MapRepository = mapRepository;
+            _UserDb = userDb;
         }
 
         public IActionResult Index() {
@@ -111,7 +119,24 @@ namespace gex.Controllers {
             return View();
         }
 
-        public new IActionResult User(int userID) {
+        public new async Task<IActionResult> User(int userID, CancellationToken cancel) {
+            try {
+                string? ogDesc = null;
+                await Task.Run(async () => {
+                    BarUser? user = await _UserDb.GetByID(userID, cancel);
+
+                    if (user == null) {
+                        return;
+                    }
+
+                    ogDesc = $"View user stats for {user.Username}";
+                }, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
+
+                ViewBag.OgDescription = ogDesc;
+            } catch (Exception) {
+                _Logger.LogWarning($"failed to generate og:description for user within 1s [userID={userID}]");
+            }
+
             return View();
         }
 
@@ -165,7 +190,39 @@ namespace gex.Controllers {
             return File(fs, "application/octet-stream", fileDownloadName: match.FileName, false);
         }
 
-        public IActionResult Map(string filename) {
+        public async Task<IActionResult> Map(string filename, CancellationToken cancel) {
+            try {
+                string? ogDesc = null;
+
+                await Task.Run(async () => {
+                    BarMap? map = await _MapRepository.GetByFileName(filename, cancel);
+
+                    if (map == null) {
+                        return;
+                    }
+
+                    ogDesc = $"View map info for {map.Name} by {map.Author}";
+                }, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
+
+                ViewBag.OgDescription = ogDesc;
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to generate og:description for map [filename={filename}]");
+            }
+
+            return View();
+        }
+
+        public async Task<IActionResult> MapName(string mapName, CancellationToken cancel) {
+            BarMap? map = await _MapRepository.GetByName(mapName, cancel);
+
+            if (map == null) {
+                return RedirectToAction("Maps", "Home");
+            }
+
+            return Redirect($"/map/{map.FileName}");
+        }
+
+        public IActionResult Maps() {
             return View();
         }
 

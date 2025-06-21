@@ -1,5 +1,9 @@
 ﻿<meta property="og:title" content="Gex / User" />
-<meta property="og:description" content="User stats" />
+@if (ViewBag.OgDescription == null) {
+    <meta property="og:description" content="View user info" />
+} else {
+    <meta property="og:description" content="@ViewBag.OgDescription" />
+}
 
 <script src="~/dist/view/user/view.js" defer asp-append-version="true"></script>
 

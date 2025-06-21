@@ -14,7 +14,7 @@
                 Skill
             </h4>
 
-            <div class="d-flex justify-content-around" style="gap: 1rem;">
+            <div class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
                 <div v-for="skill in skills" :key="skill.gamemode" class="hoverable text-center mx-2 rounded p-3">
                     <h5 class="border-bottom py-1">
                         {{ skill.gamemode | gamemode }}
@@ -35,9 +35,9 @@
                 Faction
             </h4>
 
-            <div class="d-flex justify-content-around mb-3">
+            <div class="d-flex flex-wrap justify-content-around mb-3" style="gap: 0.5rem;">
 
-                <div v-for="faction in user.factionStats" :key="faction.faction + '-' + faction.gamemode" class="hoverable mx-2 text-center p-3 rounded">
+                <div v-for="faction in user.factionStats" :key="faction.faction + '-' + faction.gamemode" class="hoverable text-center p-3 rounded">
 
                     <h5 class="border-bottom py-1">
                         <img v-if="faction.faction == 1" src="/img/armada.png" width="24">
@@ -106,7 +106,7 @@
                 Map stats are seperated into gamemode, so it is possible to have 1 map listed multiple times, each for a different gamemode
             </h6>
 
-            <a-table :entries="mapData" :show-filters="true" default-sort-field="playCount" default-sort-order="desc" :default-page-size="10">
+            <a-table :entries="mapData" :show-filters="true" default-sort-field="playCount" default-sort-order="desc" :default-page-size="10" :overflow-wrap="true">
                 <a-col>
                     <a-header>
                         <b>Map</b>

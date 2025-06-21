@@ -2,7 +2,7 @@
     <div>
         <a-table :entries="matches"
             :show-filters="true"
-            :default-page-size="10"
+            :default-page-size="10" :overflow-wrap="true"
             default-sort-field="startTime" default-sort-order="desc">
 
             <a-col sort-field="startTime">

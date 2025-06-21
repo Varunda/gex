@@ -116,7 +116,10 @@ export const ATable = Vue.extend({
         // Will the pages also be shown above the data?
         ShowTopPages: { type: Boolean, required: false, default: false },
 
-        name: { type: String, required: false, default: null }
+        name: { type: String, required: false, default: null },
+
+        // will the table be wrapped in a <div> that adds scrolling?
+        OverflowWrap: { type: Boolean, required: false, default: false }
     },
 
     data: function() {
@@ -473,7 +476,7 @@ export const ATable = Vue.extend({
             console.error(err);
         }
 
-		return createElement("table",
+        const t = createElement("table",
 			{
 				staticClass: "table a-table",
 				class: {
@@ -484,6 +487,20 @@ export const ATable = Vue.extend({
 			},
 			rows
 		);
+
+        if (this.OverflowWrap == true) {
+            return createElement("div",
+                {
+                    staticStyle: {
+                        "width": "100%",
+                        "overflow-y": "scroll"
+                    }
+                },
+                [ t ]
+            )
+        } else {
+            return t;
+        }
     },
 
     methods: {

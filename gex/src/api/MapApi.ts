@@ -11,4 +11,8 @@ export class MapApi extends ApiWrapper<BarMap> {
         return MapApi.get().readSingle(`/api/map/${encodeURIComponent(filename)}`, BarMap.parse);
     }
 
+    public static getAll(): Promise<Loading<BarMap[]>> {
+        return MapApi.get().readList(`/api/map/all`, BarMap.parse);
+    }
+
 }

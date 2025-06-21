@@ -3,6 +3,7 @@ using gex.Models.Bar;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,6 +45,19 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(map);
+        }
+
+        /// <summary>
+        ///     api method to get all maps that Gex knows about
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="BarMap"/>s
+        /// </response>
+        [HttpGet("all")]
+        public async Task<ApiResponse<List<BarMap>>> GetAll(CancellationToken cancel) {
+            List<BarMap> maps = await _MapRepository.GetAll(cancel);
+            return ApiOk(maps);
         }
 
     }

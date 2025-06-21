@@ -13,7 +13,7 @@
         </div>
 
         <div v-else-if="barMap.state == 'nocontent'">
-            No map with name <code>{{ mapFilename }}</code> exists
+            No map with name <code>'{{ mapFilename }}'</code> exists
         </div>
 
         <div v-else-if="barMap.state == 'loaded'">
