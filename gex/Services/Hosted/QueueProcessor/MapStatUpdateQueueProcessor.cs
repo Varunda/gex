@@ -1,6 +1,7 @@
 ﻿using gex.Models.Queues;
 using gex.Services.Db.MapStats;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace gex.Services.Hosted.QueueProcessor {
     public class MapStatUpdateQueueProcessor : BaseQueueProcessor<MapStatUpdateQueueEntry> {
 
         private readonly MapStatsDb _MapStatsDb;
-        private readonly MapStatsStartSpotDb _StartSpotDb;
+        private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly MapStatsByFactionDb _FactionStatsDb;
         private readonly MapStatsOpeningLabDb _OpeningLabDb;
 
@@ -26,12 +27,12 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         public MapStatUpdateQueueProcessor(ILoggerFactory factory,
             BaseQueue<MapStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
-            MapStatsDb mapStatsDb, MapStatsStartSpotDb startSpotDb, MapStatsByFactionDb factionStatsDb,
-            MapStatsOpeningLabDb openingLabDb)
+            MapStatsDb mapStatsDb, MapStatsStartSpotRepository startSpotRepo,
+            MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb)
         : base("map_stat_update_queue", factory, queue, serviceHealthMonitor) {
 
             _MapStatsDb = mapStatsDb;
-            _StartSpotDb = startSpotDb;
+            _StartSpotRepository = startSpotRepo;
             _FactionStatsDb = factionStatsDb;
             _OpeningLabDb = openingLabDb;
         }
@@ -53,7 +54,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _MapStatsDb.Generate(entry.MapFilename, cancel);
             long statsMs = timer.ElapsedMilliseconds; timer.Restart();
 
-            await _StartSpotDb.Generate(entry.MapFilename, cancel);
+            await _StartSpotRepository.Generate(entry.MapFilename, cancel);
             long startMs = timer.ElapsedMilliseconds; timer.Restart();
 
             await _FactionStatsDb.Generate(entry.MapFilename, cancel);

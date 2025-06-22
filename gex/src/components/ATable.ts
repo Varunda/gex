@@ -493,7 +493,7 @@ export const ATable = Vue.extend({
                 {
                     staticStyle: {
                         "width": "100%",
-                        "overflow-y": "scroll"
+                        "overflow-y": "auto"
                     }
                 },
                 [ t ]

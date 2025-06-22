@@ -17,21 +17,21 @@ namespace gex.Controllers.Api {
         private readonly ILogger<MapStatsApiController> _Logger;
         private readonly BarMapRepository _MapRepository;
         private readonly MapStatsDb _MapStatsDb;
-        private readonly MapStatsStartSpotDb _StartSpotDb;
+        private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly MapStatsByFactionDb _FactionStatsDb;
         private readonly MapStatsOpeningLabDb _OpeningLabDb;
 
         public MapStatsApiController(ILogger<MapStatsApiController> logger,
-            MapStatsDb mapStatsDb, MapStatsStartSpotDb startSpotDb,
-            BarMapRepository mapRepository, MapStatsByFactionDb factionStatsDb,
-            MapStatsOpeningLabDb openingLabDb) {
+            MapStatsDb mapStatsDb, BarMapRepository mapRepository,
+            MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb,
+            MapStatsStartSpotRepository startSpotRepository) {
 
             _Logger = logger;
             _MapStatsDb = mapStatsDb;
-            _StartSpotDb = startSpotDb;
             _MapRepository = mapRepository;
             _FactionStatsDb = factionStatsDb;
             _OpeningLabDb = openingLabDb;
+            _StartSpotRepository = startSpotRepository;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace gex.Controllers.Api {
             }
 
             if (includeStartSpots == true) {
-                stats.StartSpots = await _StartSpotDb.GetByMap(mapFilename, cancel);
+                stats.StartSpots = await _StartSpotRepository.GetByMap(mapFilename, cancel);
             }
 
             if (includeFactionStats == true) {

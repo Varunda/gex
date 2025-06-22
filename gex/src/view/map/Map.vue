@@ -260,7 +260,7 @@
         </div>
 
         <div v-else-if="barMap.state == 'error'">
-            <api-error :problem="barMap.problem"></api-error>
+            <api-error :error="barMap.problem"></api-error>
         </div>
     </div>
 
@@ -433,14 +433,6 @@
                     .attr("href", this.mapUrl)
                     .style("filter", "saturate(0%)")
                     ;
-
-                /*
-                ROOT.append("rect")
-                    .classed("map-no-remove", true)
-                    .attr("x", 0).attr("y", 0)
-                    .attr("width", this.imgW).attr("height", this.imgH)
-                    .style("fill", "#0a224244");
-                */
 
                 this.tooltip = d3.select("#d3_canvas")
                     .append("div")

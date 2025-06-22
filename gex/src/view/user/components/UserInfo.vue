@@ -10,7 +10,7 @@
         </h4>
 
         <div class="mb-3">
-            <h4 class="wt-header mb-3">
+            <h4 class="wt-header bg-light text-dark mb-3">
                 Skill
             </h4>
 
@@ -31,7 +31,7 @@
         </div>
 
         <div>
-            <h4 class="wt-header">
+            <h4 class="wt-header bg-light text-dark">
                 Faction
             </h4>
 
@@ -76,7 +76,7 @@
         </div>
 
         <div v-if="user.previousNames.length > 1" class="mb-3">
-            <h4 class="wt-header mb-2">Previous names</h4>
+            <h4 class="wt-header bg-light text-dark mb-2">Previous names</h4>
 
             <table class="table table-sm table-hover">
                 <thead class="table-secondary">
@@ -99,7 +99,7 @@
         </div>
 
         <div>
-            <h4 class="wt-header mb-1">
+            <h4 class="wt-header bg-light text-dark mb-1">
                 Maps
             </h4>
             <h6 class="text-muted mb-3">
@@ -117,7 +117,9 @@
                     </a-filter>
 
                     <a-body v-slot="entry">
-                        {{ entry.map }}
+                        <a :href="'/MapName/' + encodeURIComponent(entry.map)">
+                            {{ entry.map }}
+                        </a>
                     </a-body>
                 </a-col>
 
@@ -159,11 +161,53 @@
                         </span>
                     </a-body>
                 </a-col>
+
+                <a-col>
+                    <a-header>
+                        <b>Start spots</b>
+                    </a-header>
+
+                    <a-body v-slot="entry">
+                        <button class="btn btn-primary btn-sm px-1 py-0 border-0" @click="generateStartSpots(entry.map, entry.gamemode)">
+                            Generate
+                        </button>
+                    </a-body>
+                </a-col>
             </a-table>
 
+            <div v-if="startSpot.loaded == true" class="mb-3">
+                <h4 class="wt-header bg-light text-dark">
+                    Starting position data
+
+                    <button class="btn-close border border-light text-light" @click="closeStartSpots" aria-label="close">
+                        &times;
+                    </button>
+                </h4>
+
+                <span v-if="startSpot.map.state == 'loading' || startSpot.data.state == 'loading'">
+                    <busy class="busy busy-sm"></busy>
+                    Loading...
+                </span>
+
+                <div v-if="startSpot.map.state == 'loaded' && startSpot.data.state == 'loaded'">
+                    <h4 class="text-center">
+                        Viewing map stats for 
+                        <b>{{ user.username }}</b>
+                        on map 
+                        <b>{{ startSpot.map.data.name }}</b>
+                        for gamemode
+                        <b>{{ startSpot.gamemode | gamemode }}</b>
+                    </h4>
+
+                    <start-spot-map :map-data="startSpot.map.data" :start-spots="startSpot.data.data">
+                    </start-spot-map>
+                </div>
+
+                <api-error v-if="startSpot.map.state == 'error'" :error="startSpot.map.problem"></api-error>
+                <api-error v-if="startSpot.data.state == 'error'" :error="startSpot.data.problem"></api-error>
+            </div>
 
         </div>
-
     </div>
 </template>
 
@@ -187,10 +231,17 @@
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
     import InfoHover from "components/InfoHover.vue";
+    import StartSpotMap from "components/app/StartSpotMap.vue";
+    import Busy from "components/Busy.vue";
 
     import { BarUser } from "model/BarUser";
     import { BarUserMapStats } from "model/BarUserMapStats";
     import { BarUserSkill } from "model/BarUserSkill";
+    import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
+    import { BarMap } from "model/BarMap";
+
+    import { MapStatsApi } from "api/map_stats/MapStatsApi";
+    import { MapApi } from "api/MapApi";
 
     import "filters/BarGamemodeFilter";
     import "filters/LocaleFilter";
@@ -204,12 +255,54 @@
 
         data: function() {
             return {
-
+                startSpot: {
+                    loaded: false as boolean,
+                    gamemode: 0 as number,
+                    map: Loadable.idle() as Loading<BarMap>,
+                    data: Loadable.idle() as Loading<MapStatsStartSpot[]>,
+                }
             }
         },
 
         methods: {
+            generateStartSpots: async function(mapName: string, gamemode: number): Promise<void> {
+                this.startSpot.loaded = false;
 
+                this.startSpot.gamemode = gamemode;
+
+                this.startSpot.data = Loadable.loading();
+                this.startSpot.data = await MapStatsApi.getStartSpotsByMapAndUser(mapName, this.user.userID);
+                this.startSpot.loaded = true;
+
+                if (this.startSpot.data.state != "loaded") {
+                    return;
+                }
+
+                if (this.startSpot.data.data.length == 0) {
+                    this.startSpot.data = Loadable.error(`no start spot data found for user ${this.user.userID} and map ${mapName}`);
+                    return;
+                }
+
+                const startSpots: MapStatsStartSpot[] = this.startSpot.data.data.filter(iter => iter.gamemode == gamemode);
+                if (startSpots.length == 0) {
+                    this.startSpot.data = Loadable.error(`no start spot data found for user ${this.user.userID} and map ${mapName} on gamemode ${gamemode}`);
+                    return;
+                }
+
+                const mapFilename: string = startSpots[0].mapFilename;
+                this.startSpot.data = Loadable.loaded(startSpots);
+                this.startSpot.map = Loadable.loading();
+                this.startSpot.map = await MapApi.getByFilename(mapFilename);
+
+                this.startSpot.loaded = true;
+                console.log(`UserInfo> showing start spot info for map ${mapName} on gamemode ${gamemode} for user ${this.user.username}`);
+            },
+
+            closeStartSpots: function(): void {
+                this.startSpot.loaded = false;
+                this.startSpot.data = Loadable.idle();
+                this.startSpot.map = Loadable.idle();
+            }
         },
 
         computed:  {
@@ -228,12 +321,21 @@
 
             mapTotalPlays: function(): number {
                 return this.user.mapStats.reduce((acc, iter) => acc += iter.playCount, 0);
+            },
+
+            startSpotGamemodes: function(): number[] {
+                if (this.startSpot.data.state != "loaded") {
+                    return [];
+                }
+
+                return this.startSpot.data.data.map(iter => iter.gamemode).filter((val, index, arr) => arr.indexOf(val) == index);
             }
         },
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            InfoHover
+            InfoHover, Busy,
+            StartSpotMap
         }
     });
     export default UserInfo;

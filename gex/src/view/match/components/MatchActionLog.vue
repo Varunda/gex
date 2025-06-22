@@ -214,7 +214,7 @@
                     if (ev.weaponDefinitionID < 0) {
                         if (ev.weaponDefinitionID == -19) {
                             entry.parts.push(this.createText("(decayed)"));
-                        } else if (ev.weaponDefinitionID == -12){
+                        } else if (ev.weaponDefinitionID == -12) {
 
                         } else if (ev.weaponDefinitionID == -8) {
                             entry.parts.push(this.createText("(crashed)"));

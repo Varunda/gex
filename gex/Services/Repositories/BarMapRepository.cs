@@ -48,7 +48,7 @@ namespace gex.Services.Repositories {
             string cacheKey = string.Format(CACHE_KEY_NAME, filename);
             if (_Cache.TryGetValue(cacheKey, out BarMap? map) == false) {
                 _Logger.LogTrace($"loading bar map from DB [filename={filename}]");
-                map = await _Db.GetByFileName(filename);
+                map = await _Db.GetByFileName(filename, cancel);
 
                 if (map == null) {
                     _Logger.LogDebug($"loading map info from BAR api [filename={filename}]");

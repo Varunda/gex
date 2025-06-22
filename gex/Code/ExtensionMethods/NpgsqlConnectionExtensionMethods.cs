@@ -25,8 +25,8 @@ namespace gex.Code.ExtensionMethods {
         }
 
         public static async Task<T?> QuerySingleAsync<T>(this NpgsqlConnection conn, string query, object? parms, CancellationToken cancellationToken) {
-            return await conn.QueryFirstAsync<T>(new CommandDefinition(
-                "SELECT * FROM app_group WHERE id = @ID",
+            return await conn.QueryFirstOrDefaultAsync<T>(new CommandDefinition(
+                query,
                 parms,
                 cancellationToken: cancellationToken
             ));

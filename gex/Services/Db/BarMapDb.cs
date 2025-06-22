@@ -74,15 +74,17 @@ namespace gex.Services.Db {
         ///     get a map based on ID
         /// </summary>
         /// <param name="mapID">ID of the map to get</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>
         ///     the <see cref="BarMap"/> with <see cref="BarMap.ID"/> of <paramref name="mapID"/>,
         ///     or <c>null</c> if it does not exist
         /// </returns>
-        public async Task<BarMap?> GetByID(int mapID) {
+        public async Task<BarMap?> GetByID(int mapID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return await conn.QueryFirstOrDefaultAsync<BarMap>(
+            return await conn.QuerySingleAsync<BarMap>(
                 "SELECT * FROM bar_map WHERE id = @ID",
-                new { ID = mapID }
+                new { ID = mapID },
+                cancel
             );
         }
 
@@ -108,15 +110,17 @@ namespace gex.Services.Db {
         ///     and put to lowercase
         /// </summary>
         /// <param name="mapName">name of the map</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>
         ///     the <see cref="BarMap"/> with <see cref="BarMap.FileName"/> of <paramref name="mapName"/>,
         ///     or <c>null</c> if it does not exist
         /// </returns>
-        public async Task<BarMap?> GetByFileName(string mapName) {
+        public async Task<BarMap?> GetByFileName(string mapName, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return await conn.QueryFirstOrDefaultAsync<BarMap>(
+            return await conn.QuerySingleAsync<BarMap>(
                 "SELECT * FROM bar_map WHERE filename = @FileName",
-                new { FileName = mapName }
+                new { FileName = mapName },
+                cancel
             );
         }
 
@@ -127,10 +131,10 @@ namespace gex.Services.Db {
         /// <returns></returns>
         public async Task<List<BarMap>> GetAll(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return (await conn.QueryAsync<BarMap>(new CommandDefinition(
+            return await conn.QueryListAsync<BarMap>(
                 "SELECT * from bar_map",
-                cancellationToken: cancel
-            ))).ToList();
+                cancel
+            );
         }
 
     }

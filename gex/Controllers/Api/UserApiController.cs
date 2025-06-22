@@ -1,7 +1,11 @@
 ﻿using gex.Models;
 using gex.Models.Api;
+using gex.Models.Bar;
+using gex.Models.MapStats;
 using gex.Models.UserStats;
+using gex.Services.Db;
 using gex.Services.Db.UserStats;
+using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -19,16 +23,21 @@ namespace gex.Controllers.Api {
         private readonly BarUserSkillDb _SkillDb;
         private readonly BarUserMapStatsDb _MapStatsDb;
         private readonly BarUserFactionStatsDb _FactionStatsDb;
+        private readonly BarMapDb _MapDb;
+        private readonly MapStatsStartSpotRepository _StartSpotRepository;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserDb userDb, BarUserMapStatsDb mapStatsDb,
-            BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb) {
+            BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
+            BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository) {
 
             _Logger = logger;
             _UserDb = userDb;
             _MapStatsDb = mapStatsDb;
             _FactionStatsDb = factionStatsDb;
             _SkillDb = skillDb;
+            _MapDb = mapDb;
+            _StartSpotRepository = startSpotRepository;
         }
 
         /// <summary>
@@ -124,6 +133,71 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
+        }
+
+        /// <summary>
+        ///     get the start spots of a user on a specific map, either by map name or map filename
+        /// </summary>
+        /// <param name="userID">ID of the user</param>
+        /// <param name="mapFilename">filename of the map. either this one or <paramref name="mapName"/> must be given</param>
+        /// <param name="mapName">name of the map. either this or <paramref name="mapFilename"/> must be given</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="MapStatsStartSpot"/>s
+        ///     for the user on the map
+        /// </response>
+        /// <response code="400">
+        ///     neither <paramref name="mapFilename"/> or <paramref name="mapName"/> was given
+        /// </response>
+        /// <response code="404">
+        ///     one of the following objects could not be found:
+        ///     <ul>
+        ///         <li>no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists</li>
+        ///         <li>no <see cref="BarMap"/> with <see cref="BarMap.FileName"/> of <paramref name="mapFilename"/> exists</li>
+        ///     </ul>
+        /// </response>
+        [HttpGet("start-spots/{userID}")]
+        public async Task<ApiResponse<List<MapStatsStartSpot>>> GetStartSpotsByName(
+            long userID,
+            [FromQuery] string? mapFilename = null,
+            [FromQuery] string? mapName = null,
+            CancellationToken cancel = default
+        ) {
+
+            if (mapFilename == null && mapName == null) {
+                return ApiBadRequest<List<MapStatsStartSpot>>($"either {nameof(mapFilename)} or {nameof(mapName)} must be given");
+            }
+            if (mapFilename != null && mapName != null) {
+                return ApiBadRequest<List<MapStatsStartSpot>>($"cannot give both {nameof(mapFilename)} and {nameof(mapName)}");
+            }
+
+            BarMap? map = null;
+
+            if (mapFilename != null) {
+                map = await _MapDb.GetByFileName(mapFilename, cancel);
+                if (map == null) {
+                    return ApiNotFound<List<MapStatsStartSpot>>($"{nameof(BarMap)} {mapFilename}");
+                }
+            }
+
+            if (mapName != null) {
+                map = await _MapDb.GetByName(mapName, cancel);
+                if (map == null) {
+                    return ApiNotFound<List<MapStatsStartSpot>>($"{nameof(BarMap)} {mapName}");
+                }
+            }
+
+            if (map == null) {
+                throw new System.Exception($"logic error: why is map null here, 404 was expected");
+            }
+
+            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            if (user == null) {
+                return ApiNotFound<List<MapStatsStartSpot>>($"{nameof(BarUser)} {userID}");
+            }
+
+            List<MapStatsStartSpot> spots = await _StartSpotRepository.GetByMapAndUser(map.FileName, userID, cancel);
+            return ApiOk(spots);
         }
 
     }

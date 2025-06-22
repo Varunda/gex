@@ -19,6 +19,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarSkillLeaderboardRepository>();
             services.AddSingleton<SkillHistogramRepository>();
             services.AddSingleton<BarMapPlayCountRepository>();
+            services.AddSingleton<MapStatsStartSpotRepository>();
         }
 
     }

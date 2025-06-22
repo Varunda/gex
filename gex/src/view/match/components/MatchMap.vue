@@ -228,7 +228,8 @@
         mounted: function(): void {
             const mapData: BarMap | null = this.match.mapData;
             if (mapData == null) {
-                console.warn(`cannot add player start pos: map data is missing!`);
+                console.warn(`MatchMap> cannot add player start pos: map data is missing!`);
+                return;
             } else {
                 this.mapW = mapData.width * 512;
                 this.mapH = mapData.height * 512;
@@ -244,7 +245,7 @@
                 const img: HTMLElement | null = document.getElementById("map-dims");
 
                 if (img == null) {
-                    console.error(`missing #map-dims!`);
+                    console.error(`MatchMap> missing #map-dims!`);
                     return;
                 }
 
@@ -253,7 +254,7 @@
                 img.addEventListener("load", (ev: Event) => {
                     this.isMapImageLoading = false;
                     if (this.svg == null) {
-                        console.error(`missing #map-svg`);
+                        console.error(`MatchMap> missing #map-svg`);
                         return;
                     }
 
@@ -317,6 +318,10 @@
                     this.computedData.commander = CommanderData.compute(this.output, this.match);
                     this.computedData.factories = PlayerFactories.compute(this.match, this.output);
                     this.computedData.position = UnitPositionFrame.compute(this.match, this.output);
+
+                    if (this.mapH == 0 || this.mapW == 0) {
+                        throw `MatchMap> bad map dimensions!`;
+                    }
 
                     this.drawMap();
                 });

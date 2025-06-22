@@ -11,7 +11,9 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    {{ entry.startTime | moment }}
+                    <a :href="'/match/' + entry.id">
+                        {{ entry.startTime | moment }}
+                    </a>
                 </a-body>
             </a-col>
 
