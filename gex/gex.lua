@@ -10,6 +10,8 @@ local timer
 local commanders = {}
 
 local units_died_in_frame = {}
+local units_pending_load = {}
+local units_pending_unload = {}
 
 local CMD_RECLAIM = 90
 local CMD_RESTORE = 110
@@ -196,6 +198,23 @@ local function SendUnitPositions()
 end
 
 function widget:GameFrame(n)
+    -- 2025-06-22 HACK:
+    -- ok, this is really fucking stupid code, caused by the classic "what the fuck is a wupget"
+    -- widgets don't get the GameFramePost callin, but Gex still needs to emit this data at the
+    -- end of a frame, so Gex emits this data before the |frame| global is updated so the frame emitted
+    -- is one frame back from what the game's frame actually is :>
+    units_died_in_frame = {} -- reset back to nothing
+
+    for unitID,v in pairs(units_pending_load) do
+        writeJson("transport_loaded", v)
+    end
+    units_pending_load = {}
+
+    for unitID,v in pairs(units_pending_unload) do
+        writeJson("transport_unloaded", v)
+    end
+	units_pending_unload = {}
+
     frame = n
 
     local unitIDs = Spring.GetAllUnits()
@@ -253,10 +272,6 @@ function widget:GameFrame(n)
     if (frame % 600 == 0) then
         Spring.Echo("[Gex] on frame " .. frame)
     end
-end
-
-function widget:GameFramePost()
-    units_died_in_frame = {} -- reset back to nothing
 end
 
 function widget:TeamDied(teamID)
@@ -430,8 +445,35 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
 end
 
 function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+
+    -- 2025-06-21 HACK:
+    -- a unit can be loaded and unloaded by different transports multiple times per frame.
+    -- instead of sending all of those events, send all of the unit loaded events after the frame is over
+    -- ex:
+    -- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":10061,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":10061,"transportTeamID":0,...}
+	-- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":24424,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":24424,"transportTeamID":0,...}
+	-- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":29322,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":29322,"transportTeamID":0,...}
+    --
+    -- note the unitID is the same for all events, but the transport ID is different
+    -- only emit the last one of these events per frame
+
     local x, y, z = Spring.GetUnitPosition(unitID)
 
+    units_pending_load[unitID] = {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    }
+
+    --[[
     writeJson("transport_loaded", {
         { "unitID", unitID },
         { "defID", unitDefID },
@@ -442,11 +484,25 @@ function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTe
         { "unitY", y },
         { "unitZ", z }
     })
+    ]]
 end
 
 function widget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+
     local x, y, z = Spring.GetUnitPosition(unitID)
 
+    units_pending_unload[unitID] = {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    }
+
+    --[[
     writeJson("transport_unloaded", {
         { "unitID", unitID },
         { "defID", unitDefID },
@@ -457,6 +513,7 @@ function widget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID, transport
         { "unitY", y },
         { "unitZ", z }
     })
+    ]]
 end
 
 function widget:UnitFromFactory(unitID, unitDefID, unitTeam, factID, factDefID, userOrders)
