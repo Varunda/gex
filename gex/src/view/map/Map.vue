@@ -161,28 +161,28 @@
                             <tbody>
                                 <tr v-for="faction in factionStats" :key="faction.faction">
                                     <td>
-                                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24" height="24">
-                                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24" height="24">
-                                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24" height="24">
-                                        <span v-else-if="faction.faction == 4">?</span>
+                                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24" height="24" title="icon for armada">
+                                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24" height="24" title="icon for cortex">
+                                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24" height="24" title="icon for legion">
+                                        <img v-else-if="faction.faction == 4" src="/img/random.png" width="24" height="24" title="icon for random">
                                         <span v-else>unchecked faction {{ faction.faction }}</span>
                                         {{ faction.faction | faction }}
                                     </td>
                                     <td>
                                         {{ faction.winCountAllTime / Math.max(faction.playCountAllTime, 1) * 100 | locale(2) }}%
-                                        ({{ faction.winCountAllTime }} / {{ faction.playCountAllTime }})
+                                        ({{ faction.winCountAllTime | locale(0) }} / {{ faction.playCountAllTime | locale(0) }})
                                     </td>
                                     <td>
                                         {{ faction.winCountMonth / Math.max(faction.playCountMonth, 1) * 100 | locale(2) }}%
-                                        ({{ faction.winCountMonth }} / {{ faction.playCountMonth }})
+                                        ({{ faction.winCountMonth | locale(0) }} / {{ faction.playCountMonth | locale(0) }})
                                     </td>
                                     <td>
                                         {{ faction.winCountWeek / Math.max(faction.playCountWeek, 1) * 100 | locale(2) }}%
-                                        ({{ faction.winCountWeek }} / {{ faction.playCountWeek }})
+                                        ({{ faction.winCountWeek | locale(0) }} / {{ faction.playCountWeek | locale(0) }})
                                     </td>
                                     <td>
                                         {{ faction.winCountDay / Math.max(faction.playCountDay, 1) * 100 | locale(2) }}%
-                                        ({{ faction.winCountDay }} / {{ faction.playCountDay }})
+                                        ({{ faction.winCountDay | locale(0) }} / {{ faction.playCountDay | locale(0) }})
                                     </td>
                                 </tr>
                             </tbody>
@@ -211,24 +211,24 @@
                                         <img :src="'/image-proxy/UnitIcon?defName=' + lab.defName + '&color=' + factionColor(lab.defName)" height="24" width="24">
                                         {{ lab.defName | defName }}
                                     </td>
-                                    <td>{{ lab.countTotal }}</td>
+                                    <td>{{ lab.countTotal | locale(0) }}</td>
                                     <td>
-                                        {{ lab.winTotal }}
+                                        {{ lab.winTotal | locale(0) }}
                                         ({{ lab.winTotal / Math.max(1, lab.countTotal) * 100 | locale(2) }}%)
                                     </td>
-                                    <td>{{ lab.countMonth }}</td>
+                                    <td>{{ lab.countMonth | locale(0) }}</td>
                                     <td>
-                                        {{ lab.winMonth }}
+                                        {{ lab.winMonth | locale(0) }}
                                         ({{ lab.winMonth / Math.max(1, lab.countMonth) * 100 | locale(2) }}%)
                                     </td>
-                                    <td>{{ lab.countWeek }}</td>
+                                    <td>{{ lab.countWeek | locale(0) }}</td>
                                     <td>
-                                        {{ lab.winWeek }}
+                                        {{ lab.winWeek | locale(0) }}
                                         ({{ lab.winWeek / Math.max(1, lab.countWeek) * 100 | locale(2) }}%)
                                     </td>
-                                    <td>{{ lab.countDay }}</td>
+                                    <td>{{ lab.countDay | locale(0) }}</td>
                                     <td>
-                                        {{ lab.winDay }}
+                                        {{ lab.winDay | locale(0) }}
                                         ({{ lab.winDay / Math.max(1, lab.countDay) * 100 | locale(2) }}%)
                                     </td>
                                 </tr>
@@ -253,10 +253,8 @@
 
             <h2 class="wt-header">Recent games</h2>
             <div v-if="recent.state == 'loaded'">
-
                 <match-list :matches="recent.data"></match-list>
             </div>
-
         </div>
 
         <div v-else-if="barMap.state == 'error'">

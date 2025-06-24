@@ -140,8 +140,8 @@ export class UnitStats {
             }
 
             elem.damageRatio = elem.damageDealt / Math.max(1, elem.damageTaken);
-            elem.metalRatio = elem.metalKilled / (elem.produced * (elem.definition?.metalCost ?? 1));
-            elem.energyRatio = elem.energyKilled / (elem.produced * (elem.definition?.energyCost ?? 1));
+            elem.metalRatio = elem.metalKilled / Math.max(1, (elem.produced * (elem.definition?.metalCost ?? 1)));
+            elem.energyRatio = elem.energyKilled / Math.max(1, (elem.produced * (elem.definition?.energyCost ?? 1)));
         }
 
         return arr;

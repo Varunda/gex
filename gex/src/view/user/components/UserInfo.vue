@@ -40,10 +40,13 @@
                 <div v-for="faction in user.factionStats" :key="faction.faction + '-' + faction.gamemode" class="hoverable text-center p-3 rounded">
 
                     <h5 class="border-bottom py-1">
-                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24">
-                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24">
-                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24">
-                        <span v-else-if="faction.faction == 4" src="/img/legion.png" style="width: 24px;">?</span>
+                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24" title="icon for armada">
+                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24" title="icon for cortex">
+                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24" title="icon for legion">
+                        <img v-else-if="faction.faction == 4" src="/img/random.png" width="24" title="icon for random">
+                        <span v-else>
+                            unchecked faction {{ faction.faction }}
+                        </span>
 
                         {{ faction.faction | faction }}
                     </h5>
