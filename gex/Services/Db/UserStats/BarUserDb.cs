@@ -67,18 +67,23 @@ namespace gex.Services.Db.UserStats {
         }
 
         /// <summary>
-        ///     search for user by name
+        ///     search for user by name, and optionally previous names. case-insensitive
         /// </summary>
         /// <param name="name">name to search for</param>
+        /// <param name="includePreviousNames">will previous names be searched as well</param>
         /// <param name="cancel">cancellation token</param>
-        /// <returns></returns>
-        public async Task<List<BarUser>> SearchByName(string name, CancellationToken cancel) {
+        /// <returns>a list of <see cref="UserSearchResult"/>s</returns>
+        public async Task<List<UserSearchResult>> SearchByName(string name, bool includePreviousNames, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return (await conn.QueryAsync<BarUser>(new CommandDefinition(
-                "SELECT * FROM bar_user WHERE lower(username) LIKE lower(@Search)",
+            return await conn.QueryListAsync<UserSearchResult>(
+                includePreviousNames == true
+                    ? @"SELECT distinct(u.id) ""user_id"", u.username, u.last_updated, p.user_name ""previous_name""
+                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
+                            WHERE lower(u.username) LIKE lower(@Search) OR lower(p.user_name) LIKE lower(@Search)"
+                    : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" FROM bar_user WHERE lower(username) LIKE lower(@Search)",
                 new { Search = $"%{name}%" },
                 cancellationToken: cancel
-            ))).ToList();
+            );
         }
 
         /// <summary>
@@ -95,7 +100,9 @@ namespace gex.Services.Db.UserStats {
                 @"
                     SELECT user_name, min(m.start_time) ""timestamp""
                     FROM bar_match_player p LEFT JOIN bar_match m ON m.id = p.game_id
-                    WHERE p.user_id = @UserID group by p.user_name
+                    WHERE p.user_id = @UserID
+                    GROUP BY p.user_name
+                    ORDER BY 2 DESC;
                 ",
                 new { UserID = userID },
                 cancel

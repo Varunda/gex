@@ -4,7 +4,7 @@
         <div v-for="match in matches" :key="match.id" class="me-3 mb-3">
             <div>
                 <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                    <div class="position-absolute" style="width: 18rem; height: 18rem; background-color: #0005; z-index: 1; border-radius: 0.75rem;"></div>
+                    <div class="position-absolute tile-overlay"></div>
 
                     <h5 class="tile-title">
                         {{ mapNameWithoutVersion(match.map) }}
@@ -12,7 +12,7 @@
 
                     <div class="flex-grow-1 align-content-center w-100 mh-100" style="z-index: 10;">
                         <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                            <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" style="min-width: 47%; max-width: 47%; background-color: #00000077; border-radius: 0.25rem;">
+                            <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" class="tile-team-parent">
 
                                 <div class="tile-team"
                                     :style="getTeamPanelStyle(match, allyTeam)">
@@ -30,6 +30,10 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div v-if="match.allyTeams.length == 2" style="position: absolute; font-size: 0.75rem;" class="text-center">
+                                VS
+                            </div>
                         </div>
                     </div>
                 </a>
@@ -37,7 +41,7 @@
 
             <div class="tile-time-ago">
                 <span v-if="(new Date().getTime()) - match.endTime.getTime() > (1000 * 60 * 60 * 12)">
-                    Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mm:ssa ZZZZ") }}
+                    Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mma ZZZZ") }}
                 </span>
 
                 <span v-else :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
@@ -101,6 +105,19 @@
         z-index: 10;
     }
 
+    .tile-overlay {
+        width: 18rem;
+        height: 18rem;
+        background-color: #0005;
+        z-index: 1;
+        border-radius: 0.75rem;
+    }
+
+    .tile-overlay:hover {
+        background-color: #000F;
+        transition: background-color 0.2s ease-in;
+    }
+
     .tile-time-ago {
         font-size: 0.83rem;
         padding: 0.2rem 0.5rem;
@@ -141,7 +158,10 @@
     .tile-teams {
         text-align: center;
         justify-content: center;
+        /* 
         gap: 0.75rem;
+        */
+        gap: 1.25rem;
         z-index: 10;
         flex-grow: 1;
         align-items: center;
@@ -152,6 +172,13 @@
         padding: 0.5rem;
         border-radius: 0.25rem;
         min-width: 47%;
+    }
+
+    .tile-team-parent {
+        max-width: 43%;
+        width: 43%;
+        background-color: #00000077;
+        border-radius: 0.25rem;
     }
 
     .tile-team-title {

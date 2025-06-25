@@ -98,41 +98,38 @@ namespace gex.Controllers.Api {
         ///		<see cref="ApiBarUser.FactionStats"/> and <see cref="ApiBarUser.MapStats"/> is never populated
         /// </summary>
         /// <param name="search">text to search for. must be at least 3 characters long</param>
+        /// <param name="searchPreviousNames">will previous names be searched against as well? defaults to false</param>
         /// <param name="includeSkill">if <see cref="ApiBarUser.Skill"/> will be populated. defaults to false</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
-        ///		the response will contain a list of <see cref="ApiBarUser"/>s that match <paramref name="search"/>,
-        ///		and will include <see cref="ApiBarUser.Skill"/> if <paramref name="includeSkill"/> is true
+        ///		the response will contain a list of <see cref="UserSearchResult"/>s that match <paramref name="search"/>,
+        ///		and will include <see cref="UserSearchResult.Skill"/> if <paramref name="includeSkill"/> is true,
+        ///		and if <paramref name="searchPreviousNames"/> is true, the <see cref="UserSearchResult.Username"/>
+        ///		might not match <paramref name="search"/>, but <see cref="UserSearchResult.PreviousName"/> will
         /// </response>
         /// <response code="400">
         ///		<paramref name="search"/> is not at least 3 characters long
         /// </response>
         [HttpGet("search/{search}")]
-        public async Task<ApiResponse<List<ApiBarUser>>> Search(string search,
+        public async Task<ApiResponse<List<UserSearchResult>>> Search(string search,
             [FromQuery] bool includeSkill = false,
+            [FromQuery] bool searchPreviousNames = false,
             CancellationToken cancel = default
         ) {
 
             if (search.Length < 3) {
-                return ApiBadRequest<List<ApiBarUser>>($"search must be at least 3 characters");
+                return ApiBadRequest<List<UserSearchResult>>($"search must be at least 3 characters");
             }
 
-            List<BarUser> users = await _UserDb.SearchByName(search, cancel);
+            List<UserSearchResult> users = await _UserDb.SearchByName(search, searchPreviousNames, cancel);
 
-            List<ApiBarUser> ret = [];
-            foreach (BarUser user in users) {
-                ApiBarUser response = new();
-                response.UserID = user.UserID;
-                response.Username = user.Username;
-                response.LastUpdated = user.LastUpdated;
-
+            foreach (UserSearchResult user in users) {
                 if (includeSkill == true) {
-                    response.Skill = await _SkillDb.GetByUserID(user.UserID, cancel);
+                    user.Skill = await _SkillDb.GetByUserID(user.UserID, cancel);
                 }
-                ret.Add(response);
             }
 
-            return ApiOk(ret);
+            return ApiOk(users);
         }
 
         /// <summary>

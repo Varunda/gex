@@ -1,6 +1,7 @@
 import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
 import { BarUser } from "model/BarUser";
+import { UserSearchResult } from "model/UserSearchResult";
 
 export class BarUserApi extends ApiWrapper<BarUser> {
 
@@ -11,8 +12,8 @@ export class BarUserApi extends ApiWrapper<BarUser> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true`, BarUser.parse);
     }
 
-    public static search(text: string, includeSkill: boolean = true): Promise<Loading<BarUser[]>> {
-        return BarUserApi.get().readList(`/api/user/search/${encodeURIComponent(text)}?includeSkill=${includeSkill}`, BarUser.parse);
+    public static search(text: string, searchPreviousNames: boolean = false, includeSkill: boolean = true): Promise<Loading<UserSearchResult[]>> {
+        return BarUserApi.get().readList(`/api/user/search/${encodeURIComponent(text)}?includeSkill=${includeSkill}&searchPreviousNames=${searchPreviousNames}`, UserSearchResult.parse);
     }
 
 }

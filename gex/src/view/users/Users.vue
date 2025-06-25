@@ -4,16 +4,24 @@
         <div class="container">
             <h1>User search</h1>
 
-            <input class="form-control" type="text" v-model="searchTerm" @keyup.enter="searchWrapper">
+            <input class="form-control mb-2" type="text" v-model="searchTerm" @keyup.enter="searchWrapper" placeholder="Press enter to search (minimum 3 characters)">
 
-            <span class="text-muted">
-                Press enter to search (minimum 3 characters)
-            </span>
+            <div class="mb-2 form-check">
+                <input type="checkbox" class="form-check-input" id="search-previous-names-toggle" v-model="searchPreviousNames">
+                <label class="form-check-label" for="search-previous-names-toggle">Include name changes</label>
+            </div>
+
+            <button class="btn btn-primary" @click="searchWrapper">
+                Search
+            </button>
 
             <hr class="border">
 
             <h2 v-show="searchedValue.length > 0">
-                Search results for: {{ searchedValue }}
+                Search results for: 
+                <strong>
+                    {{ searchedValue }}
+                </strong>
             </h2>
 
             <div v-if="users.state == 'idle'"></div>
@@ -34,6 +42,11 @@
 
                         <a-body v-slot="entry">
                             <a :href="'/user/' + entry.userID">
+                                <span v-if="entry.username != entry.previousName">
+                                    {{ entry.previousName }}
+                                    &rarr;
+                                </span>
+
                                 {{ entry.username }}
                             </a>
                         </a-body>
@@ -112,6 +125,7 @@
 
     import { BarUser } from "model/BarUser";
     import { BarUserSkill } from "model/BarUserSkill";
+    import { UserSearchResult } from "model/UserSearchResult";
 
     import { GamemodeUtil } from "util/Gamemode";
     import LocaleUtil from "util/Locale";
@@ -121,6 +135,7 @@
         userID: number;
         username: string;
         lastUpdated: Date;
+        previousName: string;
 
         searchDiff: number;
 
@@ -141,6 +156,7 @@
             return {
                 searchTerm: "" as string,
                 searchedValue: "" as string,
+                searchPreviousNames: false as boolean,
                 users: Loadable.idle() as Loading<ExpandedUser[]>
             };
         },
@@ -166,7 +182,7 @@
             search: async function(term: string): Promise<void> {
                 this.users = Loadable.loading();
 
-                const ret: Loading<BarUser[]> = await BarUserApi.search(this.searchTerm, true);
+                const ret: Loading<UserSearchResult[]> = await BarUserApi.search(this.searchTerm, this.searchPreviousNames, true);
 
                 if (ret.state != "loaded") {
                     this.users = Loadable.rewrap(ret);
@@ -174,7 +190,6 @@
                 }
 
                 this.users = Loadable.loaded(ret.data.map(iter => {
-
                     const searchDiff: number = StringDistance.calculate(iter.username, term);
 
                     if (iter.skill.length == 0) {
@@ -207,29 +222,6 @@
 
                 this.searchedValue = term;
             },
-
-            highestSkill: function(user: BarUser): string {
-                if (user.skill.length == 0) {
-                    return "--";
-                }
-
-                const highest: BarUserSkill = [...user.skill.sort((a, b) => b.skill - a.skill)][0];
-
-                return `${LocaleUtil.locale(highest.skill, 2)}±${LocaleUtil.locale(highest.skillUncertainty, 2)} (in ${GamemodeUtil.getName(highest.gamemode)})`;
-            },
-
-            averageSkill: function(user: BarUser): string {
-                if (user.skill.length == 0) {
-                    return "--";
-                }
-
-                const skillSum: number = user.skill.reduce((acc, iter) => acc += iter.skill, 0);
-                const uncertainSum: number = user.skill.reduce((acc, iter) => acc += iter.skillUncertainty, 0);
-
-                const count: number = user.skill.length;
-
-                return `${LocaleUtil.locale(skillSum / count, 2)}±${LocaleUtil.locale(uncertainSum / count, 2)}`;
-            }
         },
 
         computed: {
