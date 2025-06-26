@@ -32,7 +32,10 @@
                         <thead class="table-ligh text-center">
                             <tr>
                                 <th>Player</th>
-                                <th>Skill</th>
+                                <th>
+                                    Rating
+                                    <info-hover text="Leaderboard rating is (skill - (3 * uncertainty)), which is different from the match rating"></info-hover>
+                                </th>
                             </tr>
                         </thead>
 
@@ -127,8 +130,8 @@
 
         <div class="mb-3">
             <h2 class="wt-header bg-light text-dark">
-                OpenSkill distribution
-                <info-hover text="Excludes players with less than 5 games played, and exludes the default skill"></info-hover>
+                Match rating distribution
+                <info-hover text="Excludes players with less than 5 games played, and exludes the default match rating (16.67). Match rating is equal to (skill - uncertainity)"></info-hover>
             </h2>
 
             <div v-if="skillHistogram.state == 'loading'" class="text-center">
@@ -164,6 +167,7 @@
     import MatchList from "components/app/MatchList.vue";
     import ToggleButton from "components/ToggleButton";
     import ApiError from "components/ApiError";
+    import Busy from "components/Busy.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
@@ -178,7 +182,6 @@
     import "filters/MomentFilter";
     import "filters/LocaleFilter";
     import "filters/BarGamemodeFilter";
-import Busy from "components/Busy.vue";
 
     type GroupedSkillLeaderboard = {
         gamemode: number;
@@ -207,7 +210,7 @@ import Busy from "components/Busy.vue";
         },
 
         created: function(): void {
-            document.title = "Gex";
+            document.title = "Gex / Home";
         },
 
         beforeMount: function(): void {

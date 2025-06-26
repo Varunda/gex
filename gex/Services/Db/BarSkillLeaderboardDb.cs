@@ -23,16 +23,21 @@ namespace gex.Services.Db {
         public async Task<List<BarSkillLeaderboardEntry>> Get(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarSkillLeaderboardEntry>(@"
-				(select gamemode, s.user_id, u.username, skill from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 1 order by skill desc limit 10)
+				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
+                    from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 1 order by 4 desc limit 10)
 				UNION
-				(select gamemode, s.user_id, u.username, skill from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 2 order by skill desc limit 10)
+				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
+                    from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 2 order by 4 desc limit 10)
 				UNION
-				(select gamemode, s.user_id, u.username, skill from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 3 order by skill desc limit 10)
+				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
+                    from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 3 order by 4 desc limit 10)
 				UNION
-				(select gamemode, s.user_id, u.username, skill from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 4 order by skill desc limit 10)
+				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
+                    from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 4 order by 4 desc limit 10)
 				UNION
-				(select gamemode, s.user_id, u.username, skill from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 5 order by skill desc limit 10)
-				order by gamemode asc, skill desc;
+				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
+                    from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 5 order by 4 desc limit 10)
+				order by gamemode asc, 4 desc;
 			", cancel);
         }
 
