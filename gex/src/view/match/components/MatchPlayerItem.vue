@@ -2,9 +2,10 @@
     <fragment>
         <a :href="'/user/' + player.userID" style="text-decoration: none" class="name">
             <span style="text-shadow: 1px 1px 1px #000000" :style="{ color: player.hexColor }">
-                <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16" />
-                <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16" />
-                <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16" />
+                <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16" title="icon for armada" />
+                <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16" title="icon for cortex" />
+                <img v-else-if="player.faction == 'Legion'" src="/img/legion.png" height="16" title="icon for legion" />
+                <img v-else-if="player.faction == 'Random'" src="/img/random.png" height="16" title="icon for random" />
                 <span v-else> ? </span>
                 {{ player.username }}
             </span>
