@@ -82,17 +82,23 @@
         <img id="map-dims" :src="mapUrl" style="display: none;">
 
         <div class="mt-2 mx-2">
-            <button v-if="playback.playing == false" class="btn btn-sm btn-primary" @click="startUnitPositionPlayback" :disabled="!hasEvents">
-                Play
-            </button>
+            <div class="d-flex">
+                <button v-if="playback.playing == false" class="btn btn-sm btn-primary" @click="startUnitPositionPlayback" :disabled="!hasEvents">
+                    Play
+                </button>
 
-            <button v-else class="btn btn-sm btn-primary" @click="pauseUnitPositionPlayback" :disabled="!hasEvents">
-                Pause
-            </button>
+                <button v-else class="btn btn-sm btn-primary" @click="pauseUnitPositionPlayback" :disabled="!hasEvents">
+                    Pause
+                </button>
 
-            <span>
-                Viewing units at {{ playback.frame / 30 | mduration }}
-            </span>
+                <span class="ms-3 flex-grow-1">
+                    Viewing units at {{ playback.frame / 30 | mduration }}
+                </span>
+
+                <button v-if="hasEvents" class="btn btn-sm" @click="playback.useStrategicIcons = !playback.useStrategicIcons" :class="[ playback.useStrategicIcons ? 'btn-primary' : 'btn-secondary' ]">
+                    Use strategic icons
+                </button>
+            </div>
 
             <div class="mt-1">
                 <input type="range" min="0" :max="unitPositionFrames[unitPositionFrames.length - 1]" step="900" class="form-range" v-model.number="playback.frame" :disabled="!hasEvents">
@@ -134,6 +140,7 @@
         fill-opacity: 0;
         stroke-opacity: 0;
         pointer-events: none;
+        display: none;
     }
 
 </style>
@@ -207,7 +214,8 @@
                     intervalId: -1 as number,
                     frameIndex: 0 as number,
                     frame: 0 as number,
-                    shownUnits: new Set() as Set<number>
+                    shownUnits: new Set() as Set<number>,
+                    useStrategicIcons: false as boolean,
                 },
 
                 map: {
@@ -505,7 +513,42 @@
                     // minimum 2 pixel size
                     const sizePx = Math.max(2, Math.max(this.toImgX(unitDef.sizeX), this.toImgZ(unitDef.sizeZ)) * 4);
 
-                    if (unitDef.speed == 0) {
+                    if (this.playback.useStrategicIcons == true) {
+
+                        const ux = this.toImgX(pos.x);
+                        const uz = this.toImgZ(pos.z);
+
+                        const unitGroup = this.root.append("g")
+                            .attr("id", `map-unit-pos_${pos.unitID}`)
+                            .attr("transform", `translate(${ux}, ${uz})`)
+                            .attr("width", sizePx).attr("height", sizePx)
+                            .classed("map-unit-pos", true)
+                            .classed("animate-move", true)
+                            .classed("unit-pos-hide", true)
+                            .on("mouseenter", (ev: any) => {
+                                this.showTooltip(`${unitDef?.name ?? `<missing def ${defId}>`}`);
+                            })
+                            .on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            })
+                            .on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
+
+                            /*
+                        unitGroup.append("rect")
+                            .attr("width", sizePx).attr("height", sizePx);
+                            .style("fill", player?.hexColor ?? "#333333")
+                            .style("stroke", "black").style("stroke-width", "1px")
+                            .style("paint-order", "stroke");
+                            */
+
+                        unitGroup.append("image")
+                            .attr("width", sizePx).attr("height", sizePx)
+                            //.style("transform-box", "fill-box").style("transform-origin", "center")
+                            .attr("href", `/image-proxy/UnitIcon?defName=${unitDef.definitionName}&color=${player?.color ?? 0}`);
+
+                    } else if (unitDef.speed == 0) {
                         g.append("rect")
                             .attr("id", `map-unit-pos_${pos.unitID}`)
                             .classed("map-unit-pos", true)
@@ -582,8 +625,14 @@
                         elem.classed("unit-pos-hide", false);
                         //console.log(`MatchMap> showing unit ${unitID} ${elem}`);
 
-                        elem.attr("x", this.toImgX(entry.x)).attr("y", this.toImgZ(entry.z));
-                        elem.attr("cx", this.toImgX(entry.x)).attr("cy", this.toImgZ(entry.z))
+                        const type = (elem.node()! as Element).tagName;
+
+                        if (type == "g") {
+                            elem.attr("transform", `translate(${this.toImgX(entry.x)}, ${this.toImgZ(entry.z)})`);
+                        } else {
+                            elem.attr("x", this.toImgX(entry.x)).attr("y", this.toImgZ(entry.z));
+                            elem.attr("cx", this.toImgX(entry.x)).attr("cy", this.toImgZ(entry.z))
+                        }
                     }
                 }
             },
@@ -1144,6 +1193,12 @@
         watch: {
 
             "playback.frame": function(): void {
+                this.renderUnitPositionFrame(this.playback.frame);
+            },
+            
+
+            "playback.useStrategicIcons": function(): void {
+                this.drawInitialUnitPositionFrame();
                 this.renderUnitPositionFrame(this.playback.frame);
             },
 
