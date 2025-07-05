@@ -512,12 +512,10 @@
 
                     // minimum 2 pixel size
                     const sizePx = Math.max(2, Math.max(this.toImgX(unitDef.sizeX), this.toImgZ(unitDef.sizeZ)) * 4);
+                    const ux = this.toImgX(pos.x);
+                    const uz = this.toImgZ(pos.z);
 
                     if (this.playback.useStrategicIcons == true) {
-
-                        const ux = this.toImgX(pos.x);
-                        const uz = this.toImgZ(pos.z);
-
                         const unitGroup = this.root.append("g")
                             .attr("id", `map-unit-pos_${pos.unitID}`)
                             .attr("transform", `translate(${ux}, ${uz})`)
@@ -535,17 +533,9 @@
                                 this.hideTooltip();
                             });
 
-                            /*
-                        unitGroup.append("rect")
-                            .attr("width", sizePx).attr("height", sizePx);
-                            .style("fill", player?.hexColor ?? "#333333")
-                            .style("stroke", "black").style("stroke-width", "1px")
-                            .style("paint-order", "stroke");
-                            */
-
                         unitGroup.append("image")
                             .attr("width", sizePx).attr("height", sizePx)
-                            //.style("transform-box", "fill-box").style("transform-origin", "center")
+                            .style("transform-box", "fill-box").style("transform-origin", "center")
                             .attr("href", `/image-proxy/UnitIcon?defName=${unitDef.definitionName}&color=${player?.color ?? 0}`);
 
                     } else if (unitDef.speed == 0) {
@@ -574,11 +564,11 @@
                             .classed("map-unit-pos", true)
                             .classed("animate-move", true)
                             .classed("unit-pos-hide", true)
-                            .attr("cx", this.toImgX(pos.x)).attr("cy", this.toImgZ(pos.z))
-                            .attr("r", `${sizePx}px`)
+                            .attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2))
+                            .attr("r", `${sizePx / 2}px`)
                             .style("fill", player?.hexColor ?? `#333333`)
                             .style("paint-order", "stroke")
-                            .style("stroke", "black").style("stroke-width", "2px")
+                            .style("stroke", "black").style("stroke-width", "1px")
                             .on("mouseenter", (ev: any) => {
                                 this.showTooltip(`${unitDef?.name ?? `<missing def ${defId}>`}`);
                             })
@@ -615,9 +605,24 @@
                 }
 
                 for (const unitID of Array.from(this.unitIdToDefId.keys())) {
+                    const entry: UnitPositionFrame | undefined = map.get(unitID);
+                    const defId: number | undefined = this.unitIdToDefId.get(unitID);
+
+                    if (defId == undefined) {
+                        console.warn(`MatchMap> missing unit def ID for unit ${unitID}`);
+                        continue;
+                    }
+
+                    const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defId);
+                    if (unitDef == undefined) {
+                        console.warn(`MatchMap> missing unit def ${defId}`);
+                        continue;
+                    }
+
                     const elem = this.root.select(`#map-unit-pos_${unitID}`);
 
-                    const entry: UnitPositionFrame | undefined = map.get(unitID);
+                    // minimum 2 pixel size
+                    const sizePx = Math.max(2, Math.max(this.toImgX(unitDef.sizeX), this.toImgZ(unitDef.sizeZ)) * 4);
 
                     if (entry == undefined) {
                         elem.classed("unit-pos-hide", true);
@@ -627,11 +632,15 @@
 
                         const type = (elem.node()! as Element).tagName;
 
+                        const ux = this.toImgX(entry.x);
+                        const uz = this.toImgZ(entry.z);
+
                         if (type == "g") {
-                            elem.attr("transform", `translate(${this.toImgX(entry.x)}, ${this.toImgZ(entry.z)})`);
-                        } else {
-                            elem.attr("x", this.toImgX(entry.x)).attr("y", this.toImgZ(entry.z));
-                            elem.attr("cx", this.toImgX(entry.x)).attr("cy", this.toImgZ(entry.z))
+                            elem.attr("transform", `translate(${ux}, ${uz})`);
+                        } else if (type == "rect") {
+                            elem.attr("x", ux).attr("y", uz);
+                        } else if (type == "circle") {
+                            elem.attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2));
                         }
                     }
                 }
