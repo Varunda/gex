@@ -30,6 +30,7 @@ namespace gex.Services.Util {
         private readonly GameVersionUsageDb _GameVersionUsageDb;
         private readonly MapPriorityModDb _MapPriorityModDb;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
+        private readonly BarMatchTeamDeathDb _TeamDeathDb;
 
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
@@ -43,7 +44,7 @@ namespace gex.Services.Util {
             BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
             BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
-            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue) {
+            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, BarMatchTeamDeathDb teamDeathDb) {
 
             _Logger = logger;
 
@@ -62,6 +63,7 @@ namespace gex.Services.Util {
             _HeadlessRunQueue = headlessRunQueue;
             _MapStatUpdateQueue = mapStatUpdateQueue;
             _FactionStatUpdateQueue = factionStatUpdateQueue;
+            _TeamDeathDb = teamDeathDb;
         }
 
         public async Task Process(BarMatch match, CancellationToken cancel) {
@@ -92,12 +94,17 @@ namespace gex.Services.Util {
             }
             long insertChatMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            foreach (BarMatchTeamDeath death in match.TeamDeaths) {
+                await _TeamDeathDb.Insert(death, cancel);
+            }
+            long insertDeathMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
             await _MatchRepository.Insert(match, cancel);
             long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             _Logger.LogInformation($"processed match [ID={match.ID}]"
                 + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
-                + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [match db={insertMatchMs}ms]");
+                + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [death db={match.TeamDeaths.Count}/{insertDeathMs}ms] [match db={insertMatchMs}ms]");
 
             foreach (BarMatchPlayer player in match.Players) {
                 try {

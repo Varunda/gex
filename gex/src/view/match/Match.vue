@@ -158,7 +158,7 @@
 
                 <hr class="border"/>
 
-                <match-teams :match="match.data" class="my-3"></match-teams>
+                <match-teams :match="match.data" :is-ffa="isFFA" class="my-3"></match-teams>
 
                 <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info mt-4">
                     This match has not been replayed on Gex, and in-depth stats are not available. <a href="/faq">More info</a>

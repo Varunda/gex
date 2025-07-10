@@ -35,6 +35,7 @@ namespace gex.Models.Api {
             MapData = match.MapData;
             PlayerCount = match.PlayerCount;
             UploadedByID = match.UploadedBy;
+            TeamDeaths = match.TeamDeaths;
         }
 
         public string ID { get; set; } = "";
@@ -76,6 +77,8 @@ namespace gex.Models.Api {
         public List<BarMatchSpectator> Spectators { get; set; } = [];
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
+
+        public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
 
         public BarMap? MapData { get; set; }
 

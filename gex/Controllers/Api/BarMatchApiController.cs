@@ -26,6 +26,7 @@ namespace gex.Controllers.Api {
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
+        private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly AppAccountDbStore _AccountDb;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
@@ -33,7 +34,7 @@ namespace gex.Controllers.Api {
             BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
-            AppAccountDbStore accountDb) {
+            AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -45,6 +46,7 @@ namespace gex.Controllers.Api {
             _ProcessingRepository = processingRepository;
             _HeadlessRunStatusRepository = headlessRunStatusRepository;
             _AccountDb = accountDb;
+            _TeamDeathDb = teamDeathDb;
         }
 
         /// <summary>
@@ -56,6 +58,7 @@ namespace gex.Controllers.Api {
         /// <param name="includePlayers">will <see cref="BarMatch.Players"/> be populated? defaults to false</param>
         /// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
         /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
+        /// <param name="includeTeamDeaths">will <see cref="BarMatch.TeamDeaths"/> be populated? defaults to false</param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
@@ -63,7 +66,8 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeAllyTeams = false,
             [FromQuery] bool includePlayers = false,
             [FromQuery] bool includeChat = false,
-            [FromQuery] bool includeSpectators = false
+            [FromQuery] bool includeSpectators = false,
+            [FromQuery] bool includeTeamDeaths = false
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
@@ -84,6 +88,10 @@ namespace gex.Controllers.Api {
 
             if (includeSpectators == true) {
                 match.Spectators = await _SpectatorDb.GetByGameID(gameID, cancel);
+            }
+
+            if (includeTeamDeaths == true) {
+                match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
             }
 
             ApiMatch ret = new(match);

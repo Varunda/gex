@@ -4,11 +4,16 @@
         <collapsible header-text="Teams" size-class="h1" bg-color="bg-light">
             <div v-if="isFunkyTeams == false">
                 <div class="teams">
-                    <div class="team" v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
+                    <div class="team" v-for="allyTeam in allyTeamsSorted" :key="allyTeam.allyTeamID">
                         <div>
                             <h4 class="ally-team-header mb-0" :style="getTeamNameStyle(allyTeam)">
                                 Team {{ allyTeam.allyTeamID + 1 }}
-                                <span v-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
+
+                                <span v-if="showWinner == true && IsFfa && match.teamDeaths.length > 0">
+                                    - {{ teamPlacement(allyTeam.allyTeamID) }}
+                                </span>
+
+                                <span v-else-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
                                     title="This team won the match!">
                                 </span>
                             </h4>
@@ -141,7 +146,8 @@
 
     export const MatchTeams = Vue.extend({
         props: {
-            match: { type: Object as PropType<BarMatch>, required: true }
+            match: { type: Object as PropType<BarMatch>, required: true },
+            IsFfa: { type: Boolean, required: true }
         },
 
         data: function() {
@@ -152,7 +158,6 @@
         },
 
         methods: {
-
             allyTeamColor: function(allyTeamID: number): string {
                 return this.match.players.find(iter => iter.allyTeamID == allyTeamID)?.hexColor ?? `#333333`;
             },
@@ -166,9 +171,33 @@
                     'background-color': this.allyTeamColor(allyTeam.allyTeamID)
                 };
             },
+
+            teamPlacement: function(teamID: number): string {
+                const index = this.match.teamDeaths.findIndex(iter => iter.teamID == teamID) + 2;
+                if (index == 1) {
+                    return "1st";
+                } else if (index == 2) {
+                    return "2nd";
+                } else if (index == 3) {
+                    return "3rd";
+                } else {
+                    return `${index}th`;
+                }
+            }
         },
 
         computed: {
+
+            allyTeamsSorted: function(): BarMatchAllyTeam[] {
+                if (this.showWinner == true && this.IsFfa && this.match.teamDeaths.length > 0) {
+                    return [...this.match.allyTeams].sort((a, b) => {
+                        return this.match.teamDeaths.findIndex(i => i.teamID == a.allyTeamID) - this.match.teamDeaths.findIndex(i => i.teamID == b.allyTeamID);
+                    });
+                }
+
+                return this.match.allyTeams;
+            },
+
             maxTeamSize: function(): number {
                 return Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
             },

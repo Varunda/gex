@@ -374,6 +374,27 @@ namespace gex.Services.Parser {
                     byte size = packetReader.ReadByte();
                     byte playerNum = packetReader.ReadByte();
                     winningAllyTeams = packetReader.ReadAll();
+                } else if (packet.PacketType == BarPacketType.TEAM_MSG) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte playerNum = packetReader.ReadByte();
+                    byte action = packetReader.ReadByte();
+                    byte param1 = packetReader.ReadByte();
+
+                    if (action == 2) { // 2 = resigned
+                        BarMatchTeamDeath death = new();
+                        death.GameID = header.GameID;
+                        death.TeamID = playerNum;
+                        death.Reason = action;
+                        death.GameTime = packet.GameTime;
+                        match.TeamDeaths.Add(death);
+                    } else if (action == 4) { // 4 = TEAM_DIED, param1 = team that died
+                        BarMatchTeamDeath death = new();
+                        death.GameID = header.GameID;
+                        death.TeamID = param1;
+                        death.Reason = action;
+                        death.GameTime = packet.GameTime;
+                        match.TeamDeaths.Add(death);
+                    }
                 } else if (packet.PacketType == BarPacketType.QUIT) {
                     _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}]");
                     break;

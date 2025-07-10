@@ -18,5 +18,8 @@
 
         public const int LUA_MSG = 50;
 
+        // uint8_t playerNum, uint8_t action, uint8_t parameter1
+        public const int TEAM_MSG = 51;
+
     }
 }

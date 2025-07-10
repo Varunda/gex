@@ -27,6 +27,7 @@ namespace gex.Services.Db {
             services.AddSingleton<BarMatchPlayerDb>();
             services.AddSingleton<BarMatchSpectatorDb>();
             services.AddSingleton<BarMatchChatMessageDb>();
+            services.AddSingleton<BarMatchTeamDeathDb>();
 
             // game event
             services.AddSingleton<GameEventUnitCreatedDb>();

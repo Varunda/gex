@@ -5,6 +5,7 @@ import { BarMatchChatMessage } from "./BarMatchChatMessage";
 import { BarMatchPlayer } from "./BarMatchPlayer";
 import { BarMatchProcessing } from "./BarMatchProcessing";
 import { BarMatchSpectator } from "./BarMatchSpectator";
+import { BarMatchTeamDeath } from "./BarMatchTeamDeath";
 import { HeadlessRunStatus } from "./HeadlessRunStatus";
 
 export class BarMatch {
@@ -28,6 +29,7 @@ export class BarMatch {
     public players: BarMatchPlayer[] = [];
     public spectators: BarMatchSpectator[] = [];
     public chatMessages: BarMatchChatMessage[] = [];
+    public teamDeaths: BarMatchTeamDeath[] = [];
 
     public mapData: BarMap | null = null;
     public processing: BarMatchProcessing | null = null;
@@ -49,6 +51,7 @@ export class BarMatch {
             players: (elem.players.map((iter: any) => BarMatchPlayer.parse(iter)) as BarMatchPlayer[]).sort((a, b) => a.playerID - b.playerID),
             spectators: (elem.spectators.map((iter: any) => BarMatchSpectator.parse(iter)) as BarMatchSpectator[]).sort((a, b) => a.username.localeCompare(b.username)),
             chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
+            teamDeaths: elem.teamDeaths.map((iter: any) => BarMatchTeamDeath.parse(iter)),
 
             mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
             processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),

@@ -34,6 +34,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly MapPriorityModDb _MapPriorityModDb;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BarDemofileResultProcessor _ResultProcessor;
+        private readonly BarMatchTeamDeathDb _TeamDeathDb;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -55,7 +56,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
             BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
-            BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue) :
+            BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
+            BarMatchTeamDeathDb teamDeathDb) :
 
         base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -77,6 +79,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _PriorityCalculator = priorityCalculator;
             _ResultProcessor = resultProcessor;
             _MapStatUpdateQueue = mapStatUpdateQueue;
+            _TeamDeathDb = teamDeathDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -110,6 +113,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                     await _PlayerRepository.DeleteByGameID(entry.GameID);
                     await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
                     await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
+                    await _TeamDeathDb.DeleteByGameID(entry.GameID);
                     await _MatchRepository.Delete(entry.GameID);
                     _Logger.LogDebug($"deleting previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
                 }

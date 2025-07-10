@@ -61,7 +61,7 @@ namespace gex.Models.Db {
         public int Color { get; set; }
 
         /// <summary>
-        ///     ?
+        ///     resource income boost
         /// </summary>
         public decimal Handicap { get; set; }
 

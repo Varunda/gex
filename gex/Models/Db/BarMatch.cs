@@ -54,6 +54,8 @@ namespace gex.Models.Db {
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
+        public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
+
         public int PlayerCount { get; set; }
 
         public long? UploadedBy { get; set; }
