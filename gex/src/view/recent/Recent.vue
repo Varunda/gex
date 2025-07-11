@@ -23,31 +23,35 @@
                 </h4>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Engine</label>
                 <dropdown-search v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Game version</label>
                 <dropdown-search v-model="search.gameVersion" :api="dropdownSearchCalls.gameVersion"></dropdown-search>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Map</label>
                 <dropdown-search v-model="search.map" :api="dropdownSearchCalls.map"></dropdown-search>
             </div>
 
-            <div class="col-lg-4 col-12">
-                <label>Ranked?</label>
-                <select v-model="search.ranked" class="form-control">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Gamemode</label>
+                <select v-model.number="search.gamemode" class="form-control">
                     <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
+                    <option :value="1">Duel</option>
+                    <option :value="2">Small team</option>
+                    <option :value="3">Large team</option>
+                    <option :value="4">FFA</option>
+                    <option :value="5">Team FFA</option>
+                    <option :value="0">Other</option>
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Downloaded?</label>
                 <select v-model="search.processingDownloaded" class="form-control">
                     <option :value="null">Unset</option>
@@ -56,7 +60,7 @@
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Parsed?</label>
                 <select v-model="search.processingParsed" class="form-control">
                     <option :value="null">Unset</option>
@@ -65,7 +69,7 @@
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Replayed?</label>
                 <select v-model="search.processingReplayed" class="form-control">
                     <option :value="null">Unset</option>
@@ -74,7 +78,7 @@
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Actions parsed?</label>
                 <select v-model="search.processingAction" class="form-control">
                     <option :value="null">Unset</option>
@@ -83,17 +87,26 @@
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Ranked?</label>
+                <select v-model="search.ranked" class="form-control">
+                    <option :value="null">Unset</option>
+                    <option :value="false">No</option>
+                    <option :value="true">Yes</option>
+                </select>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Minimum player count</label>
                 <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Maximum player count</label>
                 <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Legion enabled</label>
                 <select v-model="search.legionEnabled" class="form-control">
                     <option :value="null">Unset</option>
@@ -102,9 +115,26 @@
                 </select>
             </div>
 
-            <div class="col-lg-4 col-12">
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Game link</label>
                 <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Order by</label>
+                <select v-model="search.orderBy" class="form-control">
+                    <option value="start_time">Start time</option>
+                    <option value="duration">Duration</option>
+                    <option value="player_count">Player count</option>
+                </select>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Order direction</label>
+                <select v-model="search.orderByDir" class="form-control">
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                </select>
             </div>
 
             <div class="col-12 mt-2">
@@ -230,7 +260,7 @@
                     startTimeBefore: null as Date | null,
                     durationMinimum: 0 as number,
                     durationMaximum: 0 as number,
-                    gamemode: 0 as number,
+                    gamemode: null as number | null,
                     playerCountMinimum: 0 as number,
                     playerCountMaximum: 0 as number,
                     legionEnabled: null as boolean | null,
@@ -238,6 +268,8 @@
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
                     processingAction: null as boolean | null,
+                    orderBy: "start_time" as string,
+                    orderByDir: "desc" as string,
                 },
 
                 offset: 0 as number,
@@ -263,6 +295,8 @@
             if (search.has("search") && search.get("search") != "") {
                 const b64: string = search.get("search")!;
                 this.search = JSON.parse(atob(b64));
+                this.search.orderBy ??= "start_time";
+                this.search.orderByDir ??= "desc";
                 this.performSearch();
             } else {
                 this.loadRecent();
@@ -282,7 +316,7 @@
                 if (this.showUnprocessedGames == true) {
                     this.recent = await BarMatchApi.getRecent(this.offset);
                 } else {
-                    this.recent = await BarMatchApi.search(this.offset, 24, {
+                    this.recent = await BarMatchApi.search(this.offset, 24, this.search.orderBy, this.search.orderByDir, {
                         processingAction: true
                     });
                 }
@@ -321,8 +355,7 @@
                     }
                 }
 
-                this.recent = await BarMatchApi.search(this.offset, 24, this.searchOptions);
-
+                this.recent = await BarMatchApi.search(this.offset, 24, this.search.orderBy, this.search.orderByDir, this.searchOptions);
             }
         },
 
@@ -343,6 +376,9 @@
             searchOptions: function() {
                 let options: any = {};
 
+                options.orderBy = this.search.orderBy;
+                options.orderByDir = this.search.orderByDir;
+
                 if (this.search.engine && this.search.engine != "") {
                     options.engine = this.search.engine;
                 }
@@ -352,13 +388,16 @@
                 if (this.search.map && this.search.map != "") {
                     options.map = this.search.map;
                 }
+                if (this.search.gamemode != null) {
+                    options.gamemode = this.search.gamemode;
+                }
                 if (this.search.ranked != null) {
                     options.ranked = this.search.ranked;
                 }
-                if (this.search.playerCountMinimum != 0) {
+                if (this.search.playerCountMinimum != 0 && this.search.playerCountMinimum != undefined) {
                     options.playerCountMinimum = this.search.playerCountMinimum;
                 }
-                if (this.search.playerCountMaximum != 0) {
+                if (this.search.playerCountMaximum != 0 && this.search.playerCountMaximum != undefined) {
                     options.playerCountMaximum = this.search.playerCountMaximum;
                 }
                 if (this.search.legionEnabled != null) {

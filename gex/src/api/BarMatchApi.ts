@@ -20,6 +20,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
 
     public static search(
         offset: number = 0, limit: number = 24,
+        orderBy: string, orderByDir: string,
         options: { 
             engine?: string, gameVersion?: string, map?: string, startTimeAfter?: Date, startTimeBefore?: Date,
             durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
@@ -31,6 +32,8 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         const search: URLSearchParams = new URLSearchParams();
         search.set("offset", encodeURIComponent(offset));
         search.set("limit", encodeURIComponent(limit));
+        search.set("orderBy", encodeURIComponent(orderBy));
+        search.set("orderByDir", encodeURIComponent(orderByDir));
 
         if (options.engine != undefined) {
             search.set("engine", options.engine.trim());

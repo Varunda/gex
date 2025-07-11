@@ -159,10 +159,12 @@ namespace gex.Controllers.Api {
         /// <param name="processingReplayed"></param>
         /// <param name="processingAction"></param>
         /// <param name="playerCountMinimum"></param>
-        /// <param name="playerCountMaximum"></param>
-        /// <param name="legionEnabled"></param>
-        /// <param name="offset"></param>
-        /// <param name="limit"></param>
+        /// <param name="playerCountMaximum">if not nul</param>
+        /// <param name="legionEnabled">if set to true/false, will limit results to matches that have legion enabled or disabled</param>
+        /// <param name="offset">offset into the results. is a value, not a page number</param>
+        /// <param name="limit">how many results to return. capped at 100</param>
+        /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
+        /// <param name="orderByDir">how to order the results. can only be: asc, desc</param>
         /// <param name="cancel"></param>
         /// <returns></returns>
         [HttpGet("search")]
@@ -186,6 +188,8 @@ namespace gex.Controllers.Api {
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
+            [FromQuery] string orderBy = "start_time",
+            [FromQuery] string orderByDir = "desc",
 
             CancellationToken cancel = default
         ) {
@@ -195,6 +199,22 @@ namespace gex.Controllers.Api {
             }
             if (limit <= 0 || limit > 100) {
                 return ApiBadRequest<List<ApiMatch>>($"{nameof(limit)} must be between 0 and 100 (is {limit})");
+            }
+
+            if (string.IsNullOrEmpty(orderBy.Trim())) {
+                orderBy = "start_time";
+            }
+            OrderBy? order = BarMatchSearchParameters.ParseOrderBy(orderBy);
+            if (order == null) {
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(orderBy)} can only be 'start_time'|'player_count'|'duration'");
+            }
+
+            if (string.IsNullOrEmpty(orderByDir.Trim())) {
+                orderByDir = "desc";
+            }
+            OrderByDirection? dir = BarMatchSearchParameters.ParseOrderByDirection(orderByDir);
+            if (dir == null) {
+                return ApiBadRequest<List<ApiMatch>>($"{nameof(orderByDir)} can only be 'asc'|'desc'");
             }
 
             BarMatchSearchParameters parms = new();
@@ -214,6 +234,8 @@ namespace gex.Controllers.Api {
             parms.ProcessingReplayed = processingReplayed;
             parms.ProcessingAction = processingAction;
             parms.LegionEnabled = legionEnabled;
+            parms.OrderBy = order;
+            parms.OrderByDirection = dir;
 
             List<ApiMatch> ret = [];
             List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, cancel);
@@ -228,7 +250,6 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
-
         }
 
         /// <summary>

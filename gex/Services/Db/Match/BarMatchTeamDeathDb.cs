@@ -30,7 +30,7 @@ namespace gex.Services.Db.Match {
         public async Task<List<BarMatchTeamDeath>> GetByGameID(string gameID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMatchTeamDeath>(
-                "SELECT * FROM bar_match_team_death WHERE game_id = @GameID",
+                "SELECT * FROM bar_match_team_death WHERE game_id = @GameID ORDER BY game_time ASC",
                 new { GameID = gameID },
                 cancel
             );

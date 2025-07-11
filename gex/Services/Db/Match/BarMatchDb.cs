@@ -133,9 +133,8 @@ namespace gex.Services.Db.Match {
         ///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
         /// </returns>
         public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
-
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, "");
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, ""); // command text will be set later
 
             List<string> conditions = [];
 
@@ -232,7 +231,7 @@ namespace gex.Services.Db.Match {
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
-                    ORDER BY start_time DESC
+                    ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}
                     LIMIT {limit}
                     OFFSET {offset}
             ";

@@ -88,5 +88,63 @@ namespace gex.Models.Db {
         /// </summary>
         public bool? LegionEnabled { get; set; }
 
+        public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
+
+        public OrderByDirection OrderByDirection { get; set; } = OrderByDirection.ASC;
+
+        public static OrderBy? ParseOrderBy(string name) {
+            return name.ToLower() switch {
+                "start_time" => (OrderBy?)OrderBy.START_TIME,
+                "player_count" => (OrderBy?)OrderBy.PLAYER_COUNT,
+                "duration" => (OrderBy?)OrderBy.DURATION,
+                _ => null,
+            };
+        }
+
+        public static OrderByDirection? ParseOrderByDirection(string name) {
+            return name.ToLower() switch {
+                "asc" => (OrderByDirection?)OrderByDirection.ASC,
+                "desc" => (OrderByDirection?)OrderByDirection.DESC,
+                _ => null
+            };
+        }
+
     }
+
+    /// <summary>
+    ///     possible values for the field being ordered during a search
+    /// </summary>
+    public class OrderBy {
+
+        public readonly string Value;
+
+        private OrderBy(string value) {
+            Value = value;
+        }
+
+        public readonly static OrderBy START_TIME = new("start_time");
+
+        public readonly static OrderBy PLAYER_COUNT = new("player_count");
+
+        public readonly static OrderBy DURATION = new("duration_ms");
+
+    }
+
+    /// <summary>
+    ///     possible values for the order by direction during a search
+    /// </summary>
+    public class OrderByDirection {
+
+        public readonly string Value;
+
+        private OrderByDirection(string value) {
+            Value = value;
+        }
+
+        public readonly static OrderByDirection ASC = new("ASC");
+
+        public readonly static OrderByDirection DESC = new("DESC");
+
+    }
+
 }

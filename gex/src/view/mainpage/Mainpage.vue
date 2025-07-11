@@ -224,7 +224,7 @@
 
             loadRecent: async function(): Promise<void> {
                 this.recent = Loadable.loading();
-                this.recent = await BarMatchApi.search(0, 8, {
+                this.recent = await BarMatchApi.search(0, 8, "start_time", "desc", {
                     processingAction: true
                 });
             },

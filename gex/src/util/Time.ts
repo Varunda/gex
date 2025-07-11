@@ -10,7 +10,7 @@ export default class TimeUtils {
         }
 
         if (dur.as("hours") >= 1) {
-            return `${dur.as("hours")}h ${(dur.as("minutes") % 60).toString().padStart(2, "0")}m`;
+            return `${Math.floor(dur.as("hours"))}h ${(Math.floor(dur.as("minutes") % 60)).toString().padStart(2, "0")}m`;
         }
 
         if (dur.as("minutes") >= 1) {
