@@ -173,7 +173,8 @@
             },
 
             teamPlacement: function(teamID: number): string {
-                const index = this.match.teamDeaths.findIndex(iter => iter.teamID == teamID) + 2;
+                const teamDeaths = [...this.match.teamDeaths].sort((a, b) => b.gameTime - a.gameTime);
+                const index = teamDeaths.findIndex(iter => iter.teamID == teamID) + 2;
                 if (index == 1) {
                     return "1st";
                 } else if (index == 2) {
