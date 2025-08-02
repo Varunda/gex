@@ -190,7 +190,7 @@
 
             allyTeamsSorted: function(): BarMatchAllyTeam[] {
                 if (this.showWinner == true && this.IsFfa && this.match.teamDeaths.length > 0) {
-                    const teamDeaths = [...this.match.teamDeaths].sort((a, b) => a.gameTime - b.gameTime);
+                    const teamDeaths = [...this.match.teamDeaths].sort((a, b) => b.gameTime - a.gameTime);
                     return [...this.match.allyTeams].sort((a, b) => {
                         return teamDeaths.findIndex(i => i.teamID == a.allyTeamID) - teamDeaths.findIndex(i => i.teamID == b.allyTeamID);
                     });
