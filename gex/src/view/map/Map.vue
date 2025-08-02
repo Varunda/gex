@@ -472,7 +472,7 @@
                 }
 
                 this.recent = Loadable.loading();
-                this.recent = await BarMatchApi.search(0, 8, {
+                this.recent = await BarMatchApi.search(0, 8, "start_time", "desc", {
                     map: this.barMap.data.name
                 });
             },
