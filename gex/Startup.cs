@@ -9,6 +9,7 @@ using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Implementations;
 using gex.Services.Db.Readers;
+using gex.Services.Discord;
 using gex.Services.Hosted;
 using gex.Services.Hosted.Startup;
 using gex.Services.Metrics;
@@ -225,6 +226,7 @@ namespace gex {
             services.Configure<InstanceOptions>(Configuration.GetSection("Instance"));
             services.Configure<HttpOptions>(Configuration.GetSection("Http"));
             services.Configure<FileStorageOptions>(Configuration.GetSection("FileStorage"));
+            services.Configure<ServiceOptions>(Configuration.GetSection("Services"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 
@@ -259,8 +261,8 @@ namespace gex {
             services.AddSingleton<BarDemofileResultProcessor>();
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
-                //services.AddSingleton<DiscordWrapper>();
-                //services.AddHostedService<DiscordService>();
+                services.AddSingleton<DiscordWrapper>();
+                services.AddHostedService<DiscordService>();
             }
 
             services.AddTransient<AppCurrentAccount>();

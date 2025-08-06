@@ -14,5 +14,17 @@
 
         public const byte TEAM_FFA = 5;
 
+        public static string GetName(byte gamemode) {
+            return gamemode switch {
+                DEFAULT => "default",
+                DUEL => "Duel",
+                SMALL_TEAM => "Small team",
+                LARGE_TEAM => "Large team",
+                FFA => "FFA",
+                TEAM_FFA => "Team FFA",
+                _ => $"unknown {gamemode}"
+            };
+        }
+
     }
 }

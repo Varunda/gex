@@ -14,5 +14,7 @@ namespace gex.Models.MapStats {
 
         public List<MapStatsOpeningLab> OpeningLabs { get; set; } = [];
 
+        public List<MapDailyPlays> DailyPlays { get; set; } = [];
+
     }
 }

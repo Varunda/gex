@@ -1,6 +1,7 @@
 ﻿using gex.Services.Parser;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,7 @@ namespace gex.Services.Hosted.Startup {
 
         protected override Task ExecuteAsync(CancellationToken cancel) {
             return Task.Run(async () => {
+                await Task.Delay(TimeSpan.FromMilliseconds(1));
 
                 /*
 				Result<BarMap, string> r = await _MapParser.Parse(@"F:\Gex\Engines\2025.04.01-win\maps\maps\eye_of_horus_1.7.1.sd7", cancel);

@@ -1,7 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using gex.Code.ExtensionMethods;
 using gex.Commands;
-using gex.Services;
+using gex.Services.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

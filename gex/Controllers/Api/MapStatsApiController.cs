@@ -20,11 +20,12 @@ namespace gex.Controllers.Api {
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly MapStatsByFactionDb _FactionStatsDb;
         private readonly MapStatsOpeningLabDb _OpeningLabDb;
+        private readonly MapDailyPlaysDb _DailyPlaysDb;
 
         public MapStatsApiController(ILogger<MapStatsApiController> logger,
             MapStatsDb mapStatsDb, BarMapRepository mapRepository,
             MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb,
-            MapStatsStartSpotRepository startSpotRepository) {
+            MapStatsStartSpotRepository startSpotRepository, MapDailyPlaysDb dailyPlaysDb) {
 
             _Logger = logger;
             _MapStatsDb = mapStatsDb;
@@ -32,6 +33,7 @@ namespace gex.Controllers.Api {
             _FactionStatsDb = factionStatsDb;
             _OpeningLabDb = openingLabDb;
             _StartSpotRepository = startSpotRepository;
+            _DailyPlaysDb = dailyPlaysDb;
         }
 
         /// <summary>
@@ -42,11 +44,15 @@ namespace gex.Controllers.Api {
         /// <param name="includeStartSpots">will start spot stats be included? defaults to false</param>
         /// <param name="includeFactionStats">will faction stats be included? defaults to false</param>
         /// <param name="includeOpeningLabs">will lab opener stats be included? defaults to false</param>
+        /// <param name="includeDailyPlays">will daily plays be included? defaults to false</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///		the response will contain a <see cref="MapStats"/>, where each stat is populated
         ///		depending on the include parameters passed, with the
         ///		<see cref="MapStatsByGamemode.MapFileName"/> of <paramref name="mapFilename"/>
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="BarMap"/> with <see cref="BarMap.FileName"/> of <paramref name="mapFilename"/> exists
         /// </response>
         [HttpGet("{mapFilename}")]
         public async Task<ApiResponse<MapStats>> GetByMap(string mapFilename,
@@ -54,6 +60,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeStartSpots = false,
             [FromQuery] bool includeFactionStats = false,
             [FromQuery] bool includeOpeningLabs = false,
+            [FromQuery] bool includeDailyPlays = false,
             CancellationToken cancel = default
         ) {
 
@@ -79,6 +86,10 @@ namespace gex.Controllers.Api {
 
             if (includeOpeningLabs == true) {
                 stats.OpeningLabs = await _OpeningLabDb.GetByMap(mapFilename, cancel);
+            }
+
+            if (includeDailyPlays == true) {
+                stats.DailyPlays = await _DailyPlaysDb.GetByMap(mapFilename, cancel);
             }
 
             return ApiOk(stats);

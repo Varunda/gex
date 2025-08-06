@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace gex.Services {
+namespace gex.Services.Discord {
 
     /// <summary>
     ///     A wrapper around a <see cref="DiscordClient"/>, used as a singleton so multiple services can share a client
@@ -36,7 +36,7 @@ namespace gex.Services {
                     Token = _DiscordOptions.Value.Key,
                     TokenType = TokenType.Bot,
                     LoggerFactory = loggerFactory,
-                    Intents = DiscordIntents.MessageContents | DiscordIntents.AllUnprivileged
+                    Intents = DiscordIntents.AllUnprivileged
                 });
             } catch (Exception) {
                 throw;

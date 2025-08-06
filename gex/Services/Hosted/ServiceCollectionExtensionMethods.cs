@@ -9,6 +9,7 @@ namespace gex.Services.Hosted {
     public static class ServiceCollectionExtensionMethods {
 
         public static void AddAppStartupServices(this IServiceCollection services) {
+            services.AddHostedService<ServiceEnableStartupService>();
             services.AddHostedService<StorageLocationsWriteCheckStartupService>();
             services.AddHostedService<SevenZipCheckStartupService>();
             services.AddHostedService<StartupTestService>();
