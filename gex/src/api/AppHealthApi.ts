@@ -20,6 +20,7 @@ export class AppService {
 export class ServiceQueueCount {
     public queueName: string = "";
     public count: number = 0;
+    public processed: number = 0;
     public average: number | null = null;
     public min: number | null = null;
     public max: number | null = null;

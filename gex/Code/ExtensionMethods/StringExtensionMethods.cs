@@ -10,5 +10,11 @@
             return str;
         }
 
+        public static string EscapeDiscordCharacters(this string str) {
+            return str.Replace("_", "\\_")
+                .Replace("*", "\\*")
+                .Replace("~~", "\\~~");
+        }
+
     }
 }

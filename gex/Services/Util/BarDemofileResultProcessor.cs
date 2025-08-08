@@ -28,11 +28,8 @@ namespace gex.Services.Util {
         private readonly BarUserDb _UserDb;
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
-        private readonly MapPriorityModDb _MapPriorityModDb;
-        private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
 
-        private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
 
@@ -58,9 +55,6 @@ namespace gex.Services.Util {
             _UserDb = userDb;
             _UserSkillDb = userSkillDb;
             _GameVersionUsageDb = gameVersionUsageDb;
-            _MapPriorityModDb = mapPriorityModDb;
-            _PriorityCalculator = priorityCalculator;
-            _HeadlessRunQueue = headlessRunQueue;
             _MapStatUpdateQueue = mapStatUpdateQueue;
             _FactionStatUpdateQueue = factionStatUpdateQueue;
             _TeamDeathDb = teamDeathDb;
@@ -123,7 +117,7 @@ namespace gex.Services.Util {
                     await _UserDb.Upsert(player.UserID, new Models.UserStats.BarUser() {
                         UserID = player.UserID,
                         Username = player.Name,
-                        LastUpdated = DateTime.UtcNow
+                        LastUpdated = match.StartTime
                     }, cancel);
 
                     if (match.Gamemode != BarGamemode.DEFAULT) {
@@ -132,7 +126,7 @@ namespace gex.Services.Util {
                             Gamemode = match.Gamemode,
                             Skill = player.Skill,
                             SkillUncertainty = player.SkillUncertainty,
-                            LastUpdated = DateTime.UtcNow
+                            LastUpdated = match.StartTime
                         }, cancel);
                     }
                 } catch (Exception ex) {

@@ -1,4 +1,7 @@
-﻿namespace gex.Code.Constants {
+﻿using System.Collections;
+using System.Collections.Generic;
+
+namespace gex.Code.Constants {
 
     public class BarGamemode {
 
@@ -25,6 +28,10 @@
                 _ => $"unknown {gamemode}"
             };
         }
+
+        public static readonly IEnumerable<byte> List = [
+            DUEL, SMALL_TEAM, LARGE_TEAM, FFA, TEAM_FFA
+        ];
 
     }
 }

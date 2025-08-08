@@ -18,6 +18,7 @@ namespace gex.Services.Repositories {
         private const string CACHE_KEY_ID = "Gex.Match.{0}"; // {0} => game ID
         private const string CACHE_KEY_UNIQUE_ENGINES = "Gex.Match.Unique.Engines";
         private const string CACHE_KEY_UNIQUE_GAME_VERSIONS = "Gex.Match.Unique.GameVersions";
+        private const string CACHE_KEY_GAMES_BY_USER = "Gex.Match.User.{0}"; // {0} => user ID
 
         public BarMatchRepository(ILogger<BarMatchRepository> logger,
             BarMatchDb matchDb, IMemoryCache cache) {
@@ -54,7 +55,17 @@ namespace gex.Services.Repositories {
         }
 
         public async Task<List<BarMatch>> GetByUserID(long userID, CancellationToken cancel) {
-            return await _MatchDb.GetByUserID(userID, cancel);
+            // caching here is mostly used to speed up full user stat fixes
+            string cacheKey = string.Format(CACHE_KEY_GAMES_BY_USER, userID);
+            if (_Cache.TryGetValue(cacheKey, out List<BarMatch>? matches) == false || matches == null) {
+                matches = await _MatchDb.GetByUserID(userID, cancel);
+
+                _Cache.Set(cacheKey, matches, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
+                });
+            }
+
+            return matches;
         }
 
         public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {

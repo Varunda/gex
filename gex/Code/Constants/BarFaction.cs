@@ -1,4 +1,6 @@
-﻿namespace gex.Code.Constants {
+﻿using System.Collections.Generic;
+
+namespace gex.Code.Constants {
 
     public class BarFaction {
 
@@ -11,6 +13,10 @@
         public const byte LEGION = 3;
 
         public const byte RANDOM = 4;
+
+        public static readonly IEnumerable<byte> List = [
+            ARMADA, CORTEX, LEGION, RANDOM
+        ];
 
         public static string GetName(byte id) {
             if (id == 0) {

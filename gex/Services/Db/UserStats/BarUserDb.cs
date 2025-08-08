@@ -67,6 +67,19 @@ namespace gex.Services.Db.UserStats {
         }
 
         /// <summary>
+        ///     select all <see cref="BarUser"/>s from the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarUser>> GetAll(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarUser>(
+                "SELECT * FROM bar_user",
+                cancel
+            );
+        }
+
+        /// <summary>
         ///     search for user by name, and optionally previous names. case-insensitive
         /// </summary>
         /// <param name="name">name to search for</param>

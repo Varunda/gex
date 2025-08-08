@@ -31,7 +31,7 @@ namespace gex.Services.Db.UserStats {
                 ) VALUES (
                     @UserID, @Map, @Gamemode,
                     @PlayCount, @WinCount, @LossCount, @TieCount, @LastUpdated
-                ) ON CONFLICT (user_id, map) DO UPDATE SET
+                ) ON CONFLICT (user_id, map, gamemode) DO UPDATE SET
                     play_count = @PlayCount,
                     win_count = @WinCount,
                     loss_count = @LossCount,

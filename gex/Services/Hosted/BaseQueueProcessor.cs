@@ -118,6 +118,11 @@ namespace gex.Services.Hosted {
 
                     _ServiceHealthMonitor.Set(_ServiceName, healthEntry);
 
+                    if (cancel.IsCancellationRequested == true) {
+                        _Logger.LogInformation($"stop requested! (break in loop)");
+                        break;
+                    }
+
                 } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
                     _Logger.LogError(ex, $"error in queue processor {_ServiceName}");
                 } catch (Exception) when (cancel.IsCancellationRequested == true) {

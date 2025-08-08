@@ -69,6 +69,8 @@ namespace gex.Services.Db {
             services.AddSingleton<SkillHistogramDb>();
             services.AddSingleton<BarMapPlayCountDb>();
             services.AddSingleton<UnitTweakPriorityExemptionDb>();
+            services.AddSingleton<DiscordSubscriptionMatchProcessedDb>();
+            services.AddSingleton<DiscordBarUserLinkDb>();
         }
 
     }

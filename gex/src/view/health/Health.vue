@@ -67,6 +67,9 @@
                                         Compact
                                     </toggle-button>
                                 </th>
+                                <th title="Estimated time to complete the queue (if any items are in the queue)">
+                                    ETA
+                                </th>
                                 <th>Average</th>
                                 <th>Median</th>
                                 <th>Min</th>
@@ -77,13 +80,29 @@
                         <tbody>
                             <tr v-for="queue in health.data.queues">
                                 <td>{{queue.queueName}}</td>
-                                <td>{{queue.count}}</td>
+                                <td :title="queue.count | locale">
+                                    <span v-if="settings.useCompact">
+                                        {{ queue.count | compact }}
+                                    </span>
+                                    <span v-else>
+                                        {{ queue.count | locale }}
+                                    </span>
+                                </td>
                                 <td :title="queue.processed | locale">
                                     <span v-if="settings.useCompact">
                                         {{queue.processed | compact}}
                                     </span>
                                     <span v-else>
                                         {{queue.processed | locale}}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span v-if="queue.count > 0 && queue.median != null">
+                                        {{ queue.count * (queue.median / 1000) | mduration }}
+                                    </span>
+                                    <span v-else class="text-muted">
+                                        --
                                     </span>
                                 </td>
 
@@ -149,8 +168,8 @@
                                     </a>
                                 </td>
                                 <td>{{ run.simulating }}</td>
-                                <td>{{ run.frame }}</td>
-                                <td>{{ run.durationFrames}}</td>
+                                <td>{{ run.frame }} ({{ run.frame / run.durationFrames * 100 | locale(2) }}%)</td>
+                                <td>{{ run.durationFrames }}</td>
                                 <td>{{ run.fps | locale(2) }}</td>
                                 <td>
                                     <span v-if="run.simulating == true">
@@ -217,7 +236,9 @@
 
             this.updateHealth();
             this.timerID = setInterval(async () => {
-                if (this.loadingData == true ) {
+                const diff: number = (this.latestUpdate == null) ? Number.MAX_SAFE_INTEGER : (new Date().getTime() - this.latestUpdate.getTime());
+                
+                if (this.loadingData == true && diff < 10000) {
                     return;
                 }
 

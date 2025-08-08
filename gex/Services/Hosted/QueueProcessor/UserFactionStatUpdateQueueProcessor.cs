@@ -43,13 +43,18 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             List<BarMatch> matches = await _MatchRepository.GetByUserID(entry.UserID, cancel);
             if (matches.Count == 0) {
-                _Logger.LogWarning($"there are no matches for this user? [userID={entry.UserID}] [faction={entry.Faction}]");
-                return false;
+                if (entry.MaybeNone == false) {
+                    _Logger.LogWarning($"there are no matches for this user? [userID={entry.UserID}] [faction={entry.Faction}]");
+                }
+                return true;
             }
 
             matches = matches.Where(iter => iter.Gamemode == entry.Gamemode).ToList();
             if (matches.Count == 0) {
-                _Logger.LogWarning($"there are no matches for this gamemode? [userID={entry.UserID}] [faction={entry.Faction}] [gamemode={entry.Gamemode}]");
+                if (entry.MaybeNone == false) {
+                    _Logger.LogWarning($"there are no matches for this gamemode? [userID={entry.UserID}] [faction={entry.Faction}] [gamemode={entry.Gamemode}]");
+                }
+                return true;
             }
 
             BarUserFactionStats stats = new();
@@ -94,9 +99,12 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             stats.LastUpdated = DateTime.UtcNow;
-            await _FactionStatsDb.Upsert(stats, cancel);
+            bool doUpsert = stats.WinCount != 0 || stats.PlayCount != 0 || stats.LossCount != 0;
+            if (doUpsert) {
+                await _FactionStatsDb.Upsert(stats, cancel);
+            }
 
-            _Logger.LogTrace($"updated user faction stats [userID={entry.UserID}] [faction={entry.Faction}/{facName}] "
+            _Logger.LogTrace($"updated user faction stats [ignored={!doUpsert}] [userID={entry.UserID}] [faction={entry.Faction}/{facName}] "
                 + $"[gamemode={entry.Gamemode}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return true;

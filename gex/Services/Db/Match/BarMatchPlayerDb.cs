@@ -80,6 +80,23 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        public async Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match_player
+                    WHERE user_id = @UserID;
+            ");
+
+            cmd.AddParameter("UserID", userID);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatchPlayer> players = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return players;
+        }
+
         public async Task DeleteByGameID(string gameID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"

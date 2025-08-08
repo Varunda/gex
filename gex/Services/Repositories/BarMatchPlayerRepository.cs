@@ -39,6 +39,10 @@ namespace gex.Services.Repositories {
             return players;
         }
 
+        public Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
+            return _Db.GetByUserID(userID, cancel);
+        }
+
         public async Task Insert(BarMatchPlayer player) {
             string cacheKey = string.Format(CACHE_KEY_ID, player.GameID);
             _Cache.Remove(cacheKey);

@@ -1,4 +1,6 @@
-﻿namespace gex.Models.Options {
+﻿using System.Collections.Generic;
+
+namespace gex.Models.Options {
 
     public class DiscordOptions {
 
@@ -28,6 +30,8 @@
         ///     Will the global commands be registered globally? Or just in the test server
         /// </summary>
         public bool RegisterGlobalCommands { get; set; } = false;
+
+        public Dictionary<string, string> Emojis { get; set; } = [];
 
     }
 
