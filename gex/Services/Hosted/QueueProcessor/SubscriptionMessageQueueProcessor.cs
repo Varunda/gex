@@ -8,6 +8,7 @@ using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Util;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -66,7 +67,13 @@ namespace gex.Services.Hosted.QueueProcessor {
                     embed.WithFooter("Match started at");
                     embed.Timestamp = match.StartTime;
                     embed.Color = DiscordColor.Purple;
-                    embed.WithThumbnail($"https://api.bar-rts.com/maps/{match.MapName}/texture-lq.jpg");
+
+                    string thumbnail = $"https://api.bar-rts.com/maps/{match.MapName.Replace(" ", "%20")}/texture-lq.jpg";
+                    if (Uri.IsWellFormedUriString(thumbnail, UriKind.Absolute) == true) {
+                        embed.WithThumbnail(thumbnail);
+                    } else {
+                        _Logger.LogWarning($"thumbnail gives an invalid Uri! [thumbnail={thumbnail}]");
+                    }
 
                     msg.Components.Add(SubscribeButtonCommand.REMOVE_PLAYER_SUB(player.UserID));
                     msg.Embeds.Add(embed);
