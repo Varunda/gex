@@ -24,6 +24,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly IOptions<FileStorageOptions> _Options;
+        private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionMessageQueue;
 
         private readonly ActionLogParser _ActionLogParser;
         private readonly GameEventUnitCreatedDb _UnitCreatedDb;
@@ -56,13 +57,14 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventTransportUnloadedDb transportUnloaded, GameEventExtraStatsDb extraStatDb,
             GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
-            GameEventUnitPositionDb unitPositionDb)
-
+            GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
             _ParseQueue = parseQueue;
             _Options = options;
+            _SubscriptionMessageQueue = subscriptionMessageQueue;
+
             _ActionLogParser = actionLogParser;
             _UnitCreatedDb = unitCreatedDb;
             _UnitKilledDb = unitKilledDb;
@@ -170,6 +172,11 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _ProcessingRepository.Upsert(processing);
 
             _Logger.LogInformation($"parsed action log and inserted DB events [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
+
+            _SubscriptionMessageQueue.Queue(new SubscriptionMessageQueueEntry() {
+                GameID = entry.GameID,
+                Force = entry.Force
+            });
 
             return true;
         }

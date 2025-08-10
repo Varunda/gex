@@ -2,6 +2,7 @@
 using DSharpPlus.SlashCommands;
 using gex.Code.Constants;
 using gex.Code.ExtensionMethods;
+using gex.Models;
 using gex.Models.Db;
 using gex.Models.Discord;
 using gex.Models.Options;
@@ -42,6 +43,7 @@ namespace gex.Code.Discord {
         public BarMatchPlayerRepository _PlayerRepository { set; private get; } = default!;
         public BarMatchAllyTeamDb _AllyTeamDb { set; private get; } = default!;
         public DiscordBarUserLinkDb _LinkDb { set; private get; } = default!;
+        public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -360,6 +362,135 @@ namespace gex.Code.Discord {
         }
 
         /// <summary>
+        ///     subscribe a discord account to a match being processed
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="player"></param>
+        /// <returns></returns>
+        [SlashCommand("subscribe", "Get notifications of a match being processed on Gex for a player")]
+        public async Task Subscribe(InteractionContext ctx,
+            [Option("player", "Player to subscribe to match processed notifications for")] string player) {
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            CancellationToken cancel = cts.Token;
+
+            DiscordWebhookBuilder builder = new();
+            DiscordEmbedBuilder embed = new();
+
+            Stopwatch timer = Stopwatch.StartNew();
+
+            List<UserSearchResult> users = (await _UserDb.SearchByName(player, false, cancel))
+                .OrderByDescending(iter => iter.LastUpdated).ToList();
+
+            // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
+            UserSearchResult? exactMatch = users.FirstOrDefault(iter => iter.Username.ToLower() == player.ToLower());
+            UserSearchResult? user = (users.Count == 1) ? users[0] : exactMatch;
+
+            await ctx.CreateDeferred(true);
+
+            if (user == null) {
+                if (users.Count == 0) {
+                    embed.Title = "Error! Failed to find user";
+                    embed.Description = $"Failed to find a user with the name `{player}`";
+                    embed.Color = DiscordColor.Red;
+                } else {
+                    embed.Title = "Error! Name is not unique enough";
+                    embed.Description = $"Found {users.Count} users that match the name `{player}`\n"
+                        + $"Please provide more characters to narrow it down";
+                    embed.Color = DiscordColor.Red;
+                }
+
+                await ctx.EditResponseEmbed(embed);
+                return;
+            }
+
+            List<DiscordSubscriptionMatchProcessed> subs = await _SubscriptionDb.GetByDiscordID(ctx.User.Id, cancel);
+            DiscordSubscriptionMatchProcessed? sub = subs.FirstOrDefault(iter => iter.UserID == user.UserID);
+            if (sub != null) {
+                embed.Title = $"Error! Subscription already exists";
+                embed.Description = $"A subscription for this Discord account already exists for {user.Username}";
+                embed.Color = DiscordColor.Red;
+
+                await ctx.EditResponseEmbed(embed);
+                return;
+            }
+
+            sub = new DiscordSubscriptionMatchProcessed();
+            sub.DiscordID = ctx.User.Id;
+            sub.UserID = user.UserID;
+            sub.Timestamp = DateTime.UtcNow;
+
+            await _SubscriptionDb.Insert(sub, cancel);
+
+            embed.Title = "Success!";
+            embed.Description = $"Successfully subscribed to `{user.Username}`\nWhenever Gex fully replays a game with this player in it, a message will be sent";
+            embed.Color = DiscordColor.Green;
+            builder.AddEmbed(embed);
+            await ctx.EditResponseAsync(builder);
+        }
+
+        [SlashCommand("unsubscribe", "Remove a subscription to a player")]
+        public async Task Unsubscribe(InteractionContext ctx,
+            [Option("player", "Player to unsubscribe to match processed notifications to")] string player) {
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            CancellationToken cancel = cts.Token;
+
+            DiscordWebhookBuilder builder = new();
+            DiscordEmbedBuilder embed = new();
+
+            Stopwatch timer = Stopwatch.StartNew();
+
+            List<UserSearchResult> users = (await _UserDb.SearchByName(player, false, cancel))
+                .OrderByDescending(iter => iter.LastUpdated).ToList();
+
+            // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
+            UserSearchResult? exactMatch = users.FirstOrDefault(iter => iter.Username.ToLower() == player.ToLower());
+            UserSearchResult? user = (users.Count == 1) ? users[0] : exactMatch;
+
+            await ctx.CreateDeferred(true);
+
+            if (user == null) {
+                if (users.Count == 0) {
+                    embed.Title = "Error! Failed to find user";
+                    embed.Description = $"Failed to find a user with the name `{player}`";
+                    embed.Color = DiscordColor.Red;
+                } else {
+                    embed.Title = "Error! Name is not unique enough";
+                    embed.Description = $"Found {users.Count} users that match the name `{player}`\n"
+                        + $"Please provide more characters to narrow it down";
+                    embed.Color = DiscordColor.Red;
+                }
+
+                await ctx.EditResponseEmbed(embed);
+                return;
+            }
+
+            List<DiscordSubscriptionMatchProcessed> subs = await _SubscriptionDb.GetByDiscordID(ctx.User.Id, cancel);
+            DiscordSubscriptionMatchProcessed? sub = subs.FirstOrDefault(iter => iter.UserID == user.UserID);
+            if (sub == null) {
+                embed.Title = $"Subscription does not exist";
+                embed.Description = $"Failed to find a subscription from this Discord account to `{user.Username}`";
+                embed.Color = DiscordColor.Red;
+
+                await ctx.EditResponseEmbed(embed);
+                return;
+            }
+
+            sub = new DiscordSubscriptionMatchProcessed();
+            sub.DiscordID = ctx.User.Id;
+            sub.UserID = user.UserID;
+            sub.Timestamp = DateTime.UtcNow;
+
+            await _SubscriptionDb.Insert(sub, cancel);
+
+            embed.Title = "Success!";
+            embed.Description = $"Removed the subscription to `{user.Username}`";
+            embed.Color = DiscordColor.Green;
+            builder.AddEmbed(embed);
+            await ctx.EditResponseAsync(builder);
+        }
+
+        /// <summary>
         ///     used to generate play stats for player lookups
         /// </summary>
         /// <param name="user"></param>
@@ -466,7 +597,6 @@ namespace gex.Code.Discord {
                     embed.Description += $"**{map.Key}**\n";
                     embed.Description += $"{Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n\n";
                 }
-
             } else {
                 embed.AddField("Maps", "no map stats found");
             }
@@ -549,6 +679,12 @@ namespace gex.Code.Discord {
             return embed;
         }
 
+        /// <summary>
+        ///     get the title of a <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         private async Task<string> _GetMatchTitle(BarMatch match, CancellationToken cancel) {
             string title;
             if (match.PlayerCount == 2) {
@@ -579,7 +715,31 @@ namespace gex.Code.Discord {
             return title;
         }
 
+        /// <summary>
+        ///     get a string representing an emoji based on a name
+        /// </summary>
+        /// <param name="name">name of the emoji</param>
+        /// <returns></returns>
         private string? _GetEmoji(string name) => _DiscordOptions.Value.Emojis.GetValueOrDefault(name); 
+
+        private async Task<Result<UserSearchResult, string>> _GetPlayer(string name, CancellationToken cancel) {
+            List<UserSearchResult> users = (await _UserDb.SearchByName(name, false, cancel))
+                .OrderByDescending(iter => iter.LastUpdated).ToList();
+
+            // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
+            UserSearchResult? exactMatch = users.FirstOrDefault(iter => iter.Username.ToLower() == name.ToLower());
+            UserSearchResult? user = (users.Count == 1) ? users[0] : exactMatch;
+
+            if (user != null) {
+                return user;
+            }
+
+            if (users.Count > 1) {
+                return "more than 1 possible user found";
+            }
+
+            return "no player found";
+        }
 
     }
 }

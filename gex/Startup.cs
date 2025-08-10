@@ -249,6 +249,7 @@ namespace gex {
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarDemofileParser>();
             services.AddSingleton<BarMapParser>();
+            services.AddSingleton<BarMatchTitleUtilService>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist

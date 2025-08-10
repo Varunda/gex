@@ -23,6 +23,7 @@ namespace gex.Code.Commands {
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogQueue;
+        private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionQueue;
         private readonly BarReplayApi _ReplayApi;
         private readonly BarReplayDb _ReplayDb;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
@@ -33,6 +34,7 @@ namespace gex.Code.Commands {
             _ParseQueue = services.GetRequiredService<BaseQueue<GameReplayParseQueueEntry>>();
             _HeadlessRunQueue = services.GetRequiredService<BaseQueue<HeadlessRunQueueEntry>>();
             _ActionLogQueue = services.GetRequiredService<BaseQueue<ActionLogParseQueueEntry>>();
+            _SubscriptionQueue = services.GetRequiredService<BaseQueue<SubscriptionMessageQueueEntry>>();
             _ReplayApi = services.GetRequiredService<BarReplayApi>();
             _ReplayDb = services.GetRequiredService<BarReplayDb>();
             _ProcessingRepository = services.GetRequiredService<BarMatchProcessingRepository>();
@@ -112,6 +114,14 @@ namespace gex.Code.Commands {
         public void ParseActions(string gameID) {
             _Logger.LogInformation($"forcing a re-process of action log [gameID={gameID}]");
             _ActionLogQueue.Queue(new ActionLogParseQueueEntry() {
+                GameID = gameID,
+                Force = true
+            });
+        }
+
+        public void Message(string gameID) {
+            _Logger.LogInformation($"forcing subscription messages to be setn [gameID={gameID}]");
+            _SubscriptionQueue.Queue(new SubscriptionMessageQueueEntry() {
                 GameID = gameID,
                 Force = true
             });

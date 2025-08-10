@@ -1,6 +1,7 @@
 ﻿using gex.Code;
 using gex.Models;
 using gex.Models.Api;
+using gex.Models.Discord;
 using gex.Models.Health;
 using gex.Models.Internal;
 using gex.Models.Queues;
@@ -28,7 +29,7 @@ namespace gex.Controllers.Api {
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
 
-        private readonly DiscordMessageQueue _DiscordQueue;
+        private readonly BaseQueue<AppDiscordMessage> _DiscordQueue;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
@@ -39,7 +40,7 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
 
         public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
-            DiscordMessageQueue discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
+            BaseQueue<AppDiscordMessage> discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             ServiceHealthMonitor serviceHealthMonitor, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<ActionLogParseQueueEntry> actionLogQueue,
             BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue, BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
@@ -71,7 +72,6 @@ namespace gex.Controllers.Api {
         [HttpPost("disable/{name}")]
         [Authorize]
         public ApiResponse DisableService(string name) {
-
             ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
             if (entry == null) {
                 return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");
@@ -91,7 +91,6 @@ namespace gex.Controllers.Api {
         [HttpPost("enable/{name}")]
         [Authorize]
         public ApiResponse EnableService(string name) {
-
             ServiceHealthEntry? entry = _ServiceHealthMonitor.Get(name);
             if (entry == null) {
                 return ApiNotFound($"{nameof(ServiceHealthEntry)} {name}");

@@ -1,4 +1,5 @@
 ﻿using gex.Models.Api;
+using gex.Models.Discord;
 using gex.Models.Queues;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +12,7 @@ namespace gex.Services.Queues {
         /// </summary>
         /// <param name="services">Extension instance</param>
         public static void AddGexQueueServices(this IServiceCollection services) {
-            services.AddSingleton<DiscordMessageQueue>();
+            services.AddSingleton<BaseQueue<AppDiscordMessage>, DiscordMessageQueue>();
             services.AddSingleton<BaseQueue<GameReplayDownloadQueueEntry>, GameReplayDownloaderQueue>();
             services.AddSingleton<BaseQueue<GameReplayParseQueueEntry>, GameReplayParseQueue>();
             services.AddSingleton<BaseQueue<HeadlessRunQueueEntry>, HeadlessRunQueue>();
@@ -20,6 +21,7 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<UserFactionStatUpdateQueueEntry>, UserFactionStatUpdateQueue>();
             services.AddSingleton<BaseQueue<HeadlessRunStatus>, HeadlessRunStatusUpdateQueue>();
             services.AddSingleton<BaseQueue<MapStatUpdateQueueEntry>, MapStatUpdateQueue>();
+            services.AddSingleton<BaseQueue<SubscriptionMessageQueueEntry>, SubscriptionMessageQueue>();
         }
 
     }

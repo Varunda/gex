@@ -30,7 +30,7 @@ namespace gex.Services.Discord {
 
         private readonly ILogger<DiscordService> _Logger;
 
-        private readonly DiscordMessageQueue _MessageQueue;
+        private readonly BaseQueue<AppDiscordMessage> _MessageQueue;
 
         //public DiscordClient _Discord;
         private readonly DiscordWrapper _Discord;
@@ -44,11 +44,11 @@ namespace gex.Services.Discord {
         private Dictionary<ulong, ulong> _CachedMembership = new();
 
         public DiscordService(ILogger<DiscordService> logger, ILoggerFactory loggerFactory,
-            DiscordMessageQueue msgQueue, IOptions<DiscordOptions> discordOptions, IServiceProvider services,
-            DiscordWrapper discord) {
+            IOptions<DiscordOptions> discordOptions, IServiceProvider services,
+            DiscordWrapper discord, BaseQueue<AppDiscordMessage> messageQueue) {
 
             _Logger = logger;
-            _MessageQueue = msgQueue ?? throw new ArgumentNullException(nameof(msgQueue));
+            _MessageQueue = messageQueue;
 
             _DiscordOptions = discordOptions;
 
@@ -84,7 +84,7 @@ namespace gex.Services.Discord {
             _ButtonCommands = _Discord.Get().UseButtonCommands(new ButtonCommandsConfiguration() {
                 Services = services
             });
-            //_ButtonCommands.RegisterButtons<SubscribeButtonCommands>();
+            _ButtonCommands.RegisterButtons<SubscribeButtonCommand>();
 
             _ButtonCommands.ButtonCommandExecuted += Button_Command_Executed;
             _ButtonCommands.ButtonCommandErrored += Button_Command_Error;
@@ -196,10 +196,10 @@ namespace gex.Services.Discord {
                     DiscordMember? member = await guild.TryGetMember(memberID);
                     // if the member is null, and was cached, then cache is bad
                     if (member == null) {
-                        _Logger.LogWarning($"Failed to get member {memberID} from guild {guildID}");
+                        _Logger.LogWarning($"Failed to get member from guild [memberID={memberID}] [guildID={guildID}]");
                         _CachedMembership.Remove(memberID);
                     } else {
-                        _Logger.LogDebug($"Found member {memberID} from guild {guildID} (cached)");
+                        _Logger.LogDebug($"Found member from guild (cached) [memberID={memberID}] [guildID={guildID}]");
                         return member;
                     }
                 }
@@ -210,7 +210,7 @@ namespace gex.Services.Discord {
                 DiscordMember? member = await entry.Value.TryGetMember(memberID);
 
                 if (member != null) {
-                    _Logger.LogDebug($"Found member {memberID} from guild {entry.Value.Id}");
+                    _Logger.LogDebug($"Found member from guild [memberID={memberID}] [guildID={entry.Value.Id}]");
                     _CachedMembership[memberID] = entry.Value.Id;
                     return member;
                 }
@@ -233,13 +233,12 @@ namespace gex.Services.Discord {
             _IsConnected = true;
 
             try {
-
-            DiscordGuild? guild = await sender.GetGuildAsync(_DiscordOptions.Value.GuildId);
-            if (guild == null) {
-                _Logger.LogError($"Failed to get guild {_DiscordOptions.Value.GuildId} (what was passed in the options)");
-            } else {
-                _Logger.LogInformation($"Successfully found home guild '{guild.Name}'/{guild.Id}");
-            }
+                DiscordGuild? guild = await sender.GetGuildAsync(_DiscordOptions.Value.GuildId);
+                if (guild == null) {
+                    _Logger.LogError($"Failed to get guild {_DiscordOptions.Value.GuildId} (what was passed in the options)");
+                } else {
+                    _Logger.LogInformation($"Successfully found home guild '{guild.Name}'/{guild.Id}");
+                }
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to get home guild [guildID={_DiscordOptions.Value.GuildId}");
             }

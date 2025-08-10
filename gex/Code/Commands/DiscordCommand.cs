@@ -1,7 +1,9 @@
 ﻿using DSharpPlus.Entities;
 using gex.Code.ExtensionMethods;
 using gex.Commands;
+using gex.Models.Discord;
 using gex.Services.Discord;
+using gex.Services.Queues;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,10 +17,12 @@ namespace gex.Code.Commands {
 
         private readonly ILogger<DiscordCommand> _Logger;
         private readonly DiscordWrapper _Discord;
+        private readonly BaseQueue<AppDiscordMessage> _MessageQueue;
 
         public DiscordCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<DiscordCommand>>();
             _Discord = services.GetRequiredService<DiscordWrapper>();
+            _MessageQueue = services.GetRequiredService<BaseQueue<AppDiscordMessage>>();
         }
 
         public async Task Reconnect() {
@@ -107,6 +111,16 @@ namespace gex.Code.Commands {
             } else {
                 _Logger.LogInformation($"found {userId}/{member.GetDisplay()}");
             }
+        }
+
+        public void PokeUser(ulong userId) {
+            _Logger.LogInformation($"sending a message poke to user [userId={userId}]");
+
+            AppDiscordMessage msg = new();
+            msg.TargetUserID = userId;
+            msg.Message = "Test poke from Gex!";
+
+            _MessageQueue.Queue(msg);
         }
 
     }

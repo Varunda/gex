@@ -67,7 +67,7 @@ namespace gex.Services.Db {
         ///     a list of <see cref="DiscordSubscriptionMatchProcessed"/> with a 
         ///     <see cref="DiscordSubscriptionMatchProcessed.UserID"/> of <paramref name="userID"/>
         /// </returns>
-        public async Task<List<DiscordSubscriptionMatchProcessed>> GetByUserID(ulong userID, CancellationToken cancel) {
+        public async Task<List<DiscordSubscriptionMatchProcessed>> GetByUserID(long userID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<DiscordSubscriptionMatchProcessed>(
                 "SELECT * FROM discord_subscription_match_processed WHERE user_id = @UserID",
@@ -89,7 +89,7 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<DiscordSubscriptionMatchProcessed>(
                 "SELECT * FROM discord_subscription_match_processed WHERE discord_id = @DiscordID",
-                new { DiscordID = discordID },
+                new { DiscordID = unchecked((long)(ulong)discordID) },
                 cancel
             );
         }
@@ -101,7 +101,7 @@ namespace gex.Services.Db {
         /// <param name="ID">ID of the <see cref="DiscordSubscriptionMatchProcessed"/> to remove</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation is complete</returns>
-        public async Task Remove(ulong ID, CancellationToken cancel) {
+        public async Task Remove(long ID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 DELETE FROM discord_subscription_match_processed
