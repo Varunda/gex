@@ -172,6 +172,10 @@ namespace gex.Services.Discord {
                     _MessageQueue.AddProcessTime(timer.ElapsedMilliseconds);
                 } catch (Exception ex) when (stoppingToken.IsCancellationRequested == false) {
                     _Logger.LogError(ex, "error sending message");
+
+                    if (ex.InnerException != null) {
+                        _Logger.LogError(ex, "inner exception");
+                    }
                 } catch (Exception) when (stoppingToken.IsCancellationRequested == true) {
                     _Logger.LogInformation($"Stopping {SERVICE_NAME} with {_MessageQueue.Count()} left");
                 }
