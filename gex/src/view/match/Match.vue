@@ -156,6 +156,10 @@
                     </span>
                 </h4>
 
+                <div v-if="hasTweaks">
+                    <match-tweaks :match="match.data"></match-tweaks>
+                </div>
+
                 <hr class="border"/>
 
                 <match-teams :match="match.data" :is-ffa="isFFA" class="my-3"></match-teams>
@@ -307,6 +311,7 @@
     import MatchCombatStats from "./components/MatchCombatStats.vue";
     import MatchEcoStats from "./components/MatchEcoStats.vue";
     import MatchActionLog from "./components/MatchActionLog.vue";
+    import MatchTweaks from "./components/MatchTweaks.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -728,6 +733,23 @@
                 return this.queue.wasInQueue == true
                     && this.queue.index == -1
                     && this.replay.status == null;
+            },
+
+            hasTweaks: function(): boolean {
+                if (this.match.state != "loaded") {
+                    return false;
+                }
+
+                const gs = this.match.data.gameSettings;
+
+                return gs.tweakdefs != ""
+                    || gs.tweakdefs1 != "" || gs.tweakdefs2 != "" || gs.tweakdefs3 != ""
+                    || gs.tweakdefs4 != "" || gs.tweakdefs5 != "" || gs.tweakdefs6 != ""
+                    || gs.tweakdefs7 != "" || gs.tweakdefs8 != "" || gs.tweakdefs9 != ""
+                    || gs.tweakunits == ""
+                    || gs.tweakunits1 == "" || gs.tweakunits2 == "" || gs.tweakunits3 == ""
+                    || gs.tweakunits4 == "" || gs.tweakunits5 == "" || gs.tweakunits6 == ""
+                    || gs.tweakunits7 == "" || gs.tweakunits8 == "" || gs.tweakunits9 == "";
             }
 
         },
@@ -739,7 +761,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks,
             ProcessingStep, Collapsible, Busy
         }
     });
