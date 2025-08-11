@@ -12,6 +12,7 @@ using gex.Services.Db.Readers;
 using gex.Services.Discord;
 using gex.Services.Hosted;
 using gex.Services.Hosted.Startup;
+using gex.Services.Lobby;
 using gex.Services.Metrics;
 using gex.Services.Parser;
 using gex.Services.Queues;
@@ -227,6 +228,7 @@ namespace gex {
             services.Configure<HttpOptions>(Configuration.GetSection("Http"));
             services.Configure<FileStorageOptions>(Configuration.GetSection("FileStorage"));
             services.Configure<ServiceOptions>(Configuration.GetSection("Services"));
+            services.Configure<SpringLobbyOptions>(Configuration.GetSection("Spring"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 
@@ -246,6 +248,7 @@ namespace gex {
             services.AddAppDatabaseReadersServices(); // DB readers
             services.AddBarApiServices();
             services.AddGexRepositories();
+
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarDemofileParser>();
             services.AddSingleton<BarMapParser>();
@@ -260,11 +263,13 @@ namespace gex {
             services.AddGexMetrics();
             services.AddSingleton<BarMatchPriorityCalculator>();
             services.AddSingleton<BarDemofileResultProcessor>();
+            services.AddLobbyServices(enabled: Configuration.GetValue<bool>("Spring:Enabled"));
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
                 services.AddSingleton<DiscordWrapper>();
                 services.AddHostedService<DiscordService>();
             }
+
 
             services.AddTransient<AppCurrentAccount>();
 

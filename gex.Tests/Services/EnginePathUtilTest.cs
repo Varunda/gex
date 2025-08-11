@@ -1,4 +1,5 @@
-﻿using gex.Services;
+﻿using gex.Models.Options;
+using gex.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -11,7 +12,7 @@ namespace gex.Tests.Services {
 
         [TestMethod]
         public void Get_Test() {
-            EnginePathUtil path = new(Options.Create(new Models.Options.FileStorageOptions() {
+            EnginePathUtil path = new(Options.Create(new FileStorageOptions() {
                 EngineLocation = "./temp/engine",
                 GameLogLocation = "",
                 ReplayLocation = "",

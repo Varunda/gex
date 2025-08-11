@@ -27,6 +27,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<UserFactionStatUpdateQueueProcessor>();
             services.AddHostedService<HeadlessRunStatusUpdateQueueProcessor>();
             services.AddHostedService<MapStatUpdateQueueProcessor>();
+            services.AddHostedService<LobbyMessageQueueProcessor>();
         }
 
         public static void AddPeriodicServices(this IServiceCollection services) {
@@ -36,6 +37,7 @@ namespace gex.Services.Hosted {
 
         public static void AddBackgroundServices(this IServiceCollection services) {
             services.AddHostedService<PriorityMatchHeadlessBackgroundTask>();
+            services.AddHostedService<SpringLobbyClientHost>();
         }
 
     }

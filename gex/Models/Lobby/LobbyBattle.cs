@@ -1,0 +1,47 @@
+﻿using System.Collections.Generic;
+
+namespace gex.Models.Lobby {
+
+    public class LobbyBattle {
+
+        public int BattleID { get; set; }
+
+        public int Type { get; set; }
+
+        public int NatType { get; set; }
+
+        public string FounderUsername { get; set; } = "";
+
+        public string IP { get; set; } = "";
+
+        public int Port { get; set; }
+
+        public int MaxPlayers { get; set; }
+
+        /// <summary>
+        ///     number of spectators. comes from UPDATEBATTLEINFO, not BATTLEOPENED
+        /// </summary>
+        public int SpectatorCount { get; set; }
+
+        public bool Passworded { get; set; }
+
+        public int Rank { get; set; }
+
+        public uint MapHash { get; set; }
+
+        public string Engine { get; set; } = "";
+
+        public string EngineVersion { get; set; } = "";
+
+        public string Map { get; set; } = "";
+
+        public string Title { get; set; } = "";
+
+        public string GameName { get; set; } = "";
+
+        public string Channel { get; set; } = "";
+
+        public HashSet<long> Users { get; set; } = [];
+
+    }
+}

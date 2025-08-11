@@ -1,4 +1,5 @@
-﻿using gex.Models.Db;
+﻿using gex.Models;
+using gex.Models.Db;
 using gex.Models.Queues;
 using gex.Services.Queues;
 using gex.Services.Repositories;
@@ -15,7 +16,10 @@ namespace gex.Services.Hosted.Startup {
     /// </summary>
     public class ProcessingQueueStarterService : IHostedService {
 
+        private const string SERVICE_NAME = "processing_queue_starter";
+
         private readonly ILogger<ProcessingQueueStarterService> _Logger;
+        private readonly ServiceHealthMonitor _HealthMonitor;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BarMatchPlayerRepository _PlayerRepository;
@@ -29,7 +33,7 @@ namespace gex.Services.Hosted.Startup {
             BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
             BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, BarMatchRepository matchRepository,
-            BarMatchPlayerRepository playerRepository) {
+            BarMatchPlayerRepository playerRepository, ServiceHealthMonitor healthMonitor) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;
@@ -39,10 +43,18 @@ namespace gex.Services.Hosted.Startup {
             _ActionLogParseQueue = actionLogParseQueue;
             _MatchRepository = matchRepository;
             _PlayerRepository = playerRepository;
+            _HealthMonitor = healthMonitor;
         }
 
         public Task StartAsync(CancellationToken cancellationToken) {
             return Task.Run(async () => {
+
+                ServiceHealthEntry? healthEntry = _HealthMonitor.Get("processing_queue_starter");
+                if (healthEntry != null && healthEntry.Enabled == false) {
+                    _Logger.LogInformation($"service startup is disabled (likely in in env.json)");
+                    return;
+                }
+
                 await Start(cancellationToken);
             }, cancellationToken);
         }

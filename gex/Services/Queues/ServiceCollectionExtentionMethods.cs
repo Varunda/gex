@@ -1,5 +1,6 @@
 ﻿using gex.Models.Api;
 using gex.Models.Discord;
+using gex.Models.Lobby;
 using gex.Models.Queues;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +23,7 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<HeadlessRunStatus>, HeadlessRunStatusUpdateQueue>();
             services.AddSingleton<BaseQueue<MapStatUpdateQueueEntry>, MapStatUpdateQueue>();
             services.AddSingleton<BaseQueue<SubscriptionMessageQueueEntry>, SubscriptionMessageQueue>();
+            services.AddSingleton<BaseQueue<LobbyMessage>, LobbyMessageQueue>();
         }
 
     }

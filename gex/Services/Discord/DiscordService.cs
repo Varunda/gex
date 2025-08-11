@@ -101,6 +101,8 @@ namespace gex.Services.Discord {
                 }
 
                 await base.StartAsync(cancellationToken);
+
+                await _Discord.Get().UpdateStatusAsync(new DiscordActivity("/gex", ActivityType.Playing));
             } catch (Exception ex) {
                 _Logger.LogError(ex, "Error in start up of DiscordService");
             }
