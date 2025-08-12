@@ -71,7 +71,8 @@ namespace gex.Code.Discord {
             embed.Title = $"Player lookup: `{name}`";
 
             if (users.Count == 0) {
-                embed.Description = $"Failed to find any users with this name";
+                embed.Description = $"Failed to find any users with this name\n\n"
+                    + $"-# Gex only processes public PvP games, if this user plays only PvE games, or only private games, Gex does not know about them";
                 embed.Color = DiscordColor.Red;
             } else if (users.Count == 1) {
                 UserSearchResult user = users[0];
