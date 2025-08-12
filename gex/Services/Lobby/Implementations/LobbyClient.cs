@@ -1,6 +1,7 @@
 ﻿using gex.Models;
 using gex.Models.Lobby;
 using gex.Models.Options;
+using gex.Services.Metrics;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -21,19 +22,53 @@ namespace gex.Services.Lobby.Implementations {
 
         private readonly ILogger<LobbyClient> _Logger;
         private readonly IOptions<SpringLobbyOptions> _Options;
+        private readonly LobbyClientMetric _Metric;
         private readonly BaseQueue<LobbyMessage> _LobbyMessageQueue;
 
-        private readonly TcpClient _TcpSocket;
+        /// <summary>
+        ///     TPC socket that connects to the lobby
+        /// </summary>
+        private TcpClient _TcpSocket;
+
+        /// <summary>
+        ///     incrementing ID for writing and expecting a reply
+        /// </summary>
         private static int _MessageId = 1;
+
+        /// <summary>
+        ///     messages with a message ID that are pending the reply to be sent to the writer
+        /// </summary>
         private readonly Dictionary<int, LobbyMessage> _PendingMessages = [];
 
+        /// <summary>
+        ///     hash set of message IDs gex expects to see a response for. if a command is received with an unexpected message ID,
+        ///     then it is sent to the processing queue
+        /// </summary>
+        private readonly HashSet<int> _ExpectedMessages = [];
+
+        /// <summary>
+        ///     when the last byte was received from the lobby client
+        /// </summary>
+        private DateTime _LastMessageReceived = DateTime.MinValue;
+
+        private CancellationTokenSource _Cancel = new();
+        private Task? _ReadTask;
+        private Task? _PingTask;
+
+        /// <summary>
+        ///     disconnecting is done with a semaphore to prevent the socket from getting into a bad state
+        /// </summary>
+        private readonly SemaphoreSlim _Signal = new(1, 1);
+
         public LobbyClient(ILogger<LobbyClient> logger,
-            IOptions<SpringLobbyOptions> options, BaseQueue<LobbyMessage> lobbyMessageQueue) {
+            IOptions<SpringLobbyOptions> options, BaseQueue<LobbyMessage> lobbyMessageQueue,
+            LobbyClientMetric metric) {
 
             _TcpSocket = new TcpClient();
 
             _Logger = logger;
             _Options = options;
+            _Metric = metric;
             _LobbyMessageQueue = lobbyMessageQueue;
 
             if (string.IsNullOrEmpty(_Options.Value.Host)) {
@@ -53,45 +88,57 @@ namespace gex.Services.Lobby.Implementations {
         private string _LobbyHost => _Options.Value.Host;
         private int _LobbyPort => _Options.Value.Port;
 
+        public bool IsConnected() {
+            _Signal.Wait();
+            bool connected = _TcpSocket.Connected;
+            _Signal.Release();
+            return connected;
+        }
+
+        public DateTime LastMessage() => _LastMessageReceived;
+
         public async Task<Result<bool, string>> Connect(CancellationToken cancel) {
             if (_TcpSocket.Connected == true) {
                 _Logger.LogInformation($"lobby client is already connected, reconnecting");
-                _TcpSocket.Close();
+                Result<bool, string> dis = await Disconnect(cancel);
+                if (dis.IsOk == false) {
+                    return dis;
+                }
+
+                if (_TcpSocket.Connected == true) {
+                    _Logger.LogWarning($"call to disconnect did not actually disconnect the TCP socket");
+                    return "failed to disconnect (client was already connected)";
+                }
             }
 
             try {
                 _Logger.LogInformation($"lobby client connecting to host [host={_LobbyHost}:{_LobbyPort}]");
                 await _TcpSocket.ConnectAsync(_LobbyHost, _LobbyPort, cancel);
+                _Logger.LogDebug($"lobby client TCP connection made [connected={_TcpSocket.Connected}]");
 
-                Thread readThread = new(() => {
+                _ReadTask = Task.Run(() => {
+                    _Logger.LogDebug($"started read task");
                     try {
-                        ReadThread(_TcpSocket, cancel);
-                    } catch (Exception) when (cancel.IsCancellationRequested == true) {
-                        _Logger.LogInformation($"closing TCP client");
-                    } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
+                        ReadThread(_TcpSocket, _Cancel.Token);
+                    } catch (Exception) when (_Cancel.Token.IsCancellationRequested == true) {
+                        _Logger.LogInformation($"read task cancelled");
+                    } catch (Exception ex) when (_Cancel.Token.IsCancellationRequested == false) {
                         _Logger.LogError(ex, $"error in readThread");
                     }
-                });
-                readThread.Start();
+                    _Logger.LogDebug($"read task done");
+                }, _Cancel.Token);
 
-                Thread pingWriteThread = new(() => {
+                _PingTask = Task.Run(() => {
+                    _Logger.LogDebug($"started ping task");
                     try {
-                        PingWriteThread(cancel);
-                    } catch (Exception) when (cancel.IsCancellationRequested == true) {
+                        PingWriteThread(_Cancel.Token);
+                    } catch (Exception) when (_Cancel.Token.IsCancellationRequested == true) {
                         _Logger.LogInformation($"closing ping write thread safely due to cancellation token");
-                    } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
+                    } catch (Exception ex) when (_Cancel.Token.IsCancellationRequested == false) {
                         _Logger.LogError(ex, "error in ping write thread");
                     }
-                });
-                pingWriteThread.Start();
-
-                CancellationTokenRegistration cancelCallback = cancel.Register(() => {
-                    _Logger.LogInformation($"joining TCP read thread");
-                    readThread.Join();
-
-                    _Logger.LogInformation($"joining ping write thread");
-                    pingWriteThread.Join();
-                });
+                    _Logger.LogDebug($"ping task done");
+                }, _Cancel.Token);
             } catch (Exception ex) {
                 _Logger.LogError(ex, "failed to connect to host");
                 return ex.Message;
@@ -105,12 +152,37 @@ namespace gex.Services.Lobby.Implementations {
                 return true;
             }
 
-            await Write("EXIT", cancel);
+            _Signal.Wait(cancel);
 
-            _TcpSocket.Close();
-            return true;
+            try {
+                await Write("EXIT", "", cancel);
+
+                _Cancel.Cancel();
+                if (_ReadTask != null) {
+                    await _ReadTask.WaitAsync(cancel);
+                }
+                if (_PingTask != null) {
+                    await _PingTask.WaitAsync(cancel);
+                }
+                _Cancel = new CancellationTokenSource(); // create a new token
+
+                _TcpSocket.Close();
+                _TcpSocket = new TcpClient();
+                _Logger.LogDebug($"disconnect done");
+                return true;
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"error disconnecting");
+                return false;
+            } finally {
+                _Signal.Release();
+            }
         }
 
+        /// <summary>
+        ///     perform a login
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public async Task<Result<LobbyMessage, string>> Login(CancellationToken cancel) {
             if (_TcpSocket.Connected == false) {
                 return "TCP socket is not connected";
@@ -122,41 +194,71 @@ namespace gex.Services.Lobby.Implementations {
             string password = Convert.ToBase64String(md5);
 
             Result<LobbyMessage, string> loginRequest = await WriteReply(
-                $"LOGIN {_Options.Value.Username} {password} 0 * LuaLobby Chobby\t:3 :3\tb sp", TimeSpan.FromSeconds(5), cancel
+                "LOGIN", $"{_Options.Value.Username} {password} 0 * LuaLobby Chobby\t:3 :3\tb sp", TimeSpan.FromSeconds(5), cancel
             );
 
             return loginRequest;
         }
 
-        public async Task<Result<bool, string>> Write(string message, CancellationToken cancel) {
-            byte[] msg = Encoding.UTF8.GetBytes(message + "\n");
+        public Task<Result<bool, string>> Write(string command, string message, CancellationToken cancel) {
+            return Write(null, command, message, cancel);
+        }
+
+        /// <summary>
+        ///     write a command, dont include the trailing \n
+        /// </summary>
+        /// <param name="msgId"></param>
+        /// <param name="command"></param>
+        /// <param name="message"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<Result<bool, string>> Write(int? msgId, string command, string message, CancellationToken cancel) {
+            if (_TcpSocket.Connected == false) {
+                _Logger.LogWarning($"cannot write command, socket is not connected [message={message}]");
+                return "not connected";
+            }
+
+            string cmd = $"{(msgId != null ? $"#{msgId} ": "")}{command}{(message != "" ? $" {message}" : "")}\n";
+            //_Logger.LogTrace($"SEND>> {cmd}");
+            byte[] msg = Encoding.UTF8.GetBytes(cmd);
             try {
                 await _TcpSocket.GetStream().WriteAsync(msg, cancel);
             } catch (Exception ex) {
-                _Logger.LogError(ex, "failed to write LOGIN command");
+                _Metric.RecordWriteError(command);
+                _Logger.LogError(ex, $"failed to write message [message={message}]");
                 return ex.Message;
             }
+
+            _Metric.RecordCommandSent(command);
 
             return true;
         }
 
-        public async Task<Result<LobbyMessage, string>> WriteReply(string message, TimeSpan timeout, CancellationToken cancel) {
+        /// <summary>
+        ///     write a command with a message ID, and wait for a reply with that message ID.
+        ///     do not include the trailing \n
+        /// </summary>
+        /// <param name="command">command</param>
+        /// <param name="message"></param>
+        /// <param name="timeout"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<Result<LobbyMessage, string>> WriteReply(string command, string message, TimeSpan timeout, CancellationToken cancel) {
             int msgId = _MessageId++;
-            byte[] msg = Encoding.UTF8.GetBytes($"#{msgId} {message}\n");
-            try {
-                await _TcpSocket.GetStream().WriteAsync(msg, cancel);
-            } catch (Exception ex) {
-                _Logger.LogError(ex, "failed to write LOGIN command");
-                return ex.Message;
+            Result<bool, string> write = await Write(msgId, command, message, cancel);
+            if (write.IsOk == false) {
+                return write.Error;
             }
 
             DateTime timeoutEnd = DateTime.UtcNow + timeout;
+            _ExpectedMessages.Add(msgId);
 
             LobbyMessage? response = null;
             while (response == null) {
                 response = _PendingMessages.GetValueOrDefault(msgId);
 
                 if (response != null) {
+                    _ExpectedMessages.Remove(msgId);
                     break;
                 }
 
@@ -175,6 +277,11 @@ namespace gex.Services.Lobby.Implementations {
             return response;
         }
 
+        /// <summary>
+        ///     reader method that handles reading from the TCP socket
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="cancel"></param>
         private void ReadThread(TcpClient client, CancellationToken cancel) {
             _Logger.LogInformation($"client read thread started");
             NetworkStream stream = client.GetStream();
@@ -196,6 +303,8 @@ namespace gex.Services.Lobby.Implementations {
                     break;
                 }
 
+                _LastMessageReceived = DateTime.UtcNow;
+
                 int amt = stream.Read(buffer, 0, 1024);
                 message.AddRange(buffer.AsSpan()[..amt]);
 
@@ -209,14 +318,22 @@ namespace gex.Services.Lobby.Implementations {
                         break;
                     }
 
+                    _Metric.RecordCommandReceived(msg.Command);
+
                     //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
 
                     if (msg.MessageId != null) {
-                        if (_PendingMessages.ContainsKey(msg.MessageId.Value) == true) {
-                            _Logger.LogWarning($"colliding message ID response from server found [messageID={msg.MessageId}] [command={msg.Command}]");
+                        if (_ExpectedMessages.Contains(msg.MessageId.Value) == false) {
+                            _Logger.LogWarning($"unexpected message ID, queuing up [messageID={msg.MessageId}] [command={msg.Command}]");
+                            _LobbyMessageQueue.Queue(msg);
                         } else {
-                            _PendingMessages.Add(msg.MessageId.Value, msg);
-                            _Logger.LogTrace($"added message id response [messageID={msg.MessageId}] [command={msg.Command}]");
+                            _ExpectedMessages.Remove(msg.MessageId.Value);
+                            if (_PendingMessages.ContainsKey(msg.MessageId.Value) == true) {
+                                _Logger.LogWarning($"colliding message ID response from server found [messageID={msg.MessageId}] [command={msg.Command}]");
+                            } else {
+                                _PendingMessages.Add(msg.MessageId.Value, msg);
+                                _Logger.LogTrace($"added message id response [messageID={msg.MessageId}] [command={msg.Command}]");
+                            }
                         }
                     } else {
                         _LobbyMessageQueue.Queue(msg);
@@ -229,14 +346,25 @@ namespace gex.Services.Lobby.Implementations {
             }
         }
 
+        /// <summary>
+        ///     ping writer method that pings the spring lobby every 30 seconds so it knows Gex is still connected
+        /// </summary>
+        /// <param name="cancel"></param>
         private async void PingWriteThread(CancellationToken cancel) {
             _Logger.LogInformation($"ping write started");
 
             while (cancel.IsCancellationRequested == false) {
                 // delay at the start so PING is sent 30 seconds after login
-                await Task.Delay(TimeSpan.FromSeconds(30), cancel);
+                // 2025-08-11 FIXME: why is a try/catch needed here? if cancelled, visual studio throws an exception from here,
+                //      instead of it being caught in the Task that runs this method
+                try {
+                    await Task.Delay(TimeSpan.FromSeconds(30), cancel);
+                } catch (TaskCanceledException) {
+                    //_Logger.LogDebug($"delay in ping thread canceled");
+                    break;
+                }
 
-                Result<LobbyMessage, string> pong = await WriteReply("PING", TimeSpan.FromSeconds(5), cancel);
+                Result<LobbyMessage, string> pong = await WriteReply("PING", "", TimeSpan.FromSeconds(5), cancel);
                 if (pong.IsOk == false) {
                     _Logger.LogWarning($"error when pinging lobby: {pong.Error}");
                 } else {
@@ -253,11 +381,9 @@ namespace gex.Services.Lobby.Implementations {
             int i = 0;
 
             if (buffer[0] == '#') {
-                /*
-                _Logger.LogTrace($"parse started buffer=" +
-                    $"\n{string.Join("", buffer.Select(iter => (char)iter))}" +
-                    $"\n{string.Join(" ", buffer.Select(iter => iter))}");
-                */
+                //_Logger.LogTrace($"parse started buffer=" +
+                //    $"\n{string.Join("", buffer.Select(iter => (char)iter))}" +
+                //    $"\n{string.Join(" ", buffer.Select(iter => iter))}");
 
                 string msgId = "";
                 ++i; // skip the #

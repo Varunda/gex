@@ -94,12 +94,12 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             if (msg == "/help") {
-                await _LobbyClient.Write($"SAYPRIVATE {username} howdy! this is the Gex coordinator. "
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} howdy! this is the Gex coordinator. "
                     + $"eventually users will be able to ask Gex to watch a game for live analysis, but not yet!", cancel);
             } else if (msg == ":3") {
-                await _LobbyClient.Write($"SAYPRIVATE {username} :3", cancel);
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} :3", cancel);
             } else {
-                await _LobbyClient.Write($"SAYPRIVATE {username} howdy! Gex does not know what that means. try /help", cancel);
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} howdy! Gex does not know what that means. try /help", cancel);
             }
         }
 
@@ -389,6 +389,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         ///     handle a s.user.new_incoming_friend_request user_id
         /// </summary>
         /// <param name="entry"></param>
+        /// <param name="cancel"></param>
         private async Task HandleUserNewIncomingFriendRequest(LobbyMessage entry, CancellationToken cancel) {
             // s.user.new_incoming_friend_request user_id
 
@@ -420,7 +421,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             // there is no response for this command
-            Result<bool, string> response = await _LobbyClient.Write($"ACCEPTFRIENDREQUEST userName={username}", cancel);
+            Result<bool, string> response = await _LobbyClient.Write("ACCEPTFRIENDREQUEST", $"userName={username}", cancel);
 
             if (response.IsOk == false) {
                 _Logger.LogWarning($"failed to accept friend request to user, request failed [error={response.Error}] [user={userID}/{username}]");

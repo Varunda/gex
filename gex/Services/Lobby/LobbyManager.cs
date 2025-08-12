@@ -30,6 +30,21 @@ namespace gex.Services.Lobby {
             _Logger = logger;
         }
 
+        /// <summary>
+        ///     clear all state management. used when disconnecting from the lobby
+        /// </summary>
+        public void Clear() {
+            _Battles.Clear();
+            _Users.Clear();
+            _UsernameMapping.Clear();
+            _UserBattleMapping.Clear();
+        }
+
+        /// <summary>
+        ///     get a specific <see cref="LobbyBattle"/>
+        /// </summary>
+        /// <param name="battleID"></param>
+        /// <returns></returns>
         public LobbyBattle? GetBattle(int battleID) {
             lock (_Battles) {
                 _Battles.TryGetValue(battleID, out LobbyBattle? battle);
@@ -37,6 +52,10 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     get a newly allocated list of all <see cref="LobbyBattle"/>s
+        /// </summary>
+        /// <returns></returns>
         public List<LobbyBattle> GetBattles() {
             lock (_Battles) {
                 List<LobbyBattle> battles = new List<LobbyBattle>(_Battles.Values);
@@ -44,6 +63,10 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     add a new <see cref="LobbyBattle"/> that is being tracked
+        /// </summary>
+        /// <param name="battle"></param>
         public void AddBattle(LobbyBattle battle) {
             lock (_Battles) {
                 if (_Battles.TryGetValue(battle.BattleID, out LobbyBattle? existing) == true) {
@@ -54,6 +77,10 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     remove a <see cref="LobbyBattle"/>
+        /// </summary>
+        /// <param name="battleID"></param>
         public void RemoveBattle(int battleID) {
             lock (_Battles) {
                 if (_Battles.TryRemove(battleID, out LobbyBattle? battle) == false) {
@@ -68,6 +95,11 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     add a <see cref="LobbyUser"/> to a <see cref="LobbyBattle"/>
+        /// </summary>
+        /// <param name="battleID"></param>
+        /// <param name="username"></param>
         public void AddUserToBattle(int battleID, string username) {
             LobbyUser? user = GetUser(username);
             if (user == null) {
@@ -87,6 +119,11 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     remove a <see cref="LobbyUser"/> from a <see cref="LobbyBattle"/>
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="battleID"></param>
         public void RemoveUserFromBattle(string username, int battleID) {
             LobbyUser? user = GetUser(username);
             if (user == null) {
@@ -106,12 +143,22 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     update a <see cref="LobbyBattle"/> with new parameters
+        /// </summary>
+        /// <param name="battleID"></param>
+        /// <param name="battle"></param>
         public void UpdateBattle(int battleID, LobbyBattle battle) {
             lock (_Battles) {
                 _Battles.AddOrUpdate(battleID, battle, (key, value) => battle);
             }
         }
 
+        /// <summary>
+        ///     get a specific <see cref="LobbyUser"/>
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
         public LobbyUser? GetUser(string username) {
             if (_UsernameMapping.TryGetValue(username, out long userID) == false) {
                 return null;
@@ -119,6 +166,10 @@ namespace gex.Services.Lobby {
             return GetUser(userID);
         }
 
+        /// <summary>
+        ///     get all <see cref="LobbyUser"/>s. this allocates a new listj
+        /// </summary>
+        /// <returns></returns>
         public List<LobbyUser> GetUsers() {
             lock (_Users) {
                 List<LobbyUser> users = new List<LobbyUser>(_Users.Values);
@@ -126,11 +177,20 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     get a specific <see cref="LobbyUser"/>
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns></returns>
         public LobbyUser? GetUser(long userID) {
             _Users.TryGetValue(userID, out LobbyUser? user);
             return user;
         }
 
+        /// <summary>
+        ///     add a new <see cref="LobbyUser"/> being tracked
+        /// </summary>
+        /// <param name="user"></param>
         public void AddUser(LobbyUser user) {
             lock (_Users) {
                 if (_Users.ContainsKey(user.UserID) == true) {
@@ -143,6 +203,10 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     remove a <see cref="LobbyUser"/> as being tracked
+        /// </summary>
+        /// <param name="username"></param>
         public void RemoveUser(string username) {
             if (_UsernameMapping.TryGetValue(username, out long userID) == false) {
                 _Logger.LogWarning($"failed to get username to userID mapping for removing user [username={username}]");
@@ -163,6 +227,11 @@ namespace gex.Services.Lobby {
             }
         }
 
+        /// <summary>
+        ///     update the state of a <see cref="LobbyUser"/> based on name
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="user"></param>
         public void UpdateUserStatus(string username, LobbyUser user) {
             if (_UsernameMapping.TryGetValue(username, out long userID) == false) {
                 _Logger.LogWarning($"failed to get username to userID mapping for updating status [username={username}]");

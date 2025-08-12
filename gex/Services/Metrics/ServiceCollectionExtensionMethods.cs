@@ -8,6 +8,7 @@ namespace gex.Services.Metrics {
             // don't forget to add the meter name attribute in the metric service itself!
             services.AddSingleton<QueueMetric>();
             services.AddSingleton<BarApiMetric>();
+            services.AddSingleton<LobbyClientMetric>();
         }
 
     }

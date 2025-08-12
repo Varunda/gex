@@ -48,8 +48,7 @@ namespace gex.Services.Hosted.Startup {
 
         public Task StartAsync(CancellationToken cancellationToken) {
             return Task.Run(async () => {
-
-                ServiceHealthEntry? healthEntry = _HealthMonitor.Get("processing_queue_starter");
+                ServiceHealthEntry? healthEntry = _HealthMonitor.Get(SERVICE_NAME);
                 if (healthEntry != null && healthEntry.Enabled == false) {
                     _Logger.LogInformation($"service startup is disabled (likely in in env.json)");
                     return;
