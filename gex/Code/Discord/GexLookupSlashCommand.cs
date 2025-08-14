@@ -651,8 +651,9 @@ namespace gex.Code.Discord {
         /// <summary>
         ///     get match info about a specific match and turn it into an embed
         /// </summary>
-        /// <param name="match"></param>
-        /// <param name="cancel"></param>
+        /// <param name="match">match to generate the info for</param>
+        /// <param name="focusedUser">if given, will bold this user ID in the match data</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         private async Task<DiscordEmbedBuilder> _GetMatchInfo(BarMatch match, long? focusedUser, CancellationToken cancel) {
             DiscordEmbedBuilder embed = new();
@@ -662,7 +663,7 @@ namespace gex.Code.Discord {
             embed.Timestamp = match.StartTime;
             embed.Color = DiscordColor.Green;
 
-            embed.WithThumbnail($"https://api.bar-rts.com/maps/{match.MapName}/texture-lq.jpg");
+            embed.WithThumbnail($"https://api.bar-rts.com/maps/{match.MapName.Replace(" ", "%20")}/texture-lq.jpg");
 
             List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(match.ID, cancel);
             List<BarMatchAllyTeam> allyTeams = (await _AllyTeamDb.GetByGameID(match.ID, cancel))
