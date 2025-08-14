@@ -89,6 +89,10 @@ namespace gex.Code.ExtensionMethods {
             return token.GetValue<long?>(name) ?? throw new ArgumentNullException($"Failed to get required field with name of '{name}', from {token}");
         }
 
+        public static ulong GetRequiredUInt64(this JsonElement token, string name) {
+            return token.GetValue<ulong?>(name) ?? throw new ArgumentNullException($"Failed to get required field with name of '{name}', from {token}");
+        }
+
         public static string GetString(this JsonElement token, string name, string fallback) {
             return token.GetValue<string?>(name) ?? fallback;
         }

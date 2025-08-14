@@ -1,4 +1,5 @@
 ﻿using gex.Code;
+using gex.Code.Constants;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Internal;
@@ -104,7 +105,7 @@ namespace gex.Controllers {
                         if (biggestTeam == 1) {
                             ogDesc = $"{allyTeams.Count}-way FFA";
                         } else {
-                            ogDesc = $"{(biggestTeam >= 4 ? "Large team" : "Small team")}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
+                            ogDesc = $"{BarGamemode.GetName(match.Gamemode)}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
                         }
                     }
 

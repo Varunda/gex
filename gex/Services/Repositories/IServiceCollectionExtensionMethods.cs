@@ -20,6 +20,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<SkillHistogramRepository>();
             services.AddSingleton<BarMapPlayCountRepository>();
             services.AddSingleton<MapStatsStartSpotRepository>();
+            services.AddSingleton<TeiServerRepository>();
         }
 
     }

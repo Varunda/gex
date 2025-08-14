@@ -17,6 +17,7 @@ export class UnitStats {
     public staticKills: number = 0;
     public lost: number = 0;
     public reclaimed: number = 0;
+    public reclaims: number = 0;
 
     public damageDealt: number = 0;
     public damageTaken: number = 0;
@@ -37,7 +38,7 @@ export class UnitStats {
             lastFrameBeforeKilled.set(ev.teamID, ev.frame);
         }
 
-        const getUnitStats = function(defID: number, unitID: number, teamID: number): UnitStats {
+        const getUnitStats = function(defID: number, teamID: number): UnitStats {
             const key: string = `${teamID}-${defID}`;
             let stats: UnitStats | undefined = map.get(key);
             if (stats != undefined) {
@@ -59,6 +60,7 @@ export class UnitStats {
                 staticKills: 0,
                 lost: 0,
                 reclaimed: 0,
+                reclaims: 0,
 
                 damageDealt: 0,
                 damageTaken: 0,
@@ -78,7 +80,7 @@ export class UnitStats {
         }
 
         for (const ev of output.unitsCreated) {
-            const stats: UnitStats = getUnitStats(ev.definitionID, 0, ev.teamID);
+            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
             stats.produced += 1;
         }
 
@@ -88,7 +90,7 @@ export class UnitStats {
                 continue;
             }
 
-            const stats: UnitStats = getUnitStats(ev.definitionID, 0, ev.teamID);
+            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
             if (ev.teamID == ev.attackerTeam && ev.weaponDefinitionID == -12) {
                 stats.reclaimed += 1;
             } else {
@@ -96,24 +98,29 @@ export class UnitStats {
             }
 
             if (ev.attackerID != null && ev.attackerDefinitionID != null && ev.attackerTeam != null) {
-                const attacker: UnitStats = getUnitStats(ev.attackerDefinitionID, 0, ev.attackerTeam);
-                attacker.kills += 1;
+                const attacker: UnitStats = getUnitStats(ev.attackerDefinitionID, ev.attackerTeam);
 
-                const unitDef: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
-                if (unitDef != undefined) {
-                    attacker.metalKilled += unitDef.metalCost;
-                    attacker.energyKilled += unitDef.energyCost;
-                    attacker.buildPowerKilled += unitDef.buildPower;
-
-                    if (unitDef.speed == 0) {
-                        attacker.staticKills += 1;
-                    } else if (unitDef.speed > 0) {
-                        attacker.mobileKills += 1;
-                    } else {
-                        console.log(`UnitStatData> unitDef is not static mobile ${JSON.stringify(unitDef)}`);
-                    }
+                if (ev.weaponDefinitionID == -12) {
+                    attacker.reclaims += 1;
                 } else {
-                    console.log(`UnitStatData> missing unit def ${ev.definitionID}!`);
+                    attacker.kills += 1;
+
+                    const unitDef: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
+                    if (unitDef != undefined) {
+                        attacker.metalKilled += unitDef.metalCost;
+                        attacker.energyKilled += unitDef.energyCost;
+                        attacker.buildPowerKilled += unitDef.buildPower;
+
+                        if (unitDef.speed == 0) {
+                            attacker.staticKills += 1;
+                        } else if (unitDef.speed > 0) {
+                            attacker.mobileKills += 1;
+                        } else {
+                            console.log(`UnitStatData> unitDef is not static mobile ${JSON.stringify(unitDef)}`);
+                        }
+                    } else {
+                        console.log(`UnitStatData> missing unit def ${ev.definitionID}!`);
+                    }
                 }
             }
         }
@@ -124,7 +131,7 @@ export class UnitStats {
                 continue;
             }
 
-            const stats: UnitStats = getUnitStats(ev.definitionID, 0, ev.teamID);
+            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
 
             stats.damageDealt += ev.damageDealt;
             stats.damageTaken += ev.damageTaken;

@@ -35,47 +35,36 @@
                 Faction
             </h4>
 
-            <div class="d-flex flex-wrap justify-content-around mb-3" style="gap: 0.5rem;">
+            <div v-for="faction in groupedFactionData" :key="faction.gamemode">
+                <h4 class="ms-2 d-inline">
+                    <strong>
+                        {{ faction.gamemode | gamemode }}
+                    </strong>
+                </h4>
 
-                <div v-for="faction in user.factionStats" :key="faction.faction + '-' + faction.gamemode" class="hoverable text-center p-3 rounded">
+                <h6 class="d-inline">
+                    - {{ faction.sum.winCount / faction.sum.playCount * 100 | locale(0) }}% win rate over {{ faction.sum.playCount }} games
+                </h6>
 
-                    <h5 class="border-bottom py-1">
-                        <img v-if="faction.faction == 1" src="/img/armada.png" width="24" title="icon for armada">
-                        <img v-else-if="faction.faction == 2" src="/img/cortex.png" width="24" title="icon for cortex">
-                        <img v-else-if="faction.faction == 3" src="/img/legion.png" width="24" title="icon for legion">
-                        <img v-else-if="faction.faction == 4" src="/img/random.png" width="24" title="icon for random">
-                        <span v-else>
-                            unchecked faction {{ faction.faction }}
-                        </span>
-
-                        {{ faction.faction | faction }}
-                    </h5>
-
-                    <div class="text-small fs-6">
-                        (For {{ faction.gamemode | gamemode }})
-                    </div>
-
-                    <div>
-                        {{ faction.playCount }} plays - {{ faction.playCount / Math.max(1, totalPlays) * 100 | locale(0) }}%
-                    </div>
-
-                    <div>
-                        <span style="color: var(--bs-green)">
-                            {{ faction.winCount }}
-                        </span>
-                        /
-                        <span style="color: var(--bs-red)">
-                            {{ faction.lossCount }}
-                        </span>
-
-                        <span>
-                            - {{ faction.winCount / Math.max(1, faction.playCount) * 100 | locale(0) }}%
-                        </span>
-                    </div>
-                </div>
-
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Faction</th>
+                            <th>Play count</th>
+                            <th>Win count</th>
+                            <th>Win rate</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody>
+                        <tr is="FactionStatsRow" :data="faction.sum" :faction="0"></tr>
+                        <tr v-if="faction.armada" is="FactionStatsRow" :data="faction.armada" :faction="1"></tr>
+                        <tr v-if="faction.cortex" is="FactionStatsRow" :data="faction.cortex" :faction="2"></tr>
+                        <tr v-if="faction.legion" is="FactionStatsRow" :data="faction.legion" :faction="3"></tr>
+                        <tr v-if="faction.random" is="FactionStatsRow" :data="faction.random" :faction="4"></tr>
+                    </tbody>
+                </table>
             </div>
-
         </div>
 
         <div v-if="user.previousNames.length > 1" class="mb-3">
@@ -251,6 +240,58 @@
     import "filters/BarFactionFilter";
     import "filters/BarGamemodeFilter";
 
+    import { FactionUtil } from "util/Faction";
+
+    const FactionStatsRow = Vue.extend({
+        props: {
+            faction: { type: Number, required: true },
+            data: { type: Object as PropType<GroupedFaction>, required: false }
+        },
+
+        template: `
+            <tr>
+                <td>
+                    <span v-if="faction == 0">Total</span>
+                    <img v-else-if="faction == 1" src="/img/armada.png" width="24" title="icon for armada">
+                    <img v-else-if="faction == 2" src="/img/cortex.png" width="24" title="icon for cortex">
+                    <img v-else-if="faction == 3" src="/img/legion.png" width="24" title="icon for legion">
+                    <img v-else-if="faction == 4" src="/img/random.png" width="24" title="icon for random">
+                    <span v-else>
+                        unchecked faction {{ faction }}
+                    </span>
+                    <span v-if="faction != 0">
+                        {{ faction | faction }}
+                    </span>
+                </td>
+                <template v-if="data == null">
+                    <td class="text-muted">--</td>
+                    <td class="text-muted">--</td>
+                    <td class="text-muted">--</td>
+                </template>
+                <template v-else>
+                    <td>{{ data.playCount | locale(0) }}</td>
+                    <td>{{ data.winCount | locale(0) }}
+                    <td>{{ data.winCount / data.playCount * 100 | locale(0) }}%</td>
+                </template>
+            </tr>
+        `
+    });
+
+    type GroupedFaction = {
+        faction: number;
+        playCount: number;
+        winCount: number;
+    }
+
+    type GroupedFactionGamemode = {
+        gamemode: number;
+        armada: GroupedFaction | null;
+        cortex: GroupedFaction | null;
+        legion: GroupedFaction | null;
+        random: GroupedFaction | null;
+        sum: GroupedFaction;
+    }
+
     export const UserInfo = Vue.extend({
         props: {
             user: { type: Object as PropType<BarUser>, required: true }
@@ -332,13 +373,48 @@
                 }
 
                 return this.startSpot.data.data.map(iter => iter.gamemode).filter((val, index, arr) => arr.indexOf(val) == index);
+            },
+
+            groupedFactionData: function(): GroupedFactionGamemode[] {
+
+                const map: Map<number, GroupedFaction[]> = new Map();
+
+                for (const faction of this.user.factionStats) {
+                    const factionData: GroupedFaction[] = (map.get(faction.gamemode) ?? [])
+                    factionData.push({
+                        faction: faction.faction,
+                        playCount: faction.playCount,
+                        winCount: faction.winCount
+                    });
+
+                    map.set(faction.gamemode, factionData);
+                }
+
+                return Array.from(map.entries()).map(iter => {
+                    const sum: GroupedFaction = {
+                        faction: 0,
+                        playCount: iter[1].reduce((acc, iter) => acc += iter.playCount, 0),
+                        winCount: iter[1].reduce((acc, iter) => acc += iter.winCount, 0),
+                    }
+
+                    return {
+                        gamemode: iter[0],
+                        armada: iter[1].find(iter => iter.faction == FactionUtil.ARMADA) ?? null,
+                        cortex: iter[1].find(iter => iter.faction == FactionUtil.CORTEX) ?? null,
+                        legion: iter[1].find(iter => iter.faction == FactionUtil.LEGION) ?? null,
+                        random: iter[1].find(iter => iter.faction == FactionUtil.RANDOM) ?? null,
+                        sum: sum
+                    }
+                }).sort((a, b) => {
+                    return b.sum.playCount - a.sum.playCount;
+                });
             }
         },
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             InfoHover, Busy,
-            StartSpotMap
+            StartSpotMap, FactionStatsRow
         }
     });
     export default UserInfo;

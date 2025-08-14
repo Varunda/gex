@@ -14,6 +14,8 @@ namespace gex.Models.Db {
 
         public ulong CreatedByID { get; set; }
 
+        public int TimeBetweenAlertsSeconds { get; set; }
+
         public DateTime Timestamp { get; set; }
 
         public int? MinimumOS { get; set; }
@@ -27,7 +29,6 @@ namespace gex.Models.Db {
         public int? MinimumPlayerCount { get; set; }
 
         public int? MaximumPlayerCount { get; set; }
-
 
 
 

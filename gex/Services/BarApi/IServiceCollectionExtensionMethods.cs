@@ -12,6 +12,7 @@ namespace gex.Services.BarApi {
             services.AddSingleton<BarHeadlessInstance>();
             services.AddSingleton<ActionLogParser>();
             services.AddSingleton<BarMapApi>();
+            services.AddSingleton<TeiServerApi>();
         }
 
     }

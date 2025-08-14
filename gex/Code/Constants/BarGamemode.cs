@@ -29,6 +29,17 @@ namespace gex.Code.Constants {
             };
         }
 
+        public static byte GetID(string name) {
+            return name.ToLower() switch {
+                "duel" => DUEL,
+                "small team" => SMALL_TEAM,
+                "large team" => LARGE_TEAM,
+                "ffa" => FFA,
+                "team ffa" => TEAM_FFA,
+                _ => DEFAULT
+            };
+        }
+
         public static readonly IEnumerable<byte> List = [
             DUEL, SMALL_TEAM, LARGE_TEAM, FFA, TEAM_FFA
         ];

@@ -1,4 +1,5 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using gex.Code.Constants;
 using gex.Code.ExtensionMethods;
@@ -34,8 +35,8 @@ namespace gex.Code.Discord {
         public ILogger<GexLookupSlashCommand> _Logger { set; private get; } = default!;
         public IOptions<DiscordOptions> _DiscordOptions { set; private get; } = default!;
 
-        public InstanceInfo _Instance { set; private get; } = default!;
-        public BarUserDb _UserDb { set; private get; } = default!;
+        public InstanceInfo _Instance { set; internal get; } = default!;
+        public BarUserDb _UserDb { set; internal get; } = default!;
         public BarUserSkillDb _SkillDb { set; private get; } = default!;
         public BarUserMapStatsDb _MapStatsDb { set; private get; } = default!;
         public BarUserFactionStatsDb _FactionStatsDb { set; private get; } = default!;
@@ -430,6 +431,12 @@ namespace gex.Code.Discord {
             await ctx.EditResponseAsync(builder);
         }
 
+        /// <summary>
+        ///     unsubscribe command
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="player"></param>
+        /// <returns></returns>
         [SlashCommand("unsubscribe", "Remove a subscription to a player")]
         public async Task Unsubscribe(InteractionContext ctx,
             [Option("player", "Player to unsubscribe to match processed notifications to")] string player) {
@@ -490,6 +497,26 @@ namespace gex.Code.Discord {
             builder.AddEmbed(embed);
             await ctx.EditResponseAsync(builder);
         }
+
+        /*
+        [SlashCommand("alert", "Create a new alert about a lobby being open")]
+        [SlashCommandPermissions(Permissions.ManageChannels | Permissions.ManageGuild | Permissions.Administrator)]
+        public async Task CreateAlert(InteractionContext ctx,
+            [Choice("5 minutes", 300)]
+            [Choice("10 minutes", 600)]
+            [Choice("15 minutes", 900)]
+            [Choice("30 minutes", 1800)]
+            [Choice("1 hour", 3600)]
+            [Option("alert cooldown", "How long to wait between alerts being sent")] int cooldownMinutes,
+
+            [Option("role", "what role will get pinged about lobbies that meet the conditions")] DiscordRole role,
+            [Option("minimum os", "Minimum OS of all players in the lobby")] int? minimumOs
+        ) {
+
+
+
+        }
+        */
 
         /// <summary>
         ///     used to generate play stats for player lookups
@@ -642,6 +669,7 @@ namespace gex.Code.Discord {
                 .OrderBy(iter => iter.AllyTeamID).ToList();
 
             embed.Description += $"**Map**: {match.Map}\n";
+            embed.Description += $"**Start time**: {match.StartTime.GetDiscordFullTimestamp()}\n";
             embed.Description += $"**Duration**: {TimeSpan.FromMilliseconds(match.DurationMs).GetRelativeFormat()}\n";
             embed.Description += $"**Gamemode**: {BarGamemode.GetName(match.Gamemode)}\n";
             embed.Description += $"**Player count**: {match.PlayerCount}\n";
