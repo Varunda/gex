@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,6 +52,11 @@ namespace gex.Services.Lobby.Implementations {
         /// </summary>
         private DateTime _LastMessageReceived = DateTime.MinValue;
 
+        /// <summary>
+        ///     indicates if the client is connected or not
+        /// </summary>
+        private bool _LoggedIn = false;
+
         private CancellationTokenSource _Cancel = new();
         private Task? _ReadTask;
         private Task? _PingTask;
@@ -59,6 +65,27 @@ namespace gex.Services.Lobby.Implementations {
         ///     disconnecting is done with a semaphore to prevent the socket from getting into a bad state
         /// </summary>
         private readonly SemaphoreSlim _Signal = new(1, 1);
+
+        /// <summary>
+        ///     signal to ensure only 1 $whois command is being processed at a time
+        /// </summary>
+        private readonly SemaphoreSlim _WhoisSignal = new(1, 1);
+
+        /// <summary>
+        ///     signal to indicate a $whois response is ready to be read
+        /// </summary>
+        private readonly SemaphoreSlim _WhoisReady = new(0, 1);
+
+        /// <summary>
+        ///     is the client expecting to see multiple messages that indicate a DM From "Coordinator" that
+        ///     contains the $whois response
+        /// </summary>
+        private bool _ExpectedWhoisResponse = false;
+
+        /// <summary>
+        ///     list of messages that are building a $whois response
+        /// </summary>
+        private List<LobbyMessage> _PendingWhoisResponse = [];
 
         public LobbyClient(ILogger<LobbyClient> logger,
             IOptions<SpringLobbyOptions> options, BaseQueue<LobbyMessage> lobbyMessageQueue,
@@ -93,6 +120,10 @@ namespace gex.Services.Lobby.Implementations {
             bool connected = _TcpSocket.Connected;
             _Signal.Release();
             return connected;
+        }
+
+        public bool IsLoggedIn() {
+            return IsConnected() && _LoggedIn;
         }
 
         public DateTime LastMessage() => _LastMessageReceived;
@@ -147,16 +178,27 @@ namespace gex.Services.Lobby.Implementations {
             return true;
         }
 
+        public async Task<Result<bool, string>> Exit(CancellationToken cancel) {
+            _LoggedIn = false;
+
+            if (_TcpSocket.Connected == false) {
+                return true;
+            }
+
+            await Write("EXIT", "", cancel);
+
+            return await Disconnect(cancel);
+        }
+
         public async Task<Result<bool, string>> Disconnect(CancellationToken cancel) {
+            _LoggedIn = false;
+
             if (_TcpSocket.Connected == false) {
                 return true;
             }
 
             _Signal.Wait(cancel);
-
             try {
-                await Write("EXIT", "", cancel);
-
                 _Cancel.Cancel();
                 if (_ReadTask != null) {
                     await _ReadTask.WaitAsync(cancel);
@@ -226,6 +268,11 @@ namespace gex.Services.Lobby.Implementations {
             } catch (Exception ex) {
                 _Metric.RecordWriteError(command);
                 _Logger.LogError(ex, $"failed to write message [message={message}]");
+
+                if (ex.Message == "Unable to write data to the transport connection: An established connection was aborted by the software in your host machine.") {
+                    _TcpSocket.Close();
+                }
+
                 return ex.Message;
             }
 
@@ -277,6 +324,134 @@ namespace gex.Services.Lobby.Implementations {
             return response;
         }
 
+        public async Task<Result<LobbyWhoisResponse, string>> Whois(string username, CancellationToken cancel) {
+            _Logger.LogTrace($"starting whois [username={username}]");
+            await _WhoisSignal.WaitAsync(cancel);
+            _Logger.LogTrace($"entered whois [username={username}]");
+
+            _ExpectedWhoisResponse = true;
+
+            try {
+                Result<bool, string> response = await Write("SAYPRIVATE", $"Coordinator $whois {username}", cancel);
+
+                await _WhoisReady.WaitAsync(cancel);
+                if (_PendingWhoisResponse.Count == 0) {
+                    _Logger.LogInformation($"failed to find whois user [username={username}]");
+                    return $"Coordinator did not have user [username={username}]";
+                }
+
+                List<LobbyMessage> responses = new(_PendingWhoisResponse);
+
+                _Logger.LogTrace($"got responses for $whois [username='{username}'] [count={responses.Count}] [pending count={_PendingWhoisResponse.Count}]");
+
+                // 
+                // example response
+                // 
+                // Found BobAlice
+                // Previous names: AliceBob
+                // Profile link: https://server4.beyondallreason.info/profile/1234
+                // Chevron level: 3
+                // Ratings:
+                // Duel > Game: 12.34, Leaderboard: 15.78
+                // FFA > Game: 14.2, Leaderboard: 0.0
+                // Large Team > Game: 28.25, Leaderboard: 13.9
+                // Small Team > Game: 12.35, Leaderboard: 3.15
+                // No moderation restrictions applied.
+                // 
+                LobbyWhoisResponse whois = new();
+                for (int i = 0; i < responses.Count; ++i) {
+                    LobbyMessage msg = responses[i];
+
+                    string? msgUsername = msg.GetWord();
+                    string? msgContent = msg.GetSentence();
+
+                    if (msgUsername == null || msgContent == null) {
+                        _Logger.LogWarning($"missing msgUsername or msgContent [msgUsername={msgUsername}] [msgContent={msgContent}] [username={username}]");
+                        continue;
+                    }
+
+                    if (i == 0) {
+                        if (msgContent.StartsWith("Found")) {
+                            whois.Username = msgContent.Replace("Found", "").Trim();
+                        }
+                    } else if (i == 1) {
+                        if (msgContent.StartsWith("Previous name: ")) {
+                            whois.PreviousNames = [..msgContent["Previous names: ".Length..].Split(", ")];
+                        }
+                    } else if (i == 2) {
+                        if (msgContent.StartsWith("Profile link: ")) {
+                            Regex reg = new(@"Profile link: https+://.*?/profile/(\d+)");
+                            Match match = reg.Match(msgContent);
+                            if (match.Success == false) {
+                                _Logger.LogWarning($"failed to match profile link regex [msgContent={msgContent}] [username={username}]");
+                            } else {
+                                string userID = match.Groups[1].Value;
+                                if (long.TryParse(userID, out long uID) == false) {
+                                    _Logger.LogWarning($"failed to parse profile ID to a valid int64 [userID={userID}] [username={username}]");
+                                } else {
+                                    whois.UserID = uID;
+                                }
+                            }
+                        }
+                    } else if (i == 3) {
+                        if (msgContent.StartsWith("Chevron level: ")) {
+                            string chevron = msgContent["Chevron level: ".Length..].Trim();
+                            if (int.TryParse(chevron, out int chev) == false) {
+                                _Logger.LogWarning($"failed to parse chevron for user [chevron={chevron}] [username={username}]");
+                            } else {
+                                whois.Chevron = chev;
+                            }
+                        }
+                    } else if (i == 4) {
+                        if (msgContent == "Ratings:") {
+
+                        }
+                    } else if (msgContent.StartsWith("No moderation")) {
+                        continue;
+                    } else if (i > 4) {
+                        string[] parts = msgContent.Split(">");
+                        if (parts.Length != 2) {
+                            _Logger.LogWarning($"unexpected number of parts, wanted 2 [parts.Length={parts.Length}] [username={username}]");
+                        } else {
+                            string gamemode = parts[0].Trim();
+                            string ratings = parts[1].Trim();
+
+                            Regex reg = new(@"Game: (\d{1,2}\.\d{1,2}), Leaderboard: (\d{1,2}\.\d{1,2})");
+                            Match match = reg.Match(ratings);
+                            if (match.Success == false) {
+                                _Logger.LogWarning($"failed to match ratings to regex for parsing [ratings='{ratings}'] [username={username}]");
+                            } else {
+                                WhoisRating rating = new();
+                                rating.Gamemode = gamemode;
+                                if (float.TryParse(match.Groups[1].Value, out float gameRating) == false) {
+                                    _Logger.LogWarning($"failed to convert game rating into a valid float [value={match.Groups[0].Value}] [username={username}]");
+                                } else {
+                                    rating.Rating = gameRating;
+                                }
+
+                                if (float.TryParse(match.Groups[2].Value, out float lbRating) == false) {
+                                    _Logger.LogWarning($"failed to convert leaderboard rating into a valid float [value={match.Groups[1].Value}] [username={username}]");
+                                } else {
+                                    rating.Leaderboard = lbRating;
+                                }
+
+                                whois.Ratings[gamemode] = rating;
+                            }
+                        }
+                    }
+                }
+
+                return whois;
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to perform whois [username={username}]");
+                return ex.Message;
+            } finally {
+                _PendingWhoisResponse.Clear();
+                _ExpectedWhoisResponse = false;
+                _WhoisSignal.Release();
+            }
+        }
+
         /// <summary>
         ///     reader method that handles reading from the TCP socket
         /// </summary>
@@ -322,7 +497,23 @@ namespace gex.Services.Lobby.Implementations {
 
                     //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
 
-                    if (msg.MessageId != null) {
+                    if (_ExpectedWhoisResponse == true && msg.Command == "SAIDPRIVATE" && msg.Arguments.StartsWith("Coordinator")) {
+                        _Logger.LogTrace($"got part of message DM [message={msg.Arguments}]");
+
+                        // Coordinator Unable to find a user with that name
+                        // Coordinator Unable to find a user with that name
+                        if (msg.Arguments == "Coordinator Unable to find a user with that name") {
+                            _Logger.LogDebug($"finished getting $whois response");
+                            _WhoisReady.Release();
+                        } else if (msg.Arguments == "Coordinator ---------------------------") {
+                            if (_PendingWhoisResponse.Count > 0) {
+                                _Logger.LogDebug($"finished getting $whois response");
+                                _WhoisReady.Release();
+                            }
+                        } else {
+                            _PendingWhoisResponse.Add(msg);
+                        }
+                    } else if (msg.MessageId != null) {
                         if (_ExpectedMessages.Contains(msg.MessageId.Value) == false) {
                             _Logger.LogWarning($"unexpected message ID, queuing up [messageID={msg.MessageId}] [command={msg.Command}]");
                             _LobbyMessageQueue.Queue(msg);
@@ -335,6 +526,8 @@ namespace gex.Services.Lobby.Implementations {
                                 _Logger.LogTrace($"added message id response [messageID={msg.MessageId}] [command={msg.Command}]");
                             }
                         }
+                    } else if (msg.Command == "LOGININFOEND") {
+                        _LoggedIn = true;
                     } else {
                         _LobbyMessageQueue.Queue(msg);
                     }

@@ -114,7 +114,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
         }
 
         public async Task StopAsync(CancellationToken cancel) {
-            Result<bool, string> disconnect = await _LobbyClient.Disconnect(cancel);
+            Result<bool, string> disconnect = await _LobbyClient.Exit(cancel);
 
             if (disconnect.IsOk == false) {
                 _Logger.LogWarning($"failed to disconnect from lobby [error={disconnect.Error}]");

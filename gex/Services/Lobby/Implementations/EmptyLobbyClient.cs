@@ -15,6 +15,10 @@ namespace gex.Services.Lobby.Implementations {
             return Task.FromResult(Result<bool, string>.Err("Lobby not enabled"));
         }
 
+        public Task<Result<bool, string>> Exit(CancellationToken cancel) {
+            return Task.FromResult(Result<bool, string>.Err("Lobby not enabled"));
+        }
+
         public Task<Result<bool, string>> Disconnect(CancellationToken cancel) {
             return Task.FromResult(Result<bool, string>.Err("Lobby not enabled"));
         }
@@ -35,8 +39,16 @@ namespace gex.Services.Lobby.Implementations {
             return false;
         }
 
+        public bool IsLoggedIn() {
+            return false;
+        }
+
         public DateTime LastMessage() {
             return DateTime.MinValue;
+        }
+
+        public Task<Result<LobbyWhoisResponse, string>> Whois(string username, CancellationToken cancel) {
+            return Task.FromResult(Result<LobbyWhoisResponse, string>.Err("Lobby not enabled"));
         }
 
     }

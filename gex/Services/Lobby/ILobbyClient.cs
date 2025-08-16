@@ -17,6 +17,13 @@ namespace gex.Services.Lobby {
         Task<Result<bool, string>> Connect(CancellationToken cancel);
 
         /// <summary>
+        ///     send the EXIT command to the lobby and disconnect the TCP socket
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        Task<Result<bool, string>> Exit(CancellationToken cancel);
+
+        /// <summary>
         ///     disconnect from the TCP socket to the lobby
         /// </summary>
         /// <param name="cancel"></param>
@@ -54,10 +61,18 @@ namespace gex.Services.Lobby {
         bool IsConnected();
 
         /// <summary>
+        ///     is the client both connected and logged in
+        /// </summary>
+        /// <returns></returns>
+        bool IsLoggedIn();
+
+        /// <summary>
         ///     when was the last message received by the client
         /// </summary>
         /// <returns></returns>
         DateTime LastMessage();
+
+        Task<Result<LobbyWhoisResponse, string>> Whois(string username, CancellationToken cancel);
 
     }
 }

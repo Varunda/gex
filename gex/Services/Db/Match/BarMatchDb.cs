@@ -296,6 +296,25 @@ namespace gex.Services.Db.Match {
         }
 
         /// <summary>
+        ///     get the oldest <see cref="BarMatch"/> in the DB, or <c>null</c> if no matches are in the DB
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match ORDER BY start_time DESC LIMIT 1;
+            ");
+
+            await cmd.PrepareAsync(cancel);
+
+            BarMatch? match = await _Reader.ReadSingle(cmd, cancel);
+            await conn.CloseAsync();
+
+            return match;
+        }
+
+        /// <summary>
         ///		get all unique engine versions stored in the DB
         /// </summary>
         /// <param name="cancel">cancellation token</param>

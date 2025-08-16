@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -89,6 +90,34 @@ namespace gex.Code.Commands {
 
             _Logger.LogInformation($"found user [username={user.Username}] [userID={user.UserID}] [version={user.Version}] "
                 + $"[accessStatus={user.AccessStatus}] [away={user.Away}] [in game={user.InGame}] [is bot={user.IsBot}] [rank={user.Rank}]");
+        }
+
+        public async Task Whois(string username) {
+            _Logger.LogInformation($"running $whois [username={username}]");
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            Result<LobbyWhoisResponse, string> res = await _LobbyClient.Whois(username, cts.Token);
+            if (res.IsOk == true) {
+                _Logger.LogDebug($"{JsonSerializer.Serialize(res.Value)}");
+            }
+        }
+
+        public async Task GetDisconnected() {
+            _Logger.LogInformation($"intentionally tripping flood protection");
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(120));
+            int batchSize = 2;
+
+            //Task[] tasks = new Task[batchSize];
+            for (int i = 0; i < batchSize; ++i) {
+                Result<LobbyWhoisResponse, string> res = await _LobbyClient.Whois("[Blahaj]varunda", cts.Token);
+                if (res.IsOk == true) {
+                    _Logger.LogDebug($"{JsonSerializer.Serialize(res.Value)}");
+                }
+            }
+
+            //await Task.WhenAll(tasks);
+
+            _Logger.LogInformation($"done?");
         }
 
     }

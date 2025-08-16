@@ -526,7 +526,9 @@ namespace gex.Code.Discord {
         /// <returns></returns>
         private async Task<DiscordEmbedBuilder> _GetUserInfo(UserSearchResult user, CancellationToken cancel) {
             DiscordEmbedBuilder embed = new();
-            embed.Description = "";
+
+            string oldestMatch = $"{(await _MatchRepository.GetOldestMatch(cancel))?.StartTime.GetDiscordTimestamp("D") ?? "no matches in DB??"}";
+            embed.Description = $"-# Only includes public PvP games since {oldestMatch}\n\n";
             embed.Title = $"Player lookup: `{user.Username}`";
             embed.Url = $"https://{_Instance.GetHost()}/user/{user.UserID}";
             embed.Color = DiscordColor.Green;
@@ -735,7 +737,7 @@ namespace gex.Code.Discord {
                     if (biggestTeam == 1) {
                         title = $"{allyTeams.Count}-way FFA";
                     } else {
-                        title = $"{(biggestTeam >= 4 ? "Large team" : "Small team")}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
+                        title = $"{BarGamemode.GetName(match.Gamemode)}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
                     }
                 }
             }

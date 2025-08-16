@@ -15,7 +15,8 @@ namespace gex.Services.Repositories {
         private readonly BarMatchDb _MatchDb;
 
         private readonly IMemoryCache _Cache;
-        private const string CACHE_KEY_ID = "Gex.Match.{0}"; // {0} => game ID
+        private const string CACHE_KEY_ID = "Gex.Match.ID.{0}"; // {0} => game ID
+        private const string CACHE_KEY_OLDEST = "Gex.Match.Oldest";
         private const string CACHE_KEY_UNIQUE_ENGINES = "Gex.Match.Unique.Engines";
         private const string CACHE_KEY_UNIQUE_GAME_VERSIONS = "Gex.Match.Unique.GameVersions";
         private const string CACHE_KEY_GAMES_BY_USER = "Gex.Match.User.{0}"; // {0} => user ID
@@ -66,6 +67,19 @@ namespace gex.Services.Repositories {
             }
 
             return matches;
+        }
+
+        public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
+            if (_Cache.TryGetValue(CACHE_KEY_OLDEST, out BarMatch? oldest) == false) {
+                oldest = await _MatchDb.GetOldestMatch(cancel);
+
+                // cache for a day if found, otherwise just 10 seconds
+                _Cache.Set(CACHE_KEY_OLDEST, oldest, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = oldest == null ? TimeSpan.FromSeconds(10) : TimeSpan.FromDays(1)
+                });
+            }
+
+            return oldest;
         }
 
         public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {

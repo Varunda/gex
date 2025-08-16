@@ -6,6 +6,7 @@ using gex.Services.Lobby;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,15 +19,45 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarUserDb _UserDb;
         private readonly ILobbyClient _LobbyClient;
 
+        private readonly Dictionary<string, int> _DmVelocity = [];
+
+        private Timer? _VelocityDecreaseTimer = null;
+
         public LobbyMessageQueueProcessor(ILoggerFactory factory,
             BaseQueue<LobbyMessage> queue, ServiceHealthMonitor serviceHealthMonitor,
             LobbyManager lobbyManager, ILobbyClient lobbyClient,
             BarUserDb userDb)
         : base("lobby_message_queue", factory, queue, serviceHealthMonitor) {
 
+
             _LobbyManager = lobbyManager;
             _LobbyClient = lobbyClient;
             _UserDb = userDb;
+        }
+
+        public override Task StartAsync(CancellationToken cancellationToken) {
+            _VelocityDecreaseTimer = new Timer((object? _) => {
+
+                HashSet<string> toRemove = [];
+                foreach (KeyValuePair<string, int> entry in _DmVelocity) {
+                    if ((entry.Value - 1) > 0) {
+                        _DmVelocity[entry.Key] = entry.Value - 1;
+                    } else {
+                        toRemove.Add(entry.Key);
+                    }
+                }
+
+                foreach (string rem in toRemove) {
+                    _DmVelocity.Remove(rem);
+                }
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+
+            return base.StartAsync(cancellationToken);
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken) {
+            _VelocityDecreaseTimer?.Dispose();
+            return base.StopAsync(cancellationToken);
         }
 
         protected override async Task<bool> _ProcessQueueEntry(LobbyMessage entry, CancellationToken cancel) {
@@ -42,6 +73,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 // yep, that PM was sure sent :)
             } else if (entry.Command == "s.system.disconnect") {
                 _Logger.LogWarning($"lobby disconnected from us! [reason={entry.Arguments}]");
+                await _LobbyClient.Disconnect(cancel);
             } else if (entry.Command == "s.battle.update_lobby_title") {
                 HandleBattleUpdateLobbyTitle(entry);
             } else if (entry.Command == "s.user.new_incoming_friend_request") {
@@ -90,6 +122,21 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             if (username == null || msg == null) {
                 _Logger.LogWarning($"failed to get arguments for SAIDPRIVATE [username={username}] [msg={msg}]");
+                return;
+            }
+
+            int velocity = _DmVelocity.GetValueOrDefault(username, 0);
+            if (velocity >= 5) {
+                _Logger.LogInformation($"ignoring DM from user due to velocity check [username={username}] [msg={msg}]");
+                return;
+            }
+
+            _DmVelocity[username] = velocity + 1;
+
+            _Logger.LogDebug($"got DM from user [username={username}] [msg={msg}]");
+
+            // do not reply to Coordinator
+            if (username == "Coordinator") {
                 return;
             }
 

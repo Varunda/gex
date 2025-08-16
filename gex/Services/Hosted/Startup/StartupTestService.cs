@@ -24,9 +24,18 @@ namespace gex.Services.Hosted.Startup {
         }
 
         protected override Task ExecuteAsync(CancellationToken cancel) {
-            return Task.Run(async () => {
+            Task.Run(async () => {
+                _Logger.LogInformation($"waiting for client to be logged in");
+                while (_LobbyClient.IsLoggedIn() == false) {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
+
+                _Logger.LogInformation($"client is now connected");
+
                 await Task.Delay(TimeSpan.FromMilliseconds(1));
             }, cancel);
+
+            return Task.CompletedTask;
         }
 
     }
