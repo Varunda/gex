@@ -303,7 +303,7 @@ namespace gex.Services.Db.Match {
         public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
-                SELECT * FROM bar_match ORDER BY start_time DESC LIMIT 1;
+                SELECT * FROM bar_match ORDER BY start_time ASC LIMIT 1;
             ");
 
             await cmd.PrepareAsync(cancel);
