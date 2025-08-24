@@ -1,17 +1,81 @@
 
 <template>
     <div>
-        <h2>
-            {{ user.username }}
-        </h2>
+        <div class="mb-4">
+            <h1 class="text-center border-bottom pb-2 mb-4">
+                {{ user.username }}
+            </h1>
 
-        <h4>
-            <a :href="'https://www.bar-stats.pro/playerstats?playerName=' + user.username" target="_blank" ref="nofollow">BarStats link</a>
-        </h4>
+            <div class="d-flex mb-3 flex-wrap" style="gap: 1rem;">
+                <div class="flex-grow-1 text-center">
+                    <h2 class="border-bottom d-inline-block px-3">
+                        Favorite faction
+                    </h2>
 
-        <div class="mb-3">
+                    <h4 class="mb-1">
+                        <faction-icon :faction="mostPlayedFaction.faction" :width="48"></faction-icon>
+                        {{ mostPlayedFaction.faction | faction }}
+                    </h4>
+
+                    <h5>
+                        {{ mostPlayedFaction.winCount / mostPlayedFaction.playCount * 100 | locale(0) }}% won of 
+                        {{ mostPlayedFaction.playCount | locale(0) }} played
+                    </h5>
+                </div>
+
+                <div class="flex-grow-1 text-center">
+                    <h2 class="border-bottom d-inline-block px-3">
+                        Favorite gamemode
+                    </h2>
+
+                    <h4 class="mb-1">
+                        {{ mostPlayedGamemode.gamemode | gamemode }}
+                    </h4>
+
+                    <h5>
+                        {{ mostPlayedGamemode.sum.winCount / mostPlayedGamemode.sum.playCount * 100 | locale(0) }}% won of 
+                        {{ mostPlayedGamemode.sum.playCount | locale(0) }} played
+                    </h5>
+                </div>
+
+                <div class="flex-grow-1 text-center">
+                    <h2 class="border-bottom d-inline-block px-3">
+                        Favorite maps
+                    </h2>
+
+                    <div class="d-lg-none">
+                        <div v-for="map in mostPlayedMaps" :key="map.map" class="mb-2">
+                            <b>{{ map.map }}</b>
+                            <div>
+                                {{ map.winCount / map.playCount * 100 | locale(0) }}% won of 
+                                {{ map.playCount }} played
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-none d-lg-grid" style="grid-template-columns: 1fr 1fr;">
+                        <template v-for="map in mostPlayedMaps">
+                            <div class="text-end">
+                                <b>{{ map.map }}</b>
+                            </div>
+                            <div class="ps-1 text-start">
+                                -
+                                {{ map.winCount / map.playCount * 100 | locale(0) }}% won of 
+                                {{ map.playCount }} played
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="ps-3">
+                <a :href="'https://www.bar-stats.pro/playerstats?playerName=' + user.username" target="_blank" ref="nofollow">BarStats link</a>
+            </h6>
+        </div>
+
+        <div class="mb-4">
             <h4 class="wt-header bg-light text-dark mb-3">
-                Skill
+                <b>Gamemode ratings</b>
             </h4>
 
             <div class="d-flex flex-wrap justify-content-around" style="gap: 1rem;">
@@ -32,36 +96,40 @@
 
         <div>
             <h4 class="wt-header bg-light text-dark">
-                Faction
+                <b>Faction stats</b>
             </h4>
 
-            <div v-for="faction in groupedFactionData" :key="faction.gamemode">
-                <h4 class="ms-2 d-inline">
-                    <strong>
-                        {{ faction.gamemode | gamemode }}
-                    </strong>
-                </h4>
+            <div v-for="faction in groupedFactionData" :key="faction.gamemode" class="mb-4">
+                <div class="wt-header mb-2 text-white" style="white-space: nowrap; text-wrap: wrap;">
+                    <h5 class="ms-2 d-inline-block mb-0">
+                        <strong>
+                            {{ faction.gamemode | gamemode }}
+                        </strong>
+                    </h5>
 
-                <h6 class="d-inline">
-                    - {{ faction.sum.winCount / faction.sum.playCount * 100 | locale(0) }}% win rate over {{ faction.sum.playCount }} games
-                </h6>
+                    <wbr/>
+
+                    <h6 class="d-inline-block mb-0">
+                        - {{ faction.sum.winCount / faction.sum.playCount * 100 | locale(0) }}% win rate over {{ faction.sum.playCount }} games
+                    </h6>
+                </div>
 
                 <table class="table table-sm">
                     <thead>
-                        <tr>
-                            <th>Faction</th>
-                            <th>Play count</th>
-                            <th>Win count</th>
-                            <th>Win rate</th>
+                        <tr class="table-active">
+                            <th class="ps-2">Faction</th>
+                            <th>Plays</th>
+                            <th>Wins</th>
+                            <th>Win %</th>
                         </tr>
                     </thead>
                     
                     <tbody>
-                        <tr is="FactionStatsRow" :data="faction.sum" :faction="0"></tr>
                         <tr v-if="faction.armada" is="FactionStatsRow" :data="faction.armada" :faction="1"></tr>
                         <tr v-if="faction.cortex" is="FactionStatsRow" :data="faction.cortex" :faction="2"></tr>
                         <tr v-if="faction.legion" is="FactionStatsRow" :data="faction.legion" :faction="3"></tr>
                         <tr v-if="faction.random" is="FactionStatsRow" :data="faction.random" :faction="4"></tr>
+                        <tr class="table-active" is="FactionStatsRow" :data="faction.sum" :faction="0"></tr>
                     </tbody>
                 </table>
             </div>
@@ -70,24 +138,28 @@
         <div v-if="user.previousNames.length > 1" class="mb-3">
             <h4 class="wt-header bg-light text-dark mb-2">Previous names</h4>
 
-            <table class="table table-sm table-hover">
-                <thead class="table-secondary">
-                    <tr>
-                        <th>User name</th>
-                        <th>
-                            Timestamp
-                            <info-hover text="When Gex first saw a game with this name"></info-hover>
-                        </th>
-                    </tr>
-                </thead>
+            <a-table :entries="previousNames" :show-filters="false" default-sort-field="" default-sort-order="asc" row-padding="compact" :hover="true" :default-page-size="10">
+                <a-col>
+                    <a-header>
+                        <b>User name</b>
+                    </a-header>
 
-                <tbody>
-                    <tr v-for="name in user.previousNames" :key="name.userName">
-                        <td>{{ name.userName }}</td>
-                        <td>{{ name.timestamp | moment }}</td>
-                    </tr>
-                </tbody>
-            </table>
+                    <a-body v-slot="entry">
+                        {{ entry.userName }}
+                    </a-body>
+                </a-col>
+
+                <a-col>
+                    <a-header>
+                        <b>Timestamp</b>
+                        <info-hover text="When Gex first saw a game with this name"></info-hover>
+                    </a-header>
+
+                    <a-body v-slot="entry">
+                        {{ entry.timestamp | moment }}
+                    </a-body>
+                </a-col>
+            </a-table>
         </div>
 
         <div>
@@ -225,12 +297,15 @@
     import InfoHover from "components/InfoHover.vue";
     import StartSpotMap from "components/app/StartSpotMap.vue";
     import Busy from "components/Busy.vue";
+    import { FactionIcon } from "components/app/FactionIcon";
 
     import { BarUser } from "model/BarUser";
     import { BarUserMapStats } from "model/BarUserMapStats";
     import { BarUserSkill } from "model/BarUserSkill";
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { BarMap } from "model/BarMap";
+    import { UserPreviousName } from "model/UserPreviousName";
+    import { BarUserFactionStats } from "model/BarUserFactionStats";
 
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
     import { MapApi } from "api/MapApi";
@@ -251,7 +326,7 @@
         template: `
             <tr>
                 <td>
-                    <span v-if="faction == 0">Total</span>
+                    <span v-if="faction == 0" class="ps-2"><b>Total</b></span>
                     <img v-else-if="faction == 1" src="/img/armada.png" width="24" title="icon for armada">
                     <img v-else-if="faction == 2" src="/img/cortex.png" width="24" title="icon for cortex">
                     <img v-else-if="faction == 3" src="/img/legion.png" width="24" title="icon for legion">
@@ -376,7 +451,6 @@
             },
 
             groupedFactionData: function(): GroupedFactionGamemode[] {
-
                 const map: Map<number, GroupedFaction[]> = new Map();
 
                 for (const faction of this.user.factionStats) {
@@ -408,13 +482,72 @@
                 }).sort((a, b) => {
                     return b.sum.playCount - a.sum.playCount;
                 });
+            },
+
+            previousNames: function(): Loading<UserPreviousName[]> {
+                return Loadable.loaded(this.user.previousNames);
+            },
+
+            mostPlayedFaction: function(): BarUserFactionStats {
+                // vetur moment doesn't know es2024 stuff
+                const map: Map<number, BarUserFactionStats[]> = Map.groupBy(this.user.factionStats, (elem: BarUserFactionStats) => {
+                    return elem.faction;
+                });
+
+                // TODO 2025-08-24: this kinda fuckin sucks yo, is there a better way for this?
+                return Array.from(map.entries()).sort((a, b) => {
+                    const aCount: number = a[1].reduce((acc, iter) => acc += iter.playCount, 0);
+                    const bCount: number = b[1].reduce((acc, iter) => acc += iter.playCount, 0);
+                    return bCount - aCount;
+                }).slice(0, 1).map(iter => {
+                    const fac: BarUserFactionStats = {
+                        faction: iter[0],
+                        gamemode: 0,
+                        playCount: iter[1].reduce((acc, iter) => acc += iter.playCount, 0),
+                        lossCount: 0,
+                        tieCount: 0,
+                        lastUpdated: new Date(),
+                        userID: 0,
+                        winCount: iter[1].reduce((acc, iter) => acc += iter.winCount, 0),
+                    };
+                    return fac;
+                })[0];
+            },
+
+            mostPlayedGamemode: function(): GroupedFactionGamemode {
+                return [...this.groupedFactionData].sort((a, b) => {
+                    return b.sum.playCount - a.sum.playCount;
+                })[0];
+            },
+
+            mostPlayedMaps: function(): BarUserMapStats[] {
+                const map: Map<string, BarUserMapStats[]> = Map.groupBy(this.user.mapStats, (iter: BarUserMapStats) => iter.map);
+
+                return Array.from(map.entries()).sort((a, b) => {
+                    const aCount: number = a[1].reduce((acc, iter) => acc += iter.playCount, 0);
+                    const bCount: number = b[1].reduce((acc, iter) => acc += iter.playCount, 0);
+                    return bCount - aCount;
+                }).slice(0, 3).map(iter => {
+                    const map: BarUserMapStats = {
+                        map: iter[0],
+                        gamemode: 0,
+                        lastUpdated: new Date(),
+                        lossCount: 0,
+                        winCount: iter[1].reduce((acc, iter) => acc += iter.winCount, 0),
+                        playCount: iter[1].reduce((acc, iter) => acc += iter.playCount, 0),
+                        tieCount: 0,
+                        userID: 0
+                    };
+                    return map;
+                });
             }
         },
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             InfoHover, Busy,
-            StartSpotMap, FactionStatsRow
+            StartSpotMap, FactionStatsRow,
+            FactionIcon
         }
     });
     export default UserInfo;

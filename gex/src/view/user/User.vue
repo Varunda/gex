@@ -2,38 +2,46 @@
 <template>
     <div>
         <div class="container">
-            <h2 class="wt-header bg-light text-dark">User info</h2>
+            <div>
+                <h2 class="wt-header bg-light text-dark">User info</h2>
 
-            <div v-if="user.state == 'idle'"></div>
+                <div v-if="user.state == 'idle'"></div>
 
-            <div v-else-if="user.state == 'loading'">
-                <busy class="busy busy-sm"></busy>
-                Loading...
+                <div v-else-if="user.state == 'loading'">
+                    <busy class="busy busy-sm"></busy>
+                    Loading...
+                </div>
+
+                <div v-else-if="user.state == 'loaded'">
+                    <user-info :user="user.data"></user-info>
+                </div>
             </div>
 
-            <div v-else-if="user.state == 'loaded'">
-                <user-info :user="user.data"></user-info>
+            <div>
+                <h2 class="wt-header bg-light text-dark">Recent matches</h2>
+
+                <div v-if="matches.state == 'idle'"></div>
+                
+                <div v-else-if="matches.state == 'loading'">
+                    <busy class="busy busy-sm"></busy>
+                    Loading...
+                </div>
+
+                <div v-else-if="matches.state == 'loaded'">
+                    <user-matches :data="matches.data" :user-id="userID"></user-matches>
+                </div>
+
+                <div v-else-if="matches.state == 'error'">
+                    <api-error :error="matches.problem"></api-error>
+                </div>
+
+                <div v-else>
+                    unchecked state of matches: {{ matches.state }}
+                </div>
             </div>
 
-            <h2 class="wt-header bg-light text-dark">Recent matches</h2>
-
-            <div v-if="matches.state == 'idle'"></div>
-            
-            <div v-else-if="matches.state == 'loading'">
-                <busy class="busy busy-sm"></busy>
-                Loading...
-            </div>
-
-            <div v-else-if="matches.state == 'loaded'">
-                <user-matches :data="matches.data" :user-id="userID"></user-matches>
-            </div>
-
-            <div v-else-if="matches.state == 'error'">
-                <api-error :error="matches.problem"></api-error>
-            </div>
-
-            <div v-else>
-                unchecked state of matches: {{ matches.state }}
+            <div v-if="user.state == 'loaded'">
+                <user-units-made :user="user.data"></user-units-made>
             </div>
         </div>
     </div>
@@ -55,6 +63,7 @@
 
     import UserMatches from "./components/UserMatches.vue";
     import UserInfo from "./components/UserInfo.vue";
+    import UserUnitsMade from "./components/UserUnitsMade.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { BarUserApi } from "api/BarUserApi";
@@ -140,7 +149,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton, Busy,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            UserMatches, UserInfo
+            UserMatches, UserInfo, UserUnitsMade
         }
     });
     export default User;

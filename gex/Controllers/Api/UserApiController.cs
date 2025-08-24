@@ -25,11 +25,13 @@ namespace gex.Controllers.Api {
         private readonly BarUserFactionStatsDb _FactionStatsDb;
         private readonly BarMapDb _MapDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
+        private readonly BarUserUnitsMadeRepository _UnitsMadeRepository;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserDb userDb, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
-            BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository) {
+            BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
+            BarUserUnitsMadeRepository unitsMadeRepository) {
 
             _Logger = logger;
             _UserDb = userDb;
@@ -38,6 +40,7 @@ namespace gex.Controllers.Api {
             _SkillDb = skillDb;
             _MapDb = mapDb;
             _StartSpotRepository = startSpotRepository;
+            _UnitsMadeRepository = unitsMadeRepository;
         }
 
         /// <summary>
@@ -49,7 +52,8 @@ namespace gex.Controllers.Api {
         /// <param name="includeMapStats">if <see cref="ApiBarUser.MapStats"/> is populated or not. defaults to false</param>
         /// <param name="includeFactionStats">if <see cref="ApiBarUser.FactionStats"/> is populated or not. defaults to false</param>
         /// <param name="includePreviousNames">if <see cref="ApiBarUser.PreviousNames"/> will be populated or not. defaults to false</param>
-        /// <param name="cancel"></param>
+        /// <param name="includeUnitsMade">if <see cref="ApiBarUser.UnitsMade"/> will be populated or not. defaults to false</param>
+        /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///		the response will contain the <see cref="ApiBarUser"/> with <see cref="ApiBarUser.UserID"/> of <paramref name="userID"/>
         /// </response>
@@ -62,6 +66,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeMapStats = false,
             [FromQuery] bool includeFactionStats = false,
             [FromQuery] bool includePreviousNames = false,
+            [FromQuery] bool includeUnitsMade = false,
             CancellationToken cancel = default
         ) {
 
@@ -88,6 +93,10 @@ namespace gex.Controllers.Api {
 
             if (includePreviousNames == true) {
                 response.PreviousNames = await _UserDb.GetUserNames(userID, cancel);
+            }
+
+            if (includeUnitsMade == true) {
+                response.UnitsMade = await _UnitsMadeRepository.GetByUserID(userID, cancel);
             }
 
             return ApiOk(response);

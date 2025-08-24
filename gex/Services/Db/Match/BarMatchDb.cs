@@ -284,7 +284,7 @@ namespace gex.Services.Db.Match {
                 SELECT * FROM bar_match WHERE id IN (
                     SELECT distinct(game_id) FROM bar_match_player WHERE user_id = @UserID
                 ) ORDER BY start_time DESC;
-            ");
+            ", cancel);
 
             cmd.AddParameter("UserID", userID);
             await cmd.PrepareAsync(cancel);
@@ -304,7 +304,7 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
                 SELECT * FROM bar_match ORDER BY start_time ASC LIMIT 1;
-            ");
+            ", cancel);
 
             await cmd.PrepareAsync(cancel);
 

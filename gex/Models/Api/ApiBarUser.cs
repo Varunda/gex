@@ -21,5 +21,7 @@ namespace gex.Models.Api {
 
         public List<UserPreviousName> PreviousNames { get; set; } = [];
 
+        public List<BarUserUnitsMade> UnitsMade { get; set; } = [];
+
     }
 }
