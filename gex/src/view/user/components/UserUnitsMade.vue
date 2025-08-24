@@ -6,11 +6,12 @@
 
         <div class="alert alert-info text-center">
             <div>
-                <b>This data is only an estimate, and is not exact</b>
+                <b>This data is only an estimate, and undercounts the correct value</b>
             </div>
 
             <div>
                 This data only includes public PvP games after Gex started, and only when a game is fully processed. 
+                <br/>
                 See what conditions Gex processes a game <a href="/faq">here</a>
             </div>
         </div>
