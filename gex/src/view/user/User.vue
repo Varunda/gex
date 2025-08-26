@@ -18,7 +18,17 @@
             </div>
 
             <div>
-                <h2 class="wt-header bg-light text-dark">Recent matches</h2>
+                <div class="wt-header mb-2 bg-light text-dark" style="white-space: nowrap; text-wrap: wrap;">
+                    <h2 class="d-inline-block mb-0">
+                        Recorded matches
+                    </h2>
+
+                    <wbr/>
+
+                    <h6 class="d-inline-block mb-0">
+                        Only includes public PvP games
+                    </h6>
+                </div>
 
                 <div v-if="matches.state == 'idle'"></div>
                 

@@ -239,6 +239,7 @@ namespace gex.Code.Discord {
         ///     show the latest match of the linked user or a provided player
         /// </summary>
         /// <param name="ctx"></param>
+        /// <param name="player">name of the player</param>
         /// <returns></returns>
         [SlashCommand("latest", "Show the latest match for a linked BAR account")]
         public async Task LatestCommand(InteractionContext ctx,
@@ -608,7 +609,7 @@ namespace gex.Code.Discord {
                 foreach (IGrouping<byte, BarUserFactionStats> faction in grouped.OrderByDescending(iter => iter.Sum(i2 => i2.PlayCount))) {
                     int playCount = faction.Sum(iter => iter.PlayCount);
                     int winCount = faction.Sum(iter => iter.WinCount);
-                    embed.Description += $"**{BarFaction.GetName(faction.Key)}** - {Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n";
+                    embed.Description += $"**{_GetEmoji(BarFaction.GetName(faction.Key))}{BarFaction.GetName(faction.Key)}** - {Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n";
                 }
                 embed.Description += "\n";
             }
@@ -752,7 +753,7 @@ namespace gex.Code.Discord {
         /// </summary>
         /// <param name="name">name of the emoji</param>
         /// <returns></returns>
-        private string? _GetEmoji(string name) => _DiscordOptions.Value.Emojis.GetValueOrDefault(name); 
+        private string? _GetEmoji(string name) => _DiscordOptions.Value.Emojis.GetValueOrDefault(name.ToLower()); 
 
         private async Task<Result<UserSearchResult, string>> _GetPlayer(string name, CancellationToken cancel) {
             List<UserSearchResult> users = (await _UserDb.SearchByName(name, false, cancel))

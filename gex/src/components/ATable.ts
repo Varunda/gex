@@ -982,11 +982,12 @@ export const ATable = Vue.extend({
                             {
                                 staticClass: "btn btn-light",
                                 domProps: {
-                                    type: "button"
+                                    type: "button",
+                                    title: "Go to first page in table"
                                 },
                                 on: {
                                     click: (): void => { this.paging.page = 0; }
-                                }
+                                },
                             },
                             [this.createIcon(createElement, "fa-chevron-circle-left", "fas")]
                         ),
@@ -996,7 +997,8 @@ export const ATable = Vue.extend({
                             {
                                 staticClass: "btn btn-light",
                                 domProps: {
-                                    type: "button"
+                                    type: "button",
+                                    title: "Go to previous page in table"
                                 },
                                 on: {
                                     click: (): void => { this.setPage(this.paging.page - 1) }
@@ -1013,6 +1015,9 @@ export const ATable = Vue.extend({
                                 return createElement("button",
                                     {
                                         staticClass: "btn",
+                                        domProps: {
+                                            title: `Go to page ${this.pageOffset + index} in the table`
+                                        },
                                         class: {
                                             "btn-primary": this.paging.page + 1 == index + this.pageOffset,
                                             "btn-light": this.paging.page + 1 != index + this.pageOffset

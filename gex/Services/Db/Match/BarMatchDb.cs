@@ -98,6 +98,29 @@ namespace gex.Services.Db.Match {
         }
 
         /// <summary>
+        ///     get a list of <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="IDs">List of IDs to get from the DB</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetByIDs(IEnumerable<string> IDs, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match
+                    WHERE id = ANY(@IDs);
+            ", cancel);
+
+            cmd.AddParameter("IDs", IDs);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
         ///     get recent matches
         /// </summary>
         /// <param name="offset"></param>
@@ -298,12 +321,19 @@ namespace gex.Services.Db.Match {
         /// <summary>
         ///     get the oldest <see cref="BarMatch"/> in the DB, or <c>null</c> if no matches are in the DB
         /// </summary>
+        /// <remarks>
+        ///     ignores user uploaded matches, as those might be older than when Gex started
+        /// </remarks>
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
-                SELECT * FROM bar_match ORDER BY start_time ASC LIMIT 1;
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                SELECT * 
+                FROM bar_match 
+                WHERE uploaded_by IS NULL 
+                ORDER BY start_time ASC
+                LIMIT 1;
             ", cancel);
 
             await cmd.PrepareAsync(cancel);

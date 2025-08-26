@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,6 +42,47 @@ namespace gex.Services.Repositories {
             }
 
             return match;
+        }
+
+        /// <summary>
+        ///     load a list of <see cref="BarMatch"/>s
+        /// </summary>
+        /// <param name="IDs">list of IDs to load the matches of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetByIDs(IEnumerable<string> IDs, CancellationToken cancel) {
+            if (!IDs.Any()) {
+                return new List<BarMatch>();
+            }
+
+            List<BarMatch> matches = [];
+
+            List<string> localIDs = new(IDs);
+
+            // the .toList here is to make a copy, so its safe to remove entries from localIDs
+            foreach (string ID in localIDs.ToList()) {
+                cancel.ThrowIfCancellationRequested();
+
+                string cacheKey = string.Format(CACHE_KEY_ID, ID);
+                if (_Cache.TryGetValue(cacheKey, out BarMatch? match) == true && match != null) {
+                    localIDs.Remove(ID);
+                    matches.Add(match);
+                }
+            }
+
+            if (localIDs.Count > 0) {
+                List<BarMatch> dbMatches = await _MatchDb.GetByIDs(localIDs, cancel);
+                matches.AddRange(dbMatches);
+            }
+
+            foreach (BarMatch m in matches) {
+                string cacheKey = string.Format(CACHE_KEY_ID, m.ID);
+                _Cache.Set(cacheKey, m, new MemoryCacheEntryOptions() {
+                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                });
+            }
+
+            return matches;
         }
 
         public async Task<List<BarMatch>> GetRecent(int offset, int limit, CancellationToken cancel) {

@@ -84,6 +84,17 @@
 
             <a-col>
                 <a-header>
+                    <b>Avg. Rating</b>
+                    <info-hover text="Average rating of all the players in the lobby, and the difference between this user's rating and the average"></info-hover>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <user-match-rating-cell :user-id="UserId" :match="entry"></user-match-rating-cell>
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
                     <b>Link</b>
                 </a-header>
 
@@ -99,9 +110,8 @@
 </template>
 
 <style scoped>
-
     .outcome-Won {
-        color: var(--bs-green);
+        color: var(--bs-success-text-emphasis);
     }
 
     .outcome-Tie {
@@ -109,16 +119,13 @@
     }
 
     .outcome-Lost {
-        color: var(--bs-red);
+        color: var(--bs-danger-text-emphasis);
     }
-
 </style>
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
     import { Loadable, Loading } from "Loading";
-
-    import { GamemodeUtil } from "util/Gamemode";
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
     import InfoHover from "components/InfoHover.vue";
@@ -126,8 +133,58 @@
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import "filters/BarGamemodeFilter";
+
+    import LocaleUtil from "util/Locale";
+    import { GamemodeUtil } from "util/Gamemode";
+
+    const UserMatchRatingCell = Vue.extend({
+        props: {
+            UserId: { type: Number, required: true },
+            match: { type: Object as PropType<BarMatch>, required: true }
+        },
+
+        computed: {
+            avgSkill: function(): number {
+                const totalSkill: number = this.match.players.reduce((acc, iter) => acc += iter.skill, 0);
+                const avgSkill: number = totalSkill / this.match.players.length;
+
+                return avgSkill;
+            },
+
+            userSkill: function(): number {
+                const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.userID == this.UserId);
+                return player?.skill ?? 0;
+            },
+
+            skillDiff: function(): number {
+                return Math.abs(this.avgSkill - this.userSkill);
+            },
+
+            titleText: function(): string {
+                return `User's skill was ${LocaleUtil.locale(this.skillDiff, 2)} ${this.avgSkill > this.userSkill ? "below" : "above"} the average skill in the lobby`;
+            },
+
+            cssStyle: function(): object {
+                return {
+                    "color": ((this.userSkill > this.avgSkill) ? "var(--bs-warning-text-emphasis)" : "var(--bs-secondary-text-emphasis)") + " !important",
+                    //"text-decoration": "underline"
+                };
+            }
+        },
+
+        template: `
+            <span class="font-monospace">
+                {{ avgSkill | locale(2) }}
+
+                <small class="text-muted" :title="titleText" :style="cssStyle">
+                    <span v-if="avgSkill > userSkill">-</span><span v-else>+</span>{{ Math.abs(avgSkill - userSkill) | locale(2) }}
+                </small>
+            </span>
+        `
+    });
 
     export const UserMatches = Vue.extend({
         props: {
@@ -183,11 +240,10 @@
                     ]
                 }
             }
-
-
         },
 
         components: {
+            UserMatchRatingCell,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             InfoHover, ToggleButton 
         }

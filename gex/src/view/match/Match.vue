@@ -687,7 +687,6 @@
 
         computed: {
 
-
             unitTweaks: function(): string {
                 if (this.match.state != "loaded") {
                     return "";
@@ -740,16 +739,27 @@
                     return false;
                 }
 
+                const tweaks: string[] = [
+                    "tweakdefs",
+                    "tweakdefs1", "tweakdefs2", "tweakdefs3",
+                    "tweakdefs4", "tweakdefs5", "tweakdefs6",
+                    "tweakdefs7", "tweakdefs8", "tweakdefs9",
+                    "tweakunits",
+                    "tweakunits1", "tweakunits2", "tweakunits3",
+                    "tweakunits4", "tweakunits5", "tweakunits6",
+                    "tweakunits7", "tweakunits8", "tweakunits9",
+                ];
+
                 const gs = this.match.data.gameSettings;
 
-                return gs.tweakdefs != ""
-                    || gs.tweakdefs1 != "" || gs.tweakdefs2 != "" || gs.tweakdefs3 != ""
-                    || gs.tweakdefs4 != "" || gs.tweakdefs5 != "" || gs.tweakdefs6 != ""
-                    || gs.tweakdefs7 != "" || gs.tweakdefs8 != "" || gs.tweakdefs9 != ""
-                    || gs.tweakunits == ""
-                    || gs.tweakunits1 == "" || gs.tweakunits2 == "" || gs.tweakunits3 == ""
-                    || gs.tweakunits4 == "" || gs.tweakunits5 == "" || gs.tweakunits6 == ""
-                    || gs.tweakunits7 == "" || gs.tweakunits8 == "" || gs.tweakunits9 == "";
+                for (const key of tweaks) {
+                    const t = gs[key];
+                    if (t != "" && t != "Ow") { // 'Ow' => ';'
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
         },

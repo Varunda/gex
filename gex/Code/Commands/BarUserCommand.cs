@@ -36,13 +36,15 @@ namespace gex.Code.Commands {
             _FactionStatUpdateQueue = services.GetRequiredService<BaseQueue<UserFactionStatUpdateQueueEntry>>();
         }
 
-        public async Task Fix(long userID) {
+        public Task Fix(long userID) {
             _Logger.LogInformation($"fixing user stats for {userID}");
 
             new Task(async () => {
                 List<BarMap> maps = await _MapRepository.GetAll(CancellationToken.None);
                 _InsertUser(userID, maps);
             }).Start();
+
+            return Task.CompletedTask;
         }
         
         public async Task FixAll() {

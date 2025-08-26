@@ -15,9 +15,12 @@ namespace gex.Services.Hosted.PeriodicTasks {
         private readonly BarUserDb _UserDb;
 
         public LobbyAlertSendingPeriodicService(ILoggerFactory loggerFactory,
-            ServiceHealthMonitor healthMon)
+            ServiceHealthMonitor healthMon, LobbyManager lobbyManager,
+            BarUserDb userDb)
         : base(SERVICE_NAME, TimeSpan.FromMinutes(3), loggerFactory, healthMon) {
 
+            _LobbyManager = lobbyManager;
+            _UserDb = userDb;
         }
 
         protected override Task<string?> PerformTask(CancellationToken cancel) {

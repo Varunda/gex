@@ -1,6 +1,8 @@
-﻿using gex.Models;
+﻿using gex.Code.ExtensionMethods;
+using gex.Models;
 using gex.Models.Api;
 using gex.Models.Bar;
+using gex.Models.Db;
 using gex.Models.MapStats;
 using gex.Models.UserStats;
 using gex.Services.Db;
@@ -9,6 +11,7 @@ using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,12 +29,15 @@ namespace gex.Controllers.Api {
         private readonly BarMapDb _MapDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly BarUserUnitsMadeRepository _UnitsMadeRepository;
+        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
+        private readonly BarMatchRepository _MatchRepository;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserDb userDb, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
             BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
-            BarUserUnitsMadeRepository unitsMadeRepository) {
+            BarUserUnitsMadeRepository unitsMadeRepository, BarMatchPlayerRepository matchPlayerRepository,
+            BarMatchRepository matchRepository) {
 
             _Logger = logger;
             _UserDb = userDb;
@@ -41,6 +47,8 @@ namespace gex.Controllers.Api {
             _MapDb = mapDb;
             _StartSpotRepository = startSpotRepository;
             _UnitsMadeRepository = unitsMadeRepository;
+            _MatchPlayerRepository = matchPlayerRepository;
+            _MatchRepository = matchRepository;
         }
 
         /// <summary>
@@ -100,6 +108,63 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(response);
+        }
+
+        /// <summary>
+        ///     get the skill changes of a user over time
+        /// </summary>
+        /// <param name="userID">ID of the user to get the skill changes of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a <see cref="BarUserSkillChanges"/>, that contains the skill changes for each gamemode
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
+        /// </response>
+        [HttpGet("{userID}/skill-changes")]
+        public async Task<ApiResponse<BarUserSkillChanges>> GetUserSkillChanges(long userID, CancellationToken cancel) {
+            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            if (user == null) {
+                return ApiNoContent<BarUserSkillChanges>();
+            }
+
+            List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByUserID(userID, cancel);
+            Dictionary<string, BarMatch> matches = (await _MatchRepository.GetByIDs(players.Select(iter => iter.GameID).Distinct(), cancel))
+                .ToDictionaryDistinct(iter => iter.ID);
+
+            BarUserSkillChanges changes = new();
+            Dictionary<byte, BarUserSkillGamemode> gamemodes = [];
+
+            foreach (BarMatchPlayer p in players) {
+                BarMatch? match = matches.GetValueOrDefault(p.GameID);
+                if (match == null) {
+                    _Logger.LogWarning($"missing {nameof(BarMatch)} from {nameof(BarMatchPlayer)} [gameID={p.GameID}] [userID={p.UserID}]");
+                    continue;
+                }
+
+                if (match.Gamemode == 0) {
+                    continue;
+                }
+
+                BarUserSkillGamemode gm = gamemodes.GetValueOrDefault(match.Gamemode)
+                    ?? new BarUserSkillGamemode() { Gamemode = match.Gamemode };
+
+                gm.Changes.Add(new BarUserSkillChangeEntry() {
+                    Skill = p.Skill,
+                    SkillUncertainty = p.SkillUncertainty,
+                    Timestamp = match.StartTime
+                });
+
+                gamemodes[match.Gamemode] = gm;
+            }
+
+            changes.UserID = userID;
+            changes.Gamemodes = gamemodes.Values.ToList().Select(iter => { 
+                iter.Changes = [.. iter.Changes.OrderBy(i2 => i2.Timestamp)];
+                return iter;
+            }).ToList();
+
+            return ApiOk(changes);
         }
 
         /// <summary>
