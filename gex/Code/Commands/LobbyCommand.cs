@@ -81,6 +81,17 @@ namespace gex.Code.Commands {
             }
         }
 
+        public void Battle(int battleID) {
+            LobbyBattle? battle = _LobbyManager.GetBattle(battleID);
+            if (battle == null) {
+                _Logger.LogWarning($"failed to find battle [battleID={battleID}]");
+                return;
+            }
+
+            _Logger.LogInformation($"found battle [battleID={battleID}] [map={battle.Map}] [title={battle.Title}] "
+                + $"[teamSize={battle.TeamSize}] [teamCount={battle.TeamCount}]");
+        }
+
         public void User(string username) {
             LobbyUser? user = _LobbyManager.GetUser(username);
             if (user == null) {

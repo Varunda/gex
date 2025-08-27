@@ -1,4 +1,6 @@
-﻿using gex.Models.Options;
+﻿using gex.Models.Bar;
+using gex.Models.Options;
+using gex.Services.Repositories;
 using ImageMagick;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -10,6 +12,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Controllers {
@@ -20,7 +23,9 @@ namespace gex.Controllers {
     public class GameImageController : Controller {
 
         private readonly ILogger<GameImageController> _Logger;
+
         private readonly IOptions<FileStorageOptions> _Options;
+        private readonly BarMapRepository _MapRepository;
         private readonly IMemoryCache _Cache;
 
         private const string CACHE_KEY_PIC_MISSING = "Gex.ImageProxy.Pic.{0}"; // {0} => defName
@@ -34,10 +39,13 @@ namespace gex.Controllers {
         }
 
         public GameImageController(ILogger<GameImageController> logger,
-            IOptions<FileStorageOptions> options, IMemoryCache cache) {
+            IOptions<FileStorageOptions> options, IMemoryCache cache,
+            BarMapRepository mapRepository) {
 
             _Logger = logger;
+
             _Options = options;
+            _MapRepository = mapRepository;
             _Cache = cache;
         }
 
@@ -80,6 +88,21 @@ namespace gex.Controllers {
 
             FileStream image = System.IO.File.OpenRead(mapPath);
             return File(image, "image/jpg", false);
+        }
+
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["map", "size"])] // 24 hours
+        public async Task<IActionResult> MapNameBackground(
+            [FromQuery] string map,
+            [FromQuery] string size,
+            CancellationToken cancel = default
+        ) {
+
+            BarMap? barMap = await _MapRepository.GetByName(map, cancel);
+            if (barMap == null) {
+                return StatusCode(404, $"failed to find map with name of '{map}'");
+            }
+
+            return await MapBackground(barMap.FileName, size);
         }
 
         /// <summary>

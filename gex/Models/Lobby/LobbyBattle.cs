@@ -41,6 +41,16 @@ namespace gex.Models.Lobby {
 
         public string Channel { get; set; } = "";
 
+        /// <summary>
+        ///     number of teams. comes from s.battle.teams, not BATTLEOPENED
+        /// </summary>
+        public int TeamCount { get; set; }
+
+        /// <summary>
+        ///     number of players on each time. comes from s.battle.teams, not BATTLEOPENED
+        /// </summary>
+        public int TeamSize { get; set; }
+
         public HashSet<long> Users { get; set; } = [];
 
     }

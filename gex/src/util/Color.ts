@@ -14,6 +14,7 @@ export default class ColorUtils {
     public static Armada: string = "#487edb";
     public static Cortex: string = "#b93d32";
     public static Legion: string = "#93c034";
+    public static Random: string = "#aaaaaa";
 
 	public static getFactionColor(factionID: number): string {
 		if (factionID == 1) {
@@ -22,7 +23,9 @@ export default class ColorUtils {
 			return ColorUtils.Cortex;
 		} else if (factionID == 3) {
 			return ColorUtils.Legion;
-		} 
+		} else if (factionID == 4) {
+            return ColorUtils.Random;
+        }
 
 		return "";
 	}

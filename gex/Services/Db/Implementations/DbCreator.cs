@@ -132,8 +132,7 @@ namespace gex.Services.Db.Implementations {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 SELECT EXISTS (
                     SELECT FROM pg_tables
-                    WHERE schemaname = 'gex'
-                        AND tablename  = 'metadata'
+                    WHERE tablename  = 'metadata'
                );
             ");
 

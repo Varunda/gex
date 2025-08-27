@@ -47,6 +47,8 @@ namespace gex.Services.Hosted.BackgroundTasks {
 
             while (cancel.IsCancellationRequested == false) {
                 try {
+                    if (cancel.IsCancellationRequested == true) { break; }
+
                     if (_LobbyClient.IsConnected() == false) {
                         _Logger.LogInformation($"connecting to spring lobby");
 

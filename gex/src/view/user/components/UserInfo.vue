@@ -22,6 +22,10 @@
                             &plusmn;{{ skill.skillUncertainty | locale(2) }}
                         </span>
                     </div>
+
+                    <div :title="skill.lastUpdated | moment">
+                        On {{ skill.lastUpdated | moment("yyyy-MM-dd") }}
+                    </div>
                 </div>
             </div>
 
@@ -487,6 +491,10 @@
                 const map: Map<number, GroupedFaction[]> = new Map();
 
                 for (const faction of this.user.factionStats) {
+                    if (faction.gamemode == 0) {
+                        continue;
+                    }
+
                     const factionData: GroupedFaction[] = (map.get(faction.gamemode) ?? [])
                     factionData.push({
                         faction: faction.faction,

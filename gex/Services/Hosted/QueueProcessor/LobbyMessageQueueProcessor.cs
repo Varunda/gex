@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +31,6 @@ namespace gex.Services.Hosted.QueueProcessor {
             LobbyManager lobbyManager, ILobbyClient lobbyClient,
             BarUserDb userDb)
         : base("lobby_message_queue", factory, queue, serviceHealthMonitor) {
-
 
             _LobbyManager = lobbyManager;
             _LobbyClient = lobbyClient;
@@ -78,6 +80,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                 HandleBattleUpdateLobbyTitle(entry);
             } else if (entry.Command == "s.user.new_incoming_friend_request") {
                 await HandleUserNewIncomingFriendRequest(entry, cancel);
+            } else if (entry.Command == "s.battle.teams") {
+                HandleBattleTeams(entry);
             } else if (entry.Command == "ADDUSER") {
                 HandleAddUser(entry);
             } else if (entry.Command == "BATTLECLOSED") {
@@ -476,6 +480,60 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             _Logger.LogInformation($"accepted friend request [userID={userID}]");
+        }
+
+        private void HandleBattleTeams(LobbyMessage entry) {
+            // s.battle.teams base64-json
+
+            string? info = entry.GetWord();
+            if (info == null) {
+                _Logger.LogWarning($"missing arguments for s.battle.teams [info={info}]");
+                return;
+            }
+
+            string b64;
+            try {
+                // lobby strips padding chars which c# does not like
+                if (info.Length % 4 != 0) { 
+                    info += new string('=', 4 - info.Length % 4);
+                }
+                b64 = Encoding.UTF8.GetString(Convert.FromBase64String(info));
+            } catch (Exception ex) {
+                _Logger.LogWarning($"failed to parse base64 to [info={info}] [ex={ex.Message}]");
+                return;
+            }
+
+            JsonObject? elem = JsonSerializer.Deserialize<JsonObject>(b64);
+            if (elem == null) {
+                _Logger.LogWarning($"got null json object from json string [b64={b64}]");
+                return;
+            }
+            _Logger.LogDebug($"updating battle team size [b64={b64}]");
+
+            foreach (KeyValuePair<string, JsonNode?> iter in elem) {
+                if (iter.Value == null) {
+                    _Logger.LogWarning($"missing value for s.battle.teams [key={iter.Key}] [b64={b64}]");
+                    continue;
+                }
+
+                if (int.TryParse(iter.Key, out int battleID) == false) {
+                    _Logger.LogWarning($"failed to parse battleID in s.battle.teams to a valid int32 [key={iter.Key}]");
+                    continue;
+                }
+
+                LobbyBattle? battle = _LobbyManager.GetBattle(battleID);
+                if (battle == null) {
+                    _Logger.LogWarning($"missing battle to update s.battle.teams from [battleID={battleID}]");
+                    return;
+                }
+
+                int teamCount = (int)(iter.Value["nbTeams"] ?? 0);
+                int teamSize = (int)(iter.Value["teamSize"] ?? 0);
+
+                battle.TeamCount = teamCount;
+                battle.TeamSize = teamSize;
+                _LobbyManager.UpdateBattle(battleID, battle);
+            }
         }
 
     }
