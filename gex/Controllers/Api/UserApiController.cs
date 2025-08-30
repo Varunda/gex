@@ -6,6 +6,7 @@ using gex.Models.Db;
 using gex.Models.MapStats;
 using gex.Models.UserStats;
 using gex.Services.Db;
+using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -22,25 +23,26 @@ namespace gex.Controllers.Api {
     public class UserApiController : ApiControllerBase {
 
         private readonly ILogger<UserApiController> _Logger;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
         private readonly BarUserSkillDb _SkillDb;
         private readonly BarUserMapStatsDb _MapStatsDb;
         private readonly BarUserFactionStatsDb _FactionStatsDb;
         private readonly BarMapDb _MapDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly BarUserUnitsMadeRepository _UnitsMadeRepository;
-        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
         private readonly BarMatchRepository _MatchRepository;
+        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
+        private readonly BarMatchAllyTeamDb _AllyTeamDb;
 
         public UserApiController(ILogger<UserApiController> logger,
-            BarUserDb userDb, BarUserMapStatsDb mapStatsDb,
+            BarUserRepository userRepository, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
             BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
             BarUserUnitsMadeRepository unitsMadeRepository, BarMatchPlayerRepository matchPlayerRepository,
-            BarMatchRepository matchRepository) {
+            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb) {
 
             _Logger = logger;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
             _MapStatsDb = mapStatsDb;
             _FactionStatsDb = factionStatsDb;
             _SkillDb = skillDb;
@@ -49,6 +51,7 @@ namespace gex.Controllers.Api {
             _UnitsMadeRepository = unitsMadeRepository;
             _MatchPlayerRepository = matchPlayerRepository;
             _MatchRepository = matchRepository;
+            _AllyTeamDb = allyTeamDb;
         }
 
         /// <summary>
@@ -78,7 +81,7 @@ namespace gex.Controllers.Api {
             CancellationToken cancel = default
         ) {
 
-            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
             if (user == null) {
                 return ApiNoContent<ApiBarUser>();
             }
@@ -100,7 +103,7 @@ namespace gex.Controllers.Api {
             }
 
             if (includePreviousNames == true) {
-                response.PreviousNames = await _UserDb.GetUserNames(userID, cancel);
+                response.PreviousNames = await _UserRepository.GetUserNames(userID, cancel);
             }
 
             if (includeUnitsMade == true) {
@@ -123,7 +126,7 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpGet("{userID}/skill-changes")]
         public async Task<ApiResponse<BarUserSkillChanges>> GetUserSkillChanges(long userID, CancellationToken cancel) {
-            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
             if (user == null) {
                 return ApiNoContent<BarUserSkillChanges>();
             }
@@ -168,6 +171,103 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
+        ///     get the <see cref="ApiBarUserInteractions"/> of a <see cref="BarUser"/>
+        /// </summary>
+        /// <param name="userID"><see cref="BarUser.UserID"/> of the <see cref="BarUser"/> to get the interactions of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="ApiBarUserInteractions"/> for the user
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
+        /// </response>
+        [HttpGet("{userID}/interactions")]
+        public async Task<ApiResponse<List<ApiBarUserInteractions>>> GetUserInteractions(long userID, CancellationToken cancel = default) {
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
+            if (user == null) {
+                return ApiNoContent<List<ApiBarUserInteractions>>();
+            }
+
+            List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByUserID(userID, cancel);
+
+            IEnumerable<string> gameIDs = players.Select(iter => iter.GameID).Distinct();
+
+            // load all players for all games the player has played in
+            Dictionary<string, List<BarMatchPlayer>> dict = [];
+            List<BarMatchPlayer> allPlayers = await _MatchPlayerRepository.GetByGameIDs(gameIDs, cancel);
+            foreach (BarMatchPlayer p in await _MatchPlayerRepository.GetByGameIDs(gameIDs, cancel)) {
+                List<BarMatchPlayer> gamePlayers = dict.GetValueOrDefault(p.GameID) ?? [];
+                gamePlayers.Add(p);
+                dict[p.GameID] = gamePlayers;
+            }
+
+            // load all ally teams for the games the player has been in
+            Dictionary<string, List<BarMatchAllyTeam>> allyTeamDict = [];
+            List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameIDs(gameIDs, cancel);
+            foreach (BarMatchAllyTeam at in allyTeams) {
+                List<BarMatchAllyTeam> gameAts = allyTeamDict.GetValueOrDefault(at.GameID) ?? [];
+                gameAts.Add(at);
+                allyTeamDict[at.GameID] = gameAts;
+            }
+
+            Dictionary<long, BarUserInteractions> ints = [];
+
+            foreach (BarMatchPlayer p in players) {
+                List<BarMatchPlayer>? gamePlayers = dict.GetValueOrDefault(p.GameID);
+                if (gamePlayers == null) {
+                    _Logger.LogWarning($"missing game players for interactions [gameID={p.GameID}] [userID={userID}]");
+                    continue;
+                }
+
+                List<BarMatchAllyTeam>? gameAllyTeams = allyTeamDict.GetValueOrDefault(p.GameID);
+                if (gameAllyTeams == null) {
+                    _Logger.LogWarning($"missing game ally teams for interactions [gameID={p.GameID}] [userID={userID}]");
+                    continue;
+                }
+
+                foreach (BarMatchPlayer gamePlayer in gamePlayers) {
+                    if (gamePlayer.UserID == userID) { continue; }
+
+                    BarUserInteractions inter = ints.GetValueOrDefault(gamePlayer.UserID) ?? new BarUserInteractions() {
+                        UserID = userID,
+                        TargetUserID = gamePlayer.UserID
+                    };
+
+                    BarMatchAllyTeam? at = gameAllyTeams.FirstOrDefault(iter => iter.AllyTeamID == gamePlayer.AllyTeamID);
+                    if (at == null) {
+                        _Logger.LogWarning($"missing specific ally team for a game for interactions "
+                            + $"[gameID={p.GameID}] [allyTeamID={gamePlayer.AllyTeamID}] [userID={userID}]");
+                        continue;
+                    }
+                    
+                    if (p.AllyTeamID == gamePlayer.AllyTeamID) {
+                        inter.WithCount += 1;
+                        if (at.Won == true) {
+                            inter.WithWin += 1;
+                        }
+                    } else {
+                        inter.AgainstCount += 1;
+                        if (at.Won == false) { // the ally team is for the target User ID, so if their team lost, that means the user's ally team won
+                            inter.AgainstWin += 1;
+                        }
+                    }
+
+                    ints[inter.TargetUserID] = inter;
+                }
+            }
+
+            List<ApiBarUserInteractions> apiInters = [];
+            foreach (KeyValuePair<long, BarUserInteractions> inter in ints) {
+                apiInters.Add(new ApiBarUserInteractions() {
+                    Interactions = inter.Value,
+                    User = await _UserRepository.GetByID(inter.Value.TargetUserID, cancel)
+                });
+            }
+
+            return ApiOk(apiInters);
+        }
+
+        /// <summary>
         ///		search users based on current username (case-insensitive).
         ///		<see cref="ApiBarUser.FactionStats"/> and <see cref="ApiBarUser.MapStats"/> is never populated
         /// </summary>
@@ -195,7 +295,7 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<List<UserSearchResult>>($"search must be at least 3 characters");
             }
 
-            List<UserSearchResult> users = await _UserDb.SearchByName(search, searchPreviousNames, cancel);
+            List<UserSearchResult> users = await _UserRepository.SearchByName(search, searchPreviousNames, cancel);
 
             foreach (UserSearchResult user in users) {
                 if (includeSkill == true) {
@@ -262,7 +362,7 @@ namespace gex.Controllers.Api {
                 throw new System.Exception($"logic error: why is map null here, 404 was expected");
             }
 
-            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
             if (user == null) {
                 return ApiNotFound<List<MapStatsStartSpot>>($"{nameof(BarUser)} {userID}");
             }

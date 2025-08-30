@@ -68,64 +68,34 @@
                 </div>
 
                 <div v-else>
-                    <div class="d-lg-none">
-                        <div v-for="map in mostPlayedMaps" :key="map.map" class="d-flex mb-3">
-                            <img :src="'/image-proxy/MapNameBackground?map=' + map.map + '&size=texture-thumb'" width="80" height="80" class="d-inline rounded me-2"/>
+                    <div class="d-none2 d-lg-block2">
+                        <div v-for="map in mostPlayedMaps" :key="map.map" class="mb-3 text-start" style="height: 114px;">
+                            <div class="img-overlay max-width"></div>
 
-                            <div class="d-inline-flex flex-column align-items-start">
-                                <h4 class="mb-0">
-                                    <a :href="'/mapname/' + map.map" class="text-white" style="text-decoration: none;">
-                                        {{ map.map }}
-                                    </a>
-                                </h4>
-
-                                <span>
-                                    {{ map.playCount }} plays
-                                </span>
-
-                                <span>
-                                    {{ map.winCount / map.playCount * 100 | locale(0) }}% won
-                                </span>
+                            <div class="position-absolute max-width img-map-parent" style="z-index: 0; font-size: 0">
+                                <div :style="mapBackground(map)" class="img-map-side img-map-left"></div>
+                                <div :style="mapBackground(map)" class="img-map-center"></div>
+                                <div :style="mapBackground(map)" class="img-map-side img-map-right"></div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="d-none d-lg-block">
-                        <div :style="mapStyle" class="p-3 border rounded mb-3">
-                            <h3 class="text-center">
-                                <a :href="'/mapname/' + mostPlayedMaps[0].map" class="text-white" style="text-decoration: none;">
-                                    {{ mostPlayedMaps[0].map }}
-                                </a>
-                            </h3>
+                            <div style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
+                                <img :src="'/image-proxy/MapNameBackground?map=' + map.map + '&size=texture-thumb'" width="80" height="80" class="d-inline corner-img me-2"/>
 
-                            <h4 class="d-flex">
-                                <span class="flex-grow-1">
-                                    {{ mostPlayedMaps[0].playCount }} plays
-                                </span>
+                                <div class="d-inline-flex flex-column align-items-start" style="vertical-align: top;">
+                                    <h4 class="mb-0">
+                                        <a :href="'/mapname/' + map.map" class="text-white" style="text-decoration: none;">
+                                            {{ map.map }}
+                                        </a>
+                                    </h4>
 
-                                <span class="flex-grow-1">
-                                    {{ mostPlayedMaps[0].winCount / mostPlayedMaps[0].playCount * 100 | locale(0) }}% won
-                                </span>
-                            </h4>
-                        </div>
+                                    <span>
+                                        {{ map.playCount }} plays
+                                    </span>
 
-                        <div v-for="map in mostPlayedMaps.slice(1)" :key="map.map" class="d-flex mb-3">
-                            <img :src="'/image-proxy/MapNameBackground?map=' + map.map + '&size=texture-thumb'" width="80" height="80" class="d-inline rounded me-2"/>
-
-                            <div class="d-inline-flex flex-column align-items-start">
-                                <h4 class="mb-0">
-                                    <a :href="'/mapname/' + map.map" class="text-white" style="text-decoration: none;">
-                                        {{ map.map }}
-                                    </a>
-                                </h4>
-
-                                <span>
-                                    {{ map.playCount }} plays
-                                </span>
-
-                                <span>
-                                    {{ map.winCount / map.playCount * 100 | locale(0) }}% won
-                                </span>
+                                    <span>
+                                        {{ map.winCount / map.playCount * 100 | locale(0) }}% won
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -145,6 +115,68 @@
         </div>
     </div>
 </template>
+
+<style scoped>
+    /* from: https://stackoverflow.com/a/61913549 by Temani Afif */
+    .corner-img {
+        --s: 8px; /* size on corner */
+        --t: 1px; /* thickness of border */
+        --g: 0px; /* gap between border//image */
+        
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid var(--bs-white); /* color here */
+        outline-offset: calc(-1*var(--t));
+        mask:
+            conic-gradient(at var(--s) var(--s),#0000 75%,#000 0)
+            0 0/calc(100% - var(--s)) calc(100% - var(--s)),
+            conic-gradient(#000 0 0) content-box;
+    }
+
+    .max-width {
+        max-width: calc(100vw - (var(--bs-gutter-x) * 0.5)) !important;
+    }
+
+    .img-map-parent {
+        max-width: 100vw;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .img-overlay {
+        width: 434px;
+        height: 114px;
+        position: absolute;
+        background: #0005;
+        background: linear-gradient(to right, #0005, var(--bs-body-bg));
+        z-index: 1;
+    }
+
+    .img-map-side {
+        display: inline-block;
+        width: 124px;
+        height: 114px;
+        transform: scaleX(-1);
+        background-repeat: no-repeat !important;
+        background-size: 150% !important;
+    }
+
+    .img-map-left {
+        background-position: left -36px !important;
+    }
+
+    .img-map-center {
+        display: inline-block;
+        width: 186px;
+        height: 114px;
+        background-position: center -36px !important;
+        background-size: cover !important;
+        background-repeat: no-repeat !important;
+    }
+
+    .img-map-right {
+        background-position: right -36px !important;
+    }
+</style>
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
@@ -169,6 +201,7 @@
     import { GamemodeUtil } from "util/Gamemode";
     import ColorUtils from "util/Color";
     import LocaleUtil from "util/Locale";
+    import { MapUtil } from "util/MapUtil";
 
     import { GroupedFactionGamemode } from "./common";
 
@@ -195,9 +228,19 @@
 
         methods: {
 
+            mapBackground: function(map: BarUserMapStats): any {
+                return {
+                    "background": `url("/image-proxy/MapNameBackground?map=${map.map}&size=texture-thumb")`
+                };
+            },
+
             makeCharts: function(): void {
                 this.makeFactionChart();
                 this.makeGamemodeChart();
+            },
+
+            mapNameWithoutVersion: function(name: string): string {
+                return MapUtil.getNameNameWithoutVersion(name);
             },
 
             makeFactionChart: function(): void {
@@ -360,12 +403,6 @@
                     //"background-image": `linear-gradient(to bottom, transparent, var(--bs-body-bg) 50%), url("/img/banner/armada_large.jpg")`,
                     "background-repeat": "no-repeat",
                 };
-            },
-
-            mapStyle: function(): any {
-                return {
-                    "background-image": `url("/image-proxy/MapNameBackground?map=${this.mostPlayedMaps[0].map.replaceAll(" ", "%20")}&size=texture-thumb")`
-                }
             },
 
             usernameStyle: function(): any {

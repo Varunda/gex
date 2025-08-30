@@ -2,6 +2,7 @@
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Queues;
+using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
@@ -25,7 +26,7 @@ namespace gex.Services.Util {
         private readonly BarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _BarMapRepository;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
@@ -37,7 +38,7 @@ namespace gex.Services.Util {
             BarMatchRepository matchRepository, BarReplayDb replayDb,
             BarMatchAllyTeamDb matchAllyTeamDb, BarMatchSpectatorDb matchSpectatorDb,
             BarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
-            BarMapRepository barMapRepository, BarUserDb userDb,
+            BarMapRepository barMapRepository, BarUserRepository userRepository,
             BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
             BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
@@ -52,7 +53,7 @@ namespace gex.Services.Util {
             _MatchChatMessageDb = matchChatMessageDb;
             _PlayerRepository = playerRepository;
             _BarMapRepository = barMapRepository;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
             _UserSkillDb = userSkillDb;
             _GameVersionUsageDb = gameVersionUsageDb;
             _MapStatUpdateQueue = mapStatUpdateQueue;
@@ -114,14 +115,14 @@ namespace gex.Services.Util {
                         Gamemode = match.Gamemode
                     });
 
-                    await _UserDb.Upsert(player.UserID, new Models.UserStats.BarUser() {
+                    await _UserRepository.Upsert(player.UserID, new BarUser() {
                         UserID = player.UserID,
                         Username = player.Name,
                         LastUpdated = match.StartTime
                     }, cancel);
 
                     if (match.Gamemode != BarGamemode.DEFAULT) {
-                        await _UserSkillDb.Upsert(new Models.UserStats.BarUserSkill() {
+                        await _UserSkillDb.Upsert(new BarUserSkill() {
                             UserID = player.UserID,
                             Gamemode = match.Gamemode,
                             Skill = player.Skill,

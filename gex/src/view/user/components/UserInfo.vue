@@ -83,7 +83,7 @@
         <div v-if="user.previousNames.length > 1" class="mb-3">
             <h4 class="wt-header bg-light text-dark mb-2">Previous names</h4>
 
-            <a-table :entries="previousNames" :show-filters="false" default-sort-field="" default-sort-order="asc" row-padding="compact" :hover="true" :default-page-size="10">
+            <a-table :entries="previousNames" :show-filters="false" default-sort-field="" default-sort-order="asc" row-padding="compact" :hover="true" :default-page-size="10" :hide-paginate="true">
                 <a-col>
                     <a-header>
                         <b>User name</b>
@@ -158,11 +158,11 @@
                     </a-header>
 
                     <a-body v-slot="entry">
-                        <span style="color: var(--bs-green)">
+                        <span style="color: var(--bs-success-text-emphasis)">
                             {{ entry.winCount }}
                         </span>
                         /
-                        <span style="color: var(--bs-red)">
+                        <span style="color: var(--bs-danger-text-emphasis)">
                             {{ entry.lossCount }}
                         </span>
                         <span>

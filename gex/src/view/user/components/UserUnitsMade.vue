@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <a-table :entries="unitsMade" :show-filters="true" default-sort-field="count" default-sort-order="desc" :paginate="true" :default-page-size="10">
+        <a-table :entries="unitsMade" :show-filters="true" default-sort-field="count" default-sort-order="desc" :paginate="true" :default-page-size="10" :overflow-wrap="true">
 
             <a-col sort-field="unitName">
                 <a-header>

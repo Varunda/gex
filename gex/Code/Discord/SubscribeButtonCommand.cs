@@ -6,6 +6,7 @@ using gex.Models.Db;
 using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.UserStats;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ namespace gex.Code.Discord {
 
         public ILogger<SubscribeButtonCommand> _Logger { set; private get; } = default!;
         public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
-        public BarUserDb _UserDb { set; private get; } = default!;
+        public BarUserRepository _UserRepository { set; private get; } = default!;
 
         [ButtonCommand("sub-player-remove")]
         public async Task UnsubscribePlayerEnd(ButtonContext ctx, long userID) {
@@ -30,7 +31,7 @@ namespace gex.Code.Discord {
 
             await ctx.Interaction.CreateDeferred(true);
 
-            BarUser? user = await _UserDb.GetByID(userID, cancel);
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
             List<DiscordSubscriptionMatchProcessed> subs = await _SubscriptionDb.GetByUserID(userID, cancel);
             DiscordSubscriptionMatchProcessed? sub = subs.FirstOrDefault(iter => iter.DiscordID == ctx.User.Id);
 

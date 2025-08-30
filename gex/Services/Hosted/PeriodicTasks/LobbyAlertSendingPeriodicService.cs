@@ -1,5 +1,6 @@
 ﻿using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
@@ -12,15 +13,15 @@ namespace gex.Services.Hosted.PeriodicTasks {
         private const string SERVICE_NAME = "lobby_alert_sending";
 
         private readonly LobbyManager _LobbyManager;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
 
         public LobbyAlertSendingPeriodicService(ILoggerFactory loggerFactory,
             ServiceHealthMonitor healthMon, LobbyManager lobbyManager,
-            BarUserDb userDb)
+            BarUserRepository userRepository)
         : base(SERVICE_NAME, TimeSpan.FromMinutes(3), loggerFactory, healthMon) {
 
             _LobbyManager = lobbyManager;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
         }
 
         protected override Task<string?> PerformTask(CancellationToken cancel) {

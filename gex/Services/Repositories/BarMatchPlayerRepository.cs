@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,42 @@ namespace gex.Services.Repositories {
             }
 
             return players;
+        }
+
+        public async Task<List<BarMatchPlayer>> GetByGameIDs(IEnumerable<string> IDs, CancellationToken cancel) {
+            if (!IDs.Any()) {
+                return new List<BarMatchPlayer>();
+            }
+
+            List<BarMatchPlayer> p = [];
+
+            List<string> localIDs = new(IDs);
+
+            // the .toList here is to make a copy, so its safe to remove entries from localIDs
+            foreach (string ID in localIDs.ToList()) {
+                cancel.ThrowIfCancellationRequested();
+
+                string cacheKey = string.Format(CACHE_KEY_ID, ID);
+                if (_Cache.TryGetValue(cacheKey, out List<BarMatchPlayer>? matchPlayers) == true && matchPlayers != null) {
+                    localIDs.Remove(ID);
+                    p.AddRange(matchPlayers);
+                }
+            }
+
+            if (localIDs.Count > 0) {
+                List<BarMatchPlayer> dbMatches = await _Db.GetByGameIDs(localIDs, cancel);
+                p.AddRange(dbMatches);
+            }
+
+            IEnumerable<IGrouping<string, BarMatchPlayer>> players = p.GroupBy(iter => iter.GameID);
+            foreach (IGrouping<string, BarMatchPlayer> groupedPlayers in players) {
+                string cacheKey = string.Format(CACHE_KEY_ID, groupedPlayers.Key);
+                _Cache.Set(cacheKey, groupedPlayers.ToList(), new MemoryCacheEntryOptions() {
+                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                });
+            }
+
+            return p;
         }
 
         public Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {

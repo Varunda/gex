@@ -4,7 +4,6 @@ import { BarUserSkill } from "./BarUserSkill";
 import { BarUserUnitsMade } from "./BarUserUnitsMade";
 import { UserPreviousName } from "./UserPreviousName";
 
-
 export class BarUser {
     public userID: number = 0;
     public username: string = "";
@@ -27,6 +26,21 @@ export class BarUser {
             factionStats: elem.factionStats.map((iter: any) => BarUserFactionStats.parse(iter)),
             previousNames: elem.previousNames.map((iter: any) => UserPreviousName.parse(iter)),
             unitsMade: elem.unitsMade.map((iter: any) => BarUserUnitsMade.parse(iter))
+        };
+    }
+
+}
+
+export class BasicBarUser {
+    public userID: number = 0;
+    public username: string = "";
+    public lastUpdated: Date = new Date();
+
+    public static parse(elem: any): BasicBarUser {
+        return {
+            userID: elem.userID,
+            username: elem.username,
+            lastUpdated: new Date(elem.lastUpdated)
         };
     }
 

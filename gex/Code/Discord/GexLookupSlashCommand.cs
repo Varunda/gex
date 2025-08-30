@@ -36,7 +36,7 @@ namespace gex.Code.Discord {
         public IOptions<DiscordOptions> _DiscordOptions { set; private get; } = default!;
 
         public InstanceInfo _Instance { set; internal get; } = default!;
-        public BarUserDb _UserDb { set; internal get; } = default!;
+        public BarUserRepository _UserRepository { set; internal get; } = default!;
         public BarUserSkillDb _SkillDb { set; private get; } = default!;
         public BarUserMapStatsDb _MapStatsDb { set; private get; } = default!;
         public BarUserFactionStatsDb _FactionStatsDb { set; private get; } = default!;
@@ -63,7 +63,7 @@ namespace gex.Code.Discord {
 
             Stopwatch timer = Stopwatch.StartNew();
 
-            List<UserSearchResult> users = (await _UserDb.SearchByName(name, false, cancel))
+            List<UserSearchResult> users = (await _UserRepository.SearchByName(name, false, cancel))
                 .OrderByDescending(iter => iter.LastUpdated).ToList();
 
             DiscordWebhookBuilder builder = new();
@@ -157,7 +157,7 @@ namespace gex.Code.Discord {
 
             Stopwatch timer = Stopwatch.StartNew();
 
-            List<UserSearchResult> users = (await _UserDb.SearchByName(name, false, cancel))
+            List<UserSearchResult> users = (await _UserRepository.SearchByName(name, false, cancel))
                 .OrderByDescending(iter => iter.LastUpdated).ToList();
 
             DiscordWebhookBuilder builder = new();
@@ -271,7 +271,7 @@ namespace gex.Code.Discord {
 
                 userID = link.BarUserID;
             } else {
-                List<UserSearchResult> users = (await _UserDb.SearchByName(player, false, cancel))
+                List<UserSearchResult> users = (await _UserRepository.SearchByName(player, false, cancel))
                     .OrderByDescending(iter => iter.LastUpdated).ToList();
 
                 // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
@@ -382,7 +382,7 @@ namespace gex.Code.Discord {
 
             Stopwatch timer = Stopwatch.StartNew();
 
-            List<UserSearchResult> users = (await _UserDb.SearchByName(player, false, cancel))
+            List<UserSearchResult> users = (await _UserRepository.SearchByName(player, false, cancel))
                 .OrderByDescending(iter => iter.LastUpdated).ToList();
 
             // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
@@ -449,7 +449,7 @@ namespace gex.Code.Discord {
 
             Stopwatch timer = Stopwatch.StartNew();
 
-            List<UserSearchResult> users = (await _UserDb.SearchByName(player, false, cancel))
+            List<UserSearchResult> users = (await _UserRepository.SearchByName(player, false, cancel))
                 .OrderByDescending(iter => iter.LastUpdated).ToList();
 
             // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user
@@ -756,7 +756,7 @@ namespace gex.Code.Discord {
         private string? _GetEmoji(string name) => _DiscordOptions.Value.Emojis.GetValueOrDefault(name.ToLower()); 
 
         private async Task<Result<UserSearchResult, string>> _GetPlayer(string name, CancellationToken cancel) {
-            List<UserSearchResult> users = (await _UserDb.SearchByName(name, false, cancel))
+            List<UserSearchResult> users = (await _UserRepository.SearchByName(name, false, cancel))
                 .OrderByDescending(iter => iter.LastUpdated).ToList();
 
             // if 1 user, use that one, else try to find the user with the exact match, otherwise didn't find user

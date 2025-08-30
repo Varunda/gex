@@ -23,6 +23,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<TeiServerRepository>();
 
             // user stats
+            services.AddSingleton<BarUserRepository>();
             services.AddSingleton<BarUserUnitsMadeRepository>();
         }
 

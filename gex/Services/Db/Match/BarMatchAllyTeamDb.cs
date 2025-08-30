@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -59,9 +60,26 @@ namespace gex.Services.Db.Match {
                 SELECT *
                     FROM bar_match_ally_team
                     WHERE game_id = @GameID
-            ");
+            ", cancel);
 
             cmd.AddParameter("GameID", gameID);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatchAllyTeam> allyTeams = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return allyTeams;
+        }
+
+        public async Task<List<BarMatchAllyTeam>> GetByGameIDs(IEnumerable<string> gameIDs, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match_ally_team
+                    WHERE game_id = ANY(@GameIDs)
+            ", cancel);
+
+            cmd.AddParameter("GameIDs", gameIDs.ToList());
             await cmd.PrepareAsync(cancel);
 
             List<BarMatchAllyTeam> allyTeams = await _Reader.ReadList(cmd, cancel);

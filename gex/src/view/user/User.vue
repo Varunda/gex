@@ -1,58 +1,60 @@
 
 <template>
-    <div>
-        <div class="container">
-            <div>
-                <h2 class="wt-header bg-light text-dark">User info</h2>
+    <div class="container remove-container-padding">
+        <div>
+            <h2 class="wt-header bg-light text-dark">User info</h2>
 
-                <div v-if="user.state == 'idle'"></div>
+            <div v-if="user.state == 'idle'"></div>
 
-                <div v-else-if="user.state == 'loading'">
-                    <busy class="busy busy-sm"></busy>
-                    Loading...
-                </div>
-
-                <div v-else-if="user.state == 'loaded'">
-                    <user-info :user="user.data"></user-info>
-                </div>
+            <div v-else-if="user.state == 'loading'">
+                <busy class="busy busy-sm"></busy>
+                Loading...
             </div>
 
-            <div>
-                <div class="wt-header mb-2 bg-light text-dark" style="white-space: nowrap; text-wrap: wrap;">
-                    <h2 class="d-inline-block mb-0">
-                        Recorded matches
-                    </h2>
+            <div v-else-if="user.state == 'loaded'">
+                <user-info :user="user.data"></user-info>
+            </div>
+        </div>
 
-                    <wbr/>
+        <div>
+            <div class="wt-header mb-2 bg-light text-dark" style="white-space: nowrap; text-wrap: wrap;">
+                <h2 class="d-inline-block mb-0">
+                    Recorded matches
+                </h2>
 
-                    <h6 class="d-inline-block mb-0">
-                        Only includes public PvP games
-                    </h6>
-                </div>
+                <wbr/>
 
-                <div v-if="matches.state == 'idle'"></div>
-                
-                <div v-else-if="matches.state == 'loading'">
-                    <busy class="busy busy-sm"></busy>
-                    Loading...
-                </div>
-
-                <div v-else-if="matches.state == 'loaded'">
-                    <user-matches :data="matches.data" :user-id="userID"></user-matches>
-                </div>
-
-                <div v-else-if="matches.state == 'error'">
-                    <api-error :error="matches.problem"></api-error>
-                </div>
-
-                <div v-else>
-                    unchecked state of matches: {{ matches.state }}
-                </div>
+                <h6 class="d-inline-block mb-0">
+                    Only includes public PvP games
+                </h6>
             </div>
 
-            <div v-if="user.state == 'loaded'">
-                <user-units-made :user="user.data"></user-units-made>
+            <div v-if="matches.state == 'idle'"></div>
+            
+            <div v-else-if="matches.state == 'loading'">
+                <busy class="busy busy-sm"></busy>
+                Loading...
             </div>
+
+            <div v-else-if="matches.state == 'loaded'">
+                <user-matches :data="matches.data" :user-id="userID"></user-matches>
+            </div>
+
+            <div v-else-if="matches.state == 'error'">
+                <api-error :error="matches.problem"></api-error>
+            </div>
+
+            <div v-else>
+                unchecked state of matches: {{ matches.state }}
+            </div>
+        </div>
+
+        <div v-if="user.state == 'loaded'">
+            <user-interactions :user-id="userID"></user-interactions>
+        </div>
+
+        <div v-if="user.state == 'loaded'">
+            <user-units-made :user="user.data"></user-units-made>
         </div>
     </div>
 </template>
@@ -74,6 +76,7 @@
     import UserMatches from "./components/UserMatches.vue";
     import UserInfo from "./components/UserInfo.vue";
     import UserUnitsMade from "./components/UserUnitsMade.vue";
+    import UserInteractions from "./components/UserInteractions.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { BarUserApi } from "api/BarUserApi";
@@ -159,7 +162,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton, Busy,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            UserMatches, UserInfo, UserUnitsMade
+            UserMatches, UserInfo, UserUnitsMade, UserInteractions,
         }
     });
     export default User;

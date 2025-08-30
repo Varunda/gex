@@ -36,13 +36,13 @@ namespace gex.Controllers {
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _MapRepository;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
 
         public HomeController(ILogger<HomeController> logger,
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
             BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
-            BarMapRepository mapRepository, BarUserDb userDb) {
+            BarMapRepository mapRepository, BarUserRepository userRepository) {
 
             _HttpContextAccessor = httpContextAccessor;
             _HttpUtil = httpUtil;
@@ -52,7 +52,7 @@ namespace gex.Controllers {
             _AllyTeamDb = allyTeamDb;
             _PlayerRepository = playerRepository;
             _MapRepository = mapRepository;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
         }
 
         public IActionResult Index() {
@@ -124,7 +124,7 @@ namespace gex.Controllers {
             try {
                 string? ogDesc = null;
                 await Task.Run(async () => {
-                    BarUser? user = await _UserDb.GetByID(userID, cancel);
+                    BarUser? user = await _UserRepository.GetByID(userID, cancel);
 
                     if (user == null) {
                         return;

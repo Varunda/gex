@@ -30,7 +30,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _BarMapRepository;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
         private readonly MapPriorityModDb _MapPriorityModDb;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BarDemofileResultProcessor _ResultProcessor;
@@ -52,7 +52,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
             BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-            BarReplayDb replayDb, BarUserDb userDb,
+            BarReplayDb replayDb, BarUserRepository userRepository,
             BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
             BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
@@ -72,7 +72,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _PlayerRepository = playerRepository;
             _BarMapRepository = barMapRepository;
             _ReplayDb = replayDb;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
             _UserMapStatUpdateQueue = userMapStatUpdateQueue;
             _FactionStatUpdateQueue = factionStatUpdateQueue;
             _MapPriorityModDb = mapPriorityModDb;

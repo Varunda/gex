@@ -4,6 +4,7 @@ using gex.Models.UserStats;
 using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace gex.Services.Hosted.QueueProcessor {
     public class LobbyMessageQueueProcessor : BaseQueueProcessor<LobbyMessage> {
 
         private readonly LobbyManager _LobbyManager;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
         private readonly ILobbyClient _LobbyClient;
 
         private readonly Dictionary<string, int> _DmVelocity = [];
@@ -29,12 +30,12 @@ namespace gex.Services.Hosted.QueueProcessor {
         public LobbyMessageQueueProcessor(ILoggerFactory factory,
             BaseQueue<LobbyMessage> queue, ServiceHealthMonitor serviceHealthMonitor,
             LobbyManager lobbyManager, ILobbyClient lobbyClient,
-            BarUserDb userDb)
+            BarUserRepository userRepository)
         : base("lobby_message_queue", factory, queue, serviceHealthMonitor) {
 
             _LobbyManager = lobbyManager;
             _LobbyClient = lobbyClient;
-            _UserDb = userDb;
+            _UserRepository = userRepository;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken) {
@@ -460,7 +461,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             LobbyUser? user = _LobbyManager.GetUser(userID);
             if (user == null) {
                 _Logger.LogWarning($"missing user from lobby manager, using DB as fallback [userID={userID}]");
-                BarUser? dbUser = await _UserDb.GetByID(uID, cancel);
+                BarUser? dbUser = await _UserRepository.GetByID(uID, cancel);
                 if (dbUser != null) {
                     username = dbUser.Username;
                 } else {

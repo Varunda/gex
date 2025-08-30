@@ -169,7 +169,7 @@
 
             cssStyle: function(): object {
                 return {
-                    "color": ((this.userSkill > this.avgSkill) ? "var(--bs-warning-text-emphasis)" : "var(--bs-secondary-text-emphasis)") + " !important",
+                    "color": ((this.userSkill > this.avgSkill) ? "var(--bs-warning-text-emphasis)" : "var(--bs-info-text-emphasis)") + " !important",
                     //"text-decoration": "underline"
                 };
             }

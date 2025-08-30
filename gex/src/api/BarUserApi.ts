@@ -1,6 +1,7 @@
 import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
 import { BarUser } from "model/BarUser";
+import { BarUserInteractions } from "model/BarUserInteractions";
 import { BarUserSkillChanges } from "model/BarUserSkillChanges";
 import { UserSearchResult } from "model/UserSearchResult";
 
@@ -15,6 +16,10 @@ export class BarUserApi extends ApiWrapper<BarUser> {
 
     public static getSkillChanges(userID: number): Promise<Loading<BarUserSkillChanges>> {
         return BarUserApi.get().readSingle(`/api/user/${userID}/skill-changes`, BarUserSkillChanges.parse);
+    }
+
+    public static getInteractions(userID: number): Promise<Loading<BarUserInteractions[]>> {
+        return BarUserApi.get().readList(`/api/user/${userID}/interactions`, BarUserInteractions.parse);
     }
 
     public static search(text: string, searchPreviousNames: boolean = false, includeSkill: boolean = true): Promise<Loading<UserSearchResult[]>> {

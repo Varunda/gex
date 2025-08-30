@@ -21,7 +21,7 @@ namespace gex.Code.Commands {
     public class BarUserCommand {
 
         private readonly ILogger<BarUserCommand> _Logger;
-        private readonly BarUserDb _UserDb;
+        private readonly BarUserRepository _UserRepository;
         private readonly BarMapRepository _MapRepository;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
@@ -29,7 +29,7 @@ namespace gex.Code.Commands {
 
         public BarUserCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<BarUserCommand>>();
-            _UserDb = services.GetRequiredService<BarUserDb>();
+            _UserRepository = services.GetRequiredService<BarUserRepository>();
             _MapRepository = services.GetRequiredService<BarMapRepository>();
             _MatchRepository = services.GetRequiredService<BarMatchRepository>();
             _MapStatUpdateQueue = services.GetRequiredService<BaseQueue<UserMapStatUpdateQueueEntry>>();
@@ -48,7 +48,7 @@ namespace gex.Code.Commands {
         }
         
         public async Task FixAll() {
-            List<long> users = (await _UserDb.GetAll(CancellationToken.None)).Select(iter => iter.UserID).ToList();
+            List<long> users = (await _UserRepository.GetAll(CancellationToken.None)).Select(iter => iter.UserID).ToList();
             _Logger.LogInformation($"fixing user stats for {users.Count} users");
 
             new Task(async () => {
@@ -60,7 +60,7 @@ namespace gex.Code.Commands {
         }
 
         public async Task FixFaction() {
-            List<long> users = (await _UserDb.GetAll(CancellationToken.None)).Select(iter => iter.UserID).ToList();
+            List<long> users = (await _UserRepository.GetAll(CancellationToken.None)).Select(iter => iter.UserID).ToList();
             _Logger.LogInformation($"fixing faction user stats for {users.Count} users");
 
             new Task(() => {

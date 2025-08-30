@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,6 +79,29 @@ namespace gex.Services.Db.Match {
             await conn.CloseAsync();
 
             return players;
+        }
+
+        /// <summary>
+        ///     get a list of <see cref="BarMatchPlayer"/>s based on the <see cref="BarMatchPlayer.GameID"/>
+        /// </summary>
+        /// <param name="IDs">List of IDs to get from the DB</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatchPlayer>> GetByGameIDs(IEnumerable<string> IDs, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match_player
+                    WHERE game_id = ANY(@IDs);
+            ", cancel);
+
+            cmd.AddParameter("IDs", IDs.ToList());
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatchPlayer> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
         }
 
         public async Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
