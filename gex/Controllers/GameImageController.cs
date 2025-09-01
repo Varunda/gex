@@ -87,7 +87,7 @@ namespace gex.Controllers {
             }
 
             FileStream image = System.IO.File.OpenRead(mapPath);
-            return File(image, "image/jpg", false);
+            return File(image, "image/jpeg", $"{mapName}.jpg", false);
         }
 
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["map", "size"])] // 24 hours
@@ -206,7 +206,7 @@ namespace gex.Controllers {
             }
 
             FileStream image = System.IO.File.OpenRead(iconPath);
-            return File(image, "image/png", false);
+            return File(image, "image/png", $"{defName}.png", false);
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace gex.Controllers {
             }
 
             FileStream image = System.IO.File.OpenRead(picPath);
-            return File(image, "image/jpg", false);
+            return File(image, "image/jpeg", $"{defName}.jpg", false);
         }
 
     }
