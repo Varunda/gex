@@ -46,7 +46,7 @@ namespace gex.Code.Discord {
         public DiscordBarUserLinkDb _LinkDb { set; private get; } = default!;
         public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
         public LobbyManager _LobbyManager { set; private get; } = default!;
-        public LobbyClient _LobbyClient { set; private get; } = default!;
+        public ILobbyClient _LobbyClient { set; private get; } = default!;
         public LobbyAlertDb _LobbyAlertDb { set; private get; } = default!;
         public BarMapRepository _MapRepository { set; private get; } = default!;
 
@@ -147,6 +147,7 @@ namespace gex.Code.Discord {
                 embed.Color = DiscordColor.Red;
             } else if (player.IsOk == true) {
                 UserSearchResult user = player.Value;
+                embed.Title = $"Lobby lookup: `{name}`";
 
                 LobbyUser? lobbyUser = _LobbyManager.GetUser(user.Username);
                 if (lobbyUser == null) {
