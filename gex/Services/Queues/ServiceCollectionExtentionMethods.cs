@@ -24,6 +24,7 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<MapStatUpdateQueueEntry>, MapStatUpdateQueue>();
             services.AddSingleton<BaseQueue<SubscriptionMessageQueueEntry>, SubscriptionMessageQueue>();
             services.AddSingleton<BaseQueue<LobbyMessage>, LobbyMessageQueue>();
+            services.AddSingleton<BaseQueue<BattleStatusUpdateQueueEntry>, BattleStatusUpdateQueue>();
         }
 
     }

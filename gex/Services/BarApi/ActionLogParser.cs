@@ -110,7 +110,7 @@ namespace gex.Services.BarApi {
                         GameEventUnitGiven e = Serialize<GameEventUnitGiven>(json);
                         e.Frame = frame;
                         if (output.UnitsGiven.FirstOrDefault(iter => iter.Frame == e.Frame && iter.UnitID == e.UnitID) != null) {
-                            _Logger.LogWarning($"duplicate UnitGiven event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
+                            //_Logger.LogWarning($"duplicate UnitGiven event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
                         } else {
                             output.UnitsGiven.Add(e);
                         }
@@ -120,7 +120,7 @@ namespace gex.Services.BarApi {
                         GameEventUnitTaken e = Serialize<GameEventUnitTaken>(json);
                         e.Frame = frame;
                         if (output.UnitsTaken.FirstOrDefault(iter => iter.Frame == e.Frame && iter.UnitID == e.UnitID) != null) {
-                            _Logger.LogWarning($"duplicate UnitTaken event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
+                            //_Logger.LogWarning($"duplicate UnitTaken event found [gameID={gameID}] [frame={e.Frame}] [unitID={e.UnitID}]");
                         } else {
                             output.UnitsTaken.Add(e);
                         }

@@ -41,6 +41,7 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionQueue;
         private readonly BaseQueue<LobbyMessage> _LobbyMessageQueue;
+        private readonly BaseQueue<BattleStatusUpdateQueueEntry> _BattleStatusUpdateQueue;
 
         public HealthApiController(ILogger<HealthApiController> logger, IMemoryCache cache,
             BaseQueue<AppDiscordMessage> discordQueue, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
@@ -50,7 +51,7 @@ namespace gex.Controllers.Api {
             BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue,
             BaseQueue<HeadlessRunStatus> headlessRunStatusQueue, HeadlessRunStatusRepository headlessRunStatusRepository,
             BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue, BaseQueue<SubscriptionMessageQueueEntry> subscriptionQueue,
-            BaseQueue<LobbyMessage> lobbyMessageQueue) {
+            BaseQueue<LobbyMessage> lobbyMessageQueue, BaseQueue<BattleStatusUpdateQueueEntry> battleStatusUpdateQueue) {
 
             _Logger = logger;
             _Cache = cache;
@@ -68,6 +69,7 @@ namespace gex.Controllers.Api {
             _HeadlessRunStatusRepository = headlessRunStatusRepository;
             _SubscriptionQueue = subscriptionQueue;
             _LobbyMessageQueue = lobbyMessageQueue;
+            _BattleStatusUpdateQueue = battleStatusUpdateQueue;
         }
 
         /// <summary>
@@ -137,6 +139,7 @@ namespace gex.Controllers.Api {
                     _MakeCount("map_stat_update_queue", _MapStatUpdateQueue),
                     _MakeCount("subscription_queue", _SubscriptionQueue),
                     _MakeCount("lobby_message_queue", _LobbyMessageQueue),
+                    _MakeCount("battle_status_queue", _BattleStatusUpdateQueue)
                 };
 
                 foreach (string service in _ServiceHealthMonitor.GetServices()) {

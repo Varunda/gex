@@ -28,11 +28,13 @@ namespace gex.Services.Hosted {
             services.AddHostedService<HeadlessRunStatusUpdateQueueProcessor>();
             services.AddHostedService<MapStatUpdateQueueProcessor>();
             services.AddHostedService<LobbyMessageQueueProcessor>();
+            services.AddHostedService<BattleStatusQueueProcessor>();
         }
 
         public static void AddPeriodicServices(this IServiceCollection services) {
             services.AddHostedService<GameFetcherPeriodicService>();
             services.AddHostedService<GameVersionCleanupPeriodicService>();
+            services.AddHostedService<LobbyAlertSendingPeriodicService>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {

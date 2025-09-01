@@ -40,6 +40,7 @@ namespace gex.Services.Lobby {
         /// <summary>
         ///     write a message to the lobby, and dont wait for a reply
         /// </summary>
+        /// <param name="command">command being sent</param>
         /// <param name="message"></param>
         /// <param name="cancel"></param>
         /// <returns></returns>
@@ -48,6 +49,7 @@ namespace gex.Services.Lobby {
         /// <summary>
         ///     write a message to the lobby, and wait for the reply
         /// </summary>
+        /// <param name="command">command being sent</param>
         /// <param name="message">message to send. do not include the trailing \n</param>
         /// <param name="timeout">timeout before the reply is considered lost</param>
         /// <param name="cancel"></param>
@@ -73,6 +75,8 @@ namespace gex.Services.Lobby {
         DateTime LastMessage();
 
         Task<Result<LobbyWhoisResponse, string>> Whois(string username, CancellationToken cancel);
+
+        Task<Result<LobbyBattleStatus, string>> BattleStatus(int battleID, CancellationToken cancel);
 
     }
 }

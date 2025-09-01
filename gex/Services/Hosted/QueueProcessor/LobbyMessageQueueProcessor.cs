@@ -1,14 +1,14 @@
 ﻿using gex.Models;
 using gex.Models.Lobby;
+using gex.Models.Queues;
 using gex.Models.UserStats;
-using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -22,6 +22,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly LobbyManager _LobbyManager;
         private readonly BarUserRepository _UserRepository;
         private readonly ILobbyClient _LobbyClient;
+        private readonly BaseQueue<BattleStatusUpdateQueueEntry> _BattleStatusUpdateQueue;
 
         private readonly Dictionary<string, int> _DmVelocity = [];
 
@@ -30,12 +31,13 @@ namespace gex.Services.Hosted.QueueProcessor {
         public LobbyMessageQueueProcessor(ILoggerFactory factory,
             BaseQueue<LobbyMessage> queue, ServiceHealthMonitor serviceHealthMonitor,
             LobbyManager lobbyManager, ILobbyClient lobbyClient,
-            BarUserRepository userRepository)
+            BarUserRepository userRepository, BaseQueue<BattleStatusUpdateQueueEntry> battleStatusUpdateQueue)
         : base("lobby_message_queue", factory, queue, serviceHealthMonitor) {
 
             _LobbyManager = lobbyManager;
             _LobbyClient = lobbyClient;
             _UserRepository = userRepository;
+            _BattleStatusUpdateQueue = battleStatusUpdateQueue;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken) {
@@ -156,7 +158,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         }
 
         /// <summary>
-        ///     handle a ADDUSER command
+        ///     handle a ADDUSER command, which is sent when a new user appears in the lobby
         /// </summary>
         /// <param name="entry"></param>
         private void HandleAddUser(LobbyMessage entry) {
@@ -166,7 +168,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             string? username = entry.GetWord();
             string? country = entry.GetWord();
             string? userID = entry.GetWord();
-            string? version = entry.GetWord(); // this value is safe to be null
+            string? version = entry.GetSentence(); // this value is safe to be null
 
             if (username == null || country == null || userID == null) {
                 _Logger.LogWarning($"failed to get arguments for ADDUSER [username={username}] [country={country}] [userID={userID}] [version={version}] [args={entry.Arguments}]");
@@ -188,7 +190,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         }
 
         /// <summary>
-        ///     handdle a BATTLECLOSED command
+        ///     handle a BATTLECLOSED command
         /// </summary>
         /// <param name="entry"></param>
         private void HandleBattleClosed(LobbyMessage entry) {
@@ -264,6 +266,18 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             _LobbyManager.AddBattle(battle);
 
+            if (battle.Passworded == false) {
+                // BATTLEOPENED is sent on login, so it can include battles that are already in progress
+                LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
+
+                if (founder != null && founder.InGame == false) {
+                    _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
+                        BattleID = battle.BattleID,
+                        Reason = "battle_opened"
+                    });
+                }
+            }
+
             //_Logger.LogInformation($"battle opened [battleID={battle.BattleID}] [map={battle.Map}] [max players={battle.MaxPlayers}] [title={battle.Title}]");
         }
 
@@ -323,6 +337,23 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             _LobbyManager.RemoveUserFromBattle(username, bID);
+
+            // only request an update if the game is opened and not running
+            LobbyBattle? battle = _LobbyManager.GetBattle(bID);
+            if (battle != null && battle.Passworded == false && battle.Locked == false) {
+                LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
+
+                if (founder != null && founder.InGame == false) {
+                    LobbyUser? userLeft = _LobbyManager.GetUser(username);
+                    if (userLeft != null) {
+                        // no need to fully update the battle status, the only thing that could have changed is the
+                        if (battle.BattleStatus != null) {
+                            battle.BattleStatus.Clients = battle.BattleStatus.Clients.Where(iter => iter.UserID != userLeft.UserID).ToList();
+                            battle.BattleStatus.Spectators = battle.BattleStatus.Spectators.Where(iter => iter.UserID != userLeft.UserID).ToList();
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -345,6 +376,19 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             _LobbyManager.AddUserToBattle(bID, username);
+
+            // only request an update if the game is opened and not running
+            LobbyBattle? battle = _LobbyManager.GetBattle(bID);
+            if (battle != null && battle.Passworded == false && battle.Locked == false) {
+                LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
+
+                if (founder != null && founder.InGame == false) {
+                    _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
+                        BattleID = bID,
+                        Reason = "user_joined"
+                    });
+                }
+            }
         }
 
         /// <summary>
@@ -400,9 +444,23 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return;
             }
 
+            battle.Locked = ("locked" == "true");
+
+            bool needsStatusUpdate = battle.Passworded == false
+                && battle.Locked == false
+                && battle.SpectatorCount != specCount;
+
             battle.SpectatorCount = specCount;
             battle.Map = mapName;
             _LobbyManager.UpdateBattle(bID, battle);
+
+            LobbyUser? founder = needsStatusUpdate == true ? _LobbyManager.GetUser(battle.FounderUsername) : null;
+            if (needsStatusUpdate == true && founder != null && founder.InGame == false) {
+                _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
+                    BattleID = battle.BattleID,
+                    Reason = "spectator_count_changed"
+                });
+            }
         }
 
         /// <summary>
@@ -483,6 +541,10 @@ namespace gex.Services.Hosted.QueueProcessor {
             _Logger.LogInformation($"accepted friend request [userID={userID}]");
         }
 
+        /// <summary>
+        ///     handle s.battle.teams messages, which update the team count and team size in a battle
+        /// </summary>
+        /// <param name="entry"></param>
         private void HandleBattleTeams(LobbyMessage entry) {
             // s.battle.teams base64-json
 
@@ -509,7 +571,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogWarning($"got null json object from json string [b64={b64}]");
                 return;
             }
-            _Logger.LogDebug($"updating battle team size [b64={b64}]");
+            //_Logger.LogDebug($"updating battle team size [b64={b64}]");
 
             foreach (KeyValuePair<string, JsonNode?> iter in elem) {
                 if (iter.Value == null) {

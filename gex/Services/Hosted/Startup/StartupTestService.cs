@@ -6,6 +6,8 @@ using gex.Services.Parser;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,12 +17,14 @@ namespace gex.Services.Hosted.Startup {
 
         private readonly ILogger<StartupTestService> _Logger;
         private readonly ILobbyClient _LobbyClient;
+        private readonly LobbyManager _LobbyManager;
 
-        public StartupTestService(ILogger<StartupTestService> logger, 
-            ILobbyClient lobbyClient) {
+        public StartupTestService(ILogger<StartupTestService> logger,
+            ILobbyClient lobbyClient, LobbyManager lobbyManager) {
 
             _Logger = logger;
             _LobbyClient = lobbyClient;
+            _LobbyManager = lobbyManager;
         }
 
         protected override Task ExecuteAsync(CancellationToken cancel) {
@@ -32,7 +36,7 @@ namespace gex.Services.Hosted.Startup {
 
                 _Logger.LogInformation($"client is now connected");
 
-                await Task.Delay(TimeSpan.FromMilliseconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(1000));
             }, cancel);
 
             return Task.CompletedTask;

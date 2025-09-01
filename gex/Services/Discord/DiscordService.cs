@@ -130,12 +130,10 @@ namespace gex.Services.Discord {
 
                     DiscordMessageBuilder builder = new();
 
-                    // the contents is ignored if there is any embeds
-                    if (msg.Embeds.Count > 0) {
-                        foreach (DSharpPlus.Entities.DiscordEmbed embed in msg.Embeds) {
-                            builder.AddEmbed(embed);
-                        }
-                    } else {
+                    foreach (DSharpPlus.Entities.DiscordEmbed embed in msg.Embeds) {
+                        builder.AddEmbed(embed);
+                    }
+                    if (msg.Message != "") {
                         builder.Content = msg.Message;
                     }
 

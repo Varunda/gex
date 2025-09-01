@@ -51,5 +51,9 @@ namespace gex.Services.Lobby.Implementations {
             return Task.FromResult(Result<LobbyWhoisResponse, string>.Err("Lobby not enabled"));
         }
 
+        public Task<Result<LobbyBattleStatus, string>> BattleStatus(int battleID, CancellationToken cancel) {
+            return Task.FromResult(Result<LobbyBattleStatus, string>.Err("Lobby not enabled"));
+        }
+
     }
 }

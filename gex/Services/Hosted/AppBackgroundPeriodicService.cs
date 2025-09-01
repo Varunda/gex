@@ -69,6 +69,11 @@ namespace gex.Services.Hosted {
             }
         }
 
+        /// <summary>
+        ///     perform the task, optionally giving a message back that indicates the status of the ran task
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         protected abstract Task<string?> PerformTask(CancellationToken cancel);
 
     }

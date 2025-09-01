@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using gex.Code.Constants;
+using System.Collections.Generic;
 
 namespace gex.Models.Lobby {
 
@@ -24,6 +25,8 @@ namespace gex.Models.Lobby {
         public int SpectatorCount { get; set; }
 
         public bool Passworded { get; set; }
+
+        public bool Locked { get; set; }
 
         public int Rank { get; set; }
 
@@ -52,6 +55,26 @@ namespace gex.Models.Lobby {
         public int TeamSize { get; set; }
 
         public HashSet<long> Users { get; set; } = [];
+
+        public LobbyBattleStatus? BattleStatus { get; set; } = null;
+
+        public byte Gamemode {
+            get {
+                if (TeamCount == 2 && TeamSize == 1) {
+                    return BarGamemode.DUEL;
+                } else if (TeamCount == 2 && TeamSize <= 5) {
+                    return BarGamemode.SMALL_TEAM;
+                } else if (TeamCount == 2 && TeamSize <= 8) {
+                    return BarGamemode.LARGE_TEAM;
+                } else if (TeamCount > 2 && TeamSize == 1) {
+                    return BarGamemode.FFA;
+                } else if (TeamCount > 2 && TeamSize >= 2) {
+                    return BarGamemode.TEAM_FFA;
+                }
+
+                return 0;
+            }
+        }
 
     }
 }

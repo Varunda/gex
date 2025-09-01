@@ -72,6 +72,7 @@ namespace gex.Services.Db {
             services.AddSingleton<UnitTweakPriorityExemptionDb>();
             services.AddSingleton<DiscordSubscriptionMatchProcessedDb>();
             services.AddSingleton<DiscordBarUserLinkDb>();
+            services.AddSingleton<LobbyAlertDb>();
         }
 
     }

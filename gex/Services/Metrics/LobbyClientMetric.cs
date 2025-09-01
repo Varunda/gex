@@ -16,6 +16,7 @@ namespace gex.Services.Metrics {
         private readonly Counter<long> _ConnectionCount;
         private readonly Counter<long> _DisconnectCount;
         private readonly Counter<long> _WriteErrors;
+        private readonly Counter<long> _BattleStatus;
 
         public LobbyClientMetric(IMeterFactory meterFactory) {
             _Meter = meterFactory.Create(NAME);
@@ -40,6 +41,10 @@ namespace gex.Services.Metrics {
                 name: "gex_lobby_write_error",
                 description: "how many times Gex has errored when writing a message"
             );
+            _BattleStatus = _Meter.CreateCounter<long>(
+                name: "gex_lobby_battle_status",
+                description: "how many times a battle status update has been performed"
+            );
         }
 
         public void RecordCommandReceived(string command) {
@@ -60,6 +65,10 @@ namespace gex.Services.Metrics {
 
         public void RecordWriteError(string command) {
             _WriteErrors.Add(1, new KeyValuePair<string, object?>("command", command));
+        }
+
+        public void RecordBattleStatus(string reason) {
+            _BattleStatus.Add(1, new KeyValuePair<string, object?>("reason", reason));
         }
 
     }

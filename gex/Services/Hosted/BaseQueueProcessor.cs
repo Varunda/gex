@@ -102,6 +102,7 @@ namespace gex.Services.Hosted {
                             _LastInformedOfDisabled = DateTime.UtcNow;
                         }
 
+                        _ServiceHealthMonitor.Set(_ServiceName, healthEntry);
                         await Task.Delay(1000, cancel);
                         continue;
                     }

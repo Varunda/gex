@@ -88,8 +88,11 @@ namespace gex.Code.Commands {
                 return;
             }
 
-            _Logger.LogInformation($"found battle [battleID={battleID}] [map={battle.Map}] [title={battle.Title}] "
+            LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
+
+            _Logger.LogInformation($"found battle [battleID={battleID}] [running={founder?.InGame ?? false}] [map={battle.Map}] [title={battle.Title}] "
                 + $"[teamSize={battle.TeamSize}] [teamCount={battle.TeamCount}]");
+            _Logger.LogInformation(JsonSerializer.Serialize(battle));
         }
 
         public void User(string username) {
@@ -116,19 +119,31 @@ namespace gex.Code.Commands {
             _Logger.LogInformation($"intentionally tripping flood protection");
 
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(120));
-            int batchSize = 2;
 
-            //Task[] tasks = new Task[batchSize];
-            for (int i = 0; i < batchSize; ++i) {
-                Result<LobbyWhoisResponse, string> res = await _LobbyClient.Whois("[Blahaj]varunda", cts.Token);
+            List<LobbyBattle> battles = _LobbyManager.GetBattles();
+
+            foreach (LobbyBattle battle in battles) {
+                Result<LobbyBattleStatus, string> res = await _LobbyClient.BattleStatus(battle.BattleID, cts.Token);
                 if (res.IsOk == true) {
                     _Logger.LogDebug($"{JsonSerializer.Serialize(res.Value)}");
+                } else {
+                    _Logger.LogWarning($"error getting battle status [founder={battle.FounderUsername}] [error={res.Error}]");
                 }
             }
 
-            //await Task.WhenAll(tasks);
-
             _Logger.LogInformation($"done?");
+        }
+
+        public async Task BattleStatus(int battleID) {
+            _Logger.LogInformation($"getting battle status for battle [battleID={battleID}]");
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            Result<LobbyBattleStatus, string> res = await _LobbyClient.BattleStatus(battleID, cts.Token);
+            if (res.IsOk == true) {
+                _Logger.LogDebug($"{JsonSerializer.Serialize(res.Value)}");
+            } else {
+                _Logger.LogWarning($"failed to get battle status [error={res.Error}]");
+            }
         }
 
     }

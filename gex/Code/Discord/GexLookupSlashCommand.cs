@@ -4,26 +4,26 @@ using DSharpPlus.SlashCommands;
 using gex.Code.Constants;
 using gex.Code.ExtensionMethods;
 using gex.Models;
+using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Discord;
+using gex.Models.Lobby;
 using gex.Models.Options;
 using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Match;
-using gex.Services.Db.Patches;
-using gex.Services.Db.Readers;
 using gex.Services.Db.UserStats;
+using gex.Services.Lobby;
+using gex.Services.Lobby.Implementations;
 using gex.Services.Repositories;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Npgsql.Internal;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,6 +45,10 @@ namespace gex.Code.Discord {
         public BarMatchAllyTeamDb _AllyTeamDb { set; private get; } = default!;
         public DiscordBarUserLinkDb _LinkDb { set; private get; } = default!;
         public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
+        public LobbyManager _LobbyManager { set; private get; } = default!;
+        public LobbyClient _LobbyClient { set; private get; } = default!;
+        public LobbyAlertDb _LobbyAlertDb { set; private get; } = default!;
+        public BarMapRepository _MapRepository { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -104,6 +108,109 @@ namespace gex.Code.Discord {
                         }
 
                         embed.Description += line;
+                    }
+                }
+            }
+
+            embed.WithFooter($"generated in {timer.ElapsedMilliseconds}ms");
+
+            builder.AddEmbed(embed);
+
+            await ctx.EditResponseAsync(builder);
+        }
+
+        /// <summary>
+        ///     print the lobby a player is currently in
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [SlashCommand("lobby", "Display lobby info about an online player")]
+        public async Task PlayerLobbyCommand(InteractionContext ctx,
+            [Option("player", "player name")] string name) {
+
+            await ctx.CreateDeferred(false);
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            CancellationToken cancel = cts.Token;
+
+            Stopwatch timer = Stopwatch.StartNew();
+
+            DiscordWebhookBuilder builder = new();
+            DiscordEmbedBuilder embed = new();
+            embed.Title = $"Lobby lookup: `{name}`";
+
+            Result<UserSearchResult, string> player = await _GetPlayer(name, cancel);
+            if (player.IsOk == false) {
+                embed.Description = $"{player.Error}\n\n"
+                    + $"-# Gex only processes public PvP games, if this user plays only PvE games, or only private games, Gex does not know about them";
+                embed.Color = DiscordColor.Red;
+            } else if (player.IsOk == true) {
+                UserSearchResult user = player.Value;
+
+                LobbyUser? lobbyUser = _LobbyManager.GetUser(user.Username);
+                if (lobbyUser == null) {
+                    embed.Description = $"This user currently not online";
+                    embed.Color = DiscordColor.Yellow;
+                } else {
+                    LobbyBattle? userBattle = _LobbyManager.GetBattles().FirstOrDefault(iter => iter.Users.Contains(user.UserID));
+                    if (userBattle == null) {
+                        embed.Description = $"This user is not in a lobby";
+                        embed.Color = DiscordColor.Yellow;
+                    } else {
+                        embed.Color = DiscordColor.Green;
+                        embed.WithThumbnail($"https://api.bar-rts.com/maps/{userBattle.Map.Replace(" ", "%20")}/texture-lq.jpg");
+
+                        List<string> parts = [..userBattle.Title.Split("|")];
+                        string title = parts.First();
+                        string conds = string.Join(", ", parts[1..].Select(iter => iter.Trim()));
+
+                        int playerCount = userBattle.Users.Count - userBattle.SpectatorCount + 1; // +1 for the host
+
+                        LobbyUser? founder = _LobbyManager.GetUser(userBattle.FounderUsername);
+
+                        embed.Description = $"**{title}**\n{conds}\n\n";
+                        embed.Description += $"**Map**: {userBattle.Map}\n";
+                        if (founder != null) {
+                            embed.Description += $"**Status**: {(founder.InGame == true ? "Running" : "Idle")}\n";
+                        }
+                        if (userBattle.Passworded == true) {
+                            embed.Description += $"**Passworded**: Yes\n";
+                        }
+                        if (userBattle.Locked == true) {
+                            embed.Description += $"**Locked**: Yes\n";
+                        }
+
+                        embed.Description += $"**Players**: {playerCount}/{userBattle.MaxPlayers} ({userBattle.SpectatorCount} specs)\n\n";
+
+                        // update battle status if it is not given, or if the status is over 5 minutes old
+                        if (userBattle.BattleStatus == null || ((DateTime.UtcNow - userBattle.BattleStatus.Timestamp) > TimeSpan.FromMinutes(5))) {
+                            _Logger.LogDebug($"refreshing battle status for lobby client [battleID={userBattle.BattleID}] [timestamp={userBattle.BattleStatus?.Timestamp:u}]");
+                            CancellationTokenSource statusCts = new(TimeSpan.FromSeconds(1));
+                            Result<LobbyBattleStatus, string> battleStatus = await _LobbyClient.BattleStatus(userBattle.BattleID, statusCts.Token);
+
+                            if (battleStatus.IsOk == true) {
+                                userBattle.BattleStatus = battleStatus.Value;
+                            }
+                        }
+
+                        if (userBattle.BattleStatus != null && userBattle.BattleStatus.Clients.Count <= 16) {
+                            List<int> allyTeams = userBattle.BattleStatus.Clients.Where(iter => iter.AllyTeamID != null)
+                                .Select(iter => iter.AllyTeamID!.Value)
+                                .Distinct().Order().ToList();
+
+                            foreach (int allyTeamID in allyTeams) {
+                                embed.Description += $"**Team {allyTeamID}**\n";
+                                foreach (LobbyBattleStatusClient client in userBattle.BattleStatus.Clients) {
+                                    if (client.AllyTeamID != allyTeamID) {
+                                        continue;
+                                    }
+
+                                    embed.Description += $"{client.Username} - `[{client.Skill}]`\n";
+                                }
+                                embed.Description += "\n";
+                            }
+                        }
                     }
                 }
             }
@@ -441,6 +548,7 @@ namespace gex.Code.Discord {
         [SlashCommand("unsubscribe", "Remove a subscription to a player")]
         public async Task Unsubscribe(InteractionContext ctx,
             [Option("player", "Player to unsubscribe to match processed notifications to")] string player) {
+
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
@@ -499,25 +607,202 @@ namespace gex.Code.Discord {
             await ctx.EditResponseAsync(builder);
         }
 
-        /*
         [SlashCommand("alert", "Create a new alert about a lobby being open")]
-        [SlashCommandPermissions(Permissions.ManageChannels | Permissions.ManageGuild | Permissions.Administrator)]
         public async Task CreateAlert(InteractionContext ctx,
             [Choice("5 minutes", 300)]
             [Choice("10 minutes", 600)]
             [Choice("15 minutes", 900)]
             [Choice("30 minutes", 1800)]
             [Choice("1 hour", 3600)]
-            [Option("alert cooldown", "How long to wait between alerts being sent")] int cooldownMinutes,
+            [Option("alert_cooldown", "How long to wait between alerts being sent")] long cooldownSeconds,
 
-            [Option("role", "what role will get pinged about lobbies that meet the conditions")] DiscordRole role,
-            [Option("minimum os", "Minimum OS of all players in the lobby")] int? minimumOs
+            [Option("role", "role to ping if role pinging is enabled")] DiscordRole role,
+            [Option("ping_role", "will the role get pinged when alerts are sent?")] bool rolePing,
+
+            [Option("min_os", "Minimum OS of all players in the lobby")] long minOS = -1,
+            [Option("max_os", "Maximum OS of all players in the lobby")] long maxOS = -1,
+            [Option("min_avg_os", "Minimum average OS of players in the lobby")] long minAvgOS = -1,
+            [Option("max_avg_os", "Maximum average OS of players in the lobby")] long maxAvgOS = -1,
+            [Option("min_player_count", "Minimum number of players playing in the lobby")] long minPlayerCount = -1,
+            [Option("max_player_count", "Maximum number of players playing in the lobby")] long maxPlayerCount = -1,
+            [Option("map", "Map")] string map = "",
+
+            [Choice("Duel", BarGamemode.DUEL)]
+            [Choice("Small team", BarGamemode.SMALL_TEAM)]
+            [Choice("Large team", BarGamemode.LARGE_TEAM)]
+            [Choice("FFA", BarGamemode.FFA)]
+            [Choice("Team FFA", BarGamemode.TEAM_FFA)]
+            [Option("gamemode", "What gamemode is being played")] long gamemode = -1
         ) {
 
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            CancellationToken cancel = cts.Token;
 
+            if (ctx.Member == null || ctx.Channel == null || ctx.Guild == null) {
+                await ctx.CreateResponseAsync(new DiscordEmbedBuilder()
+                    .WithTitle("Must be used in a Discord server")
+                    .WithColor(DiscordColor.Red)
+                    .WithDescription("Lobby alerts can only be created in discord servers, not DMs")
+                , ephemeral: true);
+                return;
+            }
 
+            Permissions userPerms = ctx.Member.PermissionsIn(ctx.Channel);
+            if (userPerms.HasPermission(Permissions.Administrator) == false
+                && userPerms.HasPermission(Permissions.ManageChannels) == false
+                && userPerms.HasPermission(Permissions.ManageGuild) == false) {
+
+                await ctx.CreateImmediateText("No permission (requires administrator, manage channels or manage guild)", ephemeral: true);
+                return;
+            }
+
+            if (map != "") {
+                BarMap? mapObj = await _MapRepository.GetByName(map, cancel);
+                if (mapObj == null) {
+                    await ctx.CreateImmediateText($"Failed to find a map named `{map}`");
+                    return;
+                }
+            }
+
+            await ctx.CreateDeferred(ephemeral: false);
+
+            LobbyAlert alert = new();
+            alert.CreatedByID = ctx.User.Id;
+            alert.ChannelID = ctx.Channel.Id;
+            alert.GuildID = ctx.Guild.Id;
+            alert.TimeBetweenAlertsSeconds = (int)cooldownSeconds;
+            if (rolePing == true) {
+                alert.RoleID = role.Id;
+            }
+
+            DiscordEmbedBuilder embed = new();
+            embed.Title = "Lobby alert created";
+            embed.Color = DiscordColor.Green;
+            embed.Description = $"Whenever an idle lobby that matches the following conditions is opened, "
+                + $"a {(rolePing == true ? "ping" : "message")} will be sent in this channel\n\n";
+
+            if (map != "") {
+                alert.Map = map;
+                embed.AddField("Map", map);
+            }
+            if (minOS != -1) {
+                alert.MinimumOS = (int)minOS;
+                embed.AddField("Minimum OS", $"{alert.MinimumOS}");
+            }
+            if (maxOS != -1) {
+                alert.MaximumOS = (int)maxOS;
+                embed.AddField("Maximum OS", $"{alert.MaximumOS}");
+            }
+            if (minAvgOS != -1) {
+                alert.MinimumAverageOS = (int)minAvgOS;
+                embed.AddField("Min average OS", $"{alert.MinimumAverageOS}");
+            }
+            if (maxAvgOS != -1) {
+                alert.MaximumAverageOS = (int)maxAvgOS;
+                embed.AddField("Max average OS", $"{alert.MaximumAverageOS}");
+            }
+            if (minPlayerCount != -1) {
+                alert.MinimumPlayerCount = (int)minPlayerCount;
+                embed.AddField("Min player count", $"{alert.MinimumPlayerCount}");
+            }
+            if (maxPlayerCount != -1) {
+                alert.MaximumPlayerCount = (int)maxPlayerCount;
+                embed.AddField("Max player count", $"{alert.MaximumPlayerCount}");
+            }
+
+            long alertID = await _LobbyAlertDb.Insert(alert, cancel);
+            embed.Description += $"Use `/gex remove-alert {alertID}` to remove this alert";
+
+            await ctx.EditResponseEmbed(embed);
         }
-        */
+
+        /// <summary>
+        ///     discord command to list all lobby alerts in this channel
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
+        [SlashCommand("list-alerts", "List all lobby alerts that will be sent in this channel")]
+        public async Task ListLobbyAlerts(InteractionContext ctx) {
+            if (ctx.Channel == null) {
+                await ctx.CreateImmediateText("This command can only be used in channels for a server");
+                return;
+            }
+
+            await ctx.CreateDeferred(ephemeral: true);
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+
+            List<LobbyAlert> alerts = await _LobbyAlertDb.GetByChannelID(ctx.Channel.Id, cts.Token);
+
+            DiscordEmbedBuilder embed = new();
+            embed.Title = "Lobby alerts";
+                
+            if (alerts.Count == 0) {
+                embed.Description = "No lobby alerts for this channel";
+            } else {
+                embed.Description = "Alerts that will be sent in this channel\n";
+
+                foreach (LobbyAlert alert in alerts) {
+                    embed.Description += $"Alert ID {alert.ID} by <@{alert.CreatedByID}>\n";
+                }
+            }
+
+            await ctx.EditResponseEmbed(embed);
+        }
+
+        /// <summary>
+        ///     discord command to remove a lobby alert
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="alertID"></param>
+        /// <returns></returns>
+        [SlashCommand("remove-alert", "Delete a lobby alert")]
+        public async Task DeleteLobbyAlert(InteractionContext ctx,
+            [Option("alert_id", "ID of the alert")] long alertID) {
+
+            Permissions userPerms = ctx.Member.PermissionsIn(ctx.Channel);
+            if (userPerms.HasPermission(Permissions.Administrator) == false
+                && userPerms.HasPermission(Permissions.ManageChannels) == false
+                && userPerms.HasPermission(Permissions.ManageGuild) == false) {
+
+                await ctx.CreateImmediateText("No permission (requires administrator, manage channels or manage guild)", ephemeral: true);
+                return;
+            }
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            LobbyAlert? alert = await _LobbyAlertDb.GetByID(alertID, cts.Token);
+
+            if (alert == null) {
+                await ctx.CreateResponseAsync(new DiscordEmbedBuilder()
+                    .WithTitle("Alert not found")
+                    .WithDescription($"Failed to find alert `{alertID}`")
+                , ephemeral: true);
+                return;
+            }
+
+            if (ctx.Channel == null || ctx.Guild == null) {
+                await ctx.CreateResponseAsync(new DiscordEmbedBuilder()
+                    .WithTitle("Invalid usage")
+                    .WithDescription($"Command be used in a channel within a server")
+                , ephemeral: true);
+                return;
+            }
+
+            if (ctx.Channel.Id != alert.ChannelID) {
+                await ctx.CreateImmediateText("Alerts can only be removed in the channel it was created it.\n" +
+                    $"Channel: https://discord.com/channels/{alert.GuildID}/{alert.ChannelID}", true);
+                return;
+            }
+
+            _Logger.LogInformation($"deleting lobby alert [alertID={alertID}] [user={ctx.User.Id}/{ctx.User.Username}]");
+            await _LobbyAlertDb.DeleteByID(alertID, cts.Token);
+
+            await ctx.CreateResponseAsync(new DiscordEmbedBuilder()
+                .WithTitle("Alert deleted")
+                .WithDescription($"Alert {alertID} was successfully deleted")
+                .WithColor(DiscordColor.Green)
+            );
+        }
 
         /// <summary>
         ///     used to generate play stats for player lookups

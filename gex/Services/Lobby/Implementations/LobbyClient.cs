@@ -13,6 +13,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +27,7 @@ namespace gex.Services.Lobby.Implementations {
         private readonly IOptions<SpringLobbyOptions> _Options;
         private readonly LobbyClientMetric _Metric;
         private readonly BaseQueue<LobbyMessage> _LobbyMessageQueue;
+        private readonly LobbyManager _LobbyManager;
 
         /// <summary>
         ///     TPC socket that connects to the lobby
@@ -87,9 +90,20 @@ namespace gex.Services.Lobby.Implementations {
         /// </summary>
         private List<LobbyMessage> _PendingWhoisResponse = [];
 
+        /// <summary>
+        ///     user we expected to hear a response from about the battle status
+        /// </summary>
+        private string? _ExpectedBattleStatusUser = null;
+
+        private readonly SemaphoreSlim _BattleStatusSignal = new(1, 1);
+
+        private readonly SemaphoreSlim _BattleStatusReady = new(0, 1);
+
+        private LobbyMessage? _PendingBattleStatusResponse = null;
+
         public LobbyClient(ILogger<LobbyClient> logger,
             IOptions<SpringLobbyOptions> options, BaseQueue<LobbyMessage> lobbyMessageQueue,
-            LobbyClientMetric metric) {
+            LobbyClientMetric metric, LobbyManager lobbyManager) {
 
             _TcpSocket = new TcpClient();
 
@@ -97,6 +111,7 @@ namespace gex.Services.Lobby.Implementations {
             _Options = options;
             _Metric = metric;
             _LobbyMessageQueue = lobbyMessageQueue;
+            _LobbyManager = lobbyManager;
 
             if (string.IsNullOrEmpty(_Options.Value.Host)) {
                 throw new Exception($"missing Spring:Host. set this in secrets.json, or disable Spring by settings Spring:Enabled to false");
@@ -242,6 +257,13 @@ namespace gex.Services.Lobby.Implementations {
             return loginRequest;
         }
 
+        /// <summary>
+        ///     write a command, dont include the trailing \n
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="message"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public Task<Result<bool, string>> Write(string command, string message, CancellationToken cancel) {
             return Write(null, command, message, cancel);
         }
@@ -324,6 +346,176 @@ namespace gex.Services.Lobby.Implementations {
             return response;
         }
 
+        /// <summary>
+        ///     get the battle status of a battle
+        /// </summary>
+        /// <param name="battleID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<Result<LobbyBattleStatus, string>> BattleStatus(int battleID, CancellationToken cancel) {
+
+            LobbyBattle? battle = _LobbyManager.GetBattle(battleID);
+            if (battle == null) {
+                return $"failed to find battle [battleID={battleID}]";
+            }
+
+            string username = battle.FounderUsername;
+
+            //_Logger.LogTrace($"starting battle status [battleID={battleID}] [username={username}]");
+            await _BattleStatusSignal.WaitAsync(cancel);
+            //_Logger.LogTrace($"entered battle status [battleID={battleID}] [username={username}]");
+
+            _ExpectedBattleStatusUser = username;
+
+            try {
+                Result<bool, string> res = await Write("SAYPRIVATE",
+                    $"{username} " + @"!#JSONRPC {""jsonrpc"": ""2.0"", ""method"": ""status"", ""params"": [""battle""], ""id"": 1}",
+                    cancel);
+
+                if (res.IsOk == false) {
+                    return res.Error;
+                }
+
+                await _BattleStatusReady.WaitAsync(cancel);
+
+                if (_PendingBattleStatusResponse == null) {
+                    return "missing response after ready signal was triggered (this is a bug!)";
+                }
+
+                string? host = _PendingBattleStatusResponse.GetWord();
+                if (host != _ExpectedBattleStatusUser) {
+                    return $"wrong user response [host={host}] [expected={_ExpectedBattleStatusUser}]";
+                }
+
+                string? jsonStr = _PendingBattleStatusResponse.GetSentence();
+                if (jsonStr == null) {
+                    return "missing jsonStr";
+                }
+
+                if (jsonStr.StartsWith("!#JSONRPC") == false) {
+                    return $"expected response to start with '!#JSONRPC', started with '{_PendingBattleStatusResponse.Arguments[..8]}' instead";
+                }
+
+                JsonObject? json = JsonSerializer.Deserialize<JsonObject>(jsonStr[("!#JSONRPC ".Length)..]);
+                if (json == null) {
+                    return "got a null json object when deserialized";
+                }
+
+                JsonNode? result = json["result"];
+                if (result == null) {
+                    return $"missing 'result' field from response [response={json}]";
+                }
+
+                JsonNode? battleLobby = result["battleLobby"];
+                if (battleLobby == null) {
+                    return $"missing 'battleLobby' field from result [result={result}]";
+                }
+
+                JsonNode? clients = battleLobby["clients"];
+                if (clients == null) {
+                    return $"missing 'clients' field from battleLobby [result={clients}]";
+                }
+
+                LobbyBattleStatus response = new();
+                response.BattleID = battleID;
+                response.Timestamp = DateTime.UtcNow;
+
+                foreach (JsonNode? client in clients.AsArray()) {
+                    if (client == null) { continue; }
+
+                    // "ID" and "Id" are different fields
+                    int? playerID = client["Id"]?.GetValue<int>();
+                    int? allyTeamID = client["Team"]?.GetValue<int>();
+                    string clientName = client["Name"]?.GetValue<string>() ?? "<no name>";
+
+                    // no ID means this is a bot, not a player
+                    if (client["ID"] == null) {
+                        string version = client["Version"]?.GetValue<string>() ?? "<no version>";
+
+                        LobbyBattleStatusBot bot = new() {
+                            PlayerID = playerID,
+                            AllyTeamID = allyTeamID,
+                            Name = clientName,
+                            Version = version
+                        };
+
+                        response.Bots.Add(bot);
+                    } else {
+                        long userID = long.Parse(client["ID"]?.GetValue<string>() ?? "0");
+                        bool isBoss = client["Boss"]?.GetValue<int>() == 1;
+
+                        double skill = -1d;
+
+                        string skillValue = client["Skill"]?.GetValue<string>() ?? "[16.67 ???]";
+                        if (skillValue != "") {
+                            Regex skillPattern = new(@"\[(\d{1,3}(?:\.\d{0,2})?) \?+]");
+                            Match skillMatch = skillPattern.Match(skillValue);
+                            if (skillMatch.Success == true) {
+                                if (skillMatch.Groups.Count >= 2) {
+                                    string skillStr = skillMatch.Groups[1].Value; // 0 is input
+                                    if (double.TryParse(skillStr, out skill) == false) {
+                                        _Logger.LogWarning($"failed to parse matched skill capture into a valid double [skillStr={skillStr}] [battleID={battleID}]");
+                                    }
+                                } else {
+                                    _Logger.LogWarning($"missing capture of skill fo lobby client [skillValue={skillValue}] [battleID={battleID}]");
+                                }
+                            } else {
+                                _Logger.LogWarning($"failed to get skill of lobby client [skillValue={skillValue}] [client={client}] [battleID={battleID}] [regex={skillPattern}]");
+                            }
+                        }
+
+                        if (playerID == null) {
+                            LobbyBattleStatusSpectator spec = new() {
+                                UserID = userID,
+                                Username = clientName,
+                                IsBoss = isBoss,
+                                Skill = skill
+                            };
+
+                            response.Spectators.Add(spec);
+                        } else {
+                            LobbyBattleStatusClient battleClient = new() {
+                                UserID = userID,
+                                Username = clientName,
+                                PlayerID = playerID,
+                                AllyTeamID = allyTeamID,
+                                IsBoss = isBoss,
+                                Skill = skill
+                            };
+
+                            response.Clients.Add(battleClient);
+                        }
+                    }
+                }
+
+                //_Logger.LogInformation($"args {json}");
+
+                LobbyBattle? lobbyBattle = _LobbyManager.GetBattle(battleID);
+                if (lobbyBattle != null) {
+                    lobbyBattle.BattleStatus = response;
+                    _LobbyManager.UpdateBattle(battleID, lobbyBattle);
+                    //_Logger.LogDebug($"updated battle status for battle [battleID={battleID}]");
+                }
+
+                return response;
+            } catch (Exception ex) {
+                if (ex is not OperationCanceledException) {
+                    _Logger.LogError(ex, $"failed to perform battle status [username={username}]");
+                }
+                return ex.Message;
+            } finally {
+                _PendingBattleStatusResponse = null;
+                _ExpectedBattleStatusUser = null;
+                _BattleStatusSignal.Release();
+            }
+        }
+
+        /// <summary>
+        ///     get the whois status of a game
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public async Task<Result<LobbyWhoisResponse, string>> Whois(string username, CancellationToken cancel) {
             _Logger.LogTrace($"starting whois [username={username}]");
             await _WhoisSignal.WaitAsync(cancel);
@@ -497,11 +689,12 @@ namespace gex.Services.Lobby.Implementations {
 
                     //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
 
+                    // when getting battle status, there are some weird host names like [teh]host14
+                    LobbyUser? dmSender = msg.Command != "SAIDPRIVATE" ? null : _LobbyManager.GetUser(msg.Arguments.Split(" ")[0]);
+
                     if (_ExpectedWhoisResponse == true && msg.Command == "SAIDPRIVATE" && msg.Arguments.StartsWith("Coordinator")) {
                         _Logger.LogTrace($"got part of message DM [message={msg.Arguments}]");
 
-                        // Coordinator Unable to find a user with that name
-                        // Coordinator Unable to find a user with that name
                         if (msg.Arguments == "Coordinator Unable to find a user with that name") {
                             _Logger.LogDebug($"finished getting $whois response");
                             _WhoisReady.Release();
@@ -513,6 +706,24 @@ namespace gex.Services.Lobby.Implementations {
                         } else {
                             _PendingWhoisResponse.Add(msg);
                         }
+                    } else if (_ExpectedBattleStatusUser != null && msg.Command == "SAIDPRIVATE" && dmSender != null && dmSender.IsBot == true) {
+                        //_Logger.LogTrace($"got DM response from host about battle status [message={msg.Arguments}]");
+
+                        if (dmSender.Username == _ExpectedBattleStatusUser) {
+                            _PendingBattleStatusResponse = msg;
+                            try {
+                                if (_BattleStatusReady.CurrentCount > 0) {
+                                    _Logger.LogWarning($"expected a count of 0 for battle status ready");
+                                } else {
+                                    _BattleStatusReady.Release();
+                                }
+                            } catch (Exception ex) {
+                                _Logger.LogError(ex, $"failed to release battle status ready semaphore");
+                            }
+                        } else {
+                            _Logger.LogWarning($"got wrong user response to expected battle status [username={dmSender.Username}] [expected={_ExpectedBattleStatusUser}]");
+                        }
+
                     } else if (msg.MessageId != null) {
                         if (_ExpectedMessages.Contains(msg.MessageId.Value) == false) {
                             _Logger.LogWarning($"unexpected message ID, queuing up [messageID={msg.MessageId}] [command={msg.Command}]");
