@@ -27,5 +27,10 @@
         /// </summary>
         public string WebImageLocation { get; set; } = "";
 
+        /// <summary>
+        ///     where the .lua unit files from the BAR repo will go
+        /// </summary>
+        public string UnitDataLocation { get; set; } = "";
+
     }
 }

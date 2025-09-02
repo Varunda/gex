@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Event {
@@ -93,6 +94,29 @@ namespace gex.Services.Db.Event {
                 "SELECT * FROM unit_def_set_entry WHERE hash = @Hash",
                 new { Hash = hash }
             )).ToList();
+        }
+
+        public async Task<List<UnitNameToDefinitionSet>> GetUnitNames(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<UnitNameToDefinitionSet>(@"
+                SELECT
+                    name,
+                    ARRAY(SELECT DISTINCT e FROM unnest(array_agg(definition_name)) AS a(e)) ""definition_names""
+                FROM unit_def_set_entry 
+                GROUP BY name 
+                ORDER BY name asc;
+            ", cancel);
+        }
+
+        public async Task<List<string>> GetUnitNameByDefinitionName(string defName, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<string>(@"
+                SELECT name 
+                FROM unit_def_set_entry 
+                WHERE definition_name = @DefName 
+                GROUP BY name
+                ORDER BY count(name) DESC;
+            ", new { DefName = defName }, cancel);
         }
 
     }

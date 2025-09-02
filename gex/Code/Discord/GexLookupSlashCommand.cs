@@ -12,18 +12,22 @@ using gex.Models.Options;
 using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db;
+using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Lobby.Implementations;
+using gex.Services.Parser;
 using gex.Services.Repositories;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +38,12 @@ namespace gex.Code.Discord {
 
         public ILogger<GexLookupSlashCommand> _Logger { set; private get; } = default!;
         public IOptions<DiscordOptions> _DiscordOptions { set; private get; } = default!;
+
+        private static readonly NumberFormatInfo _NumberFormatter = new() {
+            NumberGroupSeparator = "'",
+            NumberGroupSizes = [ 3 ],
+            NumberDecimalDigits = 0
+        };
 
         public InstanceInfo _Instance { set; internal get; } = default!;
         public BarUserRepository _UserRepository { set; internal get; } = default!;
@@ -49,6 +59,9 @@ namespace gex.Code.Discord {
         public ILobbyClient _LobbyClient { set; private get; } = default!;
         public LobbyAlertDb _LobbyAlertDb { set; private get; } = default!;
         public BarMapRepository _MapRepository { set; private get; } = default!;
+        public BarUnitGithubRepository _UnitGithubRepository { set; private get; } = default!;
+        public BarUnitParser _BarUnitParser { set; private get; } = default!;
+        public GameEventUnitDefDb _UnitDefDb { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -221,6 +234,191 @@ namespace gex.Code.Discord {
             builder.AddEmbed(embed);
 
             await ctx.EditResponseAsync(builder);
+        }
+
+        /// <summary>
+        ///     print unit info
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [SlashCommand("unit", "Print unit information")]
+        public async Task UnitLookupCommand(InteractionContext ctx,
+            [Autocomplete(typeof(UnitNameProvider))]
+            [Option("unit", "Unit name")] string name) {
+
+            static string _N(double v) {
+                if (v < 1d && v > 0d) {
+                    return v.ToString("F2");
+                }
+                return v.ToString("N", _NumberFormatter);
+            }
+
+            await ctx.CreateDeferred(ephemeral: false);
+            Stopwatch timer = Stopwatch.StartNew();
+
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+
+            Result<string, string> unitInfo = await _UnitGithubRepository.GetUnitData(name, cts.Token);
+            if (unitInfo.IsOk == false) {
+                await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
+                    .WithTitle($"Unit lookup: {name}")
+                    .WithDescription($"Failed to find the unit `{name}`")
+                    .WithColor(DiscordColor.Red));
+                return;
+            }
+
+            Result<BarUnit, string> unitResult = await _BarUnitParser.Parse(unitInfo.Value, cts.Token);
+            if (unitResult.IsOk == false) {
+                await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
+                    .WithTitle($"Unit lookup: {name}")
+                    .WithDescription($"Failed to parse the lua unit info for `{name}` (but the unit does exist!)")
+                    .WithColor(DiscordColor.Red));
+                return;
+            }
+
+            DiscordEmbedBuilder embed = new();
+
+            List<string> unitName = await _UnitDefDb.GetUnitNameByDefinitionName(name, cts.Token);
+            if (unitName.Count > 0) {
+                embed.Title = $"{unitName[0]} (`{name}`)";
+            } else {
+                embed.Title = $"{name}";
+            }
+
+            BarUnit unit = unitResult.Value;
+
+            embed.Color = DiscordColor.Gray;
+            embed.WithThumbnail($"https://{_Instance.GetHost()}/image-proxy/UnitPic?defName={name}");
+            embed.Description = $"-# this data is updated every 4 hours\n\n";
+
+            if (name.StartsWith("arm")) {
+                embed.Description += $"**Faction**: {_GetEmoji("armada")} Armada\n";
+                embed.Color = DiscordColor.Cyan;
+            } else if (name.StartsWith("cor")) {
+                embed.Description += $"**Faction**: {_GetEmoji("cortex")} Cortex\n";
+                embed.Color = DiscordColor.IndianRed;
+            } else if (name.StartsWith("leg")) {
+                embed.Description += $"**Faction**: {_GetEmoji("legion")} Legion\n";
+                embed.Color = DiscordColor.SpringGreen;
+            } else if (name.StartsWith("raptor_")) {
+                embed.Color = DiscordColor.Brown;
+            }
+
+            embed.Description += $"**Health**: {_N(unit.Health)}\n"
+                + $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n"
+                + $"**Speed**: {_N(unit.Speed)}\n"
+                + $"**Vision**: {_N(unit.SightDistance)} ";
+
+            if (unit.AirSightDistance > 0) { embed.Description += $" / {unit.AirSightDistance} (air) "; }
+            embed.Description += "\n";
+
+            if (unit.RadarDistance > 0 && unit.SonarDistance > 0) {
+                embed.Description += $"**Radar**: {_N(unit.RadarDistance)}";
+                if (unit.RadarDistance != unit.SonarDistance) {
+                    embed.Description += $" / {_N(unit.SonarDistance)} (sonar)";
+                }
+                embed.Description += "\n";
+            } else if (unit.RadarDistance > 0 && unit.SonarDistance == 0) {
+                embed.Description += $"**Radar**: {_N(unit.RadarDistance)}\n";
+            } else if (unit.RadarDistance == 0 && unit.SonarDistance > 0) {
+                embed.Description += $"**Sonar**: {_N(unit.SonarDistance)}\n";
+            }
+
+            if (unit.JamDistance > 0) {
+                embed.Description += $"**Jamming**: {_N(unit.JamDistance)}\n";
+            }
+
+            if (unit.EnergyProduced != 0) {
+                embed.Description += $"**Energy made**: {_N(unit.EnergyProduced)}\n";
+            }
+            if (unit.WindGenerator != 0) {
+                embed.Description += $"**Energy made** (wind): {_N(unit.WindGenerator)}\n";
+            }
+            if (unit.MetalExtractor == true) {
+                embed.Description += $"**Metal extractor?**: Yes\n";
+            }
+            if (unit.EnergyUpkeep != 0) {
+                embed.Description += $"**Energy upkeep**: {_N(unit.EnergyUpkeep)}\n";
+            }
+            if (unit.MetalProduced != 0) {
+                embed.Description += $"**Metal made**: {_N(unit.MetalProduced)}\n";
+            }
+            if (unit.EnergyStorage != 0) {
+                embed.Description += $"**E store**: {_N(unit.EnergyStorage)}\n";
+            }
+            if (unit.MetalStorage != 0) {
+                embed.Description += $"**M store**: {_N(unit.MetalStorage)}\n";
+            }
+
+            if (unit.CloakCostStill != 0 || unit.CloakCostMoving != 0) {
+                embed.Description += $"**Cloaking**: {_N(unit.CloakCostStill)} / {_N(unit.CloakCostMoving)}\n";
+            }
+
+            if (unit.BuildPower != 0) {
+                if (unit.CanResurrect == true) {
+                    embed.Description += $"### Resurrection\n";
+                } else {
+                    embed.Description += $"### Builder\n";
+                }
+
+                embed.Description += $"**Build power**: {_N(unit.BuildPower)}\n";
+                embed.Description += $"**Range**: {_N(unit.BuildDistance)}\n";
+            }
+
+            if (unit.Weapons.Count > 0 && unit.Weapons.Where(iter => iter.IsBogus == false).Count() > 0) {
+                embed.Description += $"## Weapons\n";
+
+                foreach (BarUnitWeapon weapon in unit.Weapons) {
+                    if (weapon.IsBogus == true) { continue; }
+
+                    embed.Description += $"**{weapon.WeaponType}** ({weapon.DefinitionName})\n";
+
+                    if (weapon.WeaponType == "Shield") {
+                        if (weapon.ShieldData == null) {
+                            embed.Description += $"missing shield data!\n\n";
+                        } else {
+                            double amt = weapon.ShieldData.Power;
+                            embed.Description += $"Amount: {_N(amt)}\n"
+                                + $"Recharge: {_N(weapon.ShieldData.PowerRegen)}\n\n";
+                        }
+                    } else {
+                        double damage = 0d;
+                        if (weapon.TargetCategory == "VTOL" && weapon.Damages.TryGetValue("vtol", out damage)) {
+                            //
+                        } else if (weapon.Damages.TryGetValue("default", out damage)) {
+                            //
+                        }
+
+                        double dps = damage / Math.Max(0.01, weapon.ReloadTime);
+                        if (weapon.Burst != 0) {
+                            dps *= weapon.Burst;
+                        }
+                        embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")}\n"
+                            + $"Range: {_N(weapon.Range)}\n";
+
+                        if (weapon.TargetCategory == "NOTSUB") {
+                            embed.Description += $"Targets: Air, Navy, Ground";
+                        } else if (weapon.TargetCategory == "SURFACE") {
+                            embed.Description += $"Targets: Boats, Ground";
+                        } else if (weapon.TargetCategory == "NOTAIR" && weapon.WaterWeapon == false) {
+                            embed.Description += $"Targets: Boats, Air";
+                        } else if (weapon.TargetCategory == "NOTAIR" && weapon.WaterWeapon == true) {
+                            embed.Description += $"Targets: Boats, Subs";
+                        } else if (weapon.TargetCategory == "VTOL") {
+                            embed.Description += $"Targets: Air";
+                        } else {
+                            embed.Description += $"Targets: {weapon.TargetCategory}";
+                        }
+
+                        embed.Description += "\n\n";
+                    }
+                }
+            }
+
+            embed.WithFooter($"{(unit.ModelAuthor != null ? $"Model by: {unit.ModelAuthor} | " : "")}generated in {timer.ElapsedMilliseconds}ms");
+
+            await ctx.EditResponseEmbed(embed);
         }
 
         /// <summary>
@@ -1058,6 +1256,102 @@ namespace gex.Code.Discord {
             }
 
             return "no player found";
+        }
+
+        /// <summary>
+        ///     provider for unit names
+        /// </summary>
+        public class UnitNameProvider : IAutocompleteProvider {
+
+            private const string CACHE_KEY = "Gex.Discord.UnitNameProvider.Data";
+
+            public async Task<IEnumerable<DiscordAutoCompleteChoice>> Provider(AutocompleteContext ctx) {
+                GameEventUnitDefDb unitDefDb = ctx.Services.GetRequiredService<GameEventUnitDefDb>();
+                IMemoryCache memoryCache = ctx.Services.GetRequiredService<IMemoryCache>();
+                BarUnitGithubRepository githubUnitRepository = ctx.Services.GetRequiredService<BarUnitGithubRepository>();
+
+                string value = ctx.OptionValue.ToString() ?? "";
+
+                List<DiscordAutoCompleteChoice> choices = await _GetChoices(unitDefDb, memoryCache, githubUnitRepository);
+
+                List<DiscordAutoCompleteChoice> matches = choices.Where(iter => {
+                    return iter.Name.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+                }).ToList();
+
+                if (matches.Count > 25) {
+                    return matches[..25];
+                }
+                return matches;
+            }
+
+            private async Task<List<DiscordAutoCompleteChoice>> _GetChoices(
+                GameEventUnitDefDb unitDefDb, IMemoryCache cache, BarUnitGithubRepository unitGithubRepo
+            ) {
+
+                CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+
+                if (cache.TryGetValue(CACHE_KEY, out List<DiscordAutoCompleteChoice>? opts) == false || opts == null) {
+                    opts = new List<DiscordAutoCompleteChoice>();
+
+                    List<UnitNameToDefinitionSet> units = await unitDefDb.GetUnitNames(cts.Token);
+
+                    foreach (UnitNameToDefinitionSet set in units) {
+                        if (set.DefinitionNames.Length > 1) {
+
+                            // if the definition names change in just faction prefix (e.g. armalab, coralab)
+                            // then gex can safely just suffix the label name with the faction,
+                            // else just include the full definition name
+                            bool justFactionPrefixChanges = set.DefinitionNames.Select(iter => {
+                                if (iter.StartsWith("cor") || iter.StartsWith("arm") || iter.StartsWith("leg")) {
+                                    return iter[3..];
+                                }
+                                return iter;
+                            }).Distinct().Count() == 1;
+
+                            if (justFactionPrefixChanges == true) {
+                                foreach (string defName in set.DefinitionNames) {
+                                    if ((await unitGithubRepo.GetUnitData(defName, cts.Token)).IsOk == false) {
+                                        continue;
+                                    }
+
+                                    string labelName = set.Name + " ";
+                                    if (defName.StartsWith("cor")) {
+                                        labelName += "(Cortex)";
+                                    } else if (defName.StartsWith("arm")) {
+                                        labelName += "(Armada)";
+                                    } else if (defName.StartsWith("leg")) {
+                                        labelName += "(Legion)";
+                                    } else {
+                                        labelName += $"({defName})";
+                                    }
+
+                                    opts.Add(new DiscordAutoCompleteChoice($"{labelName}", defName));
+                                }
+                            } else {
+                                foreach (string defName in set.DefinitionNames) {
+                                    if ((await unitGithubRepo.GetUnitData(defName, cts.Token)).IsOk == false) {
+                                        continue;
+                                    }
+
+                                    opts.Add(new DiscordAutoCompleteChoice($"{set.Name} ({defName})", defName));
+                                }
+                            }
+                        } else {
+                            if ((await unitGithubRepo.GetUnitData(set.DefinitionNames[0], cts.Token)).IsOk == false) {
+                                continue;
+                            }
+                            opts.Add(new DiscordAutoCompleteChoice(set.Name, set.DefinitionNames[0]));
+                        }
+                    }
+
+                    cache.Set(CACHE_KEY, opts, new MemoryCacheEntryOptions() {
+                        SlidingExpiration = TimeSpan.FromHours(1)
+                    });
+                }
+
+                return opts;
+            }
+
         }
 
     }

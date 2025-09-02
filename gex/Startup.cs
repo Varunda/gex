@@ -229,6 +229,7 @@ namespace gex {
             services.Configure<FileStorageOptions>(Configuration.GetSection("FileStorage"));
             services.Configure<ServiceOptions>(Configuration.GetSection("Services"));
             services.Configure<SpringLobbyOptions>(Configuration.GetSection("Spring"));
+            services.Configure<GitHubOptions>(Configuration.GetSection("GitHub"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 
@@ -252,6 +253,7 @@ namespace gex {
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarDemofileParser>();
             services.AddSingleton<BarMapParser>();
+            services.AddSingleton<BarUnitParser>();
             services.AddSingleton<BarMatchTitleUtilService>();
 
             // Hosted services

@@ -21,6 +21,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMapPlayCountRepository>();
             services.AddSingleton<MapStatsStartSpotRepository>();
             services.AddSingleton<TeiServerRepository>();
+            services.AddSingleton<BarUnitGithubRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();
