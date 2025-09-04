@@ -19,21 +19,21 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Repositories {
 
-    public class BarUnitGithubRepository {
+    public class GithubDownloadRepository {
 
-        private readonly ILogger<BarUnitGithubRepository> _Logger;
+        private readonly ILogger<GithubDownloadRepository> _Logger;
         private readonly IOptions<GitHubOptions> _Options;
         private readonly IOptions<FileStorageOptions> _FileOptions;
 
         private const string BASE_URL = "https://api.github.com/repos";
 
         private static readonly HttpClient _Http = new HttpClient();
-        static BarUnitGithubRepository() {
+        static GithubDownloadRepository() {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
             _Http.DefaultRequestHeaders.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
         }
 
-        public BarUnitGithubRepository(ILogger<BarUnitGithubRepository> logger,
+        public GithubDownloadRepository(ILogger<GithubDownloadRepository> logger,
             IOptions<GitHubOptions> options, IOptions<FileStorageOptions> fileOptions) {
 
             _Logger = logger;
@@ -49,10 +49,11 @@ namespace gex.Services.Repositories {
         /// <summary>
         ///     get the contents of the .lua file that contains the unit data
         /// </summary>
-        /// <param name="definitionName">definition name of the unit</param>
+        /// <param name="folder">name of the folder within the GitHub repo that will contain the file</param>
+        /// <param name="file">name of the file</param>
         /// <param name="cancel">cancellation token</param>
-        public async Task<Result<string, string>> GetUnitData(string definitionName, CancellationToken cancel) {
-            string path = Path.Join(_FileOptions.Value.UnitDataLocation, $"{definitionName}.lua");
+        public async Task<Result<string, string>> GetFile(string folder, string file, CancellationToken cancel) {
+            string path = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, file);
             if (File.Exists(path) == false) {
                 return Result<string, string>.Err($"path does not exist [path={path}]");
             }
@@ -61,12 +62,27 @@ namespace gex.Services.Repositories {
             return Result<string, string>.Ok(content);
         }
 
+        public Result<List<string>, string> GetFiles(string folder) {
+            string path = Path.Join(_FileOptions.Value.GitHubDataLocation, folder);
+            if (Directory.Exists(path) == false) {
+                return $"failed to find folder [path={path}]";
+            }
+
+            return Directory.GetFiles(path).Select(iter => Path.GetFileName(iter)).ToList();
+        }
+
         /// <summary>
-        ///     download all updated unit data if needed
+        ///     download a folder from GitHub, placing it in the target folder named <paramref name="folder"/>
+        ///     relative to the <see cref="FileStorageOptions.GitHubDataLocation"/> set in <see cref="FileStorageOptions"/>.
+        ///     this method will not keep the directory stucture
         /// </summary>
+        /// <param name="folder"></param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        public async Task DownloadAll(CancellationToken cancel) {
+        public async Task DownloadFolder(string folder, CancellationToken cancel) {
+
+            _Logger.LogDebug($"downloading folder from github [folder={folder}]");
+
             Result<GitHubRateLimits, string> limits = await GetRateLimits(cancel);
             if (limits.IsOk == false) {
                 _Logger.LogError($"failed to get GitHub rate limits [error={limits.Error}]");
@@ -76,17 +92,22 @@ namespace gex.Services.Repositories {
             int requestsRemaining = limits.Value.Remaining;
             _Logger.LogInformation($"got GitHub rate limits [requests remaining={requestsRemaining}] [resets={limits.Value.Reset:u}]");
 
-            Result<GitHubCommit, string> latestCommit = await GetLatestCommit(cancel);
+            string targetFolder = Path.Join(_FileOptions.Value.GitHubDataLocation, folder);
+            if (File.Exists(targetFolder) == false) {
+                Directory.CreateDirectory(targetFolder);
+            }
+
+            Result<GitHubCommit, string> latestCommit = await GetLatestCommit(folder, cancel);
             if (latestCommit.IsOk == false) {
-                _Logger.LogWarning($"failed to get latest commit [error={latestCommit.Error}]");
+                _Logger.LogWarning($"failed to get latest commit [error={latestCommit.Error}] [folder={folder}]");
             } else {
-                string? downloadedCommit = await GetLatestCommitDownloaded(cancel);
+                string? downloadedCommit = await GetLatestCommitDownloaded(folder, cancel);
                 if (downloadedCommit == null) {
-                    _Logger.LogInformation($"no commit downloaded, need to get latest");
+                    _Logger.LogInformation($"no commit downloaded, need to get latest [folder={folder}]");
                 } else {
-                    _Logger.LogInformation($"comparing latest commit and downloaded commit [latest sha={latestCommit.Value.SHA}] [downloaded sha={downloadedCommit}]");
+                    _Logger.LogInformation($"comparing latest commit and downloaded commit [folder={folder}] [latest sha={latestCommit.Value.SHA}] [downloaded sha={downloadedCommit}]");
                     if (latestCommit.Value.SHA == downloadedCommit) {
-                        _Logger.LogInformation($"no unit data update needed");
+                        _Logger.LogInformation($"folder is already updated [folder={folder}]");
                         return;
                     }
                 }
@@ -95,8 +116,8 @@ namespace gex.Services.Repositories {
             Queue<string> dirs = [];
             HashSet<string> visited = [];
 
-            dirs.Enqueue(_Options.Value.UnitDataPath);
-            visited.Add(_Options.Value.UnitDataPath);
+            dirs.Enqueue(folder);
+            visited.Add(folder);
 
             string? dir = dirs.Dequeue();
             while (dir != null) {
@@ -130,7 +151,7 @@ namespace gex.Services.Repositories {
                                         _Logger.LogWarning($"GitHub rate limit hit!");
                                     }
 
-                                    await DownloadUnitData(entry.Name, entry.DownloadUrl, cancel);
+                                    await DownloadFile(folder, entry.Name, entry.DownloadUrl, cancel);
                                 } else {
                                     _Logger.LogWarning($"missing download file [name={entry.Name}]");
                                 }
@@ -152,26 +173,27 @@ namespace gex.Services.Repositories {
             // it is better for Gex to save the commit at the start, as the next time this method is called
             // Gex would see the outdated commit (even if SOME of the files are updated with the new commit)
             if (latestCommit.IsOk == true) {
-                await SaveLatestCommitDownloaded(latestCommit.Value.SHA);
+                await SaveLatestCommitDownloaded(folder, latestCommit.Value.SHA);
             }
 
-            _Logger.LogDebug($"done!");
+            _Logger.LogDebug($"finished downloading folder [folder={folder}]");
         }
 
         /// <summary>
         ///     get a string that contains the full SHA of the latest commit downloaded,
         ///     or <c>null</c> if no commit was downloaded
         /// </summary>
+        /// <param name="folder">path in the github repo to get the latest commit downloaded</param>
         /// <param name="cancel">cancellation token</param>
-        private async Task<string?> GetLatestCommitDownloaded(CancellationToken cancel) {
-            string path = Path.Join(_FileOptions.Value.UnitDataLocation, "latest_commit.txt");
-            _Logger.LogDebug($"checking latest commit of downloaded user data [path={path}]");
+        private async Task<string?> GetLatestCommitDownloaded(string folder, CancellationToken cancel) {
+            string target = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, "latest_commit.txt");
+            _Logger.LogDebug($"checking latest commit of downloaded user data [folder={folder}] [target={target}]");
 
-            if (File.Exists(path) == false) {
+            if (File.Exists(target) == false) {
                 return null;
             }
 
-            string contents = (await File.ReadAllTextAsync(path, cancel)).Trim();
+            string contents = (await File.ReadAllTextAsync(target, cancel)).Trim();
             return contents;
         }
 
@@ -179,20 +201,22 @@ namespace gex.Services.Repositories {
         ///     save a full SHA commit hash to the latest_commit.txt file.
         ///     intentionally lacks a CancellationToken
         /// </summary>
+        /// <param name="folder">path within the GitHub repository</param>
         /// <param name="commit">commit to save</param>
-        private async Task SaveLatestCommitDownloaded(string commit) {
-            string path = Path.Join(_FileOptions.Value.UnitDataLocation, "latest_commit.txt");
-            _Logger.LogDebug($"saving latest commit of downloaded user data [commit={commit}] [path={path}]");
+        private async Task SaveLatestCommitDownloaded(string folder, string commit) {
+            string target = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, "latest_commit.txt");
+            _Logger.LogDebug($"saving latest commit of downloaded user data [commit={commit}] [folder={folder}] [target={target}]");
 
-            await File.WriteAllTextAsync(path, commit, CancellationToken.None);
+            await File.WriteAllTextAsync(target, commit, CancellationToken.None);
         }
 
         /// <summary>
-        ///     get the latest full SHA from the GitHub API to the folder that has the unit data
+        ///     get the latest full SHA from the GitHub API to the path given
         /// </summary>
+        /// <param name="path">path of the file/folder to get the latest commit of</param>
         /// <param name="cancel">cancellation token</param>
-        private async Task<Result<GitHubCommit, string>> GetLatestCommit(CancellationToken cancel) {
-            string url = $"{BASE_URL}/{_Options.Value.UnitDataOrganization}/{_Options.Value.UnitDataRepository}/commits?path={_Options.Value.UnitDataPath}&per_page=1";
+        private async Task<Result<GitHubCommit, string>> GetLatestCommit(string path, CancellationToken cancel) {
+            string url = $"{BASE_URL}/{_Options.Value.UnitDataOrganization}/{_Options.Value.UnitDataRepository}/commits?path={path}&per_page=1";
             _Logger.LogDebug($"getting latest commit from GitHub api [url={url}]");
             Result<JsonElement, string> res = await _Http.GetJsonAsync(url, cancel);
             if (res.IsOk == false) {
@@ -250,16 +274,17 @@ namespace gex.Services.Repositories {
         /// <summary>
         ///     download a specific file
         /// </summary>
+        /// <param name="folder">name of the folder within the GitHub repo</param>
         /// <param name="fileName">name of the output file</param>
         /// <param name="downloadPath">full url to download the file from</param>
         /// <param name="cancel">cancellation token</param>
-        private async Task<Result<bool, string>> DownloadUnitData(string fileName, string downloadPath, CancellationToken cancel) {
+        private async Task<Result<bool, string>> DownloadFile(string folder, string fileName, string downloadPath, CancellationToken cancel) {
             HttpResponseMessage res = await _Http.GetAsync(downloadPath, cancel);
             if (res.IsSuccessStatusCode == false) {
                 return $"got status code {res.StatusCode}";
             }
 
-            string filePath = Path.Join(_FileOptions.Value.UnitDataLocation, fileName);
+            string filePath = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, fileName);
             using FileStream fs = File.OpenWrite(filePath);
             await res.Content.CopyToAsync(fs, cancel);
 

@@ -16,7 +16,6 @@ using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
-using gex.Services.Lobby.Implementations;
 using gex.Services.Parser;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Caching.Memory;
@@ -59,9 +58,10 @@ namespace gex.Code.Discord {
         public ILobbyClient _LobbyClient { set; private get; } = default!;
         public LobbyAlertDb _LobbyAlertDb { set; private get; } = default!;
         public BarMapRepository _MapRepository { set; private get; } = default!;
-        public BarUnitGithubRepository _UnitGithubRepository { set; private get; } = default!;
+        public GithubDownloadRepository _UnitGithubRepository { set; private get; } = default!;
         public BarUnitParser _BarUnitParser { set; private get; } = default!;
         public GameEventUnitDefDb _UnitDefDb { set; private get; } = default!;
+        public BarWeaponDefinitionRepository _WeaponDefinitionRepository { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -254,12 +254,16 @@ namespace gex.Code.Discord {
                 return v.ToString("N", _NumberFormatter);
             }
 
+            static string _D(double v) {
+                return v.ToString("F2");
+            }
+
             await ctx.CreateDeferred(ephemeral: false);
             Stopwatch timer = Stopwatch.StartNew();
 
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 
-            Result<string, string> unitInfo = await _UnitGithubRepository.GetUnitData(name, cts.Token);
+            Result<string, string> unitInfo = await _UnitGithubRepository.GetFile("units", $"{name}.lua", cts.Token);
             if (unitInfo.IsOk == false) {
                 await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
                     .WithTitle($"Unit lookup: {name}")
@@ -355,6 +359,19 @@ namespace gex.Code.Discord {
                 embed.Description += $"**Cloaking**: {_N(unit.CloakCostStill)} / {_N(unit.CloakCostMoving)}\n";
             }
 
+            if (unit.SelfDestructCountdown != 5d) {
+                embed.Description += $"**Self-D**: ";
+
+                Result<BarWeaponDefinition, string> selfDWeapon = await _WeaponDefinitionRepository.GetWeaponDefinition(unit.SelfDestructWeapon, cts.Token);
+                if (selfDWeapon.IsOk) {
+                    BarWeaponDefinition def = selfDWeapon.Value;
+                    double dmg = def.Damages.GetValueOrDefault("default");
+                    embed.Description += $"{_N(dmg)} max dmg, range {_N(def.AreaOfEffect)}{(def.IsParalyzer ? $" (EMP for {def.ParalyzerTime}s)" : "")}\n";
+                } else {
+                    embed.Description += $"missing weapon {unit.SelfDestructWeapon}\n";
+                }
+            }
+
             if (unit.BuildPower != 0) {
                 if (unit.CanResurrect == true) {
                     embed.Description += $"### Resurrection\n";
@@ -366,13 +383,18 @@ namespace gex.Code.Discord {
                 embed.Description += $"**Range**: {_N(unit.BuildDistance)}\n";
             }
 
-            if (unit.Weapons.Count > 0 && unit.Weapons.Where(iter => iter.IsBogus == false).Count() > 0) {
+            List<BarUnitWeapon> interestingWeapons = unit.Weapons.Where(iter => {
+                return iter.WeaponDefinition.IsBogus == false
+                    && iter.Count > 0
+                    && (iter.WeaponDefinition.WeaponType == "Shield" || iter.GetDefaultDamage() > 0d);
+            }).ToList();
+
+            if (interestingWeapons.Count > 0) {
                 embed.Description += $"## Weapons\n";
 
-                foreach (BarUnitWeapon weapon in unit.Weapons) {
-                    if (weapon.IsBogus == true) { continue; }
-
-                    embed.Description += $"**{weapon.WeaponType}** ({weapon.DefinitionName})\n";
+                foreach (BarUnitWeapon wep in interestingWeapons) {
+                    BarWeaponDefinition weapon = wep.WeaponDefinition;
+                    embed.Description += $"**{(wep.Count != 1 ? $"[{wep.Count}x] " : "")}{weapon.Name}** ({weapon.DefinitionName})\n";
 
                     if (weapon.WeaponType == "Shield") {
                         if (weapon.ShieldData == null) {
@@ -383,32 +405,34 @@ namespace gex.Code.Discord {
                                 + $"Recharge: {_N(weapon.ShieldData.PowerRegen)}\n\n";
                         }
                     } else {
-                        double damage = 0d;
-                        if (weapon.TargetCategory == "VTOL" && weapon.Damages.TryGetValue("vtol", out damage)) {
-                            //
-                        } else if (weapon.Damages.TryGetValue("default", out damage)) {
-                            //
-                        }
-
+                        double damage = wep.GetDefaultDamage();
                         double dps = damage / Math.Max(0.01, weapon.ReloadTime);
                         if (weapon.Burst != 0) {
                             dps *= weapon.Burst;
                         }
-                        embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")}\n"
-                            + $"Range: {_N(weapon.Range)}\n";
+                        embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} "
+                            + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}{_N(damage)} dmg, {_D(weapon.ReloadTime)}s reload)\n";
+                        embed.Description += $"Range: {_N(weapon.Range)}";
+                        if (weapon.ImpactOnly == false && weapon.AreaOfEffect >= 12d) {
+                            // https://springrts.com/wiki/Gamedev:WeaponDefs#edgeEffectiveness
+                            double edgeRange = weapon.AreaOfEffect * 0.99d;
+                            double minDamage = damage * ((weapon.AreaOfEffect - edgeRange) / (weapon.AreaOfEffect - (edgeRange * weapon.EdgeEffectiveness)));
+                            embed.Description += $" ({_N(weapon.AreaOfEffect)} splash)";
+                        }
+                        embed.Description += "\n";
 
-                        if (weapon.TargetCategory == "NOTSUB") {
-                            embed.Description += $"Targets: Air, Navy, Ground";
-                        } else if (weapon.TargetCategory == "SURFACE") {
+                        if (wep.TargetCategory == "NOTSUB") {
+                            embed.Description += $"Targets: Air, Boats, Ground";
+                        } else if (wep.TargetCategory == "SURFACE") {
                             embed.Description += $"Targets: Boats, Ground";
-                        } else if (weapon.TargetCategory == "NOTAIR" && weapon.WaterWeapon == false) {
+                        } else if (wep.TargetCategory == "NOTAIR" && weapon.WaterWeapon == false) {
                             embed.Description += $"Targets: Boats, Air";
-                        } else if (weapon.TargetCategory == "NOTAIR" && weapon.WaterWeapon == true) {
+                        } else if (wep.TargetCategory == "NOTAIR" && weapon.WaterWeapon == true) {
                             embed.Description += $"Targets: Boats, Subs";
-                        } else if (weapon.TargetCategory == "VTOL") {
+                        } else if (wep.TargetCategory == "VTOL") {
                             embed.Description += $"Targets: Air";
                         } else {
-                            embed.Description += $"Targets: {weapon.TargetCategory}";
+                            embed.Description += $"Targets: {wep.TargetCategory}";
                         }
 
                         embed.Description += "\n\n";
@@ -1268,7 +1292,7 @@ namespace gex.Code.Discord {
             public async Task<IEnumerable<DiscordAutoCompleteChoice>> Provider(AutocompleteContext ctx) {
                 GameEventUnitDefDb unitDefDb = ctx.Services.GetRequiredService<GameEventUnitDefDb>();
                 IMemoryCache memoryCache = ctx.Services.GetRequiredService<IMemoryCache>();
-                BarUnitGithubRepository githubUnitRepository = ctx.Services.GetRequiredService<BarUnitGithubRepository>();
+                GithubDownloadRepository githubUnitRepository = ctx.Services.GetRequiredService<GithubDownloadRepository>();
 
                 string value = ctx.OptionValue.ToString() ?? "";
 
@@ -1285,7 +1309,7 @@ namespace gex.Code.Discord {
             }
 
             private async Task<List<DiscordAutoCompleteChoice>> _GetChoices(
-                GameEventUnitDefDb unitDefDb, IMemoryCache cache, BarUnitGithubRepository unitGithubRepo
+                GameEventUnitDefDb unitDefDb, IMemoryCache cache, GithubDownloadRepository unitGithubRepo
             ) {
 
                 CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
@@ -1310,7 +1334,7 @@ namespace gex.Code.Discord {
 
                             if (justFactionPrefixChanges == true) {
                                 foreach (string defName in set.DefinitionNames) {
-                                    if ((await unitGithubRepo.GetUnitData(defName, cts.Token)).IsOk == false) {
+                                    if ((await unitGithubRepo.GetFile("units", $"{defName}.lua", cts.Token)).IsOk == false) {
                                         continue;
                                     }
 
@@ -1329,7 +1353,7 @@ namespace gex.Code.Discord {
                                 }
                             } else {
                                 foreach (string defName in set.DefinitionNames) {
-                                    if ((await unitGithubRepo.GetUnitData(defName, cts.Token)).IsOk == false) {
+                                    if ((await unitGithubRepo.GetFile("units", $"{defName}.lua", cts.Token)).IsOk == false) {
                                         continue;
                                     }
 
@@ -1337,7 +1361,7 @@ namespace gex.Code.Discord {
                                 }
                             }
                         } else {
-                            if ((await unitGithubRepo.GetUnitData(set.DefinitionNames[0], cts.Token)).IsOk == false) {
+                            if ((await unitGithubRepo.GetFile("units", $"{set.DefinitionNames[0]}.lua", cts.Token)).IsOk == false) {
                                 continue;
                             }
                             opts.Add(new DiscordAutoCompleteChoice(set.Name, set.DefinitionNames[0]));

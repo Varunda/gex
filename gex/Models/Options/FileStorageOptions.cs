@@ -28,9 +28,9 @@
         public string WebImageLocation { get; set; } = "";
 
         /// <summary>
-        ///     where the .lua unit files from the BAR repo will go
+        ///     where downloaded GitHub data will go
         /// </summary>
-        public string UnitDataLocation { get; set; } = "";
+        public string GitHubDataLocation { get; set; } = "";
 
     }
 }

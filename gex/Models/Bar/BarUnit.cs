@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Security.Permissions;
 
 namespace gex.Models.Bar {
 
@@ -74,75 +75,43 @@ namespace gex.Models.Bar {
 
         public bool CanResurrect { get; set; }
 
+        /// <summary>
+        ///     what weapon definition to use when exploding
+        /// </summary>
+        public string ExplodeAs { get; set; } = "";
+
+        /// <summary>
+        ///     what weapon definition to use when self-d
+        /// </summary>
+        public string SelfDestructWeapon { get; set; } = "";
+
+        /// <summary>
+        ///     how long it takes the unit to self-d
+        /// </summary>
+        public double SelfDestructCountdown { get; set; }
+
         public List<BarUnitWeapon> Weapons { get; set; } = [];
 
     }
 
     public class BarUnitWeapon {
 
-        public string Name { get; set; } = "";
+        public BarWeaponDefinition WeaponDefinition { get; set; } = new();
 
-        public string DefinitionName { get; set; } = "";
-
-        public double AreaOfEffect { get; set; }
-
-        public double Burst { get; set; }
-
-        public double BurstRate { get; set; }
-
-        public double FlightTime { get; set; }
-
-        public double ImpulseFactor { get; set; }
-
-        public double Range { get; set; }
-
-        public double ReloadTime { get; set; }
-
-        public double TurnRate { get; set; }
-
-        public double Velocity { get; set; }
-
-        public string WeaponType { get; set; } = "";
-
-        public bool Tracks { get; set; }
-
-        public bool WaterWeapon { get; set; }
+        public int Count { get; set; }
 
         public string TargetCategory { get; set; } = "";
 
-        public double EnergyPerShot { get; set; }
+        public double GetDefaultDamage() {
+            double damage = 0d;
+            if (TargetCategory == "VTOL" && WeaponDefinition.Damages.TryGetValue("vtol", out damage)) {
+                //
+            } else if (WeaponDefinition.Damages.TryGetValue("default", out damage)) {
+                //
+            }
 
-        public double MetalPerShot { get; set; }
-
-        public bool IsParalyzer { get; set; }
-
-        public double ParalyzerTime { get; set; }
-
-        public bool IsBogus { get; set; }
-
-        public Dictionary<string, double> Damages { get; set; } = [];
-
-        public BarUnitShield? ShieldData { get; set; } = null;
-
-    }
-
-    public class BarUnitShield {
-
-        public double EnergyUpkeep { get; set; }
-
-        public double Power { get; set; }
-
-        public double PowerRegen { get; set; }
-
-        public double PowerRegenEnergy { get; set; }
-
-        public double Radius { get; set; }
-
-        public bool Repulser { get; set; }
-
-        public double StartingPower { get; set; }
-
-        public double Force { get; set; }
+            return damage;
+        }
 
     }
 

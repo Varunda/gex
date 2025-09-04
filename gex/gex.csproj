@@ -38,6 +38,7 @@
     <PackageReference Include="DSharpPlus.SlashCommands" Version="4.5.0" />
     <PackageReference Include="Emzi0767.Common" Version="2.12.1" />
     <PackageReference Include="Kuylar.DSharpPlus.ButtonCommands" Version="1.4.0" />
+    <PackageReference Include="LuaCSharp" Version="0.4.2" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.7.0" />
     <PackageReference Include="Magick.NET.Core" Version="14.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.13" />
@@ -63,6 +64,7 @@
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
     <PackageReference Include="System.Net.Security" Version="4.3.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.8" />
+	<RuntimeHostConfigurationOption Include="System.Runtime.LegacyExceptionHandling" Value="true" />
   </ItemGroup>
 
   <ItemGroup>

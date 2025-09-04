@@ -8,7 +8,5 @@
 
         public string UnitDataRepository { get; set; } = "Beyond-All-Reason";
 
-        public string UnitDataPath { get; set; } = "units";
-
     }
 }

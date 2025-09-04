@@ -249,11 +249,10 @@ namespace gex {
             services.AddAppDatabaseReadersServices(); // DB readers
             services.AddBarApiServices();
             services.AddGexRepositories();
+            services.AddGexParsers();
+            services.AddSingleton<LuaRunner>();
 
             services.AddSingleton<PathEnvironmentService>();
-            services.AddSingleton<BarDemofileParser>();
-            services.AddSingleton<BarMapParser>();
-            services.AddSingleton<BarUnitParser>();
             services.AddSingleton<BarMatchTitleUtilService>();
 
             // Hosted services
@@ -271,7 +270,6 @@ namespace gex {
                 services.AddSingleton<DiscordWrapper>();
                 services.AddHostedService<DiscordService>();
             }
-
 
             services.AddTransient<AppCurrentAccount>();
 

@@ -23,13 +23,13 @@ namespace gex.Services.Hosted.Startup {
     public class StartupTestService : BackgroundService {
 
         private readonly ILogger<StartupTestService> _Logger;
-        private readonly BarUnitGithubRepository _UserGithubRepository;
+        private readonly GithubDownloadRepository _UserGithubRepository;
         private readonly GameEventUnitDefDb _UnitDefDb;
         private readonly BarUnitParser _UnitParser;
         private readonly IOptions<FileStorageOptions> _FileOptions;
 
         public StartupTestService(ILogger<StartupTestService> logger,
-            BarUnitGithubRepository userGithubRepository, GameEventUnitDefDb unitDefDb,
+            GithubDownloadRepository userGithubRepository, GameEventUnitDefDb unitDefDb,
             BarUnitParser unitParser, IOptions<FileStorageOptions> fileOptions) {
 
             _Logger = logger;

@@ -11,20 +11,21 @@ namespace gex.Services.Hosted.PeriodicTasks {
         private const string SERVICE_NAME = "github_unit_data_update_service";
         private static readonly TimeSpan RUN_DELAY = TimeSpan.FromHours(4);
 
-        private readonly BarUnitGithubRepository _UnitGithubRepository;
+        private readonly GithubDownloadRepository _GithubRepository;
 
         public GitHubUnitDataUpdatePeriodicService(ILoggerFactory loggerFactory,
-            ServiceHealthMonitor healthMon, BarUnitGithubRepository unitGithubRepository)
+            ServiceHealthMonitor healthMon, GithubDownloadRepository githubRepository)
 
         : base(SERVICE_NAME, RUN_DELAY, loggerFactory, healthMon) {
 
-            _UnitGithubRepository = unitGithubRepository;
+            _GithubRepository = githubRepository;
         }
 
         protected override async Task<string?> PerformTask(CancellationToken cancel) {
-            _Logger.LogInformation($"performing GitHub unit data update");
+            _Logger.LogInformation($"performing GitHub data update");
 
-            await _UnitGithubRepository.DownloadAll(cancel);
+            await _GithubRepository.DownloadFolder("units", cancel);
+            await _GithubRepository.DownloadFolder("weapons", cancel);
 
             return null;
         }

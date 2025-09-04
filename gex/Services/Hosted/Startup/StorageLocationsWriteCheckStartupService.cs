@@ -55,8 +55,8 @@ namespace gex.Services.Hosted.Startup {
                 error = true;
             }
 
-            if (string.IsNullOrEmpty(_Options.Value.UnitDataLocation)) {
-                _Logger.LogError("The option 'UnitDataLocation' was an empty string or unset. Is this set in env.json?");
+            if (string.IsNullOrEmpty(_Options.Value.GitHubDataLocation)) {
+                _Logger.LogError("The option 'GitHubDataLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
@@ -69,7 +69,7 @@ namespace gex.Services.Hosted.Startup {
             await _TestFile(_Options.Value.EngineLocation, cancel);
             await _TestFile(_Options.Value.GameLogLocation, cancel);
             await _TestFile(_Options.Value.WebImageLocation, cancel);
-            await _TestFile(_Options.Value.UnitDataLocation, cancel);
+            await _TestFile(_Options.Value.GitHubDataLocation, cancel);
 
             _Logger.LogInformation($"write test complete!");
         }

@@ -37,5 +37,10 @@ namespace gex.Controllers.Api {
             return ApiOk(ip ?? "missing?");
         }
 
+        [HttpGet("exception")]
+        public ApiResponse<string> ThrowException() {
+            throw new System.Exception("woah");
+        }
+
     }
 }
