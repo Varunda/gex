@@ -71,9 +71,9 @@ namespace gex.Services.Parser {
             unit.DefinitionName = keys[0]!.ToString()!;
 
             // basic info
-            unit.Health = _Double(info, "health", 0);
-            unit.MetalCost = _Double(info, "metalcost", 0);
-            unit.EnergyCost = _Double(info, "energycost", 0);
+            unit.Health = _Double(info, "health", _Double(info, "maxdamage", 0));
+            unit.MetalCost = _Double(info, "metalcost", _Double(info, "buildcostmetal", 0));
+            unit.EnergyCost = _Double(info, "energycost", _Double(info, "buildcostenergy", 0));
             unit.BuildTime = _Double(info, "buildtime", 0);
             unit.Speed = _Double(info, "speed", 0);
             unit.TurnRate = _Double(info, "turnrate", 0);
