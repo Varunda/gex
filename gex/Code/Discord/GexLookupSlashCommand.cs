@@ -294,7 +294,7 @@ namespace gex.Code.Discord {
 
             embed.Color = DiscordColor.Gray;
             embed.WithThumbnail($"https://{_Instance.GetHost()}/image-proxy/UnitPic?defName={name}");
-            embed.Description = $"-# this data is updated every 4 hours\n\n";
+            embed.Description = $"";
 
             if (name.StartsWith("arm")) {
                 embed.Description += $"**Faction**: {_GetEmoji("armada")} Armada\n";
@@ -440,7 +440,7 @@ namespace gex.Code.Discord {
                 }
             }
 
-            embed.WithFooter($"{(unit.ModelAuthor != null ? $"Model by: {unit.ModelAuthor} | " : "")}generated in {timer.ElapsedMilliseconds}ms");
+            embed.WithFooter($"{(unit.ModelAuthor != null ? $"Model by: {unit.ModelAuthor} | " : "")}generated in {timer.ElapsedMilliseconds}ms | updated every 4 hours");
 
             await ctx.EditResponseEmbed(embed);
         }
