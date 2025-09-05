@@ -29,6 +29,10 @@ namespace gex.Services.Repositories {
             _Cache = cache;
         }
 
+        public bool HasUnit(string defName) {
+            return _GithubRepository.HasFile("units", $"{defName}.lua");
+        }
+
         public async Task<Result<BarUnit, string>> GetByDefinitionName(string defName, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, defName);
 

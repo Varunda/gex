@@ -295,6 +295,14 @@ namespace gex.Code.Discord {
             await ctx.CreateDeferred(ephemeral: false);
             Stopwatch timer = Stopwatch.StartNew();
 
+            if (_UnitRepository.HasUnit(name) == false) {
+                await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
+                    .WithTitle($"Unit lookup: {name}")
+                    .WithDescription($"Unit does not exist")
+                    .WithColor(DiscordColor.Red));
+                return;
+            }
+
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             Result<BarUnit, string> unitResult = await _UnitRepository.GetByDefinitionName(name, cts.Token);
             if (unitResult.IsOk == false) {
