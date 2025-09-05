@@ -15,13 +15,13 @@ namespace gex.Services.Repositories {
 
         private readonly ILogger<BarWeaponDefinitionRepository> _Logger;
         private readonly BarWeaponDefinitionParser _WeaponDefinitionParser;
-        private readonly GithubDownloadRepository _GithubRepository;
+        private readonly IGithubDownloadRepository _GithubRepository;
         private readonly IMemoryCache _Cache;
 
         private const string CACHE_KEY_ALL = "Gex.WeaponDefinitions.All";
 
         public BarWeaponDefinitionRepository(ILogger<BarWeaponDefinitionRepository> logger,
-            BarWeaponDefinitionParser weaponDefinitionParser, GithubDownloadRepository githubRepository,
+            BarWeaponDefinitionParser weaponDefinitionParser, IGithubDownloadRepository githubRepository,
             IMemoryCache memoryCache) {
 
             _Logger = logger;

@@ -271,10 +271,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
 
                 if (founder != null && founder.InGame == false) {
+                    /*
                     _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
                         BattleID = battle.BattleID,
                         Reason = "battle_opened"
                     });
+                    */
                 }
             }
 
@@ -383,10 +385,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
 
                 if (founder != null && founder.InGame == false) {
+                    /*
                     _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
                         BattleID = bID,
                         Reason = "user_joined"
                     });
+                    */
                 }
             }
         }
@@ -456,10 +460,12 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             LobbyUser? founder = needsStatusUpdate == true ? _LobbyManager.GetUser(battle.FounderUsername) : null;
             if (needsStatusUpdate == true && founder != null && founder.InGame == false) {
+                /*
                 _BattleStatusUpdateQueue.Queue(new BattleStatusUpdateQueueEntry() {
                     BattleID = battle.BattleID,
                     Reason = "spectator_count_changed"
                 });
+                */
             }
         }
 

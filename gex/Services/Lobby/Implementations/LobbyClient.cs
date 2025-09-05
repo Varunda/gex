@@ -442,7 +442,6 @@ namespace gex.Services.Lobby.Implementations {
                         response.Bots.Add(bot);
                     } else {
                         long userID = long.Parse(client["ID"]?.GetValue<string>() ?? "0");
-                        bool isBoss = client["Boss"]?.GetValue<int>() == 1;
 
                         double skill = -1d;
 
@@ -464,11 +463,10 @@ namespace gex.Services.Lobby.Implementations {
                             }
                         }
 
-                        if (playerID == null) {
+                        if (playerID == null || allyTeamID == null) {
                             LobbyBattleStatusSpectator spec = new() {
                                 UserID = userID,
                                 Username = clientName,
-                                IsBoss = isBoss,
                                 Skill = skill
                             };
 
@@ -477,9 +475,7 @@ namespace gex.Services.Lobby.Implementations {
                             LobbyBattleStatusClient battleClient = new() {
                                 UserID = userID,
                                 Username = clientName,
-                                PlayerID = playerID,
-                                AllyTeamID = allyTeamID,
-                                IsBoss = isBoss,
+                                PlayerID = playerID.Value,
                                 Skill = skill
                             };
 

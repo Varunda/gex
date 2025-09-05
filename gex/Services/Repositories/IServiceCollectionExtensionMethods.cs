@@ -1,4 +1,5 @@
 ﻿using gex.Services.Repositories.Account;
+using gex.Services.Repositories.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Repositories {
@@ -21,8 +22,10 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMapPlayCountRepository>();
             services.AddSingleton<MapStatsStartSpotRepository>();
             services.AddSingleton<TeiServerRepository>();
-            services.AddSingleton<GithubDownloadRepository>();
+            services.AddSingleton<IGithubDownloadRepository, GithubDownloadRepository>();
             services.AddSingleton<BarWeaponDefinitionRepository>();
+            services.AddSingleton<BarUnitRepository>();
+            services.AddSingleton<BarI18nRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

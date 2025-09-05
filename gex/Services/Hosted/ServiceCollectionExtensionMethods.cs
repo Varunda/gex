@@ -36,6 +36,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<GameVersionCleanupPeriodicService>();
             services.AddHostedService<LobbyAlertSendingPeriodicService>();
             services.AddHostedService<GitHubUnitDataUpdatePeriodicService>();
+            services.AddHostedService<LobbyBattleStatusApiUpdatePeriodicService>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {

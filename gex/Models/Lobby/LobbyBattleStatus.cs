@@ -47,17 +47,7 @@ namespace gex.Models.Lobby {
         /// <summary>
         ///     ID of the player
         /// </summary>
-        public int? PlayerID { get; set; }
-
-        /// <summary>
-        ///     ID of the ally team
-        /// </summary>
-        public int? AllyTeamID { get; set; }
-
-        /// <summary>
-        ///     if this client is a boss in the lobby or not
-        /// </summary>
-        public bool IsBoss { get; set; }
+        public int PlayerID { get; set; }
 
         /// <summary>
         ///     skill value. -1 by default if unable to find
@@ -77,11 +67,6 @@ namespace gex.Models.Lobby {
         ///     username of the user of the client
         /// </summary>
         public string Username { get; set; } = "";
-
-        /// <summary>
-        ///     is this spectator a boss or not
-        /// </summary>
-        public bool IsBoss { get; set; }
 
         /// <summary>
         ///     skill value. -1 by default if unable to find

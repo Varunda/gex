@@ -129,7 +129,7 @@ namespace gex.Services.Parser {
 
                 foreach (string weaponKey in weaponKeys) {
                     if (weaponDefs[weaponKey] is not Dictionary<object, object> wep) {
-                        return $"expected weapondefs.{weaponKey} to be a LuaTable, "
+                        return $"expected weapondefs.{weaponKey} to be a Dictionary<object, object>, "
                             + $"was a {weaponDefs[weaponKey].GetType().FullName} instead";
                     }
 

@@ -58,10 +58,12 @@ namespace gex.Code.Discord {
         public ILobbyClient _LobbyClient { set; private get; } = default!;
         public LobbyAlertDb _LobbyAlertDb { set; private get; } = default!;
         public BarMapRepository _MapRepository { set; private get; } = default!;
-        public GithubDownloadRepository _UnitGithubRepository { set; private get; } = default!;
+        public IGithubDownloadRepository _UnitGithubRepository { set; private get; } = default!;
         public BarUnitParser _BarUnitParser { set; private get; } = default!;
         public GameEventUnitDefDb _UnitDefDb { set; private get; } = default!;
         public BarWeaponDefinitionRepository _WeaponDefinitionRepository { set; private get; } = default!;
+        public BarUnitRepository _UnitRepository { set; private get; } = default!;
+        public BarI18nRepository _I18nRepository { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -154,80 +156,112 @@ namespace gex.Code.Discord {
             embed.Title = $"Lobby lookup: `{name}`";
 
             Result<UserSearchResult, string> player = await _GetPlayer(name, cancel);
-            if (player.IsOk == false) {
-                embed.Description = $"{player.Error}\n\n"
-                    + $"-# Gex only processes public PvP games, if this user plays only PvE games, or only private games, Gex does not know about them";
-                embed.Color = DiscordColor.Red;
-            } else if (player.IsOk == true) {
+
+            do {
+                // no player
+                if (player.IsOk == false) {
+                    embed.Description = $"{player.Error}\n\n"
+                        + $"-# Gex only processes public PvP games, if this user plays only PvE games, or only private games, Gex does not know about them";
+                    embed.Color = DiscordColor.Red;
+                    break;
+                }
+
                 UserSearchResult user = player.Value;
                 embed.Title = $"Lobby lookup: `{name}`";
 
+                // user not online
                 LobbyUser? lobbyUser = _LobbyManager.GetUser(user.Username);
                 if (lobbyUser == null) {
                     embed.Description = $"This user currently not online";
                     embed.Color = DiscordColor.Yellow;
-                } else {
-                    LobbyBattle? userBattle = _LobbyManager.GetBattles().FirstOrDefault(iter => iter.Users.Contains(user.UserID));
-                    if (userBattle == null) {
-                        embed.Description = $"This user is not in a lobby";
-                        embed.Color = DiscordColor.Yellow;
+                    break;
+                }
+
+                // user not in a lobby
+                LobbyBattle? userBattle = _LobbyManager.GetBattles().FirstOrDefault(iter => iter.Users.Contains(user.UserID));
+                if (userBattle == null) {
+                    embed.Description = $"This user is not in a lobby";
+                    embed.Color = DiscordColor.Yellow;
+                    break;
+                }
+
+                embed.Color = DiscordColor.Green;
+                embed.WithThumbnail($"https://api.bar-rts.com/maps/{userBattle.Map.Replace(" ", "%20")}/texture-lq.jpg");
+
+                List<string> parts = [..userBattle.Title.Split("|")];
+                string title = parts.First();
+                string conds = string.Join(", ", parts[1..].Select(iter => iter.Trim()));
+
+                int playerCount = userBattle.Users.Count - userBattle.SpectatorCount + 1; // +1 for the host
+
+                LobbyUser? founder = _LobbyManager.GetUser(userBattle.FounderUsername);
+
+                embed.Description = $"**{title}**\n{conds}\n\n";
+                embed.Description += $"**Map**: {userBattle.Map}\n";
+                if (founder != null) {
+                    embed.Description += $"**Status**: {(founder.InGame == true ? "Running" : "Idle")}\n";
+                }
+                if (userBattle.Passworded == true) {
+                    embed.Description += $"**Passworded**: Yes\n";
+                }
+                if (userBattle.Locked == true) {
+                    embed.Description += $"**Locked**: Yes\n";
+                }
+
+                embed.Description += $"**Players**: {playerCount}/{userBattle.MaxPlayers} ({userBattle.SpectatorCount} specs)\n\n";
+
+                // don't give player names
+                if (userBattle.BattleStatus == null 
+                    || ((DateTime.UtcNow - userBattle.BattleStatus.Timestamp) > TimeSpan.FromMinutes(5))
+                    || userBattle.BattleStatus.Clients.Count > 16) {
+
+                    break;
+                }
+
+                // only show teams if the game has started
+                if (founder?.InGame == false) {
+                    foreach (LobbyBattleStatusClient client in userBattle.BattleStatus.Clients) {
+                        embed.Description += $"{client.Username} - `[{client.Skill}]`\n";
+                    }
+                    embed.Description += "\n";
+                    break;
+                }
+
+                // this fun bit of codes guesses the ally teams based on player IDs
+                int teamCount = userBattle.TeamCount;
+                int maxPlayerId = userBattle.BattleStatus.Clients.Select(iter => iter.PlayerID).Max();
+                int perTeam = userBattle.TeamSize;
+
+                List<KeyValuePair<int, List<LobbyBattleStatusClient>>> allyTeams = [];
+
+                List<LobbyBattleStatusClient> clients = userBattle.BattleStatus.Clients;
+                KeyValuePair<int, List<LobbyBattleStatusClient>>? currentTeam = null;
+                // player ID is 1 indexed
+                for (int i = 1; i <= clients.Count; ++i) {
+                    currentTeam ??= new KeyValuePair<int, List<LobbyBattleStatusClient>>(teamCount - allyTeams.Count, []);
+
+                    LobbyBattleStatusClient? client = clients.FirstOrDefault(iter => iter.PlayerID == i);
+                    if (client != null) {
+                        currentTeam.Value.Value.Add(client);
                     } else {
-                        embed.Color = DiscordColor.Green;
-                        embed.WithThumbnail($"https://api.bar-rts.com/maps/{userBattle.Map.Replace(" ", "%20")}/texture-lq.jpg");
+                        _Logger.LogWarning($"missing player ID while generating ally teams [battleID={userBattle.BattleID}] [playerID={i}]");
+                    }
 
-                        List<string> parts = [..userBattle.Title.Split("|")];
-                        string title = parts.First();
-                        string conds = string.Join(", ", parts[1..].Select(iter => iter.Trim()));
-
-                        int playerCount = userBattle.Users.Count - userBattle.SpectatorCount + 1; // +1 for the host
-
-                        LobbyUser? founder = _LobbyManager.GetUser(userBattle.FounderUsername);
-
-                        embed.Description = $"**{title}**\n{conds}\n\n";
-                        embed.Description += $"**Map**: {userBattle.Map}\n";
-                        if (founder != null) {
-                            embed.Description += $"**Status**: {(founder.InGame == true ? "Running" : "Idle")}\n";
-                        }
-                        if (userBattle.Passworded == true) {
-                            embed.Description += $"**Passworded**: Yes\n";
-                        }
-                        if (userBattle.Locked == true) {
-                            embed.Description += $"**Locked**: Yes\n";
-                        }
-
-                        embed.Description += $"**Players**: {playerCount}/{userBattle.MaxPlayers} ({userBattle.SpectatorCount} specs)\n\n";
-
-                        // update battle status if it is not given, or if the status is over 5 minutes old
-                        if (userBattle.BattleStatus == null || ((DateTime.UtcNow - userBattle.BattleStatus.Timestamp) > TimeSpan.FromMinutes(5))) {
-                            _Logger.LogDebug($"refreshing battle status for lobby client [battleID={userBattle.BattleID}] [timestamp={userBattle.BattleStatus?.Timestamp:u}]");
-                            CancellationTokenSource statusCts = new(TimeSpan.FromSeconds(1));
-                            Result<LobbyBattleStatus, string> battleStatus = await _LobbyClient.BattleStatus(userBattle.BattleID, statusCts.Token);
-
-                            if (battleStatus.IsOk == true) {
-                                userBattle.BattleStatus = battleStatus.Value;
-                            }
-                        }
-
-                        if (userBattle.BattleStatus != null && userBattle.BattleStatus.Clients.Count <= 16) {
-                            List<int> allyTeams = userBattle.BattleStatus.Clients.Where(iter => iter.AllyTeamID != null)
-                                .Select(iter => iter.AllyTeamID!.Value)
-                                .Distinct().Order().ToList();
-
-                            foreach (int allyTeamID in allyTeams) {
-                                embed.Description += $"**Team {allyTeamID}**\n";
-                                foreach (LobbyBattleStatusClient client in userBattle.BattleStatus.Clients) {
-                                    if (client.AllyTeamID != allyTeamID) {
-                                        continue;
-                                    }
-
-                                    embed.Description += $"{client.Username} - `[{client.Skill}]`\n";
-                                }
-                                embed.Description += "\n";
-                            }
-                        }
+                    if (currentTeam.Value.Value.Count >= perTeam) {
+                        allyTeams.Add(currentTeam.Value);
+                        currentTeam = null;
                     }
                 }
-            }
+
+                foreach (KeyValuePair<int, List<LobbyBattleStatusClient>> iter in allyTeams.OrderBy(iter => iter.Key)) {
+                    embed.Description += $"**Team {iter.Key}**\n";
+                    foreach (LobbyBattleStatusClient client in iter.Value.OrderByDescending(iter => iter.Skill)) {
+                        embed.Description += $"{client.Username.Replace("_", "\\_")} - `[{client.Skill:F2}]`\n";
+                    }
+                    embed.Description += "\n";
+                }
+
+            } while (false);
 
             embed.WithFooter($"generated in {timer.ElapsedMilliseconds}ms");
 
@@ -262,30 +296,20 @@ namespace gex.Code.Discord {
             Stopwatch timer = Stopwatch.StartNew();
 
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-
-            Result<string, string> unitInfo = await _UnitGithubRepository.GetFile("units", $"{name}.lua", cts.Token);
-            if (unitInfo.IsOk == false) {
-                await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
-                    .WithTitle($"Unit lookup: {name}")
-                    .WithDescription($"Failed to find the unit `{name}`")
-                    .WithColor(DiscordColor.Red));
-                return;
-            }
-
-            Result<BarUnit, string> unitResult = await _BarUnitParser.Parse(unitInfo.Value, cts.Token);
+            Result<BarUnit, string> unitResult = await _UnitRepository.GetByDefinitionName(name, cts.Token);
             if (unitResult.IsOk == false) {
                 await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
                     .WithTitle($"Unit lookup: {name}")
-                    .WithDescription($"Failed to parse the lua unit info for `{name}` (but the unit does exist!)")
+                    .WithDescription($"Failed to load unit information: {unitResult.Error}")
                     .WithColor(DiscordColor.Red));
                 return;
             }
 
             DiscordEmbedBuilder embed = new();
 
-            List<string> unitName = await _UnitDefDb.GetUnitNameByDefinitionName(name, cts.Token);
-            if (unitName.Count > 0) {
-                embed.Title = $"{unitName[0]} (`{name}`)";
+            string? unitName = await _I18nRepository.GetString("units", $"units.names.{name}", cts.Token);
+            if (string.IsNullOrEmpty(unitName) == false) {
+                embed.Title = $"{unitName} (`{name}`)";
             } else {
                 embed.Title = $"{name}";
             }
@@ -295,6 +319,11 @@ namespace gex.Code.Discord {
             embed.Color = DiscordColor.Gray;
             embed.WithThumbnail($"https://{_Instance.GetHost()}/image-proxy/UnitPic?defName={name}");
             embed.Description = $"";
+
+            string? desc = await _I18nRepository.GetString("units", $"units.descriptions.{name}", cts.Token);
+            if (string.IsNullOrEmpty(desc) == false) {
+                embed.Description += $"### {desc.Replace("_", "\\_")}\n\n";
+            }
 
             if (name.StartsWith("arm")) {
                 embed.Description += $"**Faction**: {_GetEmoji("armada")} Armada\n";
@@ -386,7 +415,10 @@ namespace gex.Code.Discord {
             List<BarUnitWeapon> interestingWeapons = unit.Weapons.Where(iter => {
                 return iter.WeaponDefinition.IsBogus == false
                     && iter.Count > 0
-                    && (iter.WeaponDefinition.WeaponType == "Shield" || iter.GetDefaultDamage() > 0d);
+                    && (iter.WeaponDefinition.WeaponType == "Shield"
+                        || iter.WeaponDefinition.CarriedUnit != null
+                        || iter.GetDefaultDamage() > 0d
+                    );
             }).ToList();
 
             if (interestingWeapons.Count > 0) {
@@ -406,13 +438,35 @@ namespace gex.Code.Discord {
                         }
                     } else {
                         double damage = wep.GetDefaultDamage();
+
+                        if (weapon.CarriedUnit != null) {
+                            embed.Description += $"Drone: {weapon.CarriedUnit.DefinitionName}\n";
+                            Result<BarUnit, string> carriedUnit = await _UnitRepository.GetByDefinitionName(weapon.CarriedUnit.DefinitionName, cts.Token);
+                            if (carriedUnit.IsOk == true && carriedUnit.Value.Weapons.Count > 0) {
+                                weapon = carriedUnit.Value.Weapons[0].WeaponDefinition;
+                                damage = carriedUnit.Value.Weapons[0].GetDefaultDamage();
+                            }
+                        }
+
                         double dps = damage / Math.Max(0.01, weapon.ReloadTime);
                         if (weapon.Burst != 0) {
                             dps *= weapon.Burst;
                         }
                         embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} "
                             + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}{_N(damage)} dmg, {_D(weapon.ReloadTime)}s reload)\n";
-                        embed.Description += $"Range: {_N(weapon.Range)}";
+
+                        string range = $"{_N(weapon.Range)}";
+                        // if the weapon was changed, this means a carrier weapon is being shown
+                        if (weapon.DefinitionName != wep.WeaponDefinition.DefinitionName) {
+                            if (wep.WeaponDefinition.CarriedUnit == null) {
+                                _Logger.LogWarning($"bad state, expected there to be a carried unit if the weapon in iteration was changed");
+                            } else {
+                                double engRng = wep.WeaponDefinition.CarriedUnit.EngagementRange;
+                                range = $"{_N(weapon.Range + engRng)} ({_N(engRng)} + {_N(weapon.Range)})";
+                            }
+                        }
+
+                        embed.Description += $"Range: {range}";
                         if (weapon.ImpactOnly == false && weapon.AreaOfEffect >= 12d) {
                             // https://springrts.com/wiki/Gamedev:WeaponDefs#edgeEffectiveness
                             double edgeRange = weapon.AreaOfEffect * 0.99d;
@@ -1133,9 +1187,10 @@ namespace gex.Code.Discord {
                     int playCount = map.Sum(iter => iter.PlayCount);
                     int winCount = map.Sum(iter => iter.WinCount);
 
-                    embed.Description += $"**{map.Key}**\n";
-                    embed.Description += $"{Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n\n";
+                    embed.Description += $"**{map.Key}** - ";
+                    embed.Description += $"{Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n";
                 }
+                embed.Description += "\n";
             } else {
                 embed.AddField("Maps", "no map stats found");
             }
@@ -1290,26 +1345,35 @@ namespace gex.Code.Discord {
             private const string CACHE_KEY = "Gex.Discord.UnitNameProvider.Data";
 
             public async Task<IEnumerable<DiscordAutoCompleteChoice>> Provider(AutocompleteContext ctx) {
+
                 GameEventUnitDefDb unitDefDb = ctx.Services.GetRequiredService<GameEventUnitDefDb>();
                 IMemoryCache memoryCache = ctx.Services.GetRequiredService<IMemoryCache>();
-                GithubDownloadRepository githubUnitRepository = ctx.Services.GetRequiredService<GithubDownloadRepository>();
+                IGithubDownloadRepository githubUnitRepository = ctx.Services.GetRequiredService<IGithubDownloadRepository>();
+                BarI18nRepository i18n = ctx.Services.GetRequiredService<BarI18nRepository>();
+                ILogger<UnitNameProvider> logger = ctx.Services.GetRequiredService<ILogger<UnitNameProvider>>();
 
                 string value = ctx.OptionValue.ToString() ?? "";
 
-                List<DiscordAutoCompleteChoice> choices = await _GetChoices(unitDefDb, memoryCache, githubUnitRepository);
+                try {
+                    List<DiscordAutoCompleteChoice> choices = await _GetChoices(memoryCache, githubUnitRepository, i18n, logger);
 
-                List<DiscordAutoCompleteChoice> matches = choices.Where(iter => {
-                    return iter.Name.StartsWith(value, StringComparison.OrdinalIgnoreCase);
-                }).ToList();
+                    List<DiscordAutoCompleteChoice> matches = choices.Where(iter => {
+                        return iter.Name.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+                    }).ToList();
 
-                if (matches.Count > 25) {
-                    return matches[..25];
+                    if (matches.Count > 25) {
+                        return matches[..25];
+                    }
+                    return matches;
+                } catch (Exception ex) {
+                    logger.LogError(ex, "failed to provide unit names");
+
+                    return [];
                 }
-                return matches;
             }
 
-            private async Task<List<DiscordAutoCompleteChoice>> _GetChoices(
-                GameEventUnitDefDb unitDefDb, IMemoryCache cache, GithubDownloadRepository unitGithubRepo
+            private async Task<List<DiscordAutoCompleteChoice>> _GetChoices(IMemoryCache cache,
+                IGithubDownloadRepository unitGithubRepo, BarI18nRepository i18n, ILogger<UnitNameProvider> logger
             ) {
 
                 CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
@@ -1317,15 +1381,27 @@ namespace gex.Code.Discord {
                 if (cache.TryGetValue(CACHE_KEY, out List<DiscordAutoCompleteChoice>? opts) == false || opts == null) {
                     opts = new List<DiscordAutoCompleteChoice>();
 
-                    List<UnitNameToDefinitionSet> units = await unitDefDb.GetUnitNames(cts.Token);
+                    List<KeyValuePair<string, string>> i18nNames = await i18n.GetKeysStartingWith("units", "units.names.", cts.Token);
+                    if (i18nNames.Count == 0) {
+                        throw new Exception($"no units found?");
+                    }
 
-                    foreach (UnitNameToDefinitionSet set in units) {
-                        if (set.DefinitionNames.Length > 1) {
+                    // create a list of unique names to all of the definition names that use that name
+                    // <display name, unit defs[]>
+                    Dictionary<string, List<string>> nameSets = [];
+                    foreach (KeyValuePair<string, string> iter in i18nNames) {
+                        List<string> defNames = nameSets.GetValueOrDefault(iter.Value) ?? new List<string>();
+                        defNames.Add(iter.Key["units.names.".Length..]); // remove the prefix units.names. from all entries
+                        nameSets[iter.Value] = defNames;
+                    }
+
+                    foreach (KeyValuePair<string, List<string>> set in nameSets) {
+                        if (set.Value.Count > 1) {
 
                             // if the definition names change in just faction prefix (e.g. armalab, coralab)
                             // then gex can safely just suffix the label name with the faction,
                             // else just include the full definition name
-                            bool justFactionPrefixChanges = set.DefinitionNames.Select(iter => {
+                            bool justFactionPrefixChanges = set.Value.Select(iter => {
                                 if (iter.StartsWith("cor") || iter.StartsWith("arm") || iter.StartsWith("leg")) {
                                     return iter[3..];
                                 }
@@ -1333,12 +1409,13 @@ namespace gex.Code.Discord {
                             }).Distinct().Count() == 1;
 
                             if (justFactionPrefixChanges == true) {
-                                foreach (string defName in set.DefinitionNames) {
+                                foreach (string defName in set.Value) {
                                     if ((await unitGithubRepo.GetFile("units", $"{defName}.lua", cts.Token)).IsOk == false) {
+                                        logger.LogDebug($"missing unit from units folder [defName={defName}]");
                                         continue;
                                     }
 
-                                    string labelName = set.Name + " ";
+                                    string labelName = set.Key + " ";
                                     if (defName.StartsWith("cor")) {
                                         labelName += "(Cortex)";
                                     } else if (defName.StartsWith("arm")) {
@@ -1352,19 +1429,21 @@ namespace gex.Code.Discord {
                                     opts.Add(new DiscordAutoCompleteChoice($"{labelName}", defName));
                                 }
                             } else {
-                                foreach (string defName in set.DefinitionNames) {
+                                foreach (string defName in set.Value) {
                                     if ((await unitGithubRepo.GetFile("units", $"{defName}.lua", cts.Token)).IsOk == false) {
+                                        logger.LogDebug($"missing unit from units folder [defName={defName}]");
                                         continue;
                                     }
 
-                                    opts.Add(new DiscordAutoCompleteChoice($"{set.Name} ({defName})", defName));
+                                    opts.Add(new DiscordAutoCompleteChoice($"{set.Key} ({defName})", defName));
                                 }
                             }
                         } else {
-                            if ((await unitGithubRepo.GetFile("units", $"{set.DefinitionNames[0]}.lua", cts.Token)).IsOk == false) {
+                            if ((await unitGithubRepo.GetFile("units", $"{set.Value[0]}.lua", cts.Token)).IsOk == false) {
+                                logger.LogDebug($"missing unit from units folder [defName={set.Value[0]}]");
                                 continue;
                             }
-                            opts.Add(new DiscordAutoCompleteChoice(set.Name, set.DefinitionNames[0]));
+                            opts.Add(new DiscordAutoCompleteChoice(set.Key, set.Value[0]));
                         }
                     }
 

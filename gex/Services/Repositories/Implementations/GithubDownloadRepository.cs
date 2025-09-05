@@ -17,9 +17,9 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Repositories {
+namespace gex.Services.Repositories.Implementations {
 
-    public class GithubDownloadRepository {
+    public class GithubDownloadRepository : IGithubDownloadRepository {
 
         private readonly ILogger<GithubDownloadRepository> _Logger;
         private readonly IOptions<GitHubOptions> _Options;
@@ -62,6 +62,11 @@ namespace gex.Services.Repositories {
             return Result<string, string>.Ok(content);
         }
 
+        /// <summary>
+        ///     get a list of all files within a folder
+        /// </summary>
+        /// <param name="folder">name of the folder within the GitHub repo to get the name of the files of</param>
+        /// <returns></returns>
         public Result<List<string>, string> GetFiles(string folder) {
             string path = Path.Join(_FileOptions.Value.GitHubDataLocation, folder);
             if (Directory.Exists(path) == false) {
@@ -69,6 +74,11 @@ namespace gex.Services.Repositories {
             }
 
             return Directory.GetFiles(path).Select(iter => Path.GetFileName(iter)).ToList();
+        }
+
+        public bool HasFile(string folder, string file) {
+            string path = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, file);
+            return File.Exists(path);
         }
 
         /// <summary>
@@ -144,19 +154,15 @@ namespace gex.Services.Repositories {
                                 visited.Add(entry.Path);
                             }
                         } else if (entry.Type == "file") {
-                            if (entry.Name.EndsWith(".lua")) {
-                                if (entry.DownloadUrl != null) {
-                                    _Logger.LogDebug($"downloading file [name={entry.Name}]");
-                                    if (requestsRemaining-- == 0) {
-                                        _Logger.LogWarning($"GitHub rate limit hit!");
-                                    }
-
-                                    await DownloadFile(folder, entry.Name, entry.DownloadUrl, cancel);
-                                } else {
-                                    _Logger.LogWarning($"missing download file [name={entry.Name}]");
+                            if (entry.DownloadUrl != null) {
+                                _Logger.LogDebug($"downloading file [name={entry.Name}]");
+                                if (requestsRemaining-- == 0) {
+                                    _Logger.LogWarning($"GitHub rate limit hit!");
                                 }
+
+                                await DownloadFile(folder, entry.Name, entry.DownloadUrl, cancel);
                             } else {
-                                _Logger.LogDebug($"skipping non-lua file to download [name={entry.Name}]");
+                                _Logger.LogWarning($"missing download file [name={entry.Name}]");
                             }
                         }
                     }

@@ -42,7 +42,7 @@ namespace gex.Tests.Services.Parser {
             return unitResult.Value;
         }
 
-        //[TestMethod]
+        [TestMethod]
         public async Task Parse_BadLua() {
             BarUnitParser parser = _MakeParser();
 
@@ -126,6 +126,9 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(false, def.IsBogus);
             Assert.AreEqual(9d, def.Damages["default"]);
             Assert.AreEqual(3d, def.Damages["vtol"]);
+            Assert.AreEqual(false, def.IsStockpile);
+            Assert.AreEqual(0d, def.StockpileTime);
+            Assert.AreEqual(0, def.StockpileLimit);
         }
 
         [TestMethod]
@@ -386,6 +389,55 @@ namespace gex.Tests.Services.Parser {
 
             BarUnitWeapon weapon = unit.Weapons[2];
             Assert.AreEqual(2, weapon.Count);
+        }
+
+        [TestMethod]
+        public async Task Parse_Legeallterrainmech_Myrmidion() {
+            BarUnit unit = await _ParseUnit("legeallterrainmech");
+
+            // basic
+            Assert.AreEqual("legeallterrainmech", unit.DefinitionName);
+
+            // weapons
+            Assert.AreEqual(5, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual("drone_controller", weapon.WeaponDefinition.DefinitionName);
+            Assert.IsNotNull(weapon.WeaponDefinition.CarriedUnit);
+
+            BarUnitCarriedUnit c = weapon.WeaponDefinition.CarriedUnit;
+            Assert.AreEqual("legheavydronesmall", c.DefinitionName);
+            Assert.AreEqual(1600d, c.EngagementRange);
+            Assert.AreEqual("LAND", c.SpawnSurface);
+            Assert.AreEqual(8d, c.SpawnRate);
+            Assert.AreEqual(2, c.MaxUnits);
+            Assert.AreEqual(1000d, c.EnergyCost);
+            Assert.AreEqual(90d, c.MetalCost);
+            Assert.AreEqual(1800d, c.ControlRadius);
+            Assert.AreEqual(4d, c.DecayRate);
+            Assert.AreEqual(true, c.EnableDocking);
+            Assert.AreEqual(0.2d, c.DockingArmor);
+            Assert.AreEqual(256d, c.DockingHealRate);
+            Assert.AreEqual(5d, c.DockingHelperSpeed);
+            Assert.AreEqual(33d, c.DockToHealThreshold);
+        }
+
+        [TestMethod]
+        public async Task Parse_Legmos_Mosquito() {
+            BarUnit unit = await _ParseUnit("legmos");
+
+            // basic
+            Assert.AreEqual("legmos", unit.DefinitionName);
+
+            // weapons
+            Assert.AreEqual(1, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual("cor_bot_rocket", weapon.WeaponDefinition.DefinitionName);
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual(true, def.IsStockpile);
+            Assert.AreEqual(2d, def.StockpileTime);
+            Assert.AreEqual(4, def.StockpileLimit);
         }
 
     }

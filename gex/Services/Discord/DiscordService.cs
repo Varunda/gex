@@ -6,12 +6,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using gex.Services.Queues;
 using DSharpPlus.SlashCommands;
-using Newtonsoft.Json.Linq;
 using DSharpPlus.SlashCommands.EventArgs;
 using gex.Code.ExtensionMethods;
 using gex.Models.Discord;
@@ -69,6 +67,7 @@ namespace gex.Services.Discord {
 
             _SlashCommands.SlashCommandErrored += Slash_Command_Errored;
             _SlashCommands.ContextMenuErrored += Context_Menu_Errored;
+            _SlashCommands.AutocompleteErrored += AutoComplete_Errored;
 
             // these commands can only be used in the "home guild"
             //_SlashCommands.RegisterCommands<PingSlashCommand>(_DiscordOptions.Value.GuildId);
@@ -422,6 +421,11 @@ namespace gex.Services.Discord {
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"error sending error message to Discord");
             }
+        }
+
+        private Task AutoComplete_Errored(SlashCommandsExtension ext, AutocompleteErrorEventArgs args) {
+            _Logger.LogError($"error in autocomplete [error={args.Exception}]");
+            return Task.CompletedTask;
         }
 
         /// <summary>

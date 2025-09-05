@@ -46,11 +46,39 @@ namespace gex.Services.Parser {
             weapon.ParalyzerTime = _Double(wep, "paralyzetime", 0);
             weapon.EnergyPerShot = _Double(wep, "energypershot", 0);
             weapon.MetalPerShot = _Double(wep, "metalpershot", 0);
+            weapon.IsStockpile = _Bool(wep, "stockpile", false);
+            weapon.StockpileTime = _Double(wep, "stockpiletime", 0);
 
             object? wepCustomParams = wep.GetValueOrDefault("customparams");
             if (wepCustomParams != null && wepCustomParams is Dictionary<object, object> wepCustomParms) {
                 weapon.IsBogus = _Int(wepCustomParms, "bogus", 0) == 1;
                 weapon.ParalyzerExceptions = _Str(wepCustomParms, "paralyzetime_exception") ?? "";
+                weapon.StockpileLimit = _Int(wepCustomParms, "stockpilelimit", 0);
+
+                if (string.IsNullOrEmpty(_Str(wepCustomParms, "carried_unit")) == false) {
+                    BarUnitCarriedUnit carried = new();
+                    carried.DefinitionName = _Str(wepCustomParms, "carried_unit") ?? throw new Exception($"how is this null here");
+                    carried.EngagementRange = _Double(wepCustomParms, "engagementrange", 0);
+                    carried.SpawnSurface = _Str(wepCustomParms, "spawns_surface") ?? "";
+                    carried.SpawnRate = _Double(wepCustomParms, "spawnrate", 0);
+                    carried.MaxUnits = _Int(wepCustomParms, "maxunits", 0);
+                    carried.EnergyCost = _Double(wepCustomParms, "energycost", 0);
+                    carried.MetalCost = _Double(wepCustomParms, "metalcost", 0);
+                    carried.ControlRadius = _Double(wepCustomParms, "controlradius", 0);
+                    carried.DecayRate = _Double(wepCustomParms, "decayrate", 0);
+                    carried.EnableDocking = _Bool(wepCustomParms, "enabledocking", false);
+                    carried.DockingArmor = _Double(wepCustomParms, "dockingarmor", 0);
+                    carried.DockingHealRate = _Double(wepCustomParms, "dockinghealrate", 0);
+                    carried.DockToHealThreshold = _Double(wepCustomParms, "docktohealthreshold", 0);
+                    // hey BAR
+                    // can we talk about how this is the ONLY KEY that is camelCase?
+                    // like hey BAR, what the fuck, you got a great thing going on, everything gets turned into lowercase keys
+                    // great, i love that, very consistent...
+                    // except for this one property
+                    carried.DockingHelperSpeed = _Double(wepCustomParms, "dockingHelperSpeed", 0);
+
+                    weapon.CarriedUnit = carried;
+                }
             }
 
             if (weapon.WeaponType != "Shield") {
@@ -60,6 +88,7 @@ namespace gex.Services.Parser {
                         weapon.Damages.Add(key, _Double(dmgs, key, 0));
                     }
                 }
+
             } else {
                 object? shieldObj = wep["shield"];
                 if (shieldObj == null || shieldObj is not Dictionary<object, object> shield) {

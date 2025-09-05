@@ -1,0 +1,16 @@
+﻿{
+    "units": {
+        "factions": {
+            "arm": "Armada",
+            "cor": "Cortex",
+            "leg": "Legion"
+        },
+        "dead": "%{name} Wreckage",
+        "names": {
+            "armaak": "Archangel"
+        },
+        "descriptions": {
+            "armaak": "Advanced Amphibious Anti-Air Bot"
+        }
+    }
+}

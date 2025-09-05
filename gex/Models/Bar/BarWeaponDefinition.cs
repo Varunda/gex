@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Security.Permissions;
 
 namespace gex.Models.Bar {
 
@@ -20,6 +21,9 @@ namespace gex.Models.Bar {
 
         public double ImpulseFactor { get; set; }
 
+        /// <summary>
+        ///     if only the impact of the projectile deals damage (i.e. no splash damage)
+        /// </summary>
         public bool ImpactOnly { get; set; }
 
         public double Range { get; set; }
@@ -40,6 +44,12 @@ namespace gex.Models.Bar {
 
         public double MetalPerShot { get; set; }
 
+        public bool IsStockpile { get; set; }
+
+        public double StockpileTime { get; set; }
+
+        public int StockpileLimit { get; set; }
+
         public bool IsParalyzer { get; set; }
 
         public double ParalyzerTime { get; set; }
@@ -51,6 +61,8 @@ namespace gex.Models.Bar {
         public Dictionary<string, double> Damages { get; set; } = [];
 
         public BarUnitShield? ShieldData { get; set; } = null;
+
+        public BarUnitCarriedUnit? CarriedUnit { get; set; } = null;
 
     }
 
@@ -73,4 +85,37 @@ namespace gex.Models.Bar {
         public double Force { get; set; }
 
     }
+
+    public class BarUnitCarriedUnit {
+
+        public string DefinitionName { get; set; } = "";
+
+        public double EngagementRange { get; set; }
+
+        public string SpawnSurface { get; set; } = "";
+
+        public double SpawnRate { get; set; }
+
+        public int MaxUnits { get; set; }
+
+        public double EnergyCost { get; set; }
+
+        public double MetalCost { get; set; }
+
+        public double ControlRadius { get; set; }
+
+        public double DecayRate { get; set; }
+
+        public bool EnableDocking { get; set; }
+
+        public double DockingArmor { get; set; }
+
+        public double DockingHealRate { get; set; }
+
+        public double DockToHealThreshold { get; set; }
+
+        public double DockingHelperSpeed { get; set; }
+
+    }
+
 }
