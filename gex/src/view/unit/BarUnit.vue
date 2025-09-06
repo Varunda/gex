@@ -88,11 +88,14 @@
         },
 
         mounted: function(): void {
-            this.definitionNames = location.pathname.split("/")[2].split(",");
+            const parts: string[] = location.pathname.split("/");
+            if (parts.length >= 3) {
+                this.definitionNames = parts[2].split(",");
 
-            this.rootLoad = Loadable.idle();
-            for (const defName of this.definitionNames) {
-                this.units.set(defName, Loadable.idle());
+                this.rootLoad = Loadable.idle();
+                for (const defName of this.definitionNames) {
+                    this.units.set(defName, Loadable.idle());
+                }
             }
 
             this.loadUnitNames();

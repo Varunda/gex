@@ -102,9 +102,7 @@ namespace gex.Controllers.Api {
                         _Logger.LogWarning($"failed to get BarUnit for carried weapon [defName={defName}] "
                             + $"[carriedUnit={weapon.WeaponDefinition.CarriedUnit.DefinitionName}] [error={carriedUnit.Error}]");
                     }
-
                 }
-
             }
 
             return ApiOk(unit);
