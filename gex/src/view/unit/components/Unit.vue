@@ -75,12 +75,16 @@
                 <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
                 <tr is="Cell" name="Range" field="range" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Splash" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Speed" field="velocity" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Edge effectiveness" field="edgeEffectiveness" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Burst" field="burst" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Burst rate" field="burstRate" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Impulse factor" field="impulseFactor" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Energy/shot" field="energyPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> E / shot</tr>
                 <tr is="Cell" name="Metal/shot" field="metalPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> m / shot</tr>
+                <tr is="Cell" name="Stockpile" field="isStockpile" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> s</tr>
+                <tr is="Cell" name="Stockpile limit" field="stockpileLimit" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
 
                 <template v-if="ShowShieldData || selectedWeapon.shieldData != null || (compareWeaponDef && compareWeaponDef.shieldData != null)">
                     <tr is="Header" name="Shield data" :colspan="colspan"></tr>
