@@ -92,6 +92,12 @@ namespace gex.Services.Parser {
             // builder
             unit.BuildDistance = _Double(info, "builddistance", 0);
             unit.BuildPower = _Double(info, "workertime", 0);
+            unit.IsBuilder = _Bool(info, "builder", false);
+            unit.CanAssist = _Bool(info, "canassist", false);
+            unit.CanReclaim = _Bool(info, "canreclaim", false);
+            unit.CanRepair = _Bool(info, "canrepair", false);
+            unit.CanRestore = _Bool(info, "canrestore", false);
+            unit.CanResurrect = _Bool(info, "canresurrect", false);
 
             // los
             unit.SightDistance = _Double(info, "sightdistance", 0);
@@ -108,10 +114,10 @@ namespace gex.Services.Parser {
             // misc
             unit.CloakCostStill = _Double(info, "cloakcost", 0);
             unit.CloakCostMoving = _Double(info, "cloakcostmoving", 0);
-            unit.CanResurrect = _Bool(info, "canresurrect", false);
             unit.ExplodeAs = _Str(info, "explodeas") ?? "";
             unit.SelfDestructWeapon = _Str(info, "selfdestructas") ?? unit.ExplodeAs; // recoil uses this behavior
             unit.SelfDestructCountdown = _Double(info, "selfdestructcountdown", 5d);
+            unit.IsStealth = _Bool(info, "stealth", false);
 
             object? customParams = info.GetValueOrDefault("customparams");
             if (customParams != null && customParams is Dictionary<object, object> parms) {

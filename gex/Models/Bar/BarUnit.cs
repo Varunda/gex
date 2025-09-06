@@ -41,9 +41,21 @@ namespace gex.Models.Bar {
 
         // builder stuff
 
+        public bool IsBuilder { get; set; }
+
         public double BuildDistance { get; set; }
 
         public double BuildPower { get; set; }
+
+        public bool CanResurrect { get; set; }
+
+        public bool CanAssist { get; set; }
+
+        public bool CanReclaim { get; set; }
+
+        public bool CanRepair { get; set; }
+
+        public bool CanRestore { get; set; }
 
         // los
 
@@ -73,7 +85,8 @@ namespace gex.Models.Bar {
 
         public double CloakCostMoving { get; set; }
 
-        public bool CanResurrect { get; set; }
+        public bool IsStealth { get; set; }
+
 
         /// <summary>
         ///     what weapon definition to use when exploding

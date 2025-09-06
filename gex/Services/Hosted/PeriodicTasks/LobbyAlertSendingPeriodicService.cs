@@ -97,10 +97,10 @@ namespace gex.Services.Hosted.PeriodicTasks {
                         continue;
                     }
 
-                    if (alert.MinimumPlayerCount != null && battle.Users.Count < alert.MinimumPlayerCount.Value) {
+                    if (alert.MinimumPlayerCount != null && battle.PlayerCount < alert.MinimumPlayerCount.Value) {
                         continue;
                     }
-                    if (alert.MaximumPlayerCount != null && battle.Users.Count > alert.MaximumPlayerCount.Value) {
+                    if (alert.MaximumPlayerCount != null && battle.PlayerCount > alert.MaximumPlayerCount.Value) {
                         continue;
                     }
 

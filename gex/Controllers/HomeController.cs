@@ -191,6 +191,12 @@ namespace gex.Controllers {
             return File(fs, "application/octet-stream", fileDownloadName: match.FileName, false);
         }
 
+        /// <summary>
+        ///     action to view map data
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public async Task<IActionResult> Map(string filename, CancellationToken cancel) {
             try {
                 string? ogDesc = null;
@@ -213,6 +219,12 @@ namespace gex.Controllers {
             return View();
         }
 
+        /// <summary>
+        ///     action to open a map by it's name, rather than its filename
+        /// </summary>
+        /// <param name="mapName"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public async Task<IActionResult> MapName(string mapName, CancellationToken cancel) {
             BarMap? map = await _MapRepository.GetByName(mapName, cancel);
 
@@ -223,11 +235,23 @@ namespace gex.Controllers {
             return Redirect($"/map/{map.FileName}");
         }
 
+        /// <summary>
+        ///     action to list all maps
+        /// </summary>
+        /// <returns></returns>
         public IActionResult Maps() {
             return View();
         }
 
+        /// <summary>
+        ///     action to view recent games
+        /// </summary>
+        /// <returns></returns>
         public IActionResult Recent() {
+            return View();
+        }
+
+        public IActionResult Unit() {
             return View();
         }
 

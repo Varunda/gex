@@ -1,6 +1,6 @@
-import Vue from "vue";
+﻿import Vue from "vue";
 
-import Upload from "./Upload.vue";
+import BarUnitView from "./BarUnit.vue";
 
 const vm = new Vue({
 	el: "#app",
@@ -18,7 +18,7 @@ const vm = new Vue({
 	},
 
 	components: {
-		Upload
+		BarUnitView
 	}
 });
 (window as any).vm = vm;

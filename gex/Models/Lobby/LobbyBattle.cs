@@ -76,5 +76,14 @@ namespace gex.Models.Lobby {
             }
         }
 
+        /// <summary>
+        ///     get how many users are players (not spectators!) in the lobby
+        /// </summary>
+        public int PlayerCount {
+            get {
+                return BattleStatus?.Clients.Count ?? Users.Count;
+            }
+        }
+
     }
 }

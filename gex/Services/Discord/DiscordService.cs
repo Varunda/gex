@@ -21,16 +21,18 @@ using System.Diagnostics;
 using gex.Models.Options;
 using static gex.Models.Discord.AppDiscordMessage;
 using gex.Code.Discord;
+using gex.Services.Metrics;
+using System.Linq;
 
 namespace gex.Services.Discord {
 
     public class DiscordService : BackgroundService {
 
         private readonly ILogger<DiscordService> _Logger;
+        private readonly DiscordMetric _Metric;
 
         private readonly BaseQueue<AppDiscordMessage> _MessageQueue;
 
-        //public DiscordClient _Discord;
         private readonly DiscordWrapper _Discord;
         private readonly SlashCommandsExtension _SlashCommands;
         private readonly ButtonCommandsExtension _ButtonCommands;
@@ -43,7 +45,7 @@ namespace gex.Services.Discord {
 
         public DiscordService(ILogger<DiscordService> logger, ILoggerFactory loggerFactory,
             IOptions<DiscordOptions> discordOptions, IServiceProvider services,
-            DiscordWrapper discord, BaseQueue<AppDiscordMessage> messageQueue) {
+            DiscordWrapper discord, BaseQueue<AppDiscordMessage> messageQueue, DiscordMetric metric) {
 
             _Logger = logger;
             _MessageQueue = messageQueue;
@@ -87,6 +89,7 @@ namespace gex.Services.Discord {
 
             _ButtonCommands.ButtonCommandExecuted += Button_Command_Executed;
             _ButtonCommands.ButtonCommandErrored += Button_Command_Error;
+            _Metric = metric;
         }
 
         public async override Task StartAsync(CancellationToken cancellationToken) {
@@ -292,6 +295,17 @@ namespace gex.Services.Discord {
             if (targetMessage == null && targetMember == null) {
                 feedback += $"{interaction.Data.Name} {GetCommandString(interaction.Data.Options)}";
             }
+
+            string type = "gex";
+            List<DiscordInteractionDataOption> opts = interaction.Data.Options?.ToList() ?? new List<DiscordInteractionDataOption>();
+            if (opts.Count > 0) {
+                DiscordInteractionDataOption opt = opts[0];
+                if (opt.Type == ApplicationCommandOptionType.SubCommand || opt.Type == ApplicationCommandOptionType.SubCommandGroup) {
+                    type = opt.Name;
+                }
+            }
+
+            _Metric.RecordUse(type, interaction.Type.ToString());
 
             _Logger.LogDebug(feedback);
 

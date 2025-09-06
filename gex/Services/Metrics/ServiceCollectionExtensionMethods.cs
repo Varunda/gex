@@ -9,6 +9,7 @@ namespace gex.Services.Metrics {
             services.AddSingleton<QueueMetric>();
             services.AddSingleton<BarApiMetric>();
             services.AddSingleton<LobbyClientMetric>();
+            services.AddSingleton<DiscordMetric>();
         }
 
     }

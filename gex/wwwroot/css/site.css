@@ -128,6 +128,10 @@
     border-top: 0 !important;
 }
 
+.table-border-bottom-0 > *:last-child {
+    border-bottom: 0 !important;
+}
+
 @font-face {
     font-family: "ps2";
     src: url("/Geo-Md.ttf");
@@ -207,4 +211,17 @@
 .remove-container-padding {
     padding-left: 0 !important;
     padding-right: 0 !important;
+}
+
+.table-sticky-header {
+    border-collapse: collapse;
+}
+
+.table-sticky-header thead tr th {
+    position: sticky;
+    top: 0;
+    border-bottom: 0;
+    border-top: 0;
+    background-color: var(--bs-light);
+    box-shadow: inset 0px -2px #444;
 }

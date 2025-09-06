@@ -326,6 +326,7 @@ namespace gex.Code.Discord {
 
             embed.Color = DiscordColor.Gray;
             embed.WithThumbnail($"https://{_Instance.GetHost()}/image-proxy/UnitPic?defName={name}");
+            embed.WithUrl($"https://{_Instance.GetHost()}/unit/{name}");
             embed.Description = $"";
 
             string? desc = await _I18nRepository.GetString("units", $"units.descriptions.{name}", cts.Token);
@@ -504,7 +505,13 @@ namespace gex.Code.Discord {
 
             embed.WithFooter($"{(unit.ModelAuthor != null ? $"Model by: {unit.ModelAuthor} | " : "")}generated in {timer.ElapsedMilliseconds}ms | updated every 4 hours");
 
-            await ctx.EditResponseEmbed(embed);
+            DiscordWebhookBuilder builder = new();
+            builder.AddEmbed(embed);
+            builder.AddComponents(
+                new DiscordLinkButtonComponent($"https://{_Instance.GetHost()}/unit/{name}", "View on Gex")
+            );
+
+            await ctx.EditResponseAsync(builder);
         }
 
         /// <summary>
@@ -952,6 +959,7 @@ namespace gex.Code.Discord {
             await ctx.CreateDeferred(ephemeral: false);
 
             LobbyAlert alert = new();
+            alert.Timestamp = DateTime.UtcNow;
             alert.CreatedByID = ctx.User.Id;
             alert.ChannelID = ctx.Channel.Id;
             alert.GuildID = ctx.Guild.Id;
@@ -1116,7 +1124,8 @@ namespace gex.Code.Discord {
             if (skill.Count > 0 && factionStats.Count > 0) {
 
                 embed.Description += $"**Games found**: {factionStats.Sum(iter => iter.PlayCount)}\n";
-                embed.Description += $"Last seen: {allGames.MaxBy(iter => iter.StartTime)!.StartTime.GetDiscordTimestamp("D")}\n";
+                embed.Description += $"**Time playing**: {TimeSpan.FromSeconds(allGames.Sum(iter => iter.DurationMs / 1000)).GetRelativeFormat()}\n";
+                embed.Description += $"Last seen: {allGames.MaxBy(iter => iter.StartTime)!.StartTime.GetDiscordTimestamp("D")}\n\n";
 
                 // group the faction stats to gamemode, to show games played per gamemode
                 List<IGrouping<byte, BarUserFactionStats>> factions = factionStats.GroupBy(iter => iter.Gamemode).ToList();
