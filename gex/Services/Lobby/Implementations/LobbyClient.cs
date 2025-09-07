@@ -656,7 +656,11 @@ namespace gex.Services.Lobby.Implementations {
                 while (!stream.DataAvailable) {
                     cancel.ThrowIfCancellationRequested();
 
-                    await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol
+                    try {
+                        await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol
+                    } catch (Exception ex) {
+                        _Logger.LogError(ex, $"error delaying");
+                    }
                     if (client.Connected == false) {
                         break;
                     }
