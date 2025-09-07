@@ -17,7 +17,7 @@
                         <button class="btn close border" @click="emitClose" :title="'Close unit card for ' + ApiUnit.displayName">&times;</button>
                     </span>
                 </h1>
-                <h3 class="text-start" style="overflow-x: hidden; text-overflow: clip; text-wrap: nowrap; max-width: 320px;">
+                <h3 class="text-start" style="overflow-x: hidden; text-overflow: clip; text-wrap: nowrap; max-width: 320px;" :title="ApiUnit.description">
                     {{ ApiUnit.description }}
                 </h3>
             </div>
@@ -82,8 +82,10 @@
                 <tr is="Cell" name="Impulse factor" field="impulseFactor" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Energy/shot" field="energyPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> E / shot</tr>
                 <tr is="Cell" name="Metal/shot" field="metalPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> m / shot</tr>
+                <tr is="Cell" name="Is EMP?" field="isParalyzer" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="EMP time" field="paralyzerTime" :unit="selectedWeapon" :compare="compareWeaponDef">s</tr>
                 <tr is="Cell" name="Stockpile" field="isStockpile" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> s</tr>
+                <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
                 <tr is="Cell" name="Stockpile limit" field="stockpileLimit" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
 
                 <template v-if="ShowShieldData || selectedWeapon.shieldData != null || (compareWeaponDef && compareWeaponDef.shieldData != null)">
@@ -161,10 +163,15 @@
 
                 <tr is="Header" name="Misc." :colspan="colspan"></tr>
                 <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"></tr>
-                <tr is="Cell" name="Cloak cost still" field="cloakCostStill" :unit="unit" :compare="compareUnit" :low="true">E / sec</tr>
-                <tr is="Cell" name="Cloak cost moving" field="cloakCostMoving" :unit="unit" :compare="compareUnit" :low="true">E / sec</tr>
-                <tr is="Cell" name="Self-D damage" field="selfDestructDamage" :unit="unit" :compare="compareUnit" :low="true"></tr>
+                <tr is="Cell" name="Cloak cost still" field="cloakCostStill" :unit="unit" :compare="compareUnit" :low="true"> E / sec</tr>
+                <tr is="Cell" name="Cloak cost moving" field="cloakCostMoving" :unit="unit" :compare="compareUnit" :low="true"> E / sec</tr>
+                <tr is="Cell" name="EMP mult." field="paralyzeMultiplier" :unit="unit" :compare="compareUnit" :low="true"></tr>
+                <tr is="Cell" name="Self-D damage" field="selfDestructDamage" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Self-D timer" field="selfDestructCountdown" :unit="unit" :compare="compareUnit" :low="true">s</tr>
+                <tr is="Cell" name="Self-D EMP?" field="selfDestructWeaponDefinition.isParalyzer" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Self-D EMP time" field="selfDestructWeaponDefinition.paralyzerTime" :unit="unit" :compare="compareUnit">s</tr>
+                <tr is="Cell" name="Self-D range" field="selfDestructWeaponDefinition.areaOfEffect" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Self-D falloff" field="selfDestructWeaponDefinition.edgeEffectiveness" :unit="unit" :compare="compareUnit"></tr>
             </tbody>
         </table>
 
@@ -218,6 +225,9 @@
 
         methods: {
             n(num: number): string {
+                if (num <= 1) {
+                    return LocaleUtil.locale(num, 2);
+                }
                 return LocaleUtil.locale(num);
             },
         },
@@ -239,14 +249,42 @@
             },
 
             value: function(): any {
-                return (this.unit as any)[this.field];
+                const parts: string[] = this.field.split(".");
+                let objPart = this.unit as any;
+                let key: string | undefined = parts.shift();
+                while (key != undefined) {
+                    objPart = objPart[key];
+                    key = parts.shift();
+                }
+
+                return objPart;
+            },
+
+            defaultcvalue: function(): any {
+                if (this.type == "number") {
+                    return 0;
+                } else if (this.type == "string") {
+                    return "";
+                } else if (this.type == "boolean") {
+                    return false;
+                }
+                return "";
             },
 
             cvalue: function(): any {
                 if (!this.compare) {
-                    return 0;
+                    return this.defaultcvalue;
                 }
-                return (this.compare as any)[this.field];
+
+                const parts: string[] = this.field.split(".");
+                let objPart = this.compare as any;
+                let key: string | undefined = parts.shift();
+                while (key != undefined) {
+                    objPart = objPart[key];
+                    key = parts.shift();
+                }
+
+                return objPart;
             },
 
             styleHigher: function() {
@@ -335,7 +373,9 @@
         computed: {
             selectedWeapon: function(): BarWeaponDefinition {
                 if (this.selectedWeaponIndex >= this.unit.weapons.length) {
-                    return new BarUnitWeapon().weaponDefinition;
+                    const wep: BarUnitWeapon = new BarUnitWeapon();
+                    wep.weaponDefinition.name = "<no weapon>";
+                    return wep.weaponDefinition;
                 }
 
                 return this.unit.weapons[this.selectedWeaponIndex].weaponDefinition;

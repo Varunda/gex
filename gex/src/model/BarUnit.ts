@@ -20,10 +20,10 @@ export class ApiBarUnit {
         };
 
         if (ret.unit.explodeAs != "") {
-            ret.unit.explodeAsWeapon = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.explodeAs.toLowerCase()) || null;
+            ret.unit.explodeAsWeapon = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.explodeAs.toLowerCase()) || new BarWeaponDefinition();
         }
         if (ret.unit.selfDestructWeapon != "") {
-            ret.unit.selfDestructWeaponDefinition = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.selfDestructWeapon.toLowerCase()) || null;
+            ret.unit.selfDestructWeaponDefinition = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.selfDestructWeapon.toLowerCase()) || new BarWeaponDefinition();
             ret.unit.selfDestructDamage = ret.unit.selfDestructWeaponDefinition?.damages.get("default") ?? 0;
         }
 
@@ -70,6 +70,8 @@ export class BarUnit {
     public transportCapacity: number = 0;
     public transportMass: number = 0;
     public transportSize: number = 0;
+
+    // misc
     public modelAuthor: string | null = null;
     public cloakCostStill: number = 0;
     public cloakCostMoving: number = 0;
@@ -77,12 +79,13 @@ export class BarUnit {
     public selfDestructWeapon: string = "";
     public selfDestructCountdown: number = 0;
     public isStealth: boolean = false;
+    public paralyzeMultiplier: number = 0;
 
     public weapons: BarUnitWeapon[] = [];
 
-    public selfDestructWeaponDefinition: BarWeaponDefinition | null = null;
+    public selfDestructWeaponDefinition: BarWeaponDefinition = new BarWeaponDefinition();
     public selfDestructDamage: number = 0;
-    public explodeAsWeapon: BarWeaponDefinition | null = null;
+    public explodeAsWeapon: BarWeaponDefinition = new BarWeaponDefinition();
 
     public static parse(elem: any): BarUnit {
         return {

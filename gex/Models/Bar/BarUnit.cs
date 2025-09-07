@@ -87,6 +87,7 @@ namespace gex.Models.Bar {
 
         public bool IsStealth { get; set; }
 
+        public double ParalyzeMultiplier { get; set; }
 
         /// <summary>
         ///     what weapon definition to use when exploding

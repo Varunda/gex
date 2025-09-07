@@ -123,6 +123,7 @@ namespace gex.Services.Parser {
             if (customParams != null && customParams is Dictionary<object, object> parms) {
                 unit.ModelAuthor = _Str(parms, "model_author");
                 unit.MetalExtractor = _Int(parms, "metal_extractor", 0) == 1;
+                unit.ParalyzeMultiplier = _Double(parms, "paralyzemultiplier", 1d);
             }
 
             // <definition name, definition>, key normalized to UPPER CASE
