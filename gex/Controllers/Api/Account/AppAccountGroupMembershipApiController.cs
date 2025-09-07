@@ -43,6 +43,7 @@ namespace gex.Controllers.Api.Account {
         /// <param name="cancel"></param>
         /// <returns></returns>
         [HttpGet("account/{accountID}")]
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse<List<AppAccountGroupMembership>>> GetByAccountID(long accountID,
             CancellationToken cancel) {
 
@@ -58,6 +59,7 @@ namespace gex.Controllers.Api.Account {
         /// <param name="cancel"></param>
         /// <returns></returns>
         [HttpGet("group/{groupID}")]
+        [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse<List<AppAccountGroupMembership>>> GetByGroupID(long groupID,
             CancellationToken cancel) {
 

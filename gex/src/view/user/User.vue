@@ -53,8 +53,18 @@
             <user-interactions :user-id="userID"></user-interactions>
         </div>
 
-        <div v-if="user.state == 'loaded'">
-            <user-units-made :user="user.data"></user-units-made>
+        <div v-if="unitData.state == 'idle'"></div>
+
+        <div v-else-if="unitData.state == 'loading'">
+            <h2 class="wt-header bg-light text-dark">
+                Units created
+            </h2>
+
+            <busy class="busy busy-sm"></busy>
+        </div>
+
+        <div v-if="unitData.state == 'loaded'">
+            <user-units-made :user="unitData.data"></user-units-made>
         </div>
     </div>
 </template>
@@ -94,7 +104,9 @@
             return {
                 userID: 0 as number,
                 matches: Loadable.idle() as Loading<BarMatch[]>,
-                user: Loadable.idle() as Loading<BarUser>
+                user: Loadable.idle() as Loading<BarUser>,
+
+                unitData: Loadable.idle() as Loading<BarUser>,
             };
         },
 
@@ -110,6 +122,7 @@
         methods: {
             loadUser: async function(): Promise<void> {
                 this.user = Loadable.loading();
+                this.unitData = Loadable.loading();
                 this.user = await BarUserApi.getByUserID(this.userID);
 
                 if (this.user.state == "loaded") {
@@ -118,6 +131,8 @@
                     url.searchParams.set("name", this.user.data.username);
 
                     history.replaceState({ path: url.href }, "", `/user/${this.userID}/?${url.searchParams.toString()}`);
+
+                    this.unitData = await BarUserApi.getUnitsMadeByUserID(this.userID);
                 }
             },
 

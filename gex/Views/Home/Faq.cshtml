@@ -22,7 +22,7 @@
 
     <h3>What games are processed?</h3>
     <p>
-        Gex downloads all public games without an AI in them. Once downloaded, Gex will parse them to get some basic information about each match.
+        Gex downloads all public games without an AI in them. Once downloaded, Gex will parse them to get some basic information about each game.
     </p>
     <div>
         Under certain conditions, Gex will also run the replay file locally to generate in-depth stats
@@ -40,20 +40,26 @@
                     <li>Contains unit tweaks</li>
                     <li>Changes any of the default mod options (increased starting resources, resource multipliers, etc.)</li>
                 </ul>
-                Matches that meet these conditions are de-prioritized as these matches usually take longer to process, and Gex tries to process quicker games first
+                Games that meet these conditions are de-prioritized as these games usually take longer to process, and Gex tries to process quicker games first
             </li>
         </ul>
     </div>
+    <p>
+        Users that are logged in can request Gex puts more priority on a game. A user can only prioritize one game at a time.
+    </p>
 
     <h3 id="gamemode-demofile-ratings">Gamemode and demofile rating inconsistency</h3>
     <p>
-        The demofile can contain incorrect rating information for a match depending on how the match is setup.
+        The demofile can contain incorrect rating information for a game depending on how the game is setup.
         <br />
         For example, if a duel is created with a team size of 8 in the lobby,
         the demofile will contain the ratings for the large team gamemode, not the duel gamemode.
     </p>
 
-    <h3></h3>
-
+    <h3>Why are PvE games not processed?</h3>
+    <p>
+        PvE games take much longer on average to process than PvP games,
+        and in general is not a particularly competitive format where the data Gex provides is useful (tho it may be interesting for some, sorry!)
+    </p>
 
 </div>

@@ -375,7 +375,7 @@ namespace gex {
                 );
 
                 endpoints.MapControllerRoute(
-                    name: "download matcth",
+                    name: "download match",
                     pattern: "/downloadmatch/{gameID}",
                     defaults: new { controller = "Home", action = "DownloadMatch" }
                 );

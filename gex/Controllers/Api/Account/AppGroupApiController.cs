@@ -2,6 +2,7 @@
 using gex.Models;
 using gex.Models.Internal;
 using gex.Services.Repositories.Account;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace gex.Controllers.Api.Account {
         /// <param name="cancel"></param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         public async Task<ApiResponse<List<AppGroup>>> GetAll(CancellationToken cancel) {
             List<AppGroup> groups = await _AppGroupRepository.GetAll(cancel);
 
@@ -44,6 +46,7 @@ namespace gex.Controllers.Api.Account {
         /// <param name="cancel"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
         public async Task<ApiResponse> Create([FromQuery] string name, [FromQuery] string hex,
             CancellationToken cancel) {

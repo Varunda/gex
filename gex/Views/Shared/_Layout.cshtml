@@ -113,8 +113,14 @@
                                     @acc.Name
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                                    <li><a id="logout-button-anchor" class="dropdown-item" href="/logout">Logout</a></li>
                                 </ul>
+                            </li>
+                        } else {
+                            <li class="ms-auto nav-item">
+                                <a id="login-button-anchor" class="nav-link" href="/login">
+                                    Login
+                                </a>
                             </li>
                         }
                     </ul>
@@ -129,5 +135,20 @@
             @RenderBody()
         </main>
     </div>
+
+    <script>
+        window.addEventListener("load", () => {
+            const logoutA = document.getElementById("logout-button-anchor");
+            if (logoutA != null) {
+                logoutA.href = `/logout?returnUrl=${encodeURI(location.href)}`;
+            }
+
+            const loginA = document.getElementById("login-button-anchor");
+            if (loginA != null) {
+                loginA.href = `/login?returnUrl=${encodeURI(location.href)}`;
+            }
+        });
+    </script>
 </body>
+
 </html>

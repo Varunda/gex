@@ -104,16 +104,6 @@
                         <collapsible header-text="Gex processing metadata" size-class="h6" :show="!showMobile">
                             <table class="table table-sm table-borderless" style="font-size: 0.8rem;">
                                 <tbody>
-                                    <template v-if="match.data.processing">
-                                        <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
-                                        <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
-                                        <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
-                                        <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
-                                        <tr>
-                                            <td class="text-muted">Prio</td>
-                                            <td class="text-muted">{{ match.data.processing.priority }}</td>
-                                        </tr>
-                                    </template>
                                     <tr>
                                         <td class="text-muted">Engine</td>
                                         <td class="text-muted">{{ match.data.engine }}</td>
@@ -122,6 +112,23 @@
                                         <td class="text-muted">Game version</td>
                                         <td class="text-muted">{{ match.data.gameVersion }}</td>
                                     </tr>
+
+                                    <template v-if="match.data.processing">
+                                        <tr is="ProcessingStep" step="Replay downloaded" :when="match.data.processing.replayDownloaded" :duration="match.data.processing.replayDownloadedMs"></tr>
+                                        <tr is="ProcessingStep" step="Replay parsed" :when="match.data.processing.replayParsed" :duration="match.data.processing.replayParsedMs"></tr>
+                                        <tr is="ProcessingStep" step="Replay simulated" :when="match.data.processing.replaySimulated" :duration="match.data.processing.replaySimulatedMs"></tr>
+                                        <tr is="ProcessingStep" step="Events parsed" :when="match.data.processing.actionsParsed" :duration="match.data.processing.actionsParsedMs"></tr>
+                                        <tr>
+                                            <td class="text-muted">Priority</td>
+                                            <td class="text-muted">
+                                                {{ match.data.processing.priority }}
+                                                <span v-if="match.data.usersPrioritizing.length > 0 && match.data.processing.replaySimulated == null">
+                                                    -> {{ Math.max(1, match.data.processing.priority - (20 * match.data.usersPrioritizing.length)) }}
+                                                    (prioritized by {{ match.data.usersPrioritizing.length }} user{{ match.data.usersPrioritizing.length == 1 ? "" : "s" }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </collapsible>
@@ -161,6 +168,28 @@
                 </div>
 
                 <hr class="border"/>
+
+                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info">
+                    <div class="mb-2">
+                        Request Gex puts more priority on replaying this game. Users can only prioritize one game at a time.
+                    </div>
+
+                    <button @click="prioritizeGame" class="btn btn-primary btn-sm" :disabled="!isLoggedIn || currentUserPriotizing">
+                        Prioritize
+                    </button>
+
+                    <span v-if="isLoggedIn == false">
+                        <a :href="'/login?returnUrl=' + returnUrl">Login</a>
+                        to use this feature
+                    </span>
+                    <span v-if="currentUserPriotizing == true" class="text-muted">
+                        Already prioritizing this match
+                    </span>
+
+                    <div v-if="isLoggedIn && nonCurrentUsersPrioritizing.length > 0" class="mt-2 pt-2 border-top">
+                        The following users are prioritizing this game: {{ nonCurrentUsersPrioritizing.join(", ") }}
+                    </div>
+                </div>
 
                 <match-teams :match="match.data" :is-ffa="isFFA" class="my-3"></match-teams>
 
@@ -330,6 +359,8 @@
     import { UnitStats } from "./compute/UnitStatData";
     import { ResourceProductionData } from "./compute/ResourceProductionData";
     import MergedStats from "./compute/MergedStats";
+
+    import AccountUtil from "util/Account";
 
     import "filters/BarGamemodeFilter";
 
@@ -682,6 +713,11 @@
                 } catch (err) {
                     console.error("error during sR connection", err);
                 }
+            },
+
+            prioritizeGame: async function(): Promise<void> {
+                await BarMatchProcessingApi.prioritizeGame(this.gameID);
+                this.loadBoth();
             }
         },
 
@@ -734,6 +770,10 @@
                     && this.replay.status == null;
             },
 
+            isLoggedIn: function(): boolean {
+                return AccountUtil.isLoggedIn();
+            },
+
             hasTweaks: function(): boolean {
                 if (this.match.state != "loaded") {
                     return false;
@@ -760,6 +800,24 @@
                 }
 
                 return false;
+            },
+
+            returnUrl: function(): string {
+                return location.href;
+            },
+
+            currentUserPriotizing: function(): boolean {
+                if (this.match.state != "loaded") {
+                    return false;
+                }
+                return this.match.data.usersPrioritizing.indexOf(AccountUtil.getAccountName()) > -1;
+            },
+
+            nonCurrentUsersPrioritizing: function(): string[] {
+                if (this.match.state != "loaded") {
+                    return [];
+                }
+                return this.match.data.usersPrioritizing.filter(iter => iter != AccountUtil.getAccountName());
             }
 
         },

@@ -4,6 +4,7 @@ using gex.Models.Db;
 using gex.Services.Db;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -16,6 +17,8 @@ namespace gex.Services.BarApi {
         private readonly ILogger<PrDownloaderService> _Logger;
         private readonly EnginePathUtil _EnginePathUtil;
         private readonly GameVersionUsageDb _VersionUsageDb;
+
+        private static Dictionary<string, Task<bool>> _PendingDownloads = [];
 
         public PrDownloaderService(ILogger<PrDownloaderService> logger,
             GameVersionUsageDb versionUsageDb, EnginePathUtil enginePathUtil) {
@@ -53,6 +56,35 @@ namespace gex.Services.BarApi {
                 return true;
             }
 
+            string downloadKey = $"{engine}-{version}";
+
+            Task<bool>? pendingDownload = null;
+            lock (_PendingDownloads) {
+                pendingDownload = _PendingDownloads.GetValueOrDefault(downloadKey);
+            }
+
+            if (pendingDownload != null) {
+                _Logger.LogInformation($"game version download is already occuring [engine={engine}] [version={version}]");
+                return await pendingDownload;
+            }
+
+            lock (_PendingDownloads) {
+                pendingDownload = GetGameVersionInternal(engine, version, cancel);
+                _PendingDownloads.Add(downloadKey, pendingDownload);
+            }
+            try {
+                return await pendingDownload;
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to download game version [engine={engine}] [version={version}]");
+                return false;
+            } finally {
+                lock (_PendingDownloads) {
+                    _PendingDownloads.Remove(downloadKey);
+                }
+            }
+        }
+
+        private async Task<bool> GetGameVersionInternal(string engine, string version, CancellationToken cancel) {
             string gameVersionOutput = Path.Join(_EnginePathUtil.Get(engine), "games", version);
 
             if (Directory.Exists(gameVersionOutput) == true) {
@@ -91,6 +123,7 @@ namespace gex.Services.BarApi {
             }, cancel);
 
             return true;
+
         }
 
         /// <summary>

@@ -23,6 +23,7 @@ namespace gex.Services.Db {
             services.AddSingleton<BarReplayDb>();
             services.AddSingleton<BarMatchDb>();
             services.AddSingleton<BarMatchProcessingDb>();
+            services.AddSingleton<BarMatchProcessingPriorityDb>();
             services.AddSingleton<BarMatchAllyTeamDb>();
             services.AddSingleton<BarMatchPlayerDb>();
             services.AddSingleton<BarMatchSpectatorDb>();

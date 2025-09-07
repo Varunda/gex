@@ -84,6 +84,8 @@ namespace gex.Models.Api {
 
         public BarMatchProcessing? Processing { get; set; }
 
+        public List<string> UsersPrioritizing { get; set; } = [];
+
         public HeadlessRunStatus? HeadlessRunStatus { get; set; }
 
         public AppAccount? UploadedBy { get; set; }

@@ -128,19 +128,27 @@ namespace gex.Services.Db.Match {
 
             return await conn.QueryFirstOrDefaultAsync<BarMatchProcessing>(new CommandDefinition(
                 @"
+                    WITH mods AS (
+                        select game_id, count(*) * 20 ""mod"" from bar_match_processing_priority group by game_id
+                    )
                     SELECT
-                        mp.* 
+                        mp.game_id, 
+                        mp.demofile_fetched, mp.demofile_parsed, mp.headless_ran, mp.actions_parsed,
+                        mp.fetch_ms, mp.parse_ms, mp.replay_ms, mp.action_ms,
+                        GREATEST(1, priority - COALESCE(c.mod, 0::bigint)) ""priority""
                     FROM 
                         bar_match_processing mp
-						INNER JOIN bar_match m ON m.id = mp.game_id
+                        INNER JOIN bar_match m ON m.id = mp.game_id
+                        LEFT JOIN mods c ON mp.game_id = c.game_id
                     WHERE 
-						priority > 0
+                        priority > 0
                         AND mp.demofile_fetched is not null
                         AND mp.demofile_parsed is not null
-						AND mp.headless_ran IS NULL
-					ORDER BY
-						priority ASC, m.start_time DESC
-					LIMIT 1;
+                        AND mp.headless_ran IS NULL
+                    ORDER BY
+                        GREATEST(1, priority - COALESCE(c.mod, 0::bigint)) ASC, 
+                        m.start_time DESC
+                    LIMIT 1;
                 ",
                 cancellationToken: cancel
             ));
@@ -154,30 +162,35 @@ namespace gex.Services.Db.Match {
         /// <returns></returns>
         /// <exception cref="System.Exception"></exception>
         public async Task<List<BarMatchProcessing>> GetPriorityList(int count, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-
             if (count > 1000) {
                 throw new System.Exception($"failsafe, only allowing a max of 1000 for count, got {count}");
             }
 
-            return (await conn.QueryAsync<BarMatchProcessing>(new CommandDefinition(
-                @$"
-                    SELECT
-                        mp.* 
-                    FROM 
-                        bar_match_processing mp
-						LEFT JOIN bar_match m ON m.id = mp.game_id
-                    WHERE 
-						priority > 0
-                        AND mp.demofile_fetched is not null
-                        AND mp.demofile_parsed is not null
-						AND mp.headless_ran IS NULL
-					ORDER BY
-						priority ASC, m.start_time DESC
-					LIMIT {count};
-                ",
-                cancellationToken: cancel
-            ))).ToList();
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+            return await conn.QueryListAsync<BarMatchProcessing>(@$"
+                WITH mods AS (
+                    select game_id, count(*) * 20 ""mod"" from bar_match_processing_priority group by game_id
+                )
+                SELECT
+                    mp.game_id, 
+                    mp.demofile_fetched, mp.demofile_parsed, mp.headless_ran, mp.actions_parsed,
+                    mp.fetch_ms, mp.parse_ms, mp.replay_ms, mp.action_ms,
+                    priority - COALESCE(c.mod, 0::bigint) ""priority""
+                FROM 
+                    bar_match_processing mp
+                    INNER JOIN bar_match m ON m.id = mp.game_id
+                    LEFT JOIN mods c ON mp.game_id = c.game_id
+                WHERE 
+                    priority > 0
+                    AND mp.demofile_fetched is not null
+                    AND mp.demofile_parsed is not null
+                    AND mp.headless_ran IS NULL
+                ORDER BY
+                    priority - COALESCE(c.mod, 0::bigint) ASC, 
+                    m.start_time DESC
+                LIMIT {count};
+            ", cancellationToken: cancel);
         }
 
     }

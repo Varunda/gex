@@ -46,7 +46,7 @@ namespace gex.Services {
             return account;
         }
 
-        public Task<ulong?> GetDiscordID() {
+        public Task<ulong?> GetDiscordID(CancellationToken cancel = default) {
             if (_Context.HttpContext == null) {
                 _Logger.LogWarning($"_Context.HttpContext is null, cannot get claims");
                 return Task.FromResult((ulong?)null);
@@ -87,6 +87,39 @@ namespace gex.Services {
             }
 
             return Task.FromResult((ulong?)null);
+        }
+
+        public Task<string?> GetClaim(string claimType, CancellationToken cancel = default) {
+            if (_Context.HttpContext == null) {
+                _Logger.LogWarning($"_Context.HttpContext is null, cannot get claims");
+                return Task.FromResult((string?)null);
+            }
+
+            HttpContext httpContext = _Context.HttpContext;
+
+            if (httpContext.User.Identity == null) {
+                _Logger.LogWarning($"httpContext.User.Identity is null");
+                return Task.FromResult((string?)null);
+            }
+
+            if (httpContext.User.Identity.IsAuthenticated == false) {
+                return Task.FromResult((string?)null);
+            } else if (httpContext.User is ClaimsPrincipal claims) {
+                /*
+                string s = "";
+                foreach (Claim claim in claims.Claims) {
+                    s += $"{claim.Type} = {claim.Value};";
+                }
+                _Logger.LogDebug($"{s}");
+                */
+
+                Claim? claim = claims.FindFirst(claimType);
+                return Task.FromResult(claim?.Value);
+            } else {
+                _Logger.LogWarning($"Unchecked stat of httpContext.User");
+            }
+
+            return Task.FromResult((string?)null);
         }
 
         /// <summary>

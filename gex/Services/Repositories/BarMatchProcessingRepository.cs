@@ -13,16 +13,20 @@ namespace gex.Services.Repositories {
 
         private readonly ILogger<BarMatchProcessingRepository> _Logger;
         private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly BarMatchProcessingPriorityDb _ProcessingPriorityDb;
         private readonly IMemoryCache _Cache;
 
         private const string CACHE_KEY = "Gex.MatchProcessing.{0}"; // {0} => game ID
         private const string CACHE_KEY_PRIO = "Gex.MatchProcessing.PriorityList";
 
         public BarMatchProcessingRepository(ILogger<BarMatchProcessingRepository> logger,
-            BarMatchProcessingDb processingDb, IMemoryCache cache) {
+            BarMatchProcessingDb processingDb, IMemoryCache cache,
+            BarMatchProcessingPriorityDb processingPriorityDb) {
 
             _Logger = logger;
+
             _ProcessingDb = processingDb;
+            _ProcessingPriorityDb = processingPriorityDb;
             _Cache = cache;
         }
 
@@ -113,6 +117,18 @@ namespace gex.Services.Repositories {
             }
 
             return list;
+        }
+
+        /// <summary>
+        ///     mark a game as prioritized by a user
+        /// </summary>
+        /// <param name="discordID"></param>
+        /// <param name="gameID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public Task PrioritizeGame(ulong discordID, string gameID, CancellationToken cancel) {
+            _Cache.Remove(CACHE_KEY_PRIO);
+            return _ProcessingPriorityDb.Upsert(discordID, gameID, cancel);
         }
 
     }

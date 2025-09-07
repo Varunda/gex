@@ -141,6 +141,7 @@
                     document.title = `Gex / Units`;
                 }
 
+                // vetur is lying, .size does exist here!!!                                                             <------
                 history.replaceState({ path: url.href }, "", `/unit/${this.definitionNames.join(",")}${(url.searchParams.size > 0 ? `?${url.searchParams.toString()}` : "")}`);
             },
 

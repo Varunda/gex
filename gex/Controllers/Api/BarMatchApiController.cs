@@ -1,6 +1,7 @@
 ﻿using gex.Models;
 using gex.Models.Api;
 using gex.Models.Db;
+using gex.Services;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Repositories;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +20,8 @@ namespace gex.Controllers.Api {
     public class BarMatchApiController : ApiControllerBase {
 
         private readonly ILogger<BarMatchApiController> _Logger;
+        private readonly AppCurrentAccount _CurrentUser;
+
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
@@ -25,6 +29,7 @@ namespace gex.Controllers.Api {
         private readonly BarMatchSpectatorDb _SpectatorDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
+        private readonly BarMatchProcessingPriorityDb _ProcessingPriorityDb;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly AppAccountDbStore _AccountDb;
@@ -34,7 +39,8 @@ namespace gex.Controllers.Api {
             BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
-            AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb) {
+            AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
+            BarMatchProcessingPriorityDb processingPriorityDb, AppCurrentAccount currentUser) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -47,6 +53,8 @@ namespace gex.Controllers.Api {
             _HeadlessRunStatusRepository = headlessRunStatusRepository;
             _AccountDb = accountDb;
             _TeamDeathDb = teamDeathDb;
+            _ProcessingPriorityDb = processingPriorityDb;
+            _CurrentUser = currentUser;
         }
 
         /// <summary>
@@ -97,6 +105,20 @@ namespace gex.Controllers.Api {
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
+
+            // if the user looking at the match is not logged in, don't show the users who prioritized the game
+            List<ulong> discordIds = await _ProcessingPriorityDb.GetByGameID(gameID, cancel);
+            if (await _CurrentUser.Get(cancel) != null) {
+                foreach (ulong discordId in discordIds) {
+                    AppAccount? acc = await _AccountDb.GetByDiscordID(discordId, cancel);
+                    if (acc != null) {
+                        ret.UsersPrioritizing.Add(acc.Name);
+                    }
+                }
+            } else {
+                ret.UsersPrioritizing.AddRange(discordIds.Select(iter => ""));
+            }
+
             ret.HeadlessRunStatus = _HeadlessRunStatusRepository.Get(gameID);
             if (ret.UploadedByID != null) {
                 ret.UploadedBy = await _AccountDb.GetByID(ret.UploadedByID.Value, cancel);

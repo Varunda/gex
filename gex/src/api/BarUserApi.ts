@@ -11,7 +11,11 @@ export class BarUserApi extends ApiWrapper<BarUser> {
     public static get(): BarUserApi { return BarUserApi._instance; }
 
     public static getByUserID(userID: number): Promise<Loading<BarUser>> {
-        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true&includeUnitsMade=true`, BarUser.parse);
+        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true&includeUnitsMade=false`, BarUser.parse);
+    }
+
+    public static getUnitsMadeByUserID(userID: number): Promise<Loading<BarUser>> {
+        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=false&includeMapStats=false&includeFactionStats=false&includePreviousNames=false&includeUnitsMade=true`, BarUser.parse);
     }
 
     public static getSkillChanges(userID: number): Promise<Loading<BarUserSkillChanges>> {

@@ -33,6 +33,7 @@ export class BarMatch {
 
     public mapData: BarMap | null = null;
     public processing: BarMatchProcessing | null = null;
+    public usersPrioritizing: string[] = [];
     public headlessRunStatus: HeadlessRunStatus | null = null;
     public uploadedBy: AppAccount | null = null;
 
@@ -55,6 +56,7 @@ export class BarMatch {
 
             mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
             processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),
+            usersPrioritizing: elem.usersPrioritizing,
             headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus),
             uploadedBy: elem.uploadedBy == null ? null : AppAccount.parse(elem.uploadedBy)
         }

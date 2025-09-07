@@ -107,6 +107,9 @@ namespace gex.Services.Hosted.BackgroundTasks {
                         }
                         if (cancel.IsCancellationRequested == true) { break; }
                     }
+
+                    await Task.Delay(10, cancel); // delay a bit so thread is not running at 100% speed lol
+
                 } catch (Exception) when (cancel.IsCancellationRequested == true) {
                     _Logger.LogInformation($"closing lobby client host");
                 } catch (Exception ex) when (cancel.IsCancellationRequested == false) {

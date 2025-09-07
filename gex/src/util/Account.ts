@@ -8,6 +8,10 @@ export class AppCurrentAccount {
 
 export default class AccountUtil {
 
+    public static isLoggedIn(): boolean {
+        return AccountUtil.get().name != "";
+    }
+
     public static get(): AppCurrentAccount {
         return (window as any).appCurrentAccount;
     }

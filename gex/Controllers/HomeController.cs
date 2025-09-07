@@ -1,11 +1,13 @@
 ﻿using gex.Code;
 using gex.Code.Constants;
+using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Models.Options;
 using gex.Models.UserStats;
 using gex.Services;
+using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Repositories;
@@ -19,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,6 +35,9 @@ namespace gex.Controllers {
         private readonly HttpUtilService _HttpUtil;
         private readonly IOptions<FileStorageOptions> _Options;
 
+        private readonly AppCurrentAccount _CurrentUser;
+        private readonly AppAccountDbStore _AccountDb;
+
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
@@ -42,12 +48,17 @@ namespace gex.Controllers {
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
             BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
-            BarMapRepository mapRepository, BarUserRepository userRepository) {
+            BarMapRepository mapRepository, BarUserRepository userRepository,
+            AppCurrentAccount currentUser, AppAccountDbStore accountDb) {
 
+            _Logger = logger;
             _HttpContextAccessor = httpContextAccessor;
             _HttpUtil = httpUtil;
-            _Logger = logger;
             _Options = options;
+
+            _CurrentUser = currentUser;
+            _AccountDb = accountDb;
+
             _MatchRepository = matchRepository;
             _AllyTeamDb = allyTeamDb;
             _PlayerRepository = playerRepository;
@@ -57,6 +68,60 @@ namespace gex.Controllers {
 
         public IActionResult Index() {
             return View();
+        }
+
+        [HttpGet("login")]
+        public async Task<IActionResult> Login(string returnUrl = "index",
+            CancellationToken cancel = default) {
+
+            IRequestCookieCollection? cookies = _HttpContextAccessor.HttpContext?.Request.Cookies;
+            if (cookies != null) {
+                ulong? discordID = await _CurrentUser.GetDiscordID();
+
+                if (discordID != null) {
+                    AppAccount? user = await _AccountDb.GetByDiscordID(discordID.Value, cancel);
+                    if (user == null) {
+                        user = new AppAccount();
+                        user.DiscordID = discordID.Value;
+                        user.Timestamp = DateTime.UtcNow;
+                        user.Name = await _CurrentUser.GetClaim(ClaimTypes.Name, cancel) ?? $"<no name claim {user.DiscordID}>";
+                        await _AccountDb.Insert(user, cancel);
+                        _Logger.LogInformation($"created new account [name={user.Name}] [discordID={user.DiscordID}]");
+                    } else {
+                        user.Name = await _CurrentUser.GetClaim(ClaimTypes.Name, cancel) ?? $"";
+                    }
+                }
+
+                if (discordID != null && cookies.TryGetValue("return-url", out string? url) == true) {
+                    _Logger.LogInformation($"login get [url={url}] [discordID={discordID}]");
+                    // expire the return-url cookie right away
+                    Response.Cookies.Append("return-url", "", new CookieOptions() {
+                        MaxAge = TimeSpan.Zero,
+                        Expires = DateTimeOffset.UtcNow.AddSeconds(-1)
+                    });
+                    return Redirect(url);
+                }
+            }
+
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost("login")]
+        public IActionResult LoginPost() {
+            IRequestCookieCollection? cookies = _HttpContextAccessor.HttpContext?.Request.Cookies;
+            if (cookies != null) {
+                if (cookies.TryGetValue("return-url", out string? url) == true) {
+                    // expire the return-url cookie right away
+                    Response.Cookies.Append("return-url", "", new CookieOptions() {
+                        MaxAge = TimeSpan.Zero,
+                        Expires = DateTimeOffset.UtcNow.AddSeconds(-1)
+                    });
+                    return Redirect(url);
+                }
+            }
+
+            return Redirect("index");
         }
 
         [Authorize]
@@ -157,11 +222,6 @@ namespace gex.Controllers {
         [Authorize]
         public IActionResult Upload() {
             return View();
-        }
-
-        [Authorize]
-        public IActionResult Login() {
-            return View("Index");
         }
 
         public async Task<IActionResult> Logout(string? returnUrl = null) {

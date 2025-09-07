@@ -1,6 +1,9 @@
 ﻿using gex.Models;
 using gex.Models.Db;
+using gex.Services;
+using gex.Services.Db.Match;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -15,12 +18,14 @@ namespace gex.Controllers.Api {
 
         private readonly ILogger<BarMatchProcessingApiController> _Logger;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
+        private readonly AppCurrentAccount _CurrentUser;
 
         public BarMatchProcessingApiController(ILogger<BarMatchProcessingApiController> logger,
-            BarMatchProcessingRepository processingRepository) {
+            BarMatchProcessingRepository processingRepository, AppCurrentAccount currentUser) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;
+            _CurrentUser = currentUser;
         }
 
         /// <summary>
@@ -57,6 +62,45 @@ namespace gex.Controllers.Api {
         public async Task<ApiResponse<List<BarMatchProcessing>>> GetPriorityList(CancellationToken cancel) {
             List<BarMatchProcessing> list = await _ProcessingRepository.GetPriorityList(cancel);
             return ApiOk(list);
+        }
+
+        /// <summary>
+        ///     request Gex priorizes a <see cref="BarMatch"/>. This requires a Discord account, 
+        ///     and reduces the priority by 20 for each user. a user can only prioritize one game
+        /// </summary>
+        /// <param name="gameID">ID of the <see cref="BarMatch"/> to lower the priority of</param>
+        /// <param name="cancel">cancellation request</param>
+        /// <response code="200">
+        ///     the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>
+        ///     successfully had the <see cref="BarMatchProcessing.Priority"/> lowered by 20
+        /// </response>
+        /// <response code="400">
+        ///     the <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/>
+        ///     of <paramref name="gameID"/> has already been simulated
+        /// </response>
+        /// <response code="404">
+        ///     no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> exists
+        /// </response>
+        [HttpPost("prioritize/{gameID}")]
+        public async Task<ApiResponse> PrioritizeGame(string gameID, CancellationToken cancel) {
+
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+            if (currentUser == null) {
+                return ApiAuthorize();
+            }
+
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            if (proc == null) {
+                return ApiNotFound($"{nameof(BarMatch)} {gameID}");
+            }
+
+            if (proc.ReplaySimulated != null) {
+                return ApiBadRequest($"game {gameID} has already been processed");
+            }
+
+            await _ProcessingRepository.PrioritizeGame(currentUser.DiscordID, gameID, cancel);
+
+            return ApiOk();
         }
 
     }

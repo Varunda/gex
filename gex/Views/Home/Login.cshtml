@@ -1,0 +1,43 @@
+﻿<meta property="og:title" content="Gex / Login" />
+<meta property="og:description" content="Login to Gex" />
+
+<div id="" class="container">
+
+    <div class="d-flex">
+        <img src="/favicon-96x96.png" width="96">
+
+        <div class="ms-3 d-flex flex-column justify-content-center">
+            <h2>Gex</h2>
+        </div>
+    </div>
+
+    <hr class="border" />
+
+    <div class="text-center">
+        <form action="login" method="post" class="mb-3">
+            <input type="submit" value="Login thru Discord" class="btn btn-primary" />
+        </form>
+
+        <a href="" id="cancel" class="btn btn-secondary">
+            Cancel
+        </a>
+
+        <div class="border-top pt-3 mt-3">
+            Will return to <pre class="d-inline" id="return-url"></pre> after login
+        </div>
+    </div>
+
+</div>
+
+<script>
+    window.addEventListener("load", () => {
+        const url = new URL(location.href);
+        const returnUrl = url.searchParams.get("returnUrl") || "index";
+
+        document.getElementById("return-url").innerText = returnUrl;
+        document.getElementById("cancel").href = returnUrl;
+
+        document.cookie = `return-url=${returnUrl}; max-age=3600`;
+    });
+
+</script>

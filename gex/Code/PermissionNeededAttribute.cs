@@ -90,8 +90,7 @@ namespace gex.Code {
             _Logger.LogTrace($"checking if user has permission [account={account.ID}/{account.Name}] [Permissions={string.Join(", ", Permissions)}] "
                 + $"[url={context.HttpContext.Request.Path.Value}]");
 
-            // account 1 is system user, account 2 is the first user made
-            if (account.ID <= 2) {
+            if (account.ID <= 1) {
                 _Logger.LogTrace($"user has permission as they are the owner [account={account.Name}] [url={context.HttpContext.Request.Path.Value}]");
                 return true;
             }

@@ -645,7 +645,7 @@ namespace gex.Services.Lobby.Implementations {
         /// </summary>
         /// <param name="client"></param>
         /// <param name="cancel"></param>
-        private void ReadThread(TcpClient client, CancellationToken cancel) {
+        private async void ReadThread(TcpClient client, CancellationToken cancel) {
             _Logger.LogInformation($"client read thread started");
             NetworkStream stream = client.GetStream();
 
@@ -656,6 +656,7 @@ namespace gex.Services.Lobby.Implementations {
                 while (!stream.DataAvailable) {
                     cancel.ThrowIfCancellationRequested();
 
+                    await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol
                     if (client.Connected == false) {
                         break;
                     }
