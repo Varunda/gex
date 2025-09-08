@@ -29,6 +29,11 @@ namespace gex.Services.Storage {
             _FileOptions = fileOptions;
         }
 
+        public bool IsSaved(string gameID) {
+            string path = Path.Join(_FileOptions.Value.UnitPositionLocation, gameID[..2], $"{gameID}.zstd");
+            return File.Exists(path);
+        }
+
         /// <summary>
         ///     save a list of <see cref="GameEventUnitPosition"/>s for a game and compress using zstd to disk
         /// </summary>

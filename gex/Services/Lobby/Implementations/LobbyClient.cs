@@ -654,7 +654,9 @@ namespace gex.Services.Lobby.Implementations {
 
             while (cancel.IsCancellationRequested == false) {
                 while (!stream.DataAvailable) {
-                    cancel.ThrowIfCancellationRequested();
+                    if (cancel.IsCancellationRequested == true) {
+                        break;
+                    }
 
                     try {
                         await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol

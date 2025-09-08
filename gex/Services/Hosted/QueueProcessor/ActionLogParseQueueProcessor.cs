@@ -171,6 +171,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             processing.ActionsParsed = DateTime.UtcNow;
             processing.ActionsParsedMs = (int)timer.ElapsedMilliseconds;
+            processing.UnitPositionCompressed = true;
             await _ProcessingRepository.Upsert(processing);
 
             _Logger.LogInformation($"parsed action log and inserted DB events [gameID={entry.GameID}] [timer={timer.ElapsedMilliseconds}ms]");
