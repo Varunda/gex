@@ -31,32 +31,37 @@ namespace gex.Services.Hosted.Startup {
             bool error = false;
 
             if (string.IsNullOrEmpty(_Options.Value.ReplayLocation)) {
-                _Logger.LogError("The option 'ReplayLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'ReplayLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
             if (string.IsNullOrEmpty(_Options.Value.TempWorkLocation)) {
-                _Logger.LogError("The option 'TempWorkLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'TempWorkLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
             if (string.IsNullOrEmpty(_Options.Value.EngineLocation)) {
-                _Logger.LogError("The option 'EngineLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'EngineLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
             if (string.IsNullOrEmpty(_Options.Value.GameLogLocation)) {
-                _Logger.LogError("The option 'GameLocLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'GameLocLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
             if (string.IsNullOrEmpty(_Options.Value.WebImageLocation)) {
-                _Logger.LogError("The option 'WebImageLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'WebImageLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
             if (string.IsNullOrEmpty(_Options.Value.GitHubDataLocation)) {
-                _Logger.LogError("The option 'GitHubDataLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'GitHubDataLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
+
+            if (string.IsNullOrEmpty(_Options.Value.UnitPositionLocation)) {
+                _Logger.LogError("the option 'UnitPositionDataLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 

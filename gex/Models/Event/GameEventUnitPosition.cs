@@ -1,5 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using System;
 
 namespace gex.Models.Event {
 
@@ -26,5 +27,19 @@ namespace gex.Models.Event {
         [ColumnMapping("z")]
         public double Z { get; set; }
 
+        public override bool Equals(object? obj) {
+            return obj is GameEventUnitPosition position &&
+                   GameID == position.GameID &&
+                   Frame == position.Frame &&
+                   UnitID == position.UnitID &&
+                   TeamID == position.TeamID &&
+                   X == position.X &&
+                   Y == position.Y &&
+                   Z == position.Z;
+        }
+
+        public override int GetHashCode() {
+            return HashCode.Combine(GameID, Frame, UnitID, TeamID, X, Y, Z);
+        }
     }
 }

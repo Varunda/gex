@@ -4,8 +4,10 @@ using gex.Models.Event;
 using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Repositories;
+using gex.Services.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +36,7 @@ namespace gex.Controllers.Api {
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
         private readonly GameEventUnitDamageDb _UnitDamageDb;
         private readonly GameEventUnitPositionDb _UnitPositionDb;
+        private readonly UnitPositionFileStorage _UnitPositionStorage;
 
         public GameEventApiController(ILogger<GameEventApiController> logger,
             GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
@@ -44,7 +47,8 @@ namespace gex.Controllers.Api {
             GameEventUnitGivenDb unitGivenDb, GameEventUnitTakenDb unitTakenDb,
             GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
             GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb,
-            GameEventUnitDamageDb unitDamageDb, GameEventUnitPositionDb unitPositionDb) {
+            GameEventUnitDamageDb unitDamageDb, GameEventUnitPositionDb unitPositionDb,
+            UnitPositionFileStorage unitPositionStorage) {
 
             _Logger = logger;
 
@@ -66,6 +70,7 @@ namespace gex.Controllers.Api {
             _UnitResourcesDb = unitResourcesDb;
             _UnitDamageDb = unitDamageDb;
             _UnitPositionDb = unitPositionDb;
+            _UnitPositionStorage = unitPositionStorage;
         }
 
         /// <summary>
@@ -188,7 +193,12 @@ namespace gex.Controllers.Api {
             }
 
             if (includeUnitPosition == true) {
-                output.UnitPosition = await _UnitPositionDb.GetByGameID(gameID, cancel);
+                Result<List<GameEventUnitPosition>, string> unitPos = await _UnitPositionStorage.GetByGameID(gameID, cancel);
+                if (unitPos.IsOk == true) {
+                    output.UnitPosition = unitPos.Value;
+                } else {
+                    _Logger.LogWarning($"failed to get unit position from storage [gameID={gameID}] [error={unitPos.Error}]");
+                }
             }
 
             if (includeUnitDefs == true) {

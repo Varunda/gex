@@ -42,6 +42,7 @@ namespace gex.Services.Hosted {
         public static void AddBackgroundServices(this IServiceCollection services) {
             services.AddHostedService<PriorityMatchHeadlessBackgroundTask>();
             services.AddHostedService<SpringLobbyClientHost>();
+            services.AddHostedService<UnitPositionCompressionService>();
         }
 
     }

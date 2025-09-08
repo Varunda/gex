@@ -8,6 +8,7 @@ using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -43,7 +44,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameEventTeamDiedDb _TeamDiedDb;
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
         private readonly GameEventUnitDamageDb _UnitDamageDb;
-        private readonly GameEventUnitPositionDb _UnitPositionDb;
+        private readonly UnitPositionFileStorage _UnitPositionStorage;
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -57,7 +58,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventTransportUnloadedDb transportUnloaded, GameEventExtraStatsDb extraStatDb,
             GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
-            GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue)
+            GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue,
+            UnitPositionFileStorage unitPositionStorage)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -82,7 +84,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _TeamDiedDb = teamDiedDb;
             _UnitResourcesDb = unitResourcesDb;
             _UnitDamageDb = unitDamageDb;
-            _UnitPositionDb = unitPositionDb;
+            _UnitPositionStorage = unitPositionStorage;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -118,7 +120,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _UnitGivenDb.DeleteByGameID(entry.GameID, cancel);
                 await _UnitTakenDb.DeleteByGameID(entry.GameID, cancel);
                 await _UnitResourcesDb.DeleteByGameID(entry.GameID, cancel);
-                await _UnitPositionDb.DeleteByGameID(entry.GameID, cancel);
+                _UnitPositionStorage.RemoveByGameID(entry.GameID);
                 await _WindUpdateDb.DeleteByGameID(entry.GameID, cancel);
                 _Logger.LogInformation($"deleted old game events due to force [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
             }
@@ -136,7 +138,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _UnitKilledDb.InsertMany(game.Value.UnitsKilled, cancel);
             await _UnitGivenDb.InsertMany(game.Value.UnitsGiven, cancel);
             await _UnitTakenDb.InsertMany(game.Value.UnitsTaken, cancel);
-            await _UnitPositionDb.InsertMany(game.Value.UnitPosition, cancel);
+            await _UnitPositionStorage.SaveToDisk(game.Value.GameID, game.Value.UnitPosition, cancel);
             await _UnitResourcesDb.InsertMany(game.Value.UnitResources, cancel);
             await _WindUpdateDb.InsertMany(game.Value.WindUpdates, cancel);
 

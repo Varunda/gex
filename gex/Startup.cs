@@ -17,6 +17,7 @@ using gex.Services.Metrics;
 using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Storage;
 using gex.Services.Util;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -251,6 +252,7 @@ namespace gex {
             services.AddGexRepositories();
             services.AddGexParsers();
             services.AddSingleton<LuaRunner>();
+            services.AddStorageServices();
 
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarMatchTitleUtilService>();

@@ -34,11 +34,11 @@ namespace gex.Services.Db.Match {
                 INSERT INTO bar_match_processing (
                     game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed,
                     fetch_ms, parse_ms, replay_ms, action_ms,
-					priority
+					priority, unit_position_compressed
                 ) VALUES (
                     @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed,
                     @FetchMs, @ParseMs, @ReplayMs, @ActionMs,
-					@Priority
+					@Priority, @UnitPositionCompressed
                 ) ON CONFLICT (game_id) DO UPDATE 
                     SET demofile_fetched = @DemofileFetched,
                         demofile_parsed = @DemofileParsed,
@@ -48,7 +48,8 @@ namespace gex.Services.Db.Match {
                         parse_ms = @ParseMs,
                         replay_ms = @ReplayMs,
                         action_ms = @ActionMs,
-						priority = @Priority
+						priority = @Priority,
+                        unit_position_compressed = @UnitPositionCompressed
                 ;
             ");
 
@@ -62,6 +63,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("ReplayMs", proc.ReplaySimulatedMs);
             cmd.AddParameter("ActionMs", proc.ActionsParsedMs);
             cmd.AddParameter("Priority", proc.Priority);
+            cmd.AddParameter("UnitPositionCompressed", proc.UnitPositionCompressed);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
@@ -191,6 +193,22 @@ namespace gex.Services.Db.Match {
                     m.start_time DESC
                 LIMIT {count};
             ", cancellationToken: cancel);
+        }
+
+        /// <summary>
+        ///     get all <see cref="BarMatchProcessing"/> where 
+        ///     <see cref="BarMatchProcessing.UnitPositionCompressed"/> is false
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<List<BarMatchProcessing>> NeedsUnitPositionCompression(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMatchProcessing>(@"
+                SELECT p.*
+                FROM bar_match_processing p
+                WHERE p.unit_position_compressed IS false
+                    AND p.actions_parsed IS NOT NULL;
+            ", cancel);
         }
 
     }

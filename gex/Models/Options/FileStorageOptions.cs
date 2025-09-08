@@ -32,5 +32,10 @@
         /// </summary>
         public string GitHubDataLocation { get; set; } = "";
 
+        /// <summary>
+        ///     where compressed unit position data will go
+        /// </summary>
+        public string UnitPositionLocation { get; set; } = "";
+
     }
 }

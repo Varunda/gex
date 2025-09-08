@@ -71,5 +71,11 @@ namespace gex.Models.Db {
         [ColumnMapping("priority")]
         public short Priority { get; set; }
 
+        /// <summary>
+        ///     has the unit position data for this match been compressed?
+        /// </summary>
+        [ColumnMapping("unit_position_compressed")]
+        public bool UnitPositionCompressed { get; set; }
+
     }
 }

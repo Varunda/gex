@@ -131,5 +131,9 @@ namespace gex.Services.Repositories {
             return _ProcessingPriorityDb.Upsert(discordID, gameID, cancel);
         }
 
+        public Task<List<BarMatchProcessing>> NeedsUnitPositionCompression(CancellationToken cancel) {
+            return _ProcessingDb.NeedsUnitPositionCompression(cancel);
+        }
+
     }
 }
