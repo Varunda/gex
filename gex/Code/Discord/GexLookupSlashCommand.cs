@@ -349,10 +349,10 @@ namespace gex.Code.Discord {
 
             embed.Description += $"**Health**: {_N(unit.Health)}\n"
                 + $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n"
-                + $"**Speed**: {_N(unit.Speed)} ({_N(30d * unit.TurnRate * (180d / 32768d))}°/sec turn)\n"
+                + $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}°/sec turning\n"
                 + $"**Vision**: {_N(unit.SightDistance)} ";
 
-            if (unit.AirSightDistance > 0) { embed.Description += $" / {unit.AirSightDistance} (air) "; }
+            if (unit.AirSightDistance > 0) { embed.Description += $" / {_N(unit.AirSightDistance)} (air) "; }
             embed.Description += "\n";
 
             if (unit.RadarDistance > 0 && unit.SonarDistance > 0) {
