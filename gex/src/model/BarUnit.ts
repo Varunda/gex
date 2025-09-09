@@ -42,6 +42,10 @@ export class BarUnit {
     public buildTime: number = 0;
     public speed: number = 0;
     public turnRate: number = 0;
+    public acceleration: number = 0;
+    public deceleration: number = 0;
+
+    // eco
     public energyProduced: number = 0;
     public windGenerator: number = 0;
     public energyStorage: number = 0;
@@ -88,10 +92,17 @@ export class BarUnit {
     public explodeAsWeapon: BarWeaponDefinition = new BarWeaponDefinition();
 
     public static parse(elem: any): BarUnit {
-        return {
+        const unit: BarUnit = {
             ...elem,
             weapons: elem.weapons.map((iter: any) => BarUnitWeapon.parse(iter))
         };
+
+        // in game does this, not sure what it means
+        unit.acceleration *= 900;
+        unit.deceleration *= 900;
+        unit.turnRate = unit.turnRate * 30 * (180 / 32728);
+
+        return unit;
     }
 
 }
@@ -120,8 +131,9 @@ export class BarWeaponDefinition {
 
     public reloadTime: number = 0;
 
+    public projectiles: number = 0;
 
-    public turnRate: number = 0;
+    public sweepFire: number = 0;
 
     public velocity: number = 0;
 
@@ -148,6 +160,12 @@ export class BarWeaponDefinition {
     public paralyzerExceptions: string = "";
 
     public isBogus: boolean = false;
+
+    public chainForkDamage: number = 0;
+
+    public chainMaxUnits: number = 0;
+
+    public chainForkRange: number = 0;
 
     public damages: Map<string, number> = new Map();
 
@@ -180,8 +198,15 @@ export class BarWeaponDefinition {
         def.fireRate = 1 / Math.max(0.0001, def.reloadTime);
 
         def.defaultDamage = def.damages.get("default") ?? def.damages.get("vtol") ?? 0;
+        if (def.projectiles != 1) {
+            def.defaultDamage *= def.projectiles;
+        }
+        if (def.sweepFire != 0) {
+            def.defaultDamage *= def.sweepFire;
+        }
+
         def.defaultBurstDamage = def.defaultDamage * Math.max(1, def.burst);
-        def.defaultDps =def.defaultDamage / Math.max(0.01, def.reloadTime);
+        def.defaultDps = def.defaultDamage / Math.max(0.01, def.reloadTime);
         if (def.burst != 0) {
             def.defaultDps *= def.burst;
         }

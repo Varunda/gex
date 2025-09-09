@@ -66,6 +66,8 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(1650d, unit.BuildTime);
             Assert.AreEqual(87d, unit.Speed);
             Assert.AreEqual(1214.40002, unit.TurnRate);
+            Assert.AreEqual(0.414d, unit.Acceleration);
+            Assert.AreEqual(0.69d, unit.Deceleration);
 
             // eco
             Assert.AreEqual(0d, unit.EnergyProduced);
@@ -82,9 +84,10 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(429d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(429d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(0d, unit.RadarDistance);
             Assert.AreEqual(0d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
 
             // transport
             Assert.AreEqual(0d, unit.TransportCapacity);
@@ -116,7 +119,7 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(0.123d, def.ImpulseFactor);
             Assert.AreEqual(180d, def.Range);
             Assert.AreEqual(0.3d, def.ReloadTime);
-            Assert.AreEqual(0d, def.TurnRate);
+            Assert.AreEqual(1180d, def.SprayAngle);
             Assert.AreEqual(500d, def.Velocity);
             Assert.AreEqual(false, def.Tracks);
             Assert.AreEqual(0d, def.EnergyPerShot);
@@ -159,7 +162,7 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(450d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(450d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(700d, unit.RadarDistance);
             Assert.AreEqual(450d, unit.SonarDistance);
 
@@ -210,7 +213,7 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(273d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(273d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(0d, unit.RadarDistance);
             Assert.AreEqual(0d, unit.SonarDistance);
 
@@ -259,7 +262,7 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(600d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(600d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(0d, unit.RadarDistance);
             Assert.AreEqual(0d, unit.SonarDistance);
 
@@ -318,7 +321,7 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(845d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(845d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(0d, unit.RadarDistance);
             Assert.AreEqual(0d, unit.SonarDistance);
 
@@ -337,6 +340,7 @@ namespace gex.Tests.Services.Parser {
 
             BarUnitWeapon weapon = unit.Weapons[5];
             Assert.AreEqual(true, weapon.WeaponDefinition.IsBogus);
+            Assert.AreEqual(10, unit.Weapons[0].WeaponDefinition.Projectiles);
         }
 
         [TestMethod]
@@ -351,6 +355,8 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(440000d, unit.BuildTime);
             Assert.AreEqual(40d, unit.Speed);
             Assert.AreEqual(360d, unit.TurnRate);
+            Assert.AreEqual(0.1750d, unit.Acceleration);
+            Assert.AreEqual(0.75d, unit.Deceleration);
 
             // eco
             Assert.AreEqual(500d, unit.EnergyProduced);
@@ -367,7 +373,7 @@ namespace gex.Tests.Services.Parser {
 
             // los
             Assert.AreEqual(845d, unit.SightDistance);
-            Assert.AreEqual(0d, unit.AirSightDistance);
+            Assert.AreEqual(845d * 1.5d, unit.AirSightDistance);
             Assert.AreEqual(0d, unit.RadarDistance);
             Assert.AreEqual(0d, unit.SonarDistance);
 
@@ -438,6 +444,89 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(true, def.IsStockpile);
             Assert.AreEqual(2d, def.StockpileTime);
             Assert.AreEqual(4, def.StockpileLimit);
+        }
+
+        [TestMethod]
+        public async Task Parse_Armzeus_Welder() {
+            BarUnit unit = await _ParseUnit("armzeus");
+
+            // basic
+            Assert.AreEqual("armzeus", unit.DefinitionName);
+            Assert.AreEqual(2950d, unit.Health);
+            Assert.AreEqual(350d, unit.MetalCost);
+            Assert.AreEqual(6100d, unit.EnergyCost);
+            Assert.AreEqual(7250d, unit.BuildTime);
+            Assert.AreEqual(47.4d, unit.Speed);
+            Assert.AreEqual(1214.40002, unit.TurnRate);
+            Assert.AreEqual(0.138d, unit.Acceleration);
+            Assert.AreEqual(0.8625d, unit.Deceleration);
+
+            // eco
+            Assert.AreEqual(0d, unit.EnergyProduced);
+            Assert.AreEqual(0d, unit.EnergyStorage);
+            Assert.AreEqual(0d, unit.EnergyUpkeep);
+            Assert.AreEqual(0d, unit.ExtractsMetal);
+            Assert.AreEqual(false, unit.MetalExtractor);
+            Assert.AreEqual(0d, unit.MetalProduced);
+            Assert.AreEqual(0d, unit.MetalStorage);
+
+            // builder
+            Assert.AreEqual(0d, unit.BuildDistance);
+            Assert.AreEqual(0d, unit.BuildPower);
+
+            // los
+            Assert.AreEqual(331.5d, unit.SightDistance);
+            Assert.AreEqual(331.5d * 1.5d, unit.AirSightDistance);
+            Assert.AreEqual(0d, unit.RadarDistance);
+            Assert.AreEqual(0d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
+
+            // transport
+            Assert.AreEqual(0d, unit.TransportCapacity);
+            Assert.AreEqual(0d, unit.TransportMass);
+            Assert.AreEqual(0d, unit.TransportSize);
+
+            // misc
+            Assert.AreEqual("FireStorm, FLaka", unit.ModelAuthor);
+            Assert.AreEqual(0d, unit.CloakCostStill);
+            Assert.AreEqual(0d, unit.CloakCostMoving);
+            Assert.AreEqual("mediumexplosiongeneric", unit.ExplodeAs);
+            Assert.AreEqual(5d, unit.SelfDestructCountdown);
+            Assert.AreEqual("mediumExplosionGenericSelfd", unit.SelfDestructWeapon);
+
+            // weapons
+            Assert.AreEqual(1, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("SURFACE", weapon.TargetCategory);
+
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual("lightning", def.DefinitionName);
+            Assert.AreEqual("Close-quarters g2g lightning rifle", def.Name);
+            Assert.AreEqual(8d, def.AreaOfEffect);
+            Assert.AreEqual(10d, def.Burst);
+            Assert.AreEqual(0.03333d, def.BurstRate);
+            Assert.AreEqual(0d, def.FlightTime);
+            Assert.AreEqual(0d, def.ImpulseFactor);
+            Assert.AreEqual(280d, def.Range);
+            Assert.AreEqual(1.7d, def.ReloadTime);
+            Assert.AreEqual(0d, def.SprayAngle);
+            Assert.AreEqual(400d, def.Velocity);
+            Assert.AreEqual(false, def.Tracks);
+            Assert.AreEqual(35d, def.EnergyPerShot);
+            Assert.AreEqual(0d, def.MetalPerShot);
+            Assert.AreEqual("LightningCannon", def.WeaponType);
+            Assert.AreEqual(false, def.WaterWeapon);
+            Assert.AreEqual(false, def.IsBogus);
+            Assert.AreEqual(22d, def.Damages["default"]);
+            Assert.AreEqual(6d, def.Damages["vtol"]);
+            Assert.AreEqual(false, def.IsStockpile);
+            Assert.AreEqual(0d, def.StockpileTime);
+            Assert.AreEqual(0, def.StockpileLimit);
+            Assert.AreEqual(0.33d, def.ChainForkDamage);
+            Assert.AreEqual(2, def.ChainMaxUnits);
+            Assert.AreEqual(60, def.ChainForkRange);
         }
 
     }

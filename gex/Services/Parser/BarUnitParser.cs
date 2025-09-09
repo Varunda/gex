@@ -77,6 +77,16 @@ namespace gex.Services.Parser {
             unit.BuildTime = _Double(info, "buildtime", 0);
             unit.Speed = _Double(info, "speed", 0);
             unit.TurnRate = _Double(info, "turnrate", 0);
+            // https://github.com/beyond-all-reason/RecoilEngine/blob/88207e2ee01dc9eccdfc08b8b12eb5c6b6b9ab10/rts/Sim/Units/UnitDef.cpp#L445
+            // maxAcc = udTable.GetFloat("maxAcc", udTable.GetFloat("acceleration", 0.5f));
+            // for displaying, the game uses 900 * acceleration
+            // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/2d264117ff0d4f735e867bf352a5db0cdf32c34d/luaui/Widgets/gui_unit_stats.lua#L431
+            // DrawText(texts.move..":", format("%.1f / %.1f / %.0f ("..texts.speedaccelturn..")", uDef.speed, 900 * uDef.maxAcc, simSpeed * uDef.turnRate * (180 / 32767)))
+            unit.Acceleration = _Double(info, "maxacc", _Double(info, "accrate", 0.5));
+
+            // https://github.com/beyond-all-reason/RecoilEngine/blob/88207e2ee01dc9eccdfc08b8b12eb5c6b6b9ab10/rts/Sim/Units/UnitDef.cpp#L449
+            // maxDec = udTable.GetFloat("maxDec", udTable.GetFloat("brakeRate", maxAcc));
+            unit.Deceleration = _Double(info, "maxdec", unit.Acceleration);
 
             // eco stuff
             unit.EnergyProduced = _Double(info, "energymake", 0);
@@ -101,7 +111,7 @@ namespace gex.Services.Parser {
 
             // los
             unit.SightDistance = _Double(info, "sightdistance", 0);
-            unit.AirSightDistance = _Double(info, "airsightdistance", 0);
+            unit.AirSightDistance = _Double(info, "airsightdistance", unit.SightDistance * 1.5d);
             unit.RadarDistance = _Double(info, "radardistance", 0);
             unit.SonarDistance = _Double(info, "sonardistance", 0);
             unit.JamDistance = _Double(info, "radardistancejam", 0);

@@ -9,6 +9,10 @@
                 <span v-else> ? </span>
                 {{ player.username }}
             </span>
+
+            <span v-if="ShowDebug">
+                team id {{ player.teamID }} / player id {{ player.playerID }}
+            </span>
         </a>
         <span class="os">
             [<span class="font-monospace">{{ player.skill | locale(2) }}</span>]
@@ -40,7 +44,8 @@
 
     export const MatchPlayerItem = Vue.extend({
         props: {
-            player: { type: Object as PropType<BarMatchPlayer>, required: true }
+            player: { type: Object as PropType<BarMatchPlayer>, required: true },
+            ShowDebug: { type: Boolean, required: false }
         },
 
         components: {

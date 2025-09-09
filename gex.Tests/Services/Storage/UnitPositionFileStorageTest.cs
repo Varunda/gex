@@ -21,7 +21,7 @@ namespace gex.Tests.Services.Storage {
 
         [TestCleanup]
         public void Cleanup_File() {
-            File.Delete("./resources/temp/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.dat");
+            File.Delete("./resources/temp/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zstd");
         }
 
         [TestMethod]
@@ -49,7 +49,7 @@ namespace gex.Tests.Services.Storage {
                     X = 5d, Y = 6d, Z = 7d
                 },
                 new GameEventUnitPosition() { GameID = gameID,
-                    Frame = 10000, UnitID = 1, TeamID = 2,
+                    Frame = 3, UnitID = 1, TeamID = 2,
                     X = 50.5d, Y = 60.5d, Z = 70.5d
                 },
                 new GameEventUnitPosition() { GameID = gameID,
@@ -60,7 +60,7 @@ namespace gex.Tests.Services.Storage {
             ]);
 
             await storage.SaveToDisk(gameID, positions, new CancellationTokenSource(TimeSpan.FromSeconds(2)).Token);
-            Assert.AreEqual(true, File.Exists(Path.Join("./resources/temp/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.dat")));
+            Assert.AreEqual(true, File.Exists(Path.Join("./resources/temp/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zstd")));
 
             Result<List<GameEventUnitPosition>, string> returned = await storage.GetByGameID(gameID, new CancellationTokenSource(TimeSpan.FromSeconds(2)).Token);
             Assert.AreEqual(true, returned.IsOk, $"got error {returned.Error}");

@@ -45,10 +45,13 @@
                 </tr>
 
                 <tr is="Cell" name="Health" field="health" :unit="unit" :compare="compareUnit"></tr>
-                <tr is="Cell" name="Speed" field="speed" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Metal cost" field="metalCost" :unit="unit" :compare="compareUnit" :low="true"> m</tr>
                 <tr is="Cell" name="Energy cost" field="energyCost" :unit="unit" :compare="compareUnit" :low="true"> E</tr>
                 <tr is="Cell" name="Build time" field="buildTime" :unit="unit" :compare="compareUnit" :low="true"> B</tr>
+                <tr is="Cell" name="Speed" field="speed" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Acceleration" field="acceleration" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Deceleration" field="deceleration" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"> deg/sec</tr>
             </tbody>
         </table>
 
@@ -73,8 +76,10 @@
                 <tr is="Cell" name="Damage (per shot)" field="defaultDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg</tr>
                 <tr is="Cell" name="Fire rate" field="fireRate" :unit="selectedWeapon" :compare="compareWeaponDef"> / sec</tr>
                 <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
+                <tr is="Cell" name="Projectiles" field="projectiles" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Sweep fire" field="sweepFire" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Range" field="range" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="Splash" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Splash" field="areaOfEffect" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Speed" field="velocity" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Edge effectiveness" field="edgeEffectiveness" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Burst" field="burst" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
@@ -87,6 +92,9 @@
                 <tr is="Cell" name="Stockpile" field="isStockpile" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
                 <tr is="Cell" name="Stockpile limit" field="stockpileLimit" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Chain damage" field="chainForkDamage" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Chain max units" field="chainMaxUnits" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Chain range" field="chainForkRange" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
 
                 <template v-if="ShowShieldData || selectedWeapon.shieldData != null || (compareWeaponDef && compareWeaponDef.shieldData != null)">
                     <tr is="Header" name="Shield data" :colspan="colspan"></tr>
@@ -162,7 +170,6 @@
                 <tr is="Cell" name="Transport mass" field="transportMass" :unit="unit" :compare="compareUnit"></tr>
 
                 <tr is="Header" name="Misc." :colspan="colspan"></tr>
-                <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Cloak cost still" field="cloakCostStill" :unit="unit" :compare="compareUnit" :low="true"> E / sec</tr>
                 <tr is="Cell" name="Cloak cost moving" field="cloakCostMoving" :unit="unit" :compare="compareUnit" :low="true"> E / sec</tr>
                 <tr is="Cell" name="EMP mult." field="paralyzeMultiplier" :unit="unit" :compare="compareUnit" :low="true"></tr>

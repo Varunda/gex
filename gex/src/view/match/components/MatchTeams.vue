@@ -21,7 +21,7 @@
                         
                         <div class="players">
                             <template v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)"> 
-                                <match-player-item :player="player" :key="index" />
+                                <match-player-item :player="player" :key="index" :show-debug="showDebug" />
                             </template>
                         </div>
                     </div>
@@ -38,6 +38,10 @@
                                 <span v-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
                                     title="This team won the match!">
                                 </span>
+
+                                <span v-if="showDebug">
+                                    ally team ID {{ allyTeam.allyTeamID }}
+                                </span>
                             </th>
                         </tr>
                     </thead>
@@ -45,7 +49,7 @@
                     <tbody>
                         <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <match-player-item v-if="index <= allyTeam.playerCount+1" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" />
+                                <match-player-item v-if="index <= allyTeam.playerCount" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" :show-debug="showDebug" />
                                 <span v-else>
                                     <!-- uneven team placeholder -->
                                 </span>
@@ -57,6 +61,10 @@
 
             <toggle-button class="btn-small" v-model="showWinner">
                 Show winner
+            </toggle-button>
+
+            <toggle-button class="btn-small" v-model="showDebug">
+                debug
             </toggle-button>
 
             <div v-if="match.spectators.length > 0" class="mt-2">
@@ -152,8 +160,8 @@
 
         data: function() {
             return {
-                showWinner: false as boolean
-
+                showWinner: false as boolean,
+                showDebug: false as boolean
             }
         },
 

@@ -32,6 +32,7 @@ namespace gex.Services.Parser {
             weapon.AreaOfEffect = _Double(wep, "areaofeffect", 0);
             weapon.Burst = _Double(wep, "burst", 0);
             weapon.BurstRate = _Double(wep, "burstrate", 0);
+            weapon.Projectiles = _Int(wep, "projectiles", 1);
             weapon.Range = _Double(wep, "range", 0);
             weapon.EdgeEffectiveness = _Double(wep, "edgeeffectiveness", 0);
             weapon.FlightTime = _Double(wep, "flighttime", 0);
@@ -40,6 +41,7 @@ namespace gex.Services.Parser {
             weapon.ReloadTime = _Double(wep, "reloadtime", 0);
             weapon.WeaponType = _Str(wep, "weapontype") ?? "<weapontype not given>";
             weapon.Tracks = _Bool(wep, "tracks", false);
+            weapon.SprayAngle = _Double(wep, "sprayangle", 0);
             weapon.Velocity = _Double(wep, "weaponvelocity", 0);
             weapon.WaterWeapon = _Bool(wep, "waterweapon", false);
             weapon.IsParalyzer = _Int(wep, "paralyzer", 0) == 1;
@@ -54,6 +56,10 @@ namespace gex.Services.Parser {
                 weapon.IsBogus = _Int(wepCustomParms, "bogus", 0) == 1;
                 weapon.ParalyzerExceptions = _Str(wepCustomParms, "paralyzetime_exception") ?? "";
                 weapon.StockpileLimit = _Int(wepCustomParms, "stockpilelimit", 0);
+                weapon.SweepFire = _Double(wepCustomParms, "sweepfire", 0);
+                weapon.ChainForkDamage = _Double(wepCustomParms, "spark_forkdamage", 0);
+                weapon.ChainMaxUnits = _Int(wepCustomParms, "spark_maxunits", 0);
+                weapon.ChainForkRange = _Double(wepCustomParms, "spark_range", 0);
 
                 if (string.IsNullOrEmpty(_Str(wepCustomParms, "carried_unit")) == false) {
                     BarUnitCarriedUnit carried = new();

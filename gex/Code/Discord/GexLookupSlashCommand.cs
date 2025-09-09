@@ -77,7 +77,7 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(false);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             Stopwatch timer = Stopwatch.StartNew();
@@ -146,7 +146,7 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(false);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             Stopwatch timer = Stopwatch.StartNew();
@@ -303,7 +303,7 @@ namespace gex.Code.Discord {
                 return;
             }
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             Result<BarUnit, string> unitResult = await _UnitRepository.GetByDefinitionName(name, cts.Token);
             if (unitResult.IsOk == false) {
                 await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
@@ -349,7 +349,7 @@ namespace gex.Code.Discord {
 
             embed.Description += $"**Health**: {_N(unit.Health)}\n"
                 + $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n"
-                + $"**Speed**: {_N(unit.Speed)}\n"
+                + $"**Speed**: {_N(unit.Speed)} ({_N(30d * unit.TurnRate * (180d / 32768d))}°/sec turn)\n"
                 + $"**Vision**: {_N(unit.SightDistance)} ";
 
             if (unit.AirSightDistance > 0) { embed.Description += $" / {unit.AirSightDistance} (air) "; }
@@ -457,12 +457,18 @@ namespace gex.Code.Discord {
                             }
                         }
 
-                        double dps = damage / Math.Max(0.01, weapon.ReloadTime);
-                        if (weapon.Burst != 0) {
-                            dps *= weapon.Burst;
+                        if (weapon.SweepFire != 0) {
+                            damage *= weapon.SweepFire;
                         }
+
+                        double dps = damage / Math.Max(0.01, weapon.ReloadTime);
+                        if (weapon.Burst != 0) { dps *= weapon.Burst; }
+                        if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
+
                         embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} "
-                            + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}{_N(damage)} dmg, {_D(weapon.ReloadTime)}s reload)\n";
+                            + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}"
+                            + $"{(weapon.Projectiles != 1 ? $"{weapon.Projectiles}x pellets, " : "")}"
+                            + $"{_N(damage)} dmg, {_D(weapon.ReloadTime)}s reload)\n";
 
                         string range = $"{_N(weapon.Range)}";
                         // if the weapon was changed, this means a carrier weapon is being shown
@@ -523,7 +529,7 @@ namespace gex.Code.Discord {
         public async Task PlayerLookupCommand(InteractionContext ctx) { 
             await ctx.CreateDeferred(true);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             DiscordWebhookBuilder builder = new();
@@ -551,7 +557,7 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(true);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             Stopwatch timer = Stopwatch.StartNew();
@@ -616,7 +622,7 @@ namespace gex.Code.Discord {
         public async Task UnlinkCommand(InteractionContext ctx) {
             await ctx.CreateDeferred(true);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             Stopwatch timer = Stopwatch.StartNew();
@@ -644,7 +650,7 @@ namespace gex.Code.Discord {
         public async Task LatestCommand(InteractionContext ctx,
             [Option("player", "Player to show the latest match of, leave empty to use the linked account")] string player = "") {
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             DiscordWebhookBuilder builder = new();
@@ -737,7 +743,7 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(false);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             DiscordWebhookBuilder builder = new();
@@ -773,7 +779,7 @@ namespace gex.Code.Discord {
         public async Task Subscribe(InteractionContext ctx,
             [Option("player", "Player to subscribe to match processed notifications for")] string player) {
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             DiscordWebhookBuilder builder = new();
@@ -841,7 +847,7 @@ namespace gex.Code.Discord {
         public async Task Unsubscribe(InteractionContext ctx,
             [Option("player", "Player to unsubscribe to match processed notifications to")] string player) {
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             DiscordWebhookBuilder builder = new();
@@ -927,7 +933,7 @@ namespace gex.Code.Discord {
             [Option("gamemode", "What gamemode is being played")] long gamemode = -1
         ) {
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             CancellationToken cancel = cts.Token;
 
             if (ctx.Member == null || ctx.Channel == null || ctx.Guild == null) {
@@ -1023,7 +1029,7 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(ephemeral: true);
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 
             List<LobbyAlert> alerts = await _LobbyAlertDb.GetByChannelID(ctx.Channel.Id, cts.Token);
 
@@ -1062,7 +1068,7 @@ namespace gex.Code.Discord {
                 return;
             }
 
-            CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             LobbyAlert? alert = await _LobbyAlertDb.GetByID(alertID, cts.Token);
 
             if (alert == null) {
@@ -1393,7 +1399,7 @@ namespace gex.Code.Discord {
                 IGithubDownloadRepository unitGithubRepo, BarI18nRepository i18n, ILogger<UnitNameProvider> logger
             ) {
 
-                CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 
                 if (cache.TryGetValue(CACHE_KEY, out List<DiscordAutoCompleteChoice>? opts) == false || opts == null) {
                     opts = new List<DiscordAutoCompleteChoice>();

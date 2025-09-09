@@ -381,6 +381,12 @@ namespace gex.Services.Parser {
                     byte param1 = packetReader.ReadByte();
 
                     if (action == 2) { // 2 = resigned
+                        // how can a team die multiple times ??
+                        if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == playerNum) != null) {
+                            _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={playerNum}] [gametime={packet.GameTime}] [action={action}]");
+                            continue;
+                        }
+
                         BarMatchTeamDeath death = new();
                         death.GameID = header.GameID;
                         death.TeamID = playerNum;
@@ -388,6 +394,10 @@ namespace gex.Services.Parser {
                         death.GameTime = packet.GameTime;
                         match.TeamDeaths.Add(death);
                     } else if (action == 4) { // 4 = TEAM_DIED, param1 = team that died
+                        if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == param1) != null) {
+                            _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={param1}] [gametime={packet.GameTime}] [action={action}]");
+                            continue;
+                        }
                         BarMatchTeamDeath death = new();
                         death.GameID = header.GameID;
                         death.TeamID = param1;

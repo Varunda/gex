@@ -12,6 +12,7 @@
     <None Remove="resources\github_data\language\en\units.json" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
     <None Remove="resources\unit_data\armpw.lua" />
+    <None Remove="resources\unit_data\armzeus.lua" />
     <None Remove="resources\unit_data\bad_lua.lua" />
     <None Remove="resources\unit_data\corcom.lua" />
     <None Remove="resources\unit_data\corfgate.lua" />
@@ -34,6 +35,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\armpw.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\unit_data\armzeus.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\bad_lua.lua">

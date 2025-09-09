@@ -653,102 +653,108 @@ namespace gex.Services.Lobby.Implementations {
             List<byte> message = new();
 
             while (cancel.IsCancellationRequested == false) {
-                while (!stream.DataAvailable) {
-                    if (cancel.IsCancellationRequested == true) {
-                        break;
+                try {
+                    while (!stream.DataAvailable) {
+                        if (cancel.IsCancellationRequested == true) {
+                            break;
+                        }
+
+                        try {
+                            await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol
+                        } catch (Exception ex) {
+                            _Logger.LogError(ex, $"error delaying");
+                        }
+                        if (client.Connected == false) {
+                            break;
+                        }
                     }
 
-                    try {
-                        await Task.Delay(10, cancel); // delay a little bit so the thread isn't running at 100% speed lol
-                    } catch (Exception ex) {
-                        _Logger.LogError(ex, $"error delaying");
-                    }
                     if (client.Connected == false) {
+                        _Logger.LogInformation($"client disconnected");
                         break;
                     }
-                }
 
-                if (client.Connected == false) {
-                    _Logger.LogInformation($"client disconnected");
-                    break;
-                }
+                    _LastMessageReceived = DateTime.UtcNow;
 
-                _LastMessageReceived = DateTime.UtcNow;
-
-                int amt = stream.Read(buffer, 0, 1024);
-                message.AddRange(buffer.AsSpan()[..amt]);
+                    int amt = stream.Read(buffer, 0, 1024);
+                    message.AddRange(buffer.AsSpan()[..amt]);
 
                 //_Logger.LogTrace($"tcp read [amt={amt}] [str={string.Join("", message.Select(iter => (char)iter))}]");
 
-                while (cancel.IsCancellationRequested == false) {
-                    cancel.ThrowIfCancellationRequested();
+                    while (cancel.IsCancellationRequested == false) {
+                        cancel.ThrowIfCancellationRequested();
 
-                    LobbyMessage? msg = parseMessage(message);
-                    if (msg == null) {
-                        break;
-                    }
+                        LobbyMessage? msg = parseMessage(message);
+                        if (msg == null) {
+                            break;
+                        }
 
-                    _Metric.RecordCommandReceived(msg.Command);
+                        _Metric.RecordCommandReceived(msg.Command);
 
-                    //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
+                        //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
 
-                    // when getting battle status, there are some weird host names like [teh]host14
-                    LobbyUser? dmSender = msg.Command != "SAIDPRIVATE" ? null : _LobbyManager.GetUser(msg.Arguments.Split(" ")[0]);
+                        // when getting battle status, there are some weird host names like [teh]host14
+                        LobbyUser? dmSender = msg.Command != "SAIDPRIVATE" ? null : _LobbyManager.GetUser(msg.Arguments.Split(" ")[0]);
 
-                    if (_ExpectedWhoisResponse == true && msg.Command == "SAIDPRIVATE" && msg.Arguments.StartsWith("Coordinator")) {
-                        _Logger.LogTrace($"got part of message DM [message={msg.Arguments}]");
+                        if (_ExpectedWhoisResponse == true && msg.Command == "SAIDPRIVATE" && msg.Arguments.StartsWith("Coordinator")) {
+                            _Logger.LogTrace($"got part of message DM [message={msg.Arguments}]");
 
-                        if (msg.Arguments == "Coordinator Unable to find a user with that name") {
-                            _Logger.LogDebug($"finished getting $whois response");
-                            _WhoisReady.Release();
-                        } else if (msg.Arguments == "Coordinator ---------------------------") {
-                            if (_PendingWhoisResponse.Count > 0) {
+                            if (msg.Arguments == "Coordinator Unable to find a user with that name") {
                                 _Logger.LogDebug($"finished getting $whois response");
                                 _WhoisReady.Release();
-                            }
-                        } else {
-                            _PendingWhoisResponse.Add(msg);
-                        }
-                    } else if (_ExpectedBattleStatusUser != null && msg.Command == "SAIDPRIVATE" && dmSender != null && dmSender.IsBot == true) {
-                        //_Logger.LogTrace($"got DM response from host about battle status [message={msg.Arguments}]");
-
-                        if (dmSender.Username == _ExpectedBattleStatusUser) {
-                            _PendingBattleStatusResponse = msg;
-                            try {
-                                if (_BattleStatusReady.CurrentCount > 0) {
-                                    _Logger.LogWarning($"expected a count of 0 for battle status ready");
-                                } else {
-                                    _BattleStatusReady.Release();
+                            } else if (msg.Arguments == "Coordinator ---------------------------") {
+                                if (_PendingWhoisResponse.Count > 0) {
+                                    _Logger.LogDebug($"finished getting $whois response");
+                                    _WhoisReady.Release();
                                 }
-                            } catch (Exception ex) {
-                                _Logger.LogError(ex, $"failed to release battle status ready semaphore");
-                            }
-                        } else {
-                            _Logger.LogWarning($"got wrong user response to expected battle status [username={dmSender.Username}] [expected={_ExpectedBattleStatusUser}]");
-                        }
-
-                    } else if (msg.MessageId != null) {
-                        if (_ExpectedMessages.Contains(msg.MessageId.Value) == false) {
-                            _Logger.LogWarning($"unexpected message ID, queuing up [messageID={msg.MessageId}] [command={msg.Command}]");
-                            _LobbyMessageQueue.Queue(msg);
-                        } else {
-                            _ExpectedMessages.Remove(msg.MessageId.Value);
-                            if (_PendingMessages.ContainsKey(msg.MessageId.Value) == true) {
-                                _Logger.LogWarning($"colliding message ID response from server found [messageID={msg.MessageId}] [command={msg.Command}]");
                             } else {
-                                _PendingMessages.Add(msg.MessageId.Value, msg);
-                                _Logger.LogTrace($"added message id response [messageID={msg.MessageId}] [command={msg.Command}]");
+                                _PendingWhoisResponse.Add(msg);
                             }
-                        }
-                    } else if (msg.Command == "LOGININFOEND") {
-                        _LoggedIn = true;
-                    } else {
-                        _LobbyMessageQueue.Queue(msg);
-                    }
+                        } else if (_ExpectedBattleStatusUser != null && msg.Command == "SAIDPRIVATE" && dmSender != null && dmSender.IsBot == true) {
+                            //_Logger.LogTrace($"got DM response from host about battle status [message={msg.Arguments}]");
 
-                    if (message.Count == 0) {
-                        break;
+                            if (dmSender.Username == _ExpectedBattleStatusUser) {
+                                _PendingBattleStatusResponse = msg;
+                                try {
+                                    if (_BattleStatusReady.CurrentCount > 0) {
+                                        _Logger.LogWarning($"expected a count of 0 for battle status ready");
+                                    } else {
+                                        _BattleStatusReady.Release();
+                                    }
+                                } catch (Exception ex) {
+                                    _Logger.LogError(ex, $"failed to release battle status ready semaphore");
+                                }
+                            } else {
+                                _Logger.LogWarning($"got wrong user response to expected battle status [username={dmSender.Username}] [expected={_ExpectedBattleStatusUser}]");
+                            }
+
+                        } else if (msg.MessageId != null) {
+                            if (_ExpectedMessages.Contains(msg.MessageId.Value) == false) {
+                                _Logger.LogWarning($"unexpected message ID, queuing up [messageID={msg.MessageId}] [command={msg.Command}]");
+                                _LobbyMessageQueue.Queue(msg);
+                            } else {
+                                _ExpectedMessages.Remove(msg.MessageId.Value);
+                                if (_PendingMessages.ContainsKey(msg.MessageId.Value) == true) {
+                                    _Logger.LogWarning($"colliding message ID response from server found [messageID={msg.MessageId}] [command={msg.Command}]");
+                                } else {
+                                    _PendingMessages.Add(msg.MessageId.Value, msg);
+                                    _Logger.LogTrace($"added message id response [messageID={msg.MessageId}] [command={msg.Command}]");
+                                }
+                            }
+                        } else if (msg.Command == "LOGININFOEND") {
+                            _LoggedIn = true;
+                        } else {
+                            _LobbyMessageQueue.Queue(msg);
+                        }
+
+                        if (message.Count == 0) {
+                            break;
+                        }
                     }
+                } catch (Exception) when (cancel.IsCancellationRequested == true) {
+                    return;
+                } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
+                    _Logger.LogError(ex, $"error in read thread");
                 }
             }
         }
@@ -759,23 +765,21 @@ namespace gex.Services.Lobby.Implementations {
         /// <param name="cancel"></param>
         private async void PingWriteThread(CancellationToken cancel) {
             _Logger.LogInformation($"ping write started");
-
             while (cancel.IsCancellationRequested == false) {
-                // delay at the start so PING is sent 30 seconds after login
-                // 2025-08-11 FIXME: why is a try/catch needed here? if cancelled, visual studio throws an exception from here,
-                //      instead of it being caught in the Task that runs this method
                 try {
+                    // delay at the start so PING is sent 30 seconds after login
                     await Task.Delay(TimeSpan.FromSeconds(30), cancel);
-                } catch (TaskCanceledException) {
-                    //_Logger.LogDebug($"delay in ping thread canceled");
-                    break;
-                }
 
-                Result<LobbyMessage, string> pong = await WriteReply("PING", "", TimeSpan.FromSeconds(5), cancel);
-                if (pong.IsOk == false) {
-                    _Logger.LogWarning($"error when pinging lobby: {pong.Error}");
-                } else {
-                    _Logger.LogInformation($"got PONG from lobby host, Gex is still connected");
+                    Result<LobbyMessage, string> pong = await WriteReply("PING", "", TimeSpan.FromSeconds(5), cancel);
+                    if (pong.IsOk == false) {
+                        _Logger.LogWarning($"error when pinging lobby: {pong.Error}");
+                    } else {
+                        _Logger.LogInformation($"got PONG from lobby host, Gex is still connected");
+                    }
+                } catch (Exception) when (cancel.IsCancellationRequested == true) {
+                    return;
+                } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
+                    _Logger.LogError(ex, $"error in ping write thread");
                 }
             }
         }

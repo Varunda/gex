@@ -21,6 +21,11 @@ namespace gex.Models.Bar {
 
         public double TurnRate { get; set; }
 
+        // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/2d264117ff0d4f735e867bf352a5db0cdf32c34d/luaui/Widgets/gui_unit_stats.lua#L431
+        public double Acceleration { get; set; }
+
+        public double Deceleration { get; set; }
+
         // eco stuff
 
         public double EnergyProduced { get; set; }
@@ -61,7 +66,7 @@ namespace gex.Models.Bar {
 
         public double SightDistance { get; set; }
 
-        public double AirSightDistance { get; set; }
+        public double AirSightDistance { get; set; } // is 1.5 of SightDistance if not set
 
         public double RadarDistance { get; set; }
 

@@ -26,11 +26,15 @@ namespace gex.Models.Bar {
         /// </summary>
         public bool ImpactOnly { get; set; }
 
+        public int Projectiles { get; set; }
+
+        public double SweepFire { get; set; }
+
         public double Range { get; set; }
 
         public double ReloadTime { get; set; }
 
-        public double TurnRate { get; set; }
+        public double SprayAngle { get; set; }
 
         public double Velocity { get; set; }
 
@@ -57,6 +61,12 @@ namespace gex.Models.Bar {
         public string ParalyzerExceptions { get; set; } = "";
 
         public bool IsBogus { get; set; }
+
+        public double ChainForkDamage { get; set; }
+
+        public int ChainMaxUnits { get; set; }
+
+        public double ChainForkRange { get; set; }
 
         public Dictionary<string, double> Damages { get; set; } = [];
 
