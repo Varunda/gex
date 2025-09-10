@@ -20,7 +20,8 @@ export class ApiBarUnit {
         };
 
         if (ret.unit.explodeAs != "") {
-            ret.unit.explodeAsWeapon = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.explodeAs.toLowerCase()) || new BarWeaponDefinition();
+            ret.unit.explodeAsWeaponDefinition = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.explodeAs.toLowerCase()) || new BarWeaponDefinition();
+            ret.unit.explodeAsDamage = ret.unit.explodeAsWeaponDefinition?.damages.get("default") ?? 0;
         }
         if (ret.unit.selfDestructWeapon != "") {
             ret.unit.selfDestructWeaponDefinition = ret.includedWeapons.find(iter => iter.definitionName.toLowerCase() == ret.unit.selfDestructWeapon.toLowerCase()) || new BarWeaponDefinition();
@@ -44,16 +45,21 @@ export class BarUnit {
     public turnRate: number = 0;
     public acceleration: number = 0;
     public deceleration: number = 0;
+    public sizeX: number = 0;
+    public sizeZ: number = 0;
 
     // eco
     public energyProduced: number = 0;
     public windGenerator: number = 0;
     public energyStorage: number = 0;
     public energyUpkeep: number = 0;
+    public tidalGenerator: number = 0;
     public extractsMetal: boolean = false;
     public metalExtractor: number = 0;
     public metalProduced: number = 0;
     public metalStorage: number = 0;
+    public energyConversionCapacity: number = 0;
+    public energyConversionEfficiency: number = 0;
 
     // builder stuff
     public buildDistance: number = 0;
@@ -84,12 +90,16 @@ export class BarUnit {
     public selfDestructCountdown: number = 0;
     public isStealth: boolean = false;
     public paralyzeMultiplier: number = 0;
+    public autoHeal: number = 0;
+    public idleAutoHeal: number = 0;
+    public idleTime: number = 0;
 
     public weapons: BarUnitWeapon[] = [];
 
     public selfDestructWeaponDefinition: BarWeaponDefinition = new BarWeaponDefinition();
     public selfDestructDamage: number = 0;
-    public explodeAsWeapon: BarWeaponDefinition = new BarWeaponDefinition();
+    public explodeAsWeaponDefinition: BarWeaponDefinition = new BarWeaponDefinition();
+    public explodeAsDamage: number = 0;
 
     public static parse(elem: any): BarUnit {
         const unit: BarUnit = {

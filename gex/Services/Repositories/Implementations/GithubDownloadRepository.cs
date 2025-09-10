@@ -81,15 +81,21 @@ namespace gex.Services.Repositories.Implementations {
             return File.Exists(path);
         }
 
+        public Task DownloadFolder(string folder, CancellationToken cancel) {
+            return DownloadFolder(folder, false, cancel);
+
+        }
+
         /// <summary>
         ///     download a folder from GitHub, placing it in the target folder named <paramref name="folder"/>
         ///     relative to the <see cref="FileStorageOptions.GitHubDataLocation"/> set in <see cref="FileStorageOptions"/>.
         ///     this method will not keep the directory stucture
         /// </summary>
         /// <param name="folder"></param>
+        /// <param name="force">will download be forced even if the latest commit is downloaded?</param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        public async Task DownloadFolder(string folder, CancellationToken cancel) {
+        public async Task DownloadFolder(string folder, bool force, CancellationToken cancel) {
 
             _Logger.LogDebug($"downloading folder from github [folder={folder}]");
 
@@ -117,8 +123,12 @@ namespace gex.Services.Repositories.Implementations {
                 } else {
                     _Logger.LogInformation($"comparing latest commit and downloaded commit [folder={folder}] [latest sha={latestCommit.Value.SHA}] [downloaded sha={downloadedCommit}]");
                     if (latestCommit.Value.SHA == downloadedCommit) {
-                        _Logger.LogInformation($"folder is already updated [folder={folder}]");
-                        return;
+                        if (force == false) {
+                            _Logger.LogInformation($"folder is already updated [folder={folder}]");
+                            return;
+                        } else {
+                            _Logger.LogInformation($"folder is alreayd updated, but a force was ran [folder={folder}] [sha={downloadedCommit}]");
+                        }
                     }
                 }
             }
@@ -291,7 +301,7 @@ namespace gex.Services.Repositories.Implementations {
             }
 
             string filePath = Path.Join(_FileOptions.Value.GitHubDataLocation, folder, fileName);
-            using FileStream fs = File.OpenWrite(filePath);
+            using FileStream fs = File.Open(filePath, FileMode.Create);
             await res.Content.CopyToAsync(fs, cancel);
 
             return true;

@@ -112,6 +112,7 @@
         },
 
         mounted: function(): void {
+            document.title = "Gex / Maps";
             this.bind();
         },
 

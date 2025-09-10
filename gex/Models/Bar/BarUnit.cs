@@ -26,11 +26,17 @@ namespace gex.Models.Bar {
 
         public double Deceleration { get; set; }
 
+        public double SizeX { get; set; }
+
+        public double SizeZ { get; set; }
+
         // eco stuff
 
         public double EnergyProduced { get; set; }
 
         public double WindGenerator { get; set; }
+
+        public double TidalGenerator { get; set; }
 
         public double EnergyStorage { get; set; }
 
@@ -43,6 +49,10 @@ namespace gex.Models.Bar {
         public double MetalProduced { get; set; }
 
         public double MetalStorage { get; set; }
+
+        public double EnergyConversionCapacity { get; set; }
+
+        public double EnergyConversionEfficiency { get; set; }
 
         // builder stuff
 
@@ -93,6 +103,12 @@ namespace gex.Models.Bar {
         public bool IsStealth { get; set; }
 
         public double ParalyzeMultiplier { get; set; }
+
+        public double AutoHeal { get; set; }
+
+        public double IdleTime { get; set; }
+
+        public double IdleAutoHeal { get; set; }
 
         /// <summary>
         ///     what weapon definition to use when exploding

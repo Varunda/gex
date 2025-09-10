@@ -10,14 +10,14 @@
 
             <div>
                 <h1 class="text-start mb-0 d-flex">
-                    <span class="flex-grow-1">
+                    <span class="flex-grow-1" style="overflow-x: hidden; overflow-y: hidden; text-overflow: clip; text-wrap: nowrap; max-width: 260px;" :title="ApiUnit.displayName">
                         {{ ApiUnit.displayName }}
                     </span>
                     <span>
                         <button class="btn close border" @click="emitClose" :title="'Close unit card for ' + ApiUnit.displayName">&times;</button>
                     </span>
                 </h1>
-                <h3 class="text-start" style="overflow-x: hidden; text-overflow: clip; text-wrap: nowrap; max-width: 320px;" :title="ApiUnit.description">
+                <h3 class="text-start" style="overflow-x: hidden; text-overflow: clip; text-wrap: nowrap; max-width: 300px;" :title="ApiUnit.description">
                     {{ ApiUnit.description }}
                 </h3>
             </div>
@@ -52,6 +52,8 @@
                 <tr is="Cell" name="Acceleration" field="acceleration" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Deceleration" field="deceleration" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"> deg/sec</tr>
+                <tr is="Cell" name="Size X" field="sizeX" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Size Z" field="sizeZ" :unit="unit" :compare="compareUnit"></tr>
             </tbody>
         </table>
 
@@ -146,6 +148,9 @@
                 <tr is="Cell" name="Energy storage" field="energyStorage" :unit="unit" :compare="compareUnit"> E</tr>
                 <tr is="Cell" name="Energy upkeep" field="energyUpkeep" :unit="unit" :compare="compareUnit" :low="true"> E / sec</tr>
                 <tr is="Cell" name="Wind generation" field="windGenerator" :unit="unit" :compare="compareUnit"> E / sec (max)</tr>
+                <tr is="Cell" name="Tidal generator" field="tidalGenerator" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="E conv capacity" field="energyConversionCapacity" :unit="unit" :compare="compareUnit"> E</tr>
+                <tr is="Cell" name="E conv efficiency" field="energyConversionEfficiency" :unit="unit" :compare="compareUnit"> M per E</tr>
 
                 <tr is="Header" name="Vision" :colspan="colspan"></tr>
                 <tr is="Cell" name="LoS" field="sightDistance" :unit="unit" :compare="compareUnit"></tr>
@@ -179,6 +184,11 @@
                 <tr is="Cell" name="Self-D EMP time" field="selfDestructWeaponDefinition.paralyzerTime" :unit="unit" :compare="compareUnit">s</tr>
                 <tr is="Cell" name="Self-D range" field="selfDestructWeaponDefinition.areaOfEffect" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Self-D falloff" field="selfDestructWeaponDefinition.edgeEffectiveness" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Explode damage" field="explodeAsDamage" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Explode EMP?" field="explodeAsWeaponDefinition.isParalyzer" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Explode EMP time" field="explodeAsWeaponDefinition.paralyzerTime" :unit="unit" :compare="compareUnit">s</tr>
+                <tr is="Cell" name="Explode range" field="explodeAsWeaponDefinition.areaOfEffect" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Explode falloff" field="explodeAsWeaponDefinition.edgeEffectiveness" :unit="unit" :compare="compareUnit"></tr>
             </tbody>
         </table>
 

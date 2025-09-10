@@ -4,9 +4,6 @@ using gex.Models.Bar;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,6 +72,8 @@ namespace gex.Services.Parser {
             unit.MetalCost = _Double(info, "metalcost", _Double(info, "buildcostmetal", 0));
             unit.EnergyCost = _Double(info, "energycost", _Double(info, "buildcostenergy", 0));
             unit.BuildTime = _Double(info, "buildtime", 0);
+            unit.SizeX = _Double(info, "footprintx", 0);
+            unit.SizeZ = _Double(info, "footprintz", 0);
             unit.Speed = _Double(info, "speed", 0);
             unit.TurnRate = _Double(info, "turnrate", 0);
             // https://github.com/beyond-all-reason/RecoilEngine/blob/88207e2ee01dc9eccdfc08b8b12eb5c6b6b9ab10/rts/Sim/Units/UnitDef.cpp#L445
@@ -96,6 +95,7 @@ namespace gex.Services.Parser {
             unit.MetalProduced = _Double(info, "metalmake", 0);
             unit.MetalStorage = _Double(info, "metalstorage", 0);
             unit.WindGenerator = _Double(info, "windgenerator", 0);
+            unit.TidalGenerator = _Double(info, "tidalgenerator", 0);
             // set below in the customparams handling!
             // unit.MetalExtractor = ?;
 
@@ -128,12 +128,17 @@ namespace gex.Services.Parser {
             unit.SelfDestructWeapon = _Str(info, "selfdestructas") ?? unit.ExplodeAs; // recoil uses this behavior
             unit.SelfDestructCountdown = _Double(info, "selfdestructcountdown", 5d);
             unit.IsStealth = _Bool(info, "stealth", false);
+            unit.AutoHeal = _Double(info, "autoheal", 0);
+            unit.IdleTime = _Double(info, "idletime", 0);
+            unit.IdleAutoHeal = _Double(info, "idlehealtime", 0);
 
             object? customParams = info.GetValueOrDefault("customparams");
             if (customParams != null && customParams is Dictionary<object, object> parms) {
                 unit.ModelAuthor = _Str(parms, "model_author");
                 unit.MetalExtractor = _Int(parms, "metal_extractor", 0) == 1;
                 unit.ParalyzeMultiplier = _Double(parms, "paralyzemultiplier", 1d);
+                unit.EnergyConversionCapacity = _Double(parms, "energyconv_capacity", 0);
+                unit.EnergyConversionEfficiency = _Double(parms, "energyconv_efficiency", 0);
             }
 
             // <definition name, definition>, key normalized to UPPER CASE

@@ -295,15 +295,23 @@ namespace gex.Code.Discord {
             await ctx.CreateDeferred(ephemeral: false);
             Stopwatch timer = Stopwatch.StartNew();
 
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+
             if (_UnitRepository.HasUnit(name) == false) {
-                await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
-                    .WithTitle($"Unit lookup: {name}")
-                    .WithDescription($"Unit does not exist")
-                    .WithColor(DiscordColor.Red));
-                return;
+                // if the definition name was not found, try to be helpful and find the unit based on display name
+                List<BarUnitName> names = await _UnitRepository.GetAllNames(cts.Token);
+                List<BarUnitName> nameMatch = names.Where(iter => iter.DisplayName.Equals(name, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                if (nameMatch.Count == 1) {
+                    name = nameMatch[0].DefinitionName;
+                } else {
+                    await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
+                        .WithTitle($"Unit lookup: {name}")
+                        .WithDescription($"Unit does not exist")
+                        .WithColor(DiscordColor.Red));
+                    return;
+                }
             }
 
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             Result<BarUnit, string> unitResult = await _UnitRepository.GetByDefinitionName(name, cts.Token);
             if (unitResult.IsOk == false) {
                 await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
@@ -349,7 +357,7 @@ namespace gex.Code.Discord {
 
             embed.Description += $"**Health**: {_N(unit.Health)}\n"
                 + $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n"
-                + $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}°/sec turning\n"
+                + $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n"
                 + $"**Vision**: {_N(unit.SightDistance)} ";
 
             if (unit.AirSightDistance > 0) { embed.Description += $" / {_N(unit.AirSightDistance)} (air) "; }

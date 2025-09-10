@@ -23,6 +23,10 @@ namespace gex.Tests.Util {
             throw new NotImplementedException();
         }
 
+        public Task DownloadFolder(string folder, bool force, CancellationToken cancel) {
+            throw new NotImplementedException();
+        }
+
         public async Task<Result<string, string>> GetFile(string folder, string file, CancellationToken cancel) {
             string content = await File.ReadAllTextAsync($"./resources/github_data/{folder}/{file}", cancel);
 

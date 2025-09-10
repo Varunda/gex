@@ -68,6 +68,8 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(1214.40002, unit.TurnRate);
             Assert.AreEqual(0.414d, unit.Acceleration);
             Assert.AreEqual(0.69d, unit.Deceleration);
+            Assert.AreEqual(2d, unit.SizeX);
+            Assert.AreEqual(2d, unit.SizeZ);
 
             // eco
             Assert.AreEqual(0d, unit.EnergyProduced);
@@ -101,6 +103,9 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual("smallExplosionGeneric", unit.ExplodeAs);
             Assert.AreEqual(5d, unit.SelfDestructCountdown);
             Assert.AreEqual("smallExplosionGenericSelfd", unit.SelfDestructWeapon);
+            Assert.AreEqual(0d, unit.AutoHeal);
+            Assert.AreEqual(5d, unit.IdleAutoHeal);
+            Assert.AreEqual(1800d, unit.IdleTime);
 
             // weapons
             Assert.AreEqual(1, unit.Weapons.Count);
@@ -178,6 +183,9 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual("commanderexplosion", unit.ExplodeAs); // yes, just the casing is different in corcom.lua
             Assert.AreEqual(5d, unit.SelfDestructCountdown);
             Assert.AreEqual("commanderExplosion", unit.SelfDestructWeapon);
+            Assert.AreEqual(5d, unit.AutoHeal);
+            Assert.AreEqual(5d, unit.IdleAutoHeal);
+            Assert.AreEqual(1800d, unit.IdleTime);
 
             // weapons
             Assert.AreEqual(3, unit.Weapons.Count);
