@@ -67,6 +67,15 @@
     import { ApiBarUnit, BarUnit, BarUnitWeapon } from "model/BarUnit";
     import { BarUnitName } from "model/BarUnitName";
 
+    type CalcBarUnit = BarUnit & {
+        energyRepay: number;
+        metalRepay: number;
+    };
+
+    type CalcApiBarUnit = ApiBarUnit & {
+        calcUnit: CalcBarUnit
+    };
+
     export const BarUnitView = Vue.extend({
         props: {
 
@@ -80,6 +89,8 @@
                 definitionNames: [] as string[],
                 units: new Map() as Map<string, Loading<ApiBarUnit>>,
                 rootLoad: Loadable.idle() as Loading<boolean>,
+
+                showExtraEcoStats: false as boolean,
 
                 selectedWeaponIndex: 0 as number,
                 showShieldData: false as boolean,

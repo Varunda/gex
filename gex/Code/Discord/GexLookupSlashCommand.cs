@@ -1277,16 +1277,12 @@ namespace gex.Code.Discord {
                 List<BarMatchPlayer> teamPlayers = players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID)
                     .OrderByDescending(iter => iter.Skill).ToList();
 
-                embed.Description += $"**Team {allyTeam.AllyTeamID + 1}** - ";
-
-                if (allyTeam.Won == true) {
-                    embed.Description += "||Won!||";
-                } else {
-                    embed.Description += $"||Lost ||";
+                if (teamPlayers.Count == 0) {
+                    continue;
                 }
-                embed.Description += "\n";
 
-                if (teamPlayers.Count <= 8) {
+                if (match.Gamemode == BarGamemode.FFA) {
+                    embed.Description += $"**Team {allyTeam.AllyTeamID + 1}** - ";
                     foreach (BarMatchPlayer p in teamPlayers) {
                         embed.Description += $"{_GetEmoji(p.Faction.ToLower())}";
                         if (p.UserID == focusedUser) {
@@ -1297,10 +1293,47 @@ namespace gex.Code.Discord {
                         embed.Description += $"- `[{p.Skill}]`\n";
                     } 
                 } else {
-                    embed.Description += $"{teamPlayers.Count} players\n";
-                }
+                    embed.Description += $"**Team {allyTeam.AllyTeamID + 1}** - ";
 
-                embed.Description += "\n";
+                    if (allyTeam.Won == true) {
+                        embed.Description += "||Won!||";
+                    } else {
+                        embed.Description += $"||Lost ||";
+                    }
+                    embed.Description += "\n";
+
+                    if (teamPlayers.Count <= 8) {
+                        foreach (BarMatchPlayer p in teamPlayers) {
+                            embed.Description += $"{_GetEmoji(p.Faction.ToLower())}";
+                            if (p.UserID == focusedUser) {
+                                embed.Description += $" **{p.Name.EscapeDiscordCharacters()}** ";
+                            } else {
+                                embed.Description += $" {p.Name.EscapeDiscordCharacters()} ";
+                            }
+                            embed.Description += $"- `[{p.Skill}]`\n";
+                        } 
+                    } else {
+                        embed.Description += $"{teamPlayers.Count} players\n";
+                    }
+                }
+            }
+
+            if (match.Gamemode == BarGamemode.FFA) {
+                BarMatchAllyTeam? winningTeam = allyTeams.FirstOrDefault(iter => iter.Won == true);
+                if (winningTeam != null) {
+                    List<BarMatchPlayer> teamPlayers = players.Where(iter => iter.AllyTeamID == winningTeam.AllyTeamID)
+                        .OrderByDescending(iter => iter.Skill).ToList();
+
+                    int longestName = players.OrderByDescending(iter => iter.Name.Length).First().Name.Length;
+
+                    if (teamPlayers.Count == 0) {
+                        embed.Description += $"\n**Winner**: ||no player to win?||";
+                    } else {
+                        embed.Description += $"\n**Winner**: ||`{teamPlayers[0].Name.PadRight(longestName)}`||\n-# names are padded to better hide winner";
+                    }
+                } else {
+                    embed.Description += $"\n**Winner**: no one won!";
+                }
             }
 
             return embed;

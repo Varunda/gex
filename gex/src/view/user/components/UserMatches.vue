@@ -205,6 +205,10 @@
             }
         },
 
+        created: function(): void {
+
+        },
+
         methods: {
             isFFA: function(match: BarMatch): boolean {
                 return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
