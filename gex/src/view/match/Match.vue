@@ -123,7 +123,7 @@
                                             <td class="text-muted">
                                                 {{ match.data.processing.priority }}
                                                 <span v-if="match.data.usersPrioritizing.length > 0 && match.data.processing.replaySimulated == null">
-                                                    -> {{ Math.max(1, match.data.processing.priority - (20 * match.data.usersPrioritizing.length)) }}
+                                                    -> {{ Math.max(1, match.data.processing.priority - (40 * match.data.usersPrioritizing.length)) }}
                                                     (prioritized by {{ match.data.usersPrioritizing.length }} user{{ match.data.usersPrioritizing.length == 1 ? "" : "s" }})
                                                 </span>
                                             </td>

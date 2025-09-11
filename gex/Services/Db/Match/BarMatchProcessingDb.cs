@@ -131,7 +131,7 @@ namespace gex.Services.Db.Match {
             return await conn.QueryFirstOrDefaultAsync<BarMatchProcessing>(new CommandDefinition(
                 @"
                     WITH mods AS (
-                        select game_id, count(*) * 20 ""mod"" from bar_match_processing_priority group by game_id
+                        select game_id, count(*) * 40 ""mod"" from bar_match_processing_priority group by game_id
                     )
                     SELECT
                         mp.game_id, 
@@ -172,7 +172,7 @@ namespace gex.Services.Db.Match {
 
             return await conn.QueryListAsync<BarMatchProcessing>(@$"
                 WITH mods AS (
-                    select game_id, count(*) * 20 ""mod"" from bar_match_processing_priority group by game_id
+                    select game_id, count(*) * 40 ""mod"" from bar_match_processing_priority group by game_id
                 )
                 SELECT
                     mp.game_id, 
