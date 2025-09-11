@@ -52,8 +52,8 @@
                 <tr is="Cell" name="Acceleration" field="acceleration" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Deceleration" field="deceleration" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"> deg/sec</tr>
-                <tr is="Cell" name="Size X" field="sizeX" :unit="unit" :compare="compareUnit"></tr>
-                <tr is="Cell" name="Size Z" field="sizeZ" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Size X" field="sizeX" :unit="unit" :compare="compareUnit" :d="0"></tr>
+                <tr is="Cell" name="Size Z" field="sizeZ" :unit="unit" :compare="compareUnit" :d="0"></tr>
             </tbody>
         </table>
 
@@ -73,17 +73,18 @@
 
         <table class="table table-sm">
             <tbody>
+                <tr is="Cell" name="Count" field="count" :unit="selectedWeaponEntry" :compare="CompareWeapon" :d="0">x</tr>
                 <tr is="Cell" name="DPS" field="defaultDps" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg / sec</tr>
                 <tr is="Cell" name="Damage (per burst)" field="defaultBurstDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg</tr>
                 <tr is="Cell" name="Damage (per shot)" field="defaultDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg</tr>
                 <tr is="Cell" name="Fire rate" field="fireRate" :unit="selectedWeapon" :compare="compareWeaponDef"> / sec</tr>
                 <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
-                <tr is="Cell" name="Projectiles" field="projectiles" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Projectiles" field="projectiles" :unit="selectedWeapon" :compare="compareWeaponDef" :d="0"></tr>
                 <tr is="Cell" name="Sweep fire" field="sweepFire" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Range" field="range" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Splash" field="areaOfEffect" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Speed" field="velocity" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="Edge effectiveness" field="edgeEffectiveness" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Edge effectiveness" field="edgeEffectiveness" :unit="selectedWeapon" :compare="compareWeaponDef" :d="2"></tr>
                 <tr is="Cell" name="Burst" field="burst" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Burst rate" field="burstRate" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Impulse factor" field="impulseFactor" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
@@ -95,7 +96,7 @@
                 <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
                 <tr is="Cell" name="Stockpile limit" field="stockpileLimit" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Chain damage" field="chainForkDamage" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="Chain max units" field="chainMaxUnits" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Chain max units" field="chainMaxUnits" :unit="selectedWeapon" :compare="compareWeaponDef" :d="0"></tr>
                 <tr is="Cell" name="Chain range" field="chainForkRange" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
 
                 <template v-if="ShowShieldData || selectedWeapon.shieldData != null || (compareWeaponDef && compareWeaponDef.shieldData != null)">
@@ -237,15 +238,13 @@
             field: { type: String, required: true },
             unit: { type: Object as PropType<BarUnit>, required: true },
             compare: { type: Object as PropType<BarUnit | null>, required: false },
-            low: { type: Boolean, required: false, default: false }
+            low: { type: Boolean, required: false, default: false },
+            d: { type: Number, required: false, default: undefined }
         },
 
         methods: {
             n(num: number): string {
-                if (num <= 1) {
-                    return LocaleUtil.locale(num, 2);
-                }
-                return LocaleUtil.locale(num);
+                return LocaleUtil.locale(num, this.d);
             },
         },
 
@@ -388,14 +387,18 @@
         },
 
         computed: {
-            selectedWeapon: function(): BarWeaponDefinition {
+            selectedWeaponEntry: function(): BarUnitWeapon {
                 if (this.selectedWeaponIndex >= this.unit.weapons.length) {
                     const wep: BarUnitWeapon = new BarUnitWeapon();
                     wep.weaponDefinition.name = "<no weapon>";
-                    return wep.weaponDefinition;
+                    return wep;
                 }
 
-                return this.unit.weapons[this.selectedWeaponIndex].weaponDefinition;
+                return this.unit.weapons[this.selectedWeaponIndex];
+            },
+
+            selectedWeapon: function(): BarWeaponDefinition {
+                return this.selectedWeaponEntry.weaponDefinition;
             },
 
             selectShieldData: function(): BarShieldData {

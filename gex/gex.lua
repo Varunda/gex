@@ -249,12 +249,15 @@ function widget:GameFrame(n)
 
         for _,unitID in pairs(commanders) do
             local posx, posy, posz = Spring.GetUnitPosition(unitID)
-            writeJson("commander_position_update", {
-                { "unitID", unitID },
-                { "posX", posx, },
-                { "posY", posy, },
-                { "posZ", posz, }
-            })
+            -- sometimes this can be nil for reasons ??
+            if (posx ~= nil and posy ~= nil and posz ~= nil) then
+				writeJson("commander_position_update", {
+					{ "unitID", unitID },
+					{ "posX", posx, },
+					{ "posY", posy, },
+					{ "posZ", posz, }
+				})
+            end
         end
     end
 
@@ -393,6 +396,17 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
     end
 
     units_died_in_frame[unitID] = unitID
+
+    -- if a unit was killed by crashing, assign the kill credit to whatever last hurt the unit
+    -- this is useful for air to air kills, as those mostly end with crashes
+    -- thanks to TheDujin for finding this bug and reporting it!
+    if (weaponDefID == -8) then
+        attackerID = Spring.GetUnitLastAttacker(unitID)
+        if (attackerID ~= nil) then
+            attackerDefID = Spring.GetUnitDefID(attackerID)
+            attackerTeam = Spring.GetUnitTeam(attackerID)
+        end
+    end
 
     local kx, ky, kz = Spring.GetUnitPosition(unitID)
     local ax, ay, az = nil, nil, nil

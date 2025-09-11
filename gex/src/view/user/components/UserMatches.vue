@@ -1,5 +1,9 @@
 <template>
     <div>
+        <toggle-button v-model="showOutcome" class="mb-2">
+            Show outcome
+        </toggle-button>
+
         <a-table :entries="matches"
             :show-filters="true"
             :default-page-size="10" :overflow-wrap="true"
@@ -76,8 +80,11 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <span :class="'outcome-' + outcome(entry)">
+                    <span v-if="showOutcome" :class="'outcome-' + outcome(entry)">
                         {{ outcome(entry) }}
+                    </span>
+                    <span v-else @click="showOutcome = true">
+                        ??
                     </span>
                 </a-body>
             </a-col>
@@ -194,7 +201,7 @@
 
         data: function() {
             return {
-
+                showOutcome: false as boolean
             }
         },
 

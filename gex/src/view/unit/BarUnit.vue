@@ -90,7 +90,7 @@
         mounted: function(): void {
             const parts: string[] = location.pathname.split("/");
             if (parts.length >= 3) {
-                this.definitionNames = parts[2].split(",");
+                this.definitionNames = parts[2].split(",").filter(iter => iter != "");
 
                 this.rootLoad = Loadable.idle();
                 for (const defName of this.definitionNames) {
