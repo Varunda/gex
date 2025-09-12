@@ -1,5 +1,4 @@
 
-
 export class BarLeaderboardSkillEntry {
     public gamemode: number = 0;
     public userID: number = 0;

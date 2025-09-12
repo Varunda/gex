@@ -1,6 +1,8 @@
-﻿using gex.Models;
+﻿using gex.Code;
+using gex.Models;
 using gex.Models.Api;
 using gex.Models.Db;
+using gex.Models.Internal;
 using gex.Services;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
@@ -34,6 +36,7 @@ namespace gex.Controllers.Api {
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly AppAccountDbStore _AccountDb;
+        private readonly GameOutputStorage _GameOutputStorage;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -41,7 +44,8 @@ namespace gex.Controllers.Api {
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
             AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
-            BarMatchProcessingPriorityDb processingPriorityDb, AppCurrentAccount currentUser) {
+            BarMatchProcessingPriorityDb processingPriorityDb, AppCurrentAccount currentUser,
+            GameOutputStorage gameOutputStorage) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -56,6 +60,7 @@ namespace gex.Controllers.Api {
             _TeamDeathDb = teamDeathDb;
             _ProcessingPriorityDb = processingPriorityDb;
             _CurrentUser = currentUser;
+            _GameOutputStorage = gameOutputStorage;
         }
 
         /// <summary>
@@ -126,6 +131,44 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
+        }
+
+        /// <summary>
+        ///     get the stdout of a simulated game. account must have the dev permission
+        /// </summary>
+        /// <param name="gameID">ID of the <see cref="BarMatch"/> to get the stdout of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain the string that is the stdout of the game being replayed
+        /// </response>
+        /// <response code="400">
+        ///     one of the following conditions was met:
+        ///     <ul>
+        ///         <li>the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> was not locally replayed</li>
+        ///         <li>there was an error getting the stdout of the game</li>
+        ///     </ul>
+        /// </response>
+        /// <response code="404">
+        ///     no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> exists
+        /// </response>
+        [HttpGet("{gameID}/stdout")]
+        [PermissionNeeded(AppPermission.GEX_DEV)]
+        public async Task<ApiResponse<string>> GetStdout(string gameID, CancellationToken cancel) {
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            if (proc == null) {
+                return ApiNotFound<string>($"{nameof(BarMatch)} {gameID}");
+            }
+
+            if (proc.ReplaySimulated == null) {
+                return ApiBadRequest<string>($"{nameof(BarMatch)} {gameID} has not been locally simulated");
+            }
+
+            Result<string, string> stdout = await _GameOutputStorage.GetStdout(gameID, cancel);
+            if (stdout.IsOk == false) {
+                return ApiBadRequest<string>($"error getting stdout: {stdout.Error}");
+            }
+
+            return ApiOk(stdout.Value);
         }
 
         /// <summary>

@@ -20,38 +20,48 @@ namespace gex.Controllers.Api {
     public class BarLeaderboardApiController : ApiControllerBase {
 
         private readonly ILogger<BarLeaderboardApiController> _Logger;
-        private readonly BarSkillLeaderboardRepository _SkillLeaderboardRepository;
         private readonly TeiServerRepository _TeiServerRepository;
 
         public BarLeaderboardApiController(ILogger<BarLeaderboardApiController> logger,
-            BarSkillLeaderboardRepository skillLeaderboardRepository,
             TeiServerRepository teiServerRepository) {
 
             _Logger = logger;
 
-            _SkillLeaderboardRepository = skillLeaderboardRepository;
             _TeiServerRepository = teiServerRepository;
         }
 
         /// <summary>
         ///		get the <see cref="BarSkillLeaderboardEntry"/>s
         /// </summary>
+        /// <param name="count">how many in the leaderboard to return. valid range: 1-100 (inclusive)</param>
+        /// <param name="season">what season to view the leaderboards of. pass null or a negative value to use the current season</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///		the response will contain a list of <see cref="BarSkillLeaderboardEntry"/>s
         /// </response>
+        /// <response code="400">
+        ///     <paramref name="count"/> was not between 1-100 (inclusive)
+        /// </response>
         [HttpGet("skill")]
         public async Task<ApiResponse<List<BarSkillLeaderboardEntry>>> GetSkillLeaderboard(
+            [FromQuery] int count = 10,
+            [FromQuery] int? season = null,
             CancellationToken cancel = default
         ) {
-            Result<List<BarSeason>, string> seasons = await _TeiServerRepository.GetSeasons(cancel);
-            if (seasons.IsOk == false) {
-                return ApiInternalError<List<BarSkillLeaderboardEntry>>(seasons.Error);
+            if (count <= 0 || count > 100) {
+                return ApiBadRequest<List<BarSkillLeaderboardEntry>>($"{nameof(count)} must be between 1 and 100 (inclusive)");
             }
 
-            int maxSeason = seasons.Value.Select(iter => iter.Season).Max();
+            if (season == null || season < 0) {
+                Result<List<BarSeason>, string> seasons = await _TeiServerRepository.GetSeasons(cancel);
+                if (seasons.IsOk == false) {
+                    return ApiInternalError<List<BarSkillLeaderboardEntry>>(seasons.Error);
+                }
 
-            Result<List<BarLeaderboard>, string> leaderboards = await _TeiServerRepository.GetLeaderboard(maxSeason, cancel);
+                season = seasons.Value.Select(iter => iter.Season).Max();
+            }
+
+            Result<List<BarLeaderboard>, string> leaderboards = await _TeiServerRepository.GetLeaderboard(season.Value, cancel);
             if (leaderboards.IsOk == false) {
                 return ApiInternalError<List<BarSkillLeaderboardEntry>>(leaderboards.Error);
             }
@@ -77,13 +87,28 @@ namespace gex.Controllers.Api {
             }
 
             List<BarSkillLeaderboardEntry> f = new List<List<BarSkillLeaderboardEntry>>(entries.Values).Select(iter => {
-                return iter.Take(10);
+                return iter.Take(count);
             }).Aggregate(new List<BarSkillLeaderboardEntry>(), (acc, iter) => {
                 acc.AddRange(iter);
                 return acc;
             }).ToList();
 
             return ApiOk(f);
+        }
+
+        /// <summary>
+        ///     get the <see cref="BarSeason"/>s available
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        [HttpGet("seasons")]
+        public async Task<ApiResponse<List<BarSeason>>> GetSeasons(CancellationToken cancel) {
+            Result<List<BarSeason>, string> seasons = await _TeiServerRepository.GetSeasons(cancel);
+            if (seasons.IsOk == false) {
+                return ApiInternalError<List<BarSeason>>(seasons.Error);
+            }
+
+            return ApiOk(seasons.Value);
         }
 
     }

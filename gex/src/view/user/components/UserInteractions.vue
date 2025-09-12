@@ -10,7 +10,7 @@
                     <b>Player</b>
                 </a-header>
 
-                <a-filter field="unitName" type="string" method="input"
+                <a-filter field="targetUsername" type="string" method="input"
                     :conditions="[ 'contains', 'equals' ]">
                 </a-filter>
 

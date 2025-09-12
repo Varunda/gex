@@ -15,7 +15,12 @@
         </div>
 
         <div class="mb-3">
-            <h2 class="wt-header bg-light text-dark">Leaderboard</h2>
+            <h2 class="wt-header bg-light text-dark">
+                Leaderboard
+                <a href="/leaderboard" class="fs-4" target="_blank" ref="nofollow">
+                    View all
+                </a>
+            </h2>
 
             <div v-if="skillLeaderboard.state == 'loading'" class="text-center">
                 <busy class="busy busy-sm"></busy>

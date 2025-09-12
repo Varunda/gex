@@ -30,7 +30,7 @@ namespace gex.Services.Storage {
         ///		or an error if the action log could not be loaded
         /// </returns>
         public async Task<Result<string, string>> GetActionLog(string gameID, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID, "actions.json");
+            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..], gameID, "actions.json");
 
             if (File.Exists(path) == false) {
                 return Result<string, string>.Err($"missing path '{path}'");
@@ -49,7 +49,7 @@ namespace gex.Services.Storage {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for the async operation</returns>
         public async Task SaveActionLog(string gameID, string contents, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID, "actions.json");
+            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "actions.json");
 
             if (File.Exists(path) == true) {
                 _Logger.LogWarning($"action log already exists, not overwriting [gameID={gameID}] [path='{path}']");
@@ -57,6 +57,24 @@ namespace gex.Services.Storage {
             }
 
             await File.WriteAllTextAsync(path, gameID, cancel);
+        }
+
+        /// <summary>
+        ///     get the stdout of a match in the game logs
+        /// </summary>
+        /// <param name="gameID">ID of the game to get stdout of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<Result<string, string>> GetStdout(string gameID, CancellationToken cancel) {
+            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "stdout.txt");
+
+            if (File.Exists(path) == false) {
+                return Result<string, string>.Err($"missing path '{path}'");
+            }
+
+            string contents = await File.ReadAllTextAsync(path, cancel);
+
+            return Result<string, string>.Ok(contents);
         }
 
     }

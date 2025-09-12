@@ -315,5 +315,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult Leaderboard() {
+            return View();
+        }
+
     }
 }

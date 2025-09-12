@@ -469,14 +469,16 @@ namespace gex.Code.Discord {
                             damage *= weapon.SweepFire;
                         }
 
-                        double dps = damage / Math.Max(0.01, weapon.ReloadTime);
+                        // show stockpile time instead of reload time for stockpile weapons
+                        double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
+                        double dps = damage / Math.Max(0.01, reloadTime);
                         if (weapon.Burst != 0) { dps *= weapon.Burst; }
                         if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
 
                         embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} "
                             + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}"
                             + $"{(weapon.Projectiles != 1 ? $"{weapon.Projectiles}x pellets, " : "")}"
-                            + $"{_N(damage)} dmg, {_D(weapon.ReloadTime)}s reload)\n";
+                            + $"{_N(damage)} dmg, {_D(reloadTime)}s reload)\n";
 
                         string range = $"{_N(weapon.Range)}";
                         // if the weapon was changed, this means a carrier weapon is being shown
@@ -1315,6 +1317,8 @@ namespace gex.Code.Discord {
                     } else {
                         embed.Description += $"{teamPlayers.Count} players\n";
                     }
+
+                    embed.Description += "\n";
                 }
             }
 
@@ -1329,7 +1333,7 @@ namespace gex.Code.Discord {
                     if (teamPlayers.Count == 0) {
                         embed.Description += $"\n**Winner**: ||no player to win?||";
                     } else {
-                        embed.Description += $"\n**Winner**: ||`{teamPlayers[0].Name.PadRight(longestName)}`||\n-# names are padded to better hide winner";
+                        embed.Description += $"\n**Winner**: ||{teamPlayers[0].Name.PadRight(longestName)}||";
                     }
                 } else {
                     embed.Description += $"\n**Winner**: no one won!";

@@ -128,6 +128,14 @@
                                                 </span>
                                             </td>
                                         </tr>
+                                        <tr v-if="canViewStdout">
+                                            <td>stdout</td>
+                                            <td>
+                                                <span @click="viewStdout">
+                                                    load
+                                                </span>
+                                            </td>
+                                        </tr>
                                     </template>
                                 </tbody>
                             </table>
@@ -140,6 +148,12 @@
                     <match-option name="Map settings" :options="match.data.mapSettings"></match-option>
                     <match-option name="Lobby settings" :options="match.data.spadsSettings"></match-option>
                     <match-option name="Host settings" :options="match.data.hostSettings"></match-option>
+                </div>
+
+                <div v-if="stdout.show" style="max-height: 600px; overflow: scroll">
+                    stdout <button @click="stdout.show = false" class="btn close">&times;</button>
+
+                    <pre>{{ stdout.data }}</pre>
                 </div>
 
                 <h4>
@@ -182,7 +196,7 @@
                         <a :href="'/login?returnUrl=' + returnUrl">Login</a>
                         to use this feature
                     </span>
-                    <span v-if="currentUserPriotizing == true" class="text-muted">
+                    <span v-if="isLoggedIn && currentUserPriotizing == true" class="text-muted">
                         Already prioritizing this match
                     </span>
 
@@ -423,6 +437,11 @@
 
                 replay: {
                     status: null as HeadlessRunStatus | null
+                },
+
+                stdout: {
+                    show: false as boolean,
+                    data: "" as string
                 },
 
                 connection: null as sR.HubConnection | null,
@@ -718,6 +737,14 @@
             prioritizeGame: async function(): Promise<void> {
                 await BarMatchProcessingApi.prioritizeGame(this.gameID);
                 this.loadBoth();
+            },
+
+            viewStdout: async function(): Promise<void> {
+                const stdout: Loading<string> = await BarMatchApi.getStdout(this.gameID);
+                if (stdout.state == "loaded") {
+                    this.stdout.show = true;
+                    this.stdout.data = stdout.data;
+                }
             }
         },
 
@@ -818,8 +845,11 @@
                     return [];
                 }
                 return this.match.data.usersPrioritizing.filter(iter => iter != AccountUtil.getAccountName());
-            }
+            },
 
+            canViewStdout: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Dev");
+            }
         },
 
         watch: {

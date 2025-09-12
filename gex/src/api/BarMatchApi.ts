@@ -18,6 +18,10 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         return BarMatchApi.get().readList(`/api/match/user/${userID}`, BarMatch.parse);
     }
 
+    public static getStdout(gameID: string): Promise<Loading<string>> {
+        return BarMatchApi.get().readSingle(`/api/match/${gameID}/stdout`, (elem) => elem as string);
+    }
+
     public static search(
         offset: number = 0, limit: number = 24,
         orderBy: string, orderByDir: string,
