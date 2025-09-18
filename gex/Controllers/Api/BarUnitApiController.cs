@@ -45,6 +45,34 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
+        ///     get a list of all <see cref="ApiBarUnit"/>s
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("all-defs")]
+        [ResponseCache(Duration = 60 * 5)]
+        public async Task<ApiResponse<List<ApiBarUnit>>> GetAllDefinitions(CancellationToken cancel) {
+            List<BarUnitName> names = await _BarUnitRepository.GetAllNames(cancel);
+
+            List<ApiBarUnit> units = [];
+
+            foreach (BarUnitName name in names) {
+                if (_BarUnitRepository.HasUnit(name.DefinitionName) == false) {
+                    continue;
+                }
+
+                Result<BarUnit, string> res = await _BarUnitRepository.GetByDefinitionName(name.DefinitionName, cancel);
+                if (res.IsOk == false) {
+                    _Logger.LogWarning($"error getting unit from repository [defName={name.DefinitionName}] [error={res.Error}]");
+                } else {
+                    units.Add(await _Convert(res.Value, cancel));
+                }
+            }
+
+            return ApiOk(units);
+        }
+
+        /// <summary>
         ///     get a <see cref="BarUnit"/> by its <see cref="BarUnit.DefinitionName"/>
         /// </summary>
         /// <param name="defName">definition name of the unit. case-sensitive</param>
@@ -69,18 +97,22 @@ namespace gex.Controllers.Api {
                 return ApiInternalError<ApiBarUnit>($"error getting unit from repository [error={res.Error}]");
             }
 
+            return ApiOk(await _Convert(res.Value, cancel));
+        }
+
+        private async Task<ApiBarUnit> _Convert(BarUnit def, CancellationToken cancel) {
             ApiBarUnit unit = new();
-            unit.DefinitionName = defName;
-            unit.Unit = res.Value;
-            unit.DisplayName = await _I18n.GetString("units", $"units.names.{defName}", cancel) ?? $"<missing name>";
-            unit.Description = await _I18n.GetString("units", $"units.descriptions.{defName}", cancel) ?? $"<missing desc>";
+            unit.DefinitionName = def.DefinitionName;
+            unit.Unit = def;
+            unit.DisplayName = await _I18n.GetString("units", $"units.names.{unit.DefinitionName}", cancel) ?? $"<missing name>";
+            unit.Description = await _I18n.GetString("units", $"units.descriptions.{unit.DefinitionName}", cancel) ?? $"<missing desc>";
 
             if (string.IsNullOrEmpty(unit.Unit.ExplodeAs) == false) {
                 Result<BarWeaponDefinition, string> wep = await _WeaponDefinitionRepository.GetWeaponDefinition(unit.Unit.ExplodeAs, cancel);
                 if (wep.IsOk == true) {
                     unit.IncludedWeapons.Add(wep.Value);
                 } else {
-                    _Logger.LogWarning($"missing unit ExplodeAs weapon [defName={defName}] [explodeAs={unit.Unit.ExplodeAs}] [error={wep.Error}]");
+                    _Logger.LogWarning($"missing unit ExplodeAs weapon [defName={unit.DefinitionName}] [explodeAs={unit.Unit.ExplodeAs}] [error={wep.Error}]");
                 }
             }
             if (unit.Unit.ExplodeAs != unit.Unit.SelfDestructWeapon && string.IsNullOrEmpty(unit.Unit.SelfDestructWeapon) == false) {
@@ -88,7 +120,7 @@ namespace gex.Controllers.Api {
                 if (wep.IsOk == true) {
                     unit.IncludedWeapons.Add(wep.Value);
                 } else {
-                    _Logger.LogWarning($"missing unit SelfDestructWeapon weapon [defName={defName}] "
+                    _Logger.LogWarning($"missing unit SelfDestructWeapon weapon [defName={unit.DefinitionName}] "
                         + $"[selfDestructWeapon={unit.Unit.SelfDestructWeapon}] [error={wep.Error}]");
                 }
             }
@@ -99,13 +131,13 @@ namespace gex.Controllers.Api {
                     if (carriedUnit.IsOk == true) {
                         unit.IncludedUnits.Add(carriedUnit.Value);
                     } else {
-                        _Logger.LogWarning($"failed to get BarUnit for carried weapon [defName={defName}] "
+                        _Logger.LogWarning($"failed to get BarUnit for carried weapon [defName={unit.DefinitionName}] "
                             + $"[carriedUnit={weapon.WeaponDefinition.CarriedUnit.DefinitionName}] [error={carriedUnit.Error}]");
                     }
                 }
             }
 
-            return ApiOk(unit);
+            return unit;
         }
 
     }

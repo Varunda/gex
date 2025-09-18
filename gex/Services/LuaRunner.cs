@@ -66,6 +66,7 @@ namespace gex.Services {
             long setupLuaMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             object[]? ret = null;
+            string? exceptionMessage = null;
             try {
                 Task executeLua = new(() => {
                     string src = @"
@@ -82,6 +83,10 @@ namespace gex.Services {
                         end
 
                         function Spring.Utilities.Gametype.IsRaptors() 
+                            return false
+                        end
+
+                        function Spring.Utilities.Gametype.IsScavengers() 
                             return false
                         end
 
@@ -138,7 +143,12 @@ namespace gex.Services {
                         end
                     " + lua;
 
-                    ret = l.DoString(src);
+                    try {
+                        ret = l.DoString(src);
+                    } catch (Exception ex) {
+                        _Logger.LogError(ex, $"failed to run lua script [lua={src}]");
+                        exceptionMessage = ex.Message;
+                    }
                 });
 
                 DateTime start = DateTime.UtcNow;
@@ -160,19 +170,27 @@ namespace gex.Services {
 
                 executeLua.Start();
 
-                // limit how long execution can take place
+                // limiting how long the lua takes is done in the debug hook that checks each line 
+                // if the timeout was reached, or the cancel token was thrown
                 await executeLua.WaitAsync(CancellationToken.None);
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to run lua");
-                return $"failed to run lua: {ex.Message}";
+                return Result<object[], string>.Err($"failed to run lua: {ex.Message}");
             }
 
             long runLuaMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             if (ret == null) {
-                return $"failed to execute lua in run duration";
+                return Result<object[], string>.Err($"got no return from lua");
             }
 
+            if (exceptionMessage != null) {
+                return Result<object[], string>.Err($"exception running lua: {exceptionMessage}");
+            }
+
+            // the default lua state is disposable, and will get disposed of once returned,
+            // so gex copies the state into c# stuff (like a table into a Dictionary).
+            // this is probably not a perfect lossly conversion, but it handles whatever BAR throws at it
             object[] clone = new object[ret.Length];
             for (int i = 0; i < ret.Length; ++i) {
                 clone[i] = Clone(ret[i]);
