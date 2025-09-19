@@ -85,6 +85,10 @@ namespace gex.Services.Repositories {
             return matches;
         }
 
+        public Task<List<BarMatch>> GetAll(CancellationToken cancel) {
+            return _MatchDb.GetAll(cancel);
+        }
+
         public async Task<List<BarMatch>> GetRecent(int offset, int limit, CancellationToken cancel) {
             return await _MatchDb.GetRecent(offset, limit, cancel);
         }

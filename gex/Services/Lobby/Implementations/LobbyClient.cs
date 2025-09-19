@@ -60,9 +60,15 @@ namespace gex.Services.Lobby.Implementations {
         /// </summary>
         private bool _LoggedIn = false;
 
+        /// <summary>
+        ///     indicates if the client is performing a login or not
+        /// </summary>
+        private bool _LoggingIn = false;
+
         private CancellationTokenSource _Cancel = new();
         private Task? _ReadTask;
         private Task? _PingTask;
+
 
         /// <summary>
         ///     disconnecting is done with a semaphore to prevent the socket from getting into a bad state
@@ -141,6 +147,10 @@ namespace gex.Services.Lobby.Implementations {
             return IsConnected() && _LoggedIn;
         }
 
+        public bool IsLoggingIn() {
+            return _LoggingIn;
+        }
+
         public DateTime LastMessage() => _LastMessageReceived;
 
         public async Task<Result<bool, string>> Connect(CancellationToken cancel) {
@@ -207,6 +217,7 @@ namespace gex.Services.Lobby.Implementations {
 
         public async Task<Result<bool, string>> Disconnect(CancellationToken cancel) {
             _LoggedIn = false;
+            _LoggingIn = false;
 
             if (_TcpSocket.Connected == false) {
                 return true;
@@ -241,9 +252,15 @@ namespace gex.Services.Lobby.Implementations {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<Result<LobbyMessage, string>> Login(CancellationToken cancel) {
+            if (_LoggingIn == true) {
+                return "performing login currently, not starting another one";
+            }
+
             if (_TcpSocket.Connected == false) {
                 return "TCP socket is not connected";
             }
+
+            _LoggingIn = true;
 
             _Logger.LogDebug($"logging in to Spring lobby [host={_LobbyHost}:{_LobbyPort}] [user={_Options.Value.Username}]");
 
@@ -743,6 +760,7 @@ namespace gex.Services.Lobby.Implementations {
                             }
                         } else if (msg.Command == "LOGININFOEND") {
                             _LoggedIn = true;
+                            _LoggingIn = false;
                         } else {
                             _LobbyMessageQueue.Queue(msg);
                         }

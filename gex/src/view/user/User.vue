@@ -12,7 +12,7 @@
             </div>
 
             <div v-else-if="user.state == 'loaded'">
-                <user-info :user="user.data"></user-info>
+                <user-info :user="user.data" :matches="matches"></user-info>
             </div>
         </div>
 

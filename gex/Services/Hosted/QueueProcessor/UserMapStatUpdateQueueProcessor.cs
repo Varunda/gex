@@ -65,6 +65,10 @@ namespace gex.Services.Hosted.QueueProcessor {
             // for each match, check if there was a winning ally team (else it was a tie), then check
             //      what ally team the player was on, and if they won or not
             foreach (BarMatch match in matches) {
+                if (match.WrongSkillValues == true) {
+                    continue;
+                }
+
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);
 
                 // tie check, if no teams won, then it's a tie. no need to load players then!

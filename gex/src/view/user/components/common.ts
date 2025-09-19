@@ -12,4 +12,6 @@ export type GroupedFactionGamemode = {
     legion: GroupedFaction | null;
     random: GroupedFaction | null;
     sum: GroupedFaction;
+    averageSkillDiff: number;
+    averageSkill: number;
 }

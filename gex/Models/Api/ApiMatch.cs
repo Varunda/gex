@@ -36,6 +36,7 @@ namespace gex.Models.Api {
             PlayerCount = match.PlayerCount;
             UploadedByID = match.UploadedBy;
             TeamDeaths = match.TeamDeaths;
+            WrongSkillValues = match.WrongSkillValues;
         }
 
         public string ID { get; set; } = "";
@@ -89,6 +90,8 @@ namespace gex.Models.Api {
         public HeadlessRunStatus? HeadlessRunStatus { get; set; }
 
         public AppAccount? UploadedBy { get; set; }
+
+        public bool WrongSkillValues { get; set; }
 
     }
 }

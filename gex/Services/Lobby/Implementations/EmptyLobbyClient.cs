@@ -39,6 +39,10 @@ namespace gex.Services.Lobby.Implementations {
             return false;
         }
 
+        public bool IsLoggingIn() {
+            return false;
+        }
+
         public bool IsLoggedIn() {
             return false;
         }

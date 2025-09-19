@@ -145,7 +145,7 @@ namespace gex.Controllers.Api {
                     continue;
                 }
 
-                if (match.Gamemode == 0) {
+                if (match.Gamemode == 0 || match.WrongSkillValues == true) {
                     continue;
                 }
 

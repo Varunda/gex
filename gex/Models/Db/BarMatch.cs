@@ -60,6 +60,12 @@ namespace gex.Models.Db {
 
         public long? UploadedBy { get; set; }
 
+        /// <summary>
+        ///     does this match contain the wrong open skill values for the <see cref="Gamemode"/>
+        ///     in the <see cref="BarMatchPlayer"/> entries for this match?
+        /// </summary>
+        public bool WrongSkillValues { get; set; }
+
         public BarMap? MapData { get; set; }
 
     }

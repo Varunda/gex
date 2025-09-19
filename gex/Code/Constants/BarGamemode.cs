@@ -40,6 +40,22 @@ namespace gex.Code.Constants {
             };
         }
 
+        public static byte GetByPlayers(int teamCount, int teamSize) {
+            if (teamCount == 2 && teamSize == 1) {
+                return BarGamemode.DUEL;
+            } else if (teamCount == 2 && teamSize <= 5) {
+                return BarGamemode.SMALL_TEAM;
+            } else if (teamCount == 2 && teamSize <= 8) {
+                return BarGamemode.LARGE_TEAM;
+            } else if (teamCount > 2 && teamSize == 1) {
+                return BarGamemode.FFA;
+            } else if (teamCount > 2 && teamSize >= 2) {
+                return BarGamemode.TEAM_FFA;
+            }
+
+            return DEFAULT;
+        }
+
         public static readonly IEnumerable<byte> List = [
             DUEL, SMALL_TEAM, LARGE_TEAM, FFA, TEAM_FFA
         ];

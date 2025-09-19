@@ -5,6 +5,7 @@ using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.Options;
 using gex.Services.Db;
+using gex.Services.Metrics;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.SignalR;
@@ -33,19 +34,38 @@ namespace gex.Services.BarApi {
         private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
         private readonly IHubContext<HeadlessReplayHub, IHeadlessReplayHub> _HeadlessReplayHub;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
+        private readonly HeadlessRunnerMetric _Metric;
 
         private static int _PortOffset = 0;
 
+        /// <summary>
+        ///     regex to find the messages from the widget that tell Gex what from the replay is on
+        /// </summary>
         private static Regex FramePattern = new(@"^\[t=.*?\]\[f=\d*?\] \[Gex\] on frame (\d+?)$");
 
+        /// <summary>
+        ///     regex for an error that indicates the widget failed to load
+        /// </summary>
         private static Regex GexLoadErrorPattern = new(@"\[t=.+?\]\[f=-000001\] Failed to load: gex\.lua");
 
+        /// <summary>
+        ///     regex for when the game ends
+        /// </summary>
         private static Regex GameEndedPattern = new(@"\[t=.+?\]\[f=.+?\] \[SpringApp::Kill\]\[1\] fromRun=1");
 
+        /// <summary>
+        ///     regex for an error being printed
+        /// </summary>
         private static Regex StdErrErrorPattern = new Regex(@"^\[t=.+?\]\[f=.+?\] Error: ");
 
+        /// <summary>
+        ///     regex for a fatal error being ran
+        /// </summary>
         private static Regex StdErrFatalPattern = new Regex(@"^\[t=.+?\]\[f=.+?\] Fatal: ");
 
+        /// <summary>
+        ///     message for when an instance tried to bind to a port in use
+        /// </summary>
         private const string SOCKET_BIND_ERROR = "Error: [UDPListener::TryBindSocket] binding UDP socket to IP localhost failed: "
             + "bind: An attempt was made to access a socket in a way forbidden by its access permissions.";
 
@@ -55,7 +75,7 @@ namespace gex.Services.BarApi {
             EnginePathUtil enginePathUtil, GameVersionUsageDb versionUsageDb,
             HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
             IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,
-            BarMatchProcessingRepository processingRepository) {
+            BarMatchProcessingRepository processingRepository, HeadlessRunnerMetric metric) {
 
             _Logger = logger;
             _Options = options;
@@ -68,6 +88,7 @@ namespace gex.Services.BarApi {
             _HeadlessRunStatusQueue = headlessRunStatusQueue;
             _HeadlessReplayHub = headlessReplayHub;
             _ProcessingRepository = processingRepository;
+            _Metric = metric;
         }
 
         public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -295,6 +316,7 @@ namespace gex.Services.BarApi {
                     if (frame == 0) {
                         _Logger.LogDebug($"game startup complete [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [engine={match.Engine}] [version={match.GameVersion}]");
                         playbackStartedMs = timer.ElapsedMilliseconds;
+                        _Metric.RecordStartup(playbackStartedMs);
                     } else {
                         decimal fps = deltaFrame / (Math.Max(1, deltaTimer) / 1000m);
                         status.Fps = (double)fps;

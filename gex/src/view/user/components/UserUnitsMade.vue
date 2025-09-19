@@ -65,6 +65,12 @@
             user: { type: Object as PropType<BarUser>, required: true }
         },
 
+        data: function() {
+            return {
+                range: "all_time" as "daily" | "weekly" | "monthly" | "all_time"
+            }
+        },
+
         methods: {
             getUnitColor: function(defName: string): string | null {
                 if (defName.startsWith("arm")) {
@@ -81,6 +87,23 @@
 
         computed: {
             unitsMade: function(): Loading<BarUserUnitsMade[]> {
+
+                if (this.range == "all_time") {
+                    const map: Map<string, BarUserUnitsMade> = new Map();
+                    for (const iter of this.user.unitsMade) {
+                        let unit: BarUserUnitsMade | undefined = map.get(iter.definitionName);
+                        if (unit == undefined) {
+                            unit = iter;
+                        } else {
+                            unit.count += iter.count;
+                        }
+
+                        map.set(iter.definitionName, unit);
+                    }
+
+                    return Loadable.loaded(Array.from(map.values()));
+                }
+
                 return Loadable.loaded(this.user.unitsMade);
             }
         },

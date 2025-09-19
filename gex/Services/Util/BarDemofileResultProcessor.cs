@@ -101,6 +101,7 @@ namespace gex.Services.Util {
                 + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
                 + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [death db={match.TeamDeaths.Count}/{insertDeathMs}ms] [match db={insertMatchMs}ms]");
 
+            bool saidWrongSkillValues = false;
             foreach (BarMatchPlayer player in match.Players) {
                 try {
                     _MapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
@@ -121,7 +122,7 @@ namespace gex.Services.Util {
                         LastUpdated = match.StartTime
                     }, cancel);
 
-                    if (match.Gamemode != BarGamemode.DEFAULT) {
+                    if (match.Gamemode != BarGamemode.DEFAULT && match.WrongSkillValues == false) {
                         await _UserSkillDb.Upsert(new BarUserSkill() {
                             UserID = player.UserID,
                             Gamemode = match.Gamemode,
@@ -129,6 +130,9 @@ namespace gex.Services.Util {
                             SkillUncertainty = player.SkillUncertainty,
                             LastUpdated = match.StartTime
                         }, cancel);
+                    } else if (saidWrongSkillValues == false) {
+                        _Logger.LogDebug($"not updating user skill due to wrong skill values [gameID={match.ID}]");
+                        saidWrongSkillValues = true;
                     }
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to upsert user after parse [gameID={match.ID}] [userID={player.UserID}]");

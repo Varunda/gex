@@ -63,6 +63,12 @@ namespace gex.Services.Lobby {
         bool IsConnected();
 
         /// <summary>
+        ///     is the client currently performing a login
+        /// </summary>
+        /// <returns></returns>
+        bool IsLoggingIn();
+
+        /// <summary>
         ///     is the client both connected and logged in
         /// </summary>
         /// <returns></returns>

@@ -19,6 +19,8 @@ export class BarMatch {
     public fileName: string = "";
     public durationMs: number = 0;
     public uploadedByID: number | null = null;
+    public wrongSkillValues: boolean = false;
+    public gamemode: number = 0;
 
     public hostSettings: any = {};
     public gameSettings: any = {};

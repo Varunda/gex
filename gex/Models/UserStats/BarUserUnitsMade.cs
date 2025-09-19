@@ -1,5 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using System;
 
 namespace gex.Models.UserStats {
 
@@ -11,6 +12,9 @@ namespace gex.Models.UserStats {
         /// </summary>
         [ColumnMapping("user_id")]
         public long UserID { get; set; }
+
+        [ColumnMapping("date")]
+        public DateTime Timestamp { get; set; }
 
         /// <summary>
         ///     definition name of the unit

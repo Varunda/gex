@@ -67,15 +67,6 @@
     import { ApiBarUnit, BarUnit, BarUnitWeapon } from "model/BarUnit";
     import { BarUnitName } from "model/BarUnitName";
 
-    type CalcBarUnit = BarUnit & {
-        energyRepay: number;
-        metalRepay: number;
-    };
-
-    type CalcApiBarUnit = ApiBarUnit & {
-        calcUnit: CalcBarUnit
-    };
-
     export const BarUnitView = Vue.extend({
         props: {
 

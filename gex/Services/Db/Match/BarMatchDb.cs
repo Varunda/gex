@@ -41,11 +41,11 @@ namespace gex.Services.Db.Match {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
                     id, start_time, map, duration_ms, duration_frame_count,
-					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by,
+					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @Map, @DurationMs, @DurationFrameCount,
-					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy,
+					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy, @WrongSkillValues,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -62,12 +62,34 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("Gamemode", match.Gamemode);
             cmd.AddParameter("PlayerCount", match.PlayerCount);
             cmd.AddParameter("UploadedBy", match.UploadedBy);
+            cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
             cmd.AddParameter("MapSettings", match.MapSettings);
             cmd.AddParameter("SpadsSettings", match.SpadsSettings);
             cmd.AddParameter("Restrictions", match.Restrictions);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     update just the <see cref="BarMatch.WrongSkillValues"/> of a <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to update. uses <see cref="BarMatch.ID"/> and <see cref="BarMatch.WrongSkillValues"/></param>
+        /// <param name="cancel">cancellation token</param>
+        public async Task UpdateWrongSkillValues(BarMatch match, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET wrong_skill_values = @WrongSkillValues
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
+            cmd.AddParameter("ID", match.ID);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);
@@ -112,6 +134,25 @@ namespace gex.Services.Db.Match {
             ", cancel);
 
             cmd.AddParameter("IDs", IDs);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+        
+        /// <summary>
+        ///     get all <see cref="BarMatch"/>s in the DB. do not use this frequently
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetAll(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match;
+            ", cancel);
+
             await cmd.PrepareAsync(cancel);
 
             List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);

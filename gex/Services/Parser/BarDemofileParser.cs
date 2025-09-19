@@ -491,17 +491,16 @@ namespace gex.Services.Parser {
 
             int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();
             int allyTeamCount = match.AllyTeams.Count;
+            match.Gamemode = BarGamemode.GetByPlayers(allyTeamCount, largestAllyTeam);
 
-            if (allyTeamCount == 2 && largestAllyTeam == 1) {
-                match.Gamemode = BarGamemode.DUEL;
-            } else if (allyTeamCount == 2 && largestAllyTeam <= 5) {
-                match.Gamemode = BarGamemode.SMALL_TEAM;
-            } else if (allyTeamCount == 2 && largestAllyTeam <= 8) {
-                match.Gamemode = BarGamemode.LARGE_TEAM;
-            } else if (allyTeamCount > 2 && largestAllyTeam == 1) {
-                match.Gamemode = BarGamemode.FFA;
-            } else if (allyTeamCount > 2 && largestAllyTeam >= 2) {
-                match.Gamemode = BarGamemode.TEAM_FFA;
+            if (match.Gamemode != BarGamemode.DEFAULT) {
+                int spadsTeamCount = match.SpadsSettings.GetRequiredInt32("nbteams");
+                int spadsTeamSize = match.SpadsSettings.GetRequiredInt32("teamsize");
+                byte spadsGamemode = BarGamemode.GetByPlayers(spadsTeamCount, spadsTeamSize);
+                match.WrongSkillValues = match.Gamemode != spadsGamemode;
+                if (match.WrongSkillValues == true) {
+                    _Logger.LogInformation($"got demofile with wrong skill values [gameID={match.ID}] [gamemode={match.Gamemode}] [spads={spadsGamemode}]");
+                }
             } else {
                 _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
             }

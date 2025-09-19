@@ -2,6 +2,17 @@
 <template>
     <div>
         <collapsible header-text="Teams" size-class="h1" bg-color="bg-light">
+
+            <div v-if="match.wrongSkillValues == true" class="alert alert-warning text-center">
+                This replay file contains the wrong OpenSkill values for this gamemode.
+                <br/>
+                This match is a <strong>{{ match.gamemode | gamemode }}</strong>, but the replay file contains the OpenSkill for <strong>{{ providedSkillGamemode | gamemode }}</strong>
+                <br/>
+                <a href="/faq#gamemode-demofile-ratings" target="_blank" ref="nofollow">
+                    Learn more
+                </a>
+            </div>
+
             <div v-if="isFunkyTeams == false">
                 <div class="teams">
                     <div class="team" v-for="allyTeam in allyTeamsSorted" :key="allyTeam.allyTeamID">
@@ -146,6 +157,7 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+import { GamemodeUtil } from "util/Gamemode";
 
     type GroupedPlayers = {
         allyTeamID: number,
@@ -223,6 +235,25 @@
                         players: this.match.players.filter(p => p.allyTeamID == iter.allyTeamID)
                     }
                 });
+            },
+
+            providedSkillGamemode: function(): number {
+                const teamCount: number = this.match.spadsSettings.nbteams;
+                const teamSize: number = this.match.spadsSettings.teamsize;
+
+                if (teamCount == 2 && teamSize == 1) {
+                    return GamemodeUtil.DUEL;
+                } else if (teamCount == 2 && teamSize <= 5) {
+                    return GamemodeUtil.SMALL_TEAM;
+                } else if (teamCount == 2 && teamSize <= 8) {
+                    return GamemodeUtil.LARGE_TEAM;
+                } else if (teamCount > 2 && teamSize == 1) {
+                    return GamemodeUtil.FFA;
+                } else if (teamCount > 2 && teamSize > 2) {
+                    return GamemodeUtil.TEAM_FFA;
+                }
+
+                return GamemodeUtil.UNKNOWN;
             }
         },
 

@@ -49,10 +49,10 @@ namespace gex.Services.Hosted.BackgroundTasks {
                 try {
                     if (cancel.IsCancellationRequested == true) { break; }
 
+                    int delaySeconds = (3 * Math.Min(10, repeatedFailures)) + Random.Shared.Next(0, 3);
+
                     if (_LobbyClient.IsConnected() == false) {
                         _Logger.LogInformation($"connecting to spring lobby");
-
-                        int delaySeconds = 3 * Math.Min(10, repeatedFailures);
 
                         if (cancel.IsCancellationRequested == true) { break; }
 
@@ -60,18 +60,20 @@ namespace gex.Services.Hosted.BackgroundTasks {
                         if (connect.IsOk == false) {
                             _Logger.LogWarning($"failed to connect to lobby [error={connect.Error}]");
                             ++repeatedFailures;
-                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds + Random.Shared.Next(0, 3)), cancel);
+                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancel);
                             continue;
                         }
                         if (cancel.IsCancellationRequested == true) { break; }
 
                         _Logger.LogDebug($"connected to spring lobby");
+                    } else if (_LobbyClient.IsLoggedIn() == false && _LobbyClient.IsLoggingIn() == false) {
+                        _Logger.LogInformation($"client is not logged in, logging in");
 
                         Result<LobbyMessage, string> login = await _LobbyClient.Login(cancel);
                         if (login.IsOk == false) {
                             _Logger.LogWarning($"failed to login to lobby [error={login.Error}]");
                             ++repeatedFailures;
-                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds + Random.Shared.Next(0, 3)), cancel);
+                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancel);
                             continue;
                         }
                         if (cancel.IsCancellationRequested == true) { break; }
@@ -83,7 +85,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
                             } else {
                                 _Logger.LogError($"login to lobby failed [reason={login.Value.Arguments}]");
                                 ++repeatedFailures;
-                                await Task.Delay(TimeSpan.FromSeconds(delaySeconds + Random.Shared.Next(0, 3)), cancel);
+                                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancel);
                             }
 
                             await _LobbyClient.Disconnect(cancel);
@@ -102,7 +104,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
 
                             await _LobbyClient.Disconnect(cancel);
                             ++repeatedFailures;
-                            await Task.Delay(TimeSpan.FromSeconds((3 * repeatedFailures) + Random.Shared.Next(0, 3)), cancel);
+                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancel);
                             continue;
                         }
                         if (cancel.IsCancellationRequested == true) { break; }
