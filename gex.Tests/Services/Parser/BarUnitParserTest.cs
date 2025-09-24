@@ -137,6 +137,12 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(false, def.IsStockpile);
             Assert.AreEqual(0d, def.StockpileTime);
             Assert.AreEqual(0, def.StockpileLimit);
+            Assert.AreEqual(0d, def.ChainForkDamage);
+            Assert.AreEqual(0, def.ChainMaxUnits);
+            Assert.AreEqual(0d, def.ChainForkRange);
+            Assert.AreEqual(0d, def.TimedAreaDamage);
+            Assert.AreEqual(0d, def.TimedAreaRange);
+            Assert.AreEqual(0d, def.TimedAreaTime);
         }
 
         [TestMethod]
@@ -535,6 +541,52 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(0.33d, def.ChainForkDamage);
             Assert.AreEqual(2, def.ChainMaxUnits);
             Assert.AreEqual(60, def.ChainForkRange);
+        }
+
+        [TestMethod]
+        public async Task Parse_Legbart_Belcher() {
+            BarUnit unit = await _ParseUnit("legbart");
+
+            // basic
+            Assert.AreEqual("legbart", unit.DefinitionName);
+
+            // weapons
+            Assert.AreEqual(1, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("SURFACE", weapon.TargetCategory);
+
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual("clusternapalm", def.DefinitionName);
+            Assert.AreEqual("HeavyCannon", def.Name);
+            Assert.AreEqual(150d, def.AreaOfEffect);
+            Assert.AreEqual(0d, def.Burst);
+            Assert.AreEqual(0d, def.BurstRate);
+            Assert.AreEqual(0d, def.FlightTime);
+            Assert.AreEqual(0.123d, def.ImpulseFactor);
+            Assert.AreEqual(625d, def.Range);
+            Assert.AreEqual(4d, def.ReloadTime);
+            Assert.AreEqual(2500d, def.SprayAngle);
+            Assert.AreEqual(300d, def.Velocity);
+            Assert.AreEqual(false, def.Tracks);
+            Assert.AreEqual(0d, def.EnergyPerShot);
+            Assert.AreEqual(0d, def.MetalPerShot);
+            Assert.AreEqual("Cannon", def.WeaponType);
+            Assert.AreEqual(false, def.WaterWeapon);
+            Assert.AreEqual(false, def.IsBogus);
+            Assert.AreEqual(45d, def.Damages["default"]);
+            Assert.AreEqual(10d, def.Damages["vtol"]);
+            Assert.AreEqual(10d, def.Damages["subs"]);
+            Assert.AreEqual(false, def.IsStockpile);
+            Assert.AreEqual(0d, def.StockpileTime);
+            Assert.AreEqual(0, def.StockpileLimit);
+            Assert.AreEqual(0d, def.ChainForkDamage);
+            Assert.AreEqual(0, def.ChainMaxUnits);
+            Assert.AreEqual(0, def.ChainForkRange);
+            Assert.AreEqual(45d, def.TimedAreaDamage);
+            Assert.AreEqual(75d, def.TimedAreaRange);
+            Assert.AreEqual(10d, def.TimedAreaTime);
         }
 
     }

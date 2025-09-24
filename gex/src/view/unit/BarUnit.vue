@@ -34,14 +34,16 @@
             </div>
 
             <template v-else>
-                <unit :api-unit="firstUnit" @weaponindexchange="selectedWeaponIndexChanged" @close="removeUnit($event)"
+                <unit :api-unit="firstUnit" @weaponindexchange="selectedWeaponIndexChanged" @close="removeUnit($event)" @updatedamagetypes="updateDamageTypes"
+                    :damage-types="damageTypeSet"
                     :show-shield-data="showShieldData" :show-carrier-data="showCarrierData">
                 </unit>
 
                 <unit v-for="otherUnit in otherUnits" class="border-start ps-2" :key="otherUnit.definitionName" :api-unit="otherUnit"
                     @close="removeUnit($event)"
+                    @updatedamagetypes="updateDamageTypes"
                     @changeshowshield="changeShowShieldData" @changeshowcarrier="changeShowCarrierData"
-                    :show-shield-data="showShieldData" :show-carrier-data="showCarrierData"
+                    :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :damage-types="damageTypeSet"
                     :compare="firstUnit" :compare-weapon="firstUnitSelectedWeapon">
                 </unit>
             </template>
@@ -84,6 +86,7 @@
                 showExtraEcoStats: false as boolean,
 
                 selectedWeaponIndex: 0 as number,
+                damageTypeSet: [] as string[],
                 showShieldData: false as boolean,
                 showCarrierData: false as boolean,
             }
@@ -208,6 +211,21 @@
             changeShowCarrierData: function(b: boolean): void {
                 console.log(`BarUnit> show change carrier data to ${b}`);
                 this.showCarrierData = this.showCarrierData || b;
+            },
+
+            updateDamageTypes: function(types: string[]): void {
+                for (const t of types) {
+                    if (t == "default") {
+                        continue;
+                    }
+
+                    if (this.damageTypeSet.indexOf(t) == -1) {
+                        console.log(`BarUnit> adding damage type to show [type=${t}]`);
+                        this.damageTypeSet.push(t);
+                    } else {
+                        console.log(`BarUnit> skipping damage type to show [type=${t}]`);
+                    }
+                }
             }
         },
 

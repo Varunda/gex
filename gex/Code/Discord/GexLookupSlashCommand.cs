@@ -275,11 +275,13 @@ namespace gex.Code.Discord {
         /// </summary>
         /// <param name="ctx"></param>
         /// <param name="name"></param>
+        /// <param name="showExtra">will extra info about the unit be shown, defaults to false</param>
         /// <returns></returns>
         [SlashCommand("unit", "Print unit information")]
         public async Task UnitLookupCommand(InteractionContext ctx,
             [Autocomplete(typeof(UnitNameProvider))]
-            [Option("unit", "Unit name")] string name) {
+            [Option("unit", "Unit name")] string name,
+            [Option("extra_info", "Show extra info")] bool showExtra = false) {
 
             static string _N(double v) {
                 if (v < 1d && v > 0d) {
@@ -434,8 +436,7 @@ namespace gex.Code.Discord {
                     && iter.Count > 0
                     && (iter.WeaponDefinition.WeaponType == "Shield"
                         || iter.WeaponDefinition.CarriedUnit != null
-                        || iter.GetDefaultDamage() > 0d
-                    );
+                        || iter.GetDefaultDamage() > 0d);
             }).ToList();
 
             if (interestingWeapons.Count > 0) {
@@ -443,7 +444,11 @@ namespace gex.Code.Discord {
 
                 foreach (BarUnitWeapon wep in interestingWeapons) {
                     BarWeaponDefinition weapon = wep.WeaponDefinition;
-                    embed.Description += $"**{(wep.Count != 1 ? $"[{wep.Count}x] " : "")}{weapon.Name}** ({weapon.DefinitionName})\n";
+                    embed.Description += $"**{(wep.Count != 1 ? $"[{wep.Count}x] " : "")}{weapon.Name}**";
+                    if (showExtra == true) {
+                        embed.Description += $" ({weapon.DefinitionName})";
+                    }
+                    embed.Description += "\n";
 
                     if (weapon.WeaponType == "Shield") {
                         if (weapon.ShieldData == null) {
@@ -475,10 +480,32 @@ namespace gex.Code.Discord {
                         if (weapon.Burst != 0) { dps *= weapon.Burst; }
                         if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
 
-                        embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} "
-                            + $"({(weapon.Burst != 0 ? $"{weapon.Burst}x burst, " : "")}"
-                            + $"{(weapon.Projectiles != 1 ? $"{weapon.Projectiles}x pellets, " : "")}"
-                            + $"{_N(damage)} dmg, {_D(reloadTime)}s reload)\n";
+                        embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} (";
+                        if (weapon.Burst != 0) {
+                            embed.Description += $"{weapon.Burst}x burst, ";
+                        }
+                        if (weapon.Projectiles != 1) {
+                            embed.Description += $"{weapon.Projectiles}x pellets, ";
+                        }
+
+                        embed.Description += $"{_N(damage)} dmg";
+
+                        if (showExtra == true && weapon.Damages.Count > 1) {
+                            embed.Description += $" [{string.Join(", ", weapon.Damages.Where(iter => iter.Value != wep.GetDefaultDamage())
+                                .Select(iter => {
+                                    string type = iter.Key == "commanders" ? "comms"
+                                        : iter.Key == "vtol" ? "air"
+                                        : iter.Key;
+                                    return $"{Math.Round(iter.Value / wep.GetDefaultDamage() * 100d)}% to {type}";
+                                })
+                            )}]";
+                        }
+
+                        embed.Description += $", {_D(reloadTime)}s reload)\n";
+
+                        if (weapon.TimedAreaDamage != 0d) {
+                            embed.Description += $"Area dmg: {_N(weapon.TimedAreaDamage * 0.7333)} dps in area, area lasts {_N(weapon.TimedAreaTime)}s\n";
+                        }
 
                         string range = $"{_N(weapon.Range)}";
                         // if the weapon was changed, this means a carrier weapon is being shown
@@ -500,18 +527,30 @@ namespace gex.Code.Discord {
                         }
                         embed.Description += "\n";
 
+                        if (showExtra == true && (weapon.EnergyPerShot != 0d || weapon.MetalPerShot != 0d)) {
+                            embed.Description += "Cost: ";
+                            if (weapon.EnergyPerShot != 0d) {
+                                embed.Description += $"{_N(weapon.EnergyPerShot)} E/shot";
+                            } else if (weapon.MetalPerShot != 0d) {
+                                embed.Description += $"{_N(weapon.MetalPerShot)} m/shot";
+                            } else {
+                                embed.Description += $"{_N(weapon.EnergyPerShot)} E/shot, {_N(weapon.MetalPerShot)} m/shot";
+                            }
+                            embed.Description += "\n";
+                        }
+
                         if (wep.TargetCategory == "NOTSUB") {
-                            embed.Description += $"Targets: Air, Boats, Ground";
+                            embed.Description += $"Can hit: Air, Boats, Ground";
                         } else if (wep.TargetCategory == "SURFACE") {
-                            embed.Description += $"Targets: Boats, Ground";
+                            embed.Description += $"Can hit: Boats, Ground";
                         } else if (wep.TargetCategory == "NOTAIR" && weapon.WaterWeapon == false) {
-                            embed.Description += $"Targets: Boats, Air";
+                            embed.Description += $"Can hit: Boats, Air";
                         } else if (wep.TargetCategory == "NOTAIR" && weapon.WaterWeapon == true) {
-                            embed.Description += $"Targets: Boats, Subs";
+                            embed.Description += $"Can hit: Boats, Subs";
                         } else if (wep.TargetCategory == "VTOL") {
-                            embed.Description += $"Targets: Air";
+                            embed.Description += $"Can hit: Air";
                         } else {
-                            embed.Description += $"Targets: {wep.TargetCategory}";
+                            embed.Description += $"Can hit: {wep.TargetCategory}";
                         }
 
                         embed.Description += "\n\n";
@@ -1204,7 +1243,8 @@ namespace gex.Code.Discord {
                 foreach (IGrouping<byte, BarUserFactionStats> faction in grouped.OrderByDescending(iter => iter.Sum(i2 => i2.PlayCount))) {
                     int playCount = faction.Sum(iter => iter.PlayCount);
                     int winCount = faction.Sum(iter => iter.WinCount);
-                    embed.Description += $"**{_GetEmoji(BarFaction.GetName(faction.Key))}{BarFaction.GetName(faction.Key)}** - {Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n";
+                    embed.Description += $"**{_GetEmoji(BarFaction.GetName(faction.Key))}{BarFaction.GetName(faction.Key)}** "
+                        + $"- {Math.Truncate((decimal)winCount / playCount * 100m)}% won of {playCount} played\n";
                 }
                 embed.Description += "\n";
             }

@@ -20,7 +20,6 @@ namespace gex.Tests.Services {
         /// <summary>
         ///     ensures compiled scripts cannot run
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
         public async Task Run_CompiledScript_Fails() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
@@ -33,29 +32,30 @@ namespace gex.Tests.Services {
         /// <summary>
         ///     ensure a script is correctly stopped if execution exceeds runDuration
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
         public async Task Run_ForeverLoop_Exits() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
             Result<object[], string> ret = await _Make.Run("local i = 0\nwhile true do i = i + 1\n end", TimeSpan.FromSeconds(1), cts.Token);
 
             Assert.AreEqual(false, ret.IsOk);
-            Assert.IsTrue(ret.Error.StartsWith("failed to run lua: execution timeout"));
+            Assert.IsTrue(ret.Error.StartsWith("exception running lua: execution timeout"), $"wrong error message, got error: {ret.Error}");
         }
 
         /// <summary>
         ///     ensure a script is correctly stopped when a cancellation token is cancelled
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
         public async Task Run_CancelThrown() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
             Result<object[], string> ret = await _Make.Run("local i = 0\nwhile true do i = i + 1\n end", TimeSpan.FromSeconds(10), cts.Token);
 
             Assert.AreEqual(false, ret.IsOk);
-            Assert.IsTrue(ret.Error.StartsWith("failed to run lua: cancelled"), $"got error: {ret.Error}");
+            Assert.IsTrue(ret.Error.StartsWith("exception running lua: cancelled"), $"wrong error message, got error: {ret.Error}");
         }
 
+        /// <summary>
+        ///     test for ensuring a basic return is correct
+        /// </summary>
         [TestMethod]
         public async Task Run_Return1() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
@@ -65,6 +65,9 @@ namespace gex.Tests.Services {
             Assert.AreEqual(1L, ret.Value[0]);
         }
 
+        /// <summary>
+        ///     test for ensuring that returning a table gives the correct values
+        /// </summary>
         [TestMethod]
         public async Task Run_ReturnTable() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
@@ -78,6 +81,34 @@ namespace gex.Tests.Services {
             Assert.IsNotNull(table);
 
             Assert.AreEqual("hello", table["value"]);
+        }
+
+        /// <summary>
+        ///     test for ensuring lua code that errors during execution is caught and returns the correct error
+        /// </summary>
+        [TestMethod]
+        public async Task Run_FailsDueToMissingFunction() {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+            Result<object[], string> ret = await _Make.Run("if DoesNotExist.IsHere() then return 1 end", TimeSpan.FromSeconds(1), cts.Token);
+
+            Assert.AreEqual(false, ret.IsOk, $"expected failed lua execution");
+            // the line this error can occur can change, so don't check for it
+            Assert.IsTrue(ret.Error.StartsWith("exception running lua: [string \"chunk\"]"));
+            Assert.IsTrue(ret.Error.Contains("attempt to index a nil value (global 'DoesNotExist')"));
+        }
+
+        /// <summary>
+        ///     test for ensuring lua code that is bad syntax is caught and returns the correct error
+        /// </summary>
+        [TestMethod]
+        public async Task Run_FailsDueToBadSyntax() {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+            Result<object[], string> ret = await _Make.Run("if DoesNotExist for return 1 end", TimeSpan.FromSeconds(1), cts.Token);
+
+            Assert.AreEqual(false, ret.IsOk, $"expected failed lua execution");
+            // the line this error can occur can change, so don't check for it
+            Assert.IsTrue(ret.Error.StartsWith("exception running lua: [string \"chunk\"]"), $"got error: {ret.Error}");
+            Assert.IsTrue(ret.Error.Contains("'then' expected near 'for'"), $"got error: {ret.Error}");
         }
 
     }

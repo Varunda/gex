@@ -57,6 +57,9 @@ namespace gex.Services.Parser {
                 weapon.ChainForkDamage = _Double(wepCustomParms, "spark_forkdamage", 0);
                 weapon.ChainMaxUnits = _Int(wepCustomParms, "spark_maxunits", 0);
                 weapon.ChainForkRange = _Double(wepCustomParms, "spark_range", 0);
+                weapon.TimedAreaDamage = _Double(wepCustomParms, "area_onhit_damage", 0);
+                weapon.TimedAreaRange = _Double(wepCustomParms, "area_onhit_range", 0);
+                weapon.TimedAreaTime = _Double(wepCustomParms, "area_onhit_time", 0);
 
                 if (string.IsNullOrEmpty(_Str(wepCustomParms, "carried_unit")) == false) {
                     BarUnitCarriedUnit carried = new();

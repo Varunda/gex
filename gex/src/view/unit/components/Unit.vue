@@ -26,7 +26,7 @@
             </div>
         </div>
 
-        <table class="table table-sm table-sticky-header">
+        <table class="table table-sm table-sticky-header table-hover">
             <thead>
                 <tr class="table-light">
                     <th>Field</th>
@@ -44,6 +44,10 @@
                     </td>
                 </tr>
 
+                <tr>
+                    <td>Definition name</td>
+                    <td :colspan="compareUnit == null ? 2 : 3">{{ unit.definitionName }}</td>
+                </tr>
                 <tr is="Cell" name="Health" field="health" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Metal cost" field="metalCost" :unit="unit" :compare="compareUnit" :low="true"> m</tr>
                 <tr is="Cell" name="Energy cost" field="energyCost" :unit="unit" :compare="compareUnit" :low="true"> E</tr>
@@ -71,14 +75,19 @@
             </div>
         </div>
 
-        <table class="table table-sm">
+        <table class="table table-sm table-hover">
             <tbody>
+                <tr is="Cell" name="Targets" field="targetCategory" :unit="selectedWeaponEntry" :compare="CompareWeapon"></tr>
                 <tr is="Cell" name="Count" field="count" :unit="selectedWeaponEntry" :compare="CompareWeapon" :d="0">x</tr>
                 <tr is="Cell" name="DPS" field="defaultDps" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg / sec</tr>
                 <tr is="Cell" name="Damage (per burst)" field="defaultBurstDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg</tr>
                 <tr is="Cell" name="Damage (per shot)" field="defaultDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg</tr>
+
+                <tr v-for="dmgType in DamageTypes" :key="dmgType"
+                    is="DamageType" :type="dmgType" :unit="selectedWeapon.damages" :compare="compareWeaponDef == null ? null : compareWeaponDef.damages" :targets="selectedWeaponEntry.targetCategory"> dmg</tr>
+
                 <tr is="Cell" name="Fire rate" field="fireRate" :unit="selectedWeapon" :compare="compareWeaponDef"> / sec</tr>
-                <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
+                <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> sec</tr>
                 <tr is="Cell" name="Projectiles" field="projectiles" :unit="selectedWeapon" :compare="compareWeaponDef" :d="0"></tr>
                 <tr is="Cell" name="Sweep fire" field="sweepFire" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Range" field="range" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
@@ -91,13 +100,16 @@
                 <tr is="Cell" name="Energy/shot" field="energyPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> E / shot</tr>
                 <tr is="Cell" name="Metal/shot" field="metalPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> m / shot</tr>
                 <tr is="Cell" name="Is EMP?" field="isParalyzer" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="EMP time" field="paralyzerTime" :unit="selectedWeapon" :compare="compareWeaponDef">s</tr>
+                <tr is="Cell" name="EMP time" field="paralyzerTime" :unit="selectedWeapon" :compare="compareWeaponDef"> sec</tr>
                 <tr is="Cell" name="Stockpile" field="isStockpile" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
-                <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true">s</tr>
+                <tr is="Cell" name="Stockpile reload" field="stockpileTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> sec</tr>
                 <tr is="Cell" name="Stockpile limit" field="stockpileLimit" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Chain damage" field="chainForkDamage" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Chain max units" field="chainMaxUnits" :unit="selectedWeapon" :compare="compareWeaponDef" :d="0"></tr>
                 <tr is="Cell" name="Chain range" field="chainForkRange" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Area damage" field="timedAreaDamage" :unit="selectedWeapon" :compare="compareWeaponDef"> dmg / sec</tr>
+                <tr is="Cell" name="Area range" field="timedAreaRange" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Area duration" field="timedAreaTime" :unit="selectedWeapon" :compare="compareWeaponDef"> sec</tr>
 
                 <template v-if="ShowShieldData || selectedWeapon.shieldData != null || (compareWeaponDef && compareWeaponDef.shieldData != null)">
                     <tr is="Header" name="Shield data" :colspan="colspan"></tr>
@@ -130,7 +142,7 @@
                     <tr is="Cell" name="Decay rate" field="decayRate" :unit="selectUnitCarried" :compare="compareCarriedUnit" :low="true"> hp / sec</tr>
                     <tr is="Cell" name="Can dock?" field="enableDocking" :unit="selectUnitCarried" :compare="compareCarriedUnit"></tr>
                     <tr is="Cell" name="Docking armor" field="dockingArmor" :unit="selectUnitCarried" :compare="compareCarriedUnit"></tr>
-                    <tr is="Cell" name="Docking heal rate" field="dockingHealRate" :unit="selectUnitCarried" :compare="compareCarriedUnit"> hp / s</tr>
+                    <tr is="Cell" name="Docking heal rate" field="dockingHealRate" :unit="selectUnitCarried" :compare="compareCarriedUnit"> hp / sec</tr>
                     <tr is="Cell" name="Docking threshold" field="dockToHealThreshold" :unit="selectUnitCarried" :compare="compareCarriedUnit"> hp</tr>
                     <tr is="Cell" name="Docking helper speed" field="dockingHelperSpeed" :unit="selectUnitCarried" :compare="compareCarriedUnit"></tr>
                 </template>
@@ -139,7 +151,7 @@
 
         </table>
 
-        <table class="table table-sm">
+        <table class="table table-sm table-hover">
             <tbody>
                 <tr is="Header" name="Resource info" :colspan="colspan"></tr>
                 <tr is="Cell" name="Metal produced" field="metalProduced" :unit="unit" :compare="compareUnit"> m / sec</tr>
@@ -217,6 +229,21 @@
 
     import LocaleUtil from "util/Locale";
 
+    const getPathValue = (obj: any, path: string): any => {
+        const parts: string[] = path.split(".");
+        let objPart = obj;
+        let key: string | undefined = parts.shift();
+        while (key != undefined) {
+            if (objPart instanceof Map) {
+                objPart = (objPart as Map<any,any>).get(key);
+            } else {
+                objPart = objPart[key];
+            }
+            key = parts.shift();
+        }
+        return objPart;
+    };
+
     const Header = Vue.extend({
         props: {
             name: { type: String, required: true },
@@ -232,6 +259,96 @@
         `
     });
 
+    const DamageType = Vue.extend({
+        props: {
+            type: { type: String, required: true },
+            targets: { type: String, required: true },
+            unit: { type: Map as PropType<Map<string, number>>, required: true },
+            compare: { type: Map as PropType<Map<string, number> | null>, required: false },
+        },
+
+        methods: {
+            n(num: number): string {
+                return LocaleUtil.locale(num);
+            },
+        },
+
+        computed: {
+
+            name: function(): string {
+                return `Damage to ${this.type == "commanders" ? "comms" : this.type}`;
+            },
+
+            canHit: function(): boolean {
+                if (this.targets == "NOTSUB" && this.type == "subs") {
+                    if (this.type == "subs") {
+                        return false;
+                    }
+                }
+                if (this.targets == "SURFACE") {
+                    if (this.type == "vtol") {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+
+            value: function(): number {
+                if (this.canHit == false) {
+                    return 0;
+                }
+
+                return this.unit.get(this.type) ?? this.unit.get("default") ?? 0;
+            },
+
+            cvalue: function(): any {
+                if (this.canHit == false) {
+                    return 0;
+                }
+
+                if (!this.compare) {
+                    return 0;
+                }
+
+                return this.compare.get(this.type) ?? this.compare.get("default") ?? 0;
+            },
+
+            styleHigher: function() {
+                return {
+                    "color": "var(--bs-info-text-emphasis)"
+                }
+            },
+
+            styleLower: function()  {
+                return {
+                    "color": "var(--bs-info-text-emphasis)"
+                }
+            }
+        },
+
+        template: `
+            <tr :data-is-diff="cvalue != value ? 'true' : 'false'" class="no-wrap">
+                <td class="no-wrap">{{ name }}</td>
+                <td class="no-wrap">
+                    {{ n(value) }}<slot name="default"></slot>
+                </td>
+                <td v-if="compare" class="no-wrap">
+                    <span v-if="cvalue > value">
+                        (<span :style="styleLower">-{{ n(cvalue - value) }}</span><slot name="default"></slot>)
+                    </span>
+                    <span v-else-if="cvalue < value">
+                        (<span :style="styleHigher">+{{ n(value - cvalue) }}</span><slot name="default"></slot>)
+                    </span>
+                    <span v-else-if="cvalue == value" class="text-muted">
+                        (<span class="text-muted">same</span>)
+                    </span>
+                </td>
+            </tr>
+        `
+
+    });
+
     const Cell = Vue.extend({
         props: {
             name: { type: String, required: true },
@@ -239,7 +356,8 @@
             unit: { type: Object as PropType<BarUnit>, required: true },
             compare: { type: Object as PropType<BarUnit | null>, required: false },
             low: { type: Boolean, required: false, default: false },
-            d: { type: Number, required: false, default: undefined }
+            d: { type: Number, required: false, default: undefined },
+            fallback: { required: false }
         },
 
         methods: {
@@ -265,15 +383,12 @@
             },
 
             value: function(): any {
-                const parts: string[] = this.field.split(".");
-                let objPart = this.unit as any;
-                let key: string | undefined = parts.shift();
-                while (key != undefined) {
-                    objPart = objPart[key];
-                    key = parts.shift();
-                }
+                const v = getPathValue(this.unit, this.field);
 
-                return objPart;
+                if (v == undefined && this.fallback != undefined) {
+                    return this.fallback;
+                }
+                return v;
             },
 
             defaultcvalue: function(): any {
@@ -292,15 +407,7 @@
                     return this.defaultcvalue;
                 }
 
-                const parts: string[] = this.field.split(".");
-                let objPart = this.compare as any;
-                let key: string | undefined = parts.shift();
-                while (key != undefined) {
-                    objPart = objPart[key];
-                    key = parts.shift();
-                }
-
-                return objPart;
+                return getPathValue(this.compare, this.field);
             },
 
             styleHigher: function() {
@@ -363,6 +470,7 @@
             CompareWeapon: { type: Object as PropType<BarUnitWeapon | null>, required: false },
             ShowShieldData: { type: Boolean, required: false, default: false },
             ShowCarrierData: { type: Boolean, required: false, default: false },
+            DamageTypes: { type: Array as PropType<string[]>, required: true }
         },
 
         data: function() {
@@ -374,6 +482,7 @@
         mounted: function(): void {
             this.$emit("changeshowshield", this.selectedWeapon.shieldData != null);
             this.$emit("changeshowcarrier", this.selectedWeapon.carriedUnit != null);
+            this.$emit("updatedamagetypes", Array.from(this.selectedWeapon.damages.keys()));
         },
 
         methods: {
@@ -448,11 +557,12 @@
 
                 this.$emit("changeshowshield", this.selectedWeapon.shieldData != null);
                 this.$emit("changeshowcarrier", this.selectedWeapon.carriedUnit != null);
+                this.$emit("updatedamagetypes", Array.from(this.selectedWeapon.damages.keys()));
             }
         },
 
         components: {
-            InfoHover, Cell, Header, UnitIcon
+            InfoHover, Cell, Header, UnitIcon, DamageType
         }
     })
     export default Unit;

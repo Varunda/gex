@@ -18,6 +18,7 @@
     <None Remove="resources\unit_data\corfgate.lua" />
     <None Remove="resources\unit_data\corkorg.lua" />
     <None Remove="resources\unit_data\cormex.lua" />
+    <None Remove="resources\unit_data\legbart.lua" />
     <None Remove="resources\unit_data\legeallterrainmech.lua" />
     <None Remove="resources\unit_data\legeheatraymech.lua" />
     <None Remove="resources\unit_data\legmos.lua" />
@@ -53,6 +54,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\cormex.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\unit_data\legbart.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\legeallterrainmech.lua">

@@ -130,7 +130,7 @@ namespace gex.Services.Parser {
             unit.IsStealth = _Bool(info, "stealth", false);
             unit.AutoHeal = _Double(info, "autoheal", 0);
             unit.IdleTime = _Double(info, "idletime", 0);
-            unit.IdleAutoHeal = _Double(info, "idlehealtime", 0);
+            unit.IdleAutoHeal = _Double(info, "idleautoheal", 0);
 
             object? customParams = info.GetValueOrDefault("customparams");
             if (customParams != null && customParams is Dictionary<object, object> parms) {

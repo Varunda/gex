@@ -177,6 +177,12 @@ export class BarWeaponDefinition {
 
     public chainForkRange: number = 0;
 
+    public timedAreaRange: number = 0;
+
+    public timedAreaDamage: number = 0;
+
+    public timedAreaTime: number = 0;
+
     public damages: Map<string, number> = new Map();
 
     public shieldData: BarShieldData | null = null;
@@ -220,6 +226,8 @@ export class BarWeaponDefinition {
         if (def.burst != 0) {
             def.defaultDps *= def.burst;
         }
+
+        def.timedAreaDamage = def.timedAreaDamage * 0.7333;
 
         return def;
     }

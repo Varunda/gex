@@ -67,6 +67,7 @@ namespace gex.Services {
 
             object[]? ret = null;
             string? exceptionMessage = null;
+            DateTime start = DateTime.UtcNow;
             try {
                 Task executeLua = new(() => {
                     string src = @"
@@ -151,7 +152,7 @@ namespace gex.Services {
                     }
                 });
 
-                DateTime start = DateTime.UtcNow;
+                start = DateTime.UtcNow;
                 l.DebugHook += (object? sender, NLua.Event.DebugHookEventArgs args) => {
                     if (cancel.IsCancellationRequested == true) {
                         // intentionally crash the lua state
@@ -180,12 +181,19 @@ namespace gex.Services {
 
             long runLuaMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-            if (ret == null) {
-                return Result<object[], string>.Err($"got no return from lua");
-            }
-
             if (exceptionMessage != null) {
                 return Result<object[], string>.Err($"exception running lua: {exceptionMessage}");
+            }
+
+            if (ret == null) {
+                if (cancel.IsCancellationRequested == true) {
+                    return Result<object[], string>.Err($"cancellation requested");
+                }
+                if (DateTime.UtcNow - start > runDuration) {
+                    return Result<object[], string>.Err($"lua execution timed out");
+                }
+
+                return Result<object[], string>.Err($"got no return from lua");
             }
 
             // the default lua state is disposable, and will get disposed of once returned,

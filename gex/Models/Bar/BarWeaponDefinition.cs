@@ -68,6 +68,22 @@ namespace gex.Models.Bar {
 
         public double ChainForkRange { get; set; }
 
+        /// <summary>
+        ///     how much damage per tick the AOE will deal. note it does not tick once per second, it ticks every 22 game updates, or every 0.7333 seconds.
+        ///     https://github.com/beyond-all-reason/Beyond-All-Reason/blob/671d0f520ba92e763f7f8c9aa8cc811326f4d354/luarules/gadgets/unit_area_timed_damage.lua#L23
+        /// </summary>
+        public double TimedAreaDamage { get; set; }
+
+        /// <summary>
+        ///     how many el units the AOE will be
+        /// </summary>
+        public double TimedAreaRange { get; set; }
+
+        /// <summary>
+        ///     how long the lasting AOE will last in seconds
+        /// </summary>
+        public double TimedAreaTime { get; set; }
+
         public Dictionary<string, double> Damages { get; set; } = [];
 
         public BarUnitShield? ShieldData { get; set; } = null;
