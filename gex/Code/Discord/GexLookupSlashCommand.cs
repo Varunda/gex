@@ -357,10 +357,17 @@ namespace gex.Code.Discord {
                 embed.Color = DiscordColor.Brown;
             }
 
-            embed.Description += $"**Health**: {_N(unit.Health)}\n"
-                + $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n"
-                + $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n"
-                + $"**Vision**: {_N(unit.SightDistance)} ";
+            embed.Description += $"**Health**: {_N(unit.Health)}";
+            if (showExtra == true) {
+                embed.Description += $" ({_N(unit.DamageModifier * 100)}% DR when closed)";
+            }
+            embed.Description += "\n";
+
+            embed.Description += $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n";
+            if (unit.Speed != 0 || unit.Acceleration != 0 || unit.TurnRate != 0) {
+                embed.Description += $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n";
+            }
+            embed.Description += $"**Vision**: {_N(unit.SightDistance)} ";
 
             if (unit.AirSightDistance > 0) { embed.Description += $" / {_N(unit.AirSightDistance)} (air) "; }
             embed.Description += "\n";
@@ -382,25 +389,25 @@ namespace gex.Code.Discord {
             }
 
             if (unit.EnergyProduced != 0) {
-                embed.Description += $"**Energy made**: {_N(unit.EnergyProduced)}\n";
+                embed.Description += $"**Energy made**: {_N(unit.EnergyProduced)} E/sec\n";
             }
             if (unit.WindGenerator != 0) {
-                embed.Description += $"**Energy made** (wind): {_N(unit.WindGenerator)}\n";
+                embed.Description += $"**Energy made** (wind): {_N(unit.WindGenerator)} E/sec (max)\n";
             }
             if (unit.MetalExtractor == true) {
                 embed.Description += $"**Metal extractor?**: Yes\n";
             }
             if (unit.EnergyUpkeep != 0) {
-                embed.Description += $"**Energy upkeep**: {_N(unit.EnergyUpkeep)}\n";
+                embed.Description += $"**Energy upkeep**: {_N(unit.EnergyUpkeep)} E/sec\n";
             }
             if (unit.MetalProduced != 0) {
-                embed.Description += $"**Metal made**: {_N(unit.MetalProduced)}\n";
+                embed.Description += $"**Metal made**: {_N(unit.MetalProduced)} m/sec\n";
             }
             if (unit.EnergyStorage != 0) {
-                embed.Description += $"**E store**: {_N(unit.EnergyStorage)}\n";
+                embed.Description += $"**E store**: {_N(unit.EnergyStorage)} E\n";
             }
             if (unit.MetalStorage != 0) {
-                embed.Description += $"**M store**: {_N(unit.MetalStorage)}\n";
+                embed.Description += $"**M store**: {_N(unit.MetalStorage)} m\n";
             }
 
             if (unit.CloakCostStill != 0 || unit.CloakCostMoving != 0) {

@@ -32,7 +32,7 @@
                     <th>Field</th>
                     <th>Value</th>
                     <th v-if="compare">
-                        Diff to {{ compare.displayName }}
+                        Diff
                     </th>
                 </tr>
             </thead>
@@ -202,6 +202,7 @@
                 <tr is="Cell" name="Explode EMP time" field="explodeAsWeaponDefinition.paralyzerTime" :unit="unit" :compare="compareUnit">s</tr>
                 <tr is="Cell" name="Explode range" field="explodeAsWeaponDefinition.areaOfEffect" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Explode falloff" field="explodeAsWeaponDefinition.edgeEffectiveness" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Damage modifier" field="damageModifier" :unit="unit" :compare="compareUnit"></tr>
             </tbody>
         </table>
 

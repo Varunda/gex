@@ -125,6 +125,13 @@ namespace gex.Models.Bar {
         /// </summary>
         public double SelfDestructCountdown { get; set; }
 
+        /// <summary>
+        ///     1 = normal damage, 0.5 = half damage
+        /// </summary>
+        public double DamageModifier { get; set; }
+
+        public bool OnOffAble { get; set; }
+
         public List<BarUnitWeapon> Weapons { get; set; } = [];
 
     }

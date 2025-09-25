@@ -131,6 +131,8 @@ namespace gex.Services.Parser {
             unit.AutoHeal = _Double(info, "autoheal", 0);
             unit.IdleTime = _Double(info, "idletime", 0);
             unit.IdleAutoHeal = _Double(info, "idleautoheal", 0);
+            unit.DamageModifier = _Double(info, "damagemodifier", 1d);
+            unit.OnOffAble = _Bool(info, "onoffable", false);
 
             object? customParams = info.GetValueOrDefault("customparams");
             if (customParams != null && customParams is Dictionary<object, object> parms) {

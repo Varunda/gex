@@ -93,6 +93,8 @@ export class BarUnit {
     public autoHeal: number = 0;
     public idleAutoHeal: number = 0;
     public idleTime: number = 0;
+    public damageModifier: number = 0;
+    public onOffAble: boolean = false;
 
     public weapons: BarUnitWeapon[] = [];
 
@@ -107,7 +109,7 @@ export class BarUnit {
             weapons: elem.weapons.map((iter: any) => BarUnitWeapon.parse(iter))
         };
 
-        // in game does this, not sure what it means
+        // 900 = 30^2 (tick rate of game)
         unit.acceleration *= 900;
         unit.deceleration *= 900;
         unit.turnRate = unit.turnRate * 30 * (180 / 32728);
