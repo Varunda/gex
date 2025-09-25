@@ -359,7 +359,7 @@ namespace gex.Code.Discord {
 
             embed.Description += $"**Health**: {_N(unit.Health)}";
             if (showExtra == true) {
-                embed.Description += $" ({_N(unit.DamageModifier * 100)}% DR when closed)";
+                embed.Description += $" ({_N((1d - unit.DamageModifier) * 100)}% DR when closed)";
             }
             embed.Description += "\n";
 
