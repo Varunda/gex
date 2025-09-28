@@ -8,6 +8,11 @@
         public string QueueName { get; set; } = "";
 
         /// <summary>
+        ///     name of the type of the queue
+        /// </summary>
+        public string TypeName { get; set; } = "";
+
+        /// <summary>
         ///     How many items are currently in this queue
         /// </summary>
         public int Count { get; set; }

@@ -1,7 +1,11 @@
-﻿using gex.Models;
+﻿using gex.Code;
+using gex.Models;
 using gex.Models.Db;
+using gex.Models.Internal;
+using gex.Models.Queues;
 using gex.Services;
 using gex.Services.Db.Match;
+using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,14 +22,19 @@ namespace gex.Controllers.Api {
 
         private readonly ILogger<BarMatchProcessingApiController> _Logger;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
+        private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
+        private readonly ServiceHealthMonitor _ServiceHealthMonitor;
 
         public BarMatchProcessingApiController(ILogger<BarMatchProcessingApiController> logger,
-            BarMatchProcessingRepository processingRepository, AppCurrentAccount currentUser) {
+            BarMatchProcessingRepository processingRepository, ICurrentAccount currentUser,
+            BaseQueue<HeadlessRunQueueEntry> headlessQueue, ServiceHealthMonitor serviceHealthMonitor) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;
             _CurrentUser = currentUser;
+            _HeadlessRunQueue = headlessQueue;
+            _ServiceHealthMonitor = serviceHealthMonitor;
         }
 
         /// <summary>
@@ -83,7 +92,6 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpPost("prioritize/{gameID}")]
         public async Task<ApiResponse> PrioritizeGame(string gameID, CancellationToken cancel) {
-
             AppAccount? currentUser = await _CurrentUser.Get(cancel);
             if (currentUser == null) {
                 return ApiAuthorize();
@@ -99,6 +107,42 @@ namespace gex.Controllers.Api {
             }
 
             await _ProcessingRepository.PrioritizeGame(currentUser.DiscordID, gameID, cancel);
+
+            return ApiOk();
+        }
+
+        /// <summary>
+        ///     developer action to force a game to be replayed on Gex.
+        ///     use carefully, this does not check if a game is in the process of being replayed.
+        ///     NOTE: if the <see cref="HeadlessRunQueue"/> service is disabled, then this will do nothing
+        /// </summary>
+        /// <param name="gameID">ID of the game to force a replay of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> was successfully
+        ///     put into the <see cref="HeadlessRunQueue"/> to be ran
+        /// </response>
+        [HttpPost("run/{gameID}")]
+        [PermissionNeeded(AppPermission.GEX_MATCH_FORCE_REPLAY)]
+        public async Task<ApiResponse> ForceGameRun(string gameID, CancellationToken cancel) {
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            if (proc == null) {
+                return ApiNotFound($"{nameof(BarMatch)} {gameID}");
+            }
+
+            _Logger.LogInformation($"forcing game to be ran headlessly [gameID={gameID}]");
+
+            ServiceHealthEntry? runQueueService = _ServiceHealthMonitor.Get("headless_run_queue_processor");
+            if (runQueueService?.Enabled ?? false == false) {
+                _Logger.LogWarning($"while game was forced to be ran, "
+                    + $"please note the headless_run_queue_processor service is disabled, so this game will NOT be ran [gameID={gameID}]");
+            }
+
+            _HeadlessRunQueue.Queue(new HeadlessRunQueueEntry() {
+                GameID = gameID,
+                Force = true,
+                ForceForward = true
+            });
 
             return ApiOk();
         }

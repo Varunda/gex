@@ -22,6 +22,7 @@
     <None Remove="resources\unit_data\legbart.lua" />
     <None Remove="resources\unit_data\legeallterrainmech.lua" />
     <None Remove="resources\unit_data\legeheatraymech.lua" />
+    <None Remove="resources\unit_data\legelrpcmech.lua" />
     <None Remove="resources\unit_data\legmos.lua" />
     <None Remove="resources\unit_data\Unit_Explosions.lua" />
   </ItemGroup>
@@ -67,6 +68,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\legeheatraymech.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\unit_data\legelrpcmech.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\legmos.lua">

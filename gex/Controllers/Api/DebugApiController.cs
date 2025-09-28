@@ -4,6 +4,7 @@ using gex.Models.Internal;
 using gex.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Logging;
 
 namespace gex.Controllers.Api {
@@ -37,6 +38,11 @@ namespace gex.Controllers.Api {
             return ApiOk(ip ?? "missing?");
         }
 
+        /// <summary>
+        ///     throw an exception
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.Exception"></exception>
         [HttpGet("exception")]
         public ApiResponse<string> ThrowException() {
             throw new System.Exception("woah");

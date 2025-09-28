@@ -38,6 +38,9 @@ namespace gex.Models.Internal {
         public const string GEX_MATCH_UPLOAD = "Gex.Match.Upload";
         public readonly static AppPermission GexMatchUpload = new(GEX_MATCH_UPLOAD, "Upload a match to Gex");
 
+        public const string GEX_MATCH_FORCE_REPLAY = "Gex.Match.ForceReplay";
+        public readonly static AppPermission GexMatchForceReplay = new(GEX_MATCH_FORCE_REPLAY, "Force a match to be replayed on Gex");
+
         public const string GEX_DEV = "Gex.Dev";
         public readonly static AppPermission GexDev = new(GEX_DEV, "Developer permissions");
 

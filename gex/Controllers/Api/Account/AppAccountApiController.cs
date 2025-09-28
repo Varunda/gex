@@ -18,11 +18,11 @@ namespace gex.Controllers.Api.Account {
     public class AppAccountApiController : ApiControllerBase {
 
         private readonly ILogger<AppAccountApiController> _Logger;
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
 
         private readonly AppAccountDbStore _AccountDb;
 
-        public AppAccountApiController(ILogger<AppAccountApiController> logger, AppCurrentAccount currentUser,
+        public AppAccountApiController(ILogger<AppAccountApiController> logger, ICurrentAccount currentUser,
             AppAccountDbStore accountDb) {
 
             _Logger = logger;

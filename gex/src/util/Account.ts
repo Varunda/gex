@@ -21,7 +21,8 @@ export default class AccountUtil {
     }
 
     public static hasPermission(name: string): boolean {
-        return AccountUtil.get().permissions.find(iter => iter.permission.toLowerCase() == name.toLowerCase()) != undefined;
+        const acc: AppCurrentAccount = AccountUtil.get();
+        return acc.ID == 1 || acc.permissions.find(iter => iter.permission.toLowerCase() == name.toLowerCase()) != undefined;
     }
 
 }

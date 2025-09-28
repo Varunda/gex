@@ -136,6 +136,14 @@
                                                 </span>
                                             </td>
                                         </tr>
+                                        <tr v-if="canForceHeadlessRun">
+                                            <td>force run</td>
+                                            <td>
+                                                <span class="hover wt-link" @click="forceGameRun">
+                                                    click here
+                                                </span>
+                                            </td>
+                                        </tr>
                                     </template>
                                 </tbody>
                             </table>
@@ -377,6 +385,7 @@
     import AccountUtil from "util/Account";
 
     import "filters/BarGamemodeFilter";
+import Toaster from "Toaster";
 
     export const ProcessingStep = Vue.extend({
         props: {
@@ -745,6 +754,13 @@
                     this.stdout.show = true;
                     this.stdout.data = stdout.data;
                 }
+            },
+
+            forceGameRun: async function(): Promise<void> {
+                const r: Loading<void> = await BarMatchProcessingApi.forceGameRun(this.gameID);
+                if (r.state == "loaded") {
+                    Toaster.add("Game force queued", "Game has been inserted into replay queue", "success");
+                }
             }
         },
 
@@ -849,6 +865,10 @@
 
             canViewStdout: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Dev");
+            },
+
+            canForceHeadlessRun: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Match.ForceReplay");
             }
         },
 

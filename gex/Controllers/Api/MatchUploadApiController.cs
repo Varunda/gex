@@ -41,7 +41,7 @@ namespace gex.Controllers.Api {
         private readonly BarMapRepository _MapRepository;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BaseQueue<HeadlessRunQueueEntry> _RunQueue;
-        private readonly AppCurrentAccount _CurrentAccount;
+        private readonly ICurrentAccount _CurrentAccount;
 
         public MatchUploadApiController(ILogger<MatchUploadApiController> logger,
             BarMatchRepository matchRepository, BarDemofileParser demofileParser,
@@ -49,7 +49,7 @@ namespace gex.Controllers.Api {
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayDb replayDb,
             BarDemofileResultProcessor demofileProcessor, BarMapRepository mapRepository,
             BarMatchPriorityCalculator priorityCalculator, BaseQueue<HeadlessRunQueueEntry> runQueue,
-            AppCurrentAccount currentAccount) {
+            ICurrentAccount currentAccount) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -110,7 +110,7 @@ namespace gex.Controllers.Api {
             }
 
             if (!HasFileContentDisposition(contentDisposition)) {
-                _Logger.LogError($"not a file content disposition");
+                _Logger.LogError($"not a file content disposition [contentDisposition={contentDisposition}]");
                 return ApiBadRequest<BarMatch>($"not a file content disposition");
             }
 
@@ -142,7 +142,7 @@ namespace gex.Controllers.Api {
             processing.ReplayParsed = DateTime.UtcNow;
 
             BarMatch match = parsed.Value;
-            match.UploadedBy = currentUser.ID;
+            match.UploadedByID = currentUser.ID;
 
             BarMatch? existing = await _MatchRepository.GetByID(match.ID, cancel);
             if (existing != null) {

@@ -7,6 +7,7 @@ using gex.Services.Db;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Util;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

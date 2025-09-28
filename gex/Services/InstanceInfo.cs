@@ -34,5 +34,13 @@ namespace gex.Services {
             return _Options.Value.Host;
         }
 
+        /// <summary>
+        ///     get if the localhost developer mode is enabled, where all requests are treated as a user with all permissions
+        /// </summary>
+        /// <returns></returns>
+        public bool IsLocalhostDeveloperMode() {
+            return _Options.Value.LocalhostDeveloperAccount;
+        }
+
     }
 }

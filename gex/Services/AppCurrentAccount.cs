@@ -14,7 +14,7 @@ namespace gex.Services {
     /// <summary>
     ///     Service to get the current user making an HTTP request
     /// </summary>
-    public class AppCurrentAccount {
+    public class AppCurrentAccount : ICurrentAccount {
 
         private readonly ILogger<AppCurrentAccount> _Logger;
         private readonly IHttpContextAccessor _Context;

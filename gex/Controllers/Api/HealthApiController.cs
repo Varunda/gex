@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -160,8 +161,10 @@ namespace gex.Controllers.Api {
         }
 
         private ServiceQueueCount _MakeCount(string name, IProcessQueue queue) {
+
             ServiceQueueCount c = new() {
                 QueueName = name,
+                TypeName = queue.GetQueueEntryType().FullName ?? "",
                 Count = queue.Count(),
                 Processed = queue.Processed()
             };

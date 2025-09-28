@@ -1,5 +1,6 @@
 ﻿using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,10 +48,12 @@ namespace gex.Services.Queues {
         /// <param name="cancel">Stopping token</param>
         public async Task<T> Dequeue(CancellationToken cancel) {
             await _Signal.WaitAsync(cancel);
-            _Items.TryDequeue(out T? entry);
-            ++_ProcessedCount;
+            lock (_Items) {
+                _Items.TryDequeue(out T? entry);
+                ++_ProcessedCount;
 
-            return entry!;
+                return entry!;
+            }
         }
 
         /// <summary>
@@ -100,9 +103,11 @@ namespace gex.Services.Queues {
         ///     Queue a new entry into the queue
         /// </summary>
         public void Queue(T entry) {
-            _Metrics.RecordCount(_QueueName);
-            _Items.Enqueue(entry);
-            _Signal.Release();
+            lock (_Items) {
+                _Metrics.RecordCount(_QueueName);
+                _Items.Enqueue(entry);
+                _Signal.Release();
+            }
         }
 
         /// <summary>
@@ -155,6 +160,21 @@ namespace gex.Services.Queues {
                 //T[] arr = new T[Count()];
                 //_Items.CopyTo(arr, 0);
                 return _Items.ToArray().ToList();
+            }
+        }
+
+        public Type GetQueueEntryType() {
+            return typeof(T);
+        }
+
+        public void Clear() {
+            lock (_Items) {
+                if (_Items.IsEmpty == true) {
+                    return;
+                }
+
+                //_Signal.Wait();
+                _Items.Clear();
             }
         }
 

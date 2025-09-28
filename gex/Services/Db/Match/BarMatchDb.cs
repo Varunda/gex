@@ -61,7 +61,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("MapName", match.MapName);
             cmd.AddParameter("Gamemode", match.Gamemode);
             cmd.AddParameter("PlayerCount", match.PlayerCount);
-            cmd.AddParameter("UploadedBy", match.UploadedBy);
+            cmd.AddParameter("UploadedBy", match.UploadedByID);
             cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
 
             cmd.AddParameter("HostSettings", match.HostSettings);

@@ -58,7 +58,7 @@ namespace gex.Models.Db {
 
         public int PlayerCount { get; set; }
 
-        public long? UploadedBy { get; set; }
+        public long? UploadedByID { get; set; }
 
         /// <summary>
         ///     does this match contain the wrong open skill values for the <see cref="Gamemode"/>

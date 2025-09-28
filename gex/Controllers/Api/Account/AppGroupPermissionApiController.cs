@@ -20,7 +20,7 @@ namespace gex.Controllers.Api.Account {
     public class AppGroupPermissionApiController : ApiControllerBase {
 
         private readonly ILogger<AppGroupPermissionApiController> _Logger;
-        private readonly AppCurrentAccount _CurrentAccount;
+        private readonly ICurrentAccount _CurrentAccount;
 
         private readonly AppAccountDbStore _AccountDb;
         private readonly AppGroupDb _GroupDb;
@@ -28,7 +28,7 @@ namespace gex.Controllers.Api.Account {
 
         public AppGroupPermissionApiController(ILogger<AppGroupPermissionApiController> logger,
             AppAccountDbStore accountDb, AppPermissionRepository permissionRepository,
-            AppCurrentAccount currentAccount, AppGroupDb groupDb) {
+            ICurrentAccount currentAccount, AppGroupDb groupDb) {
 
             _Logger = logger;
             _CurrentAccount = currentAccount;

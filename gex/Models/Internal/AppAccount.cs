@@ -8,9 +8,9 @@ namespace gex.Models {
     public class AppAccount {
 
         /// <summary>
-        ///     Default ID of the system account
+        ///     first user gets all the permissions
         /// </summary>
-        public const long SystemID = 1;
+        public const long Root = 1;
 
         /// <summary>
         ///     ID of the account

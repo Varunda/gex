@@ -9,6 +9,7 @@ using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

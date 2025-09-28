@@ -93,51 +93,64 @@ namespace gex {
                 Console.WriteLine("");
             });
 
-            services.AddAuthentication(options => {
-                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            }).AddCookie(options => {
-                options.Cookie.Name = "gex-auth";
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-
-                options.ForwardChallenge = DiscordAuthenticationDefaults.AuthenticationScheme;
-            }).AddDiscord(options => {
-                DiscordOptions? dOpts = Configuration.GetSection("Discord").Get<DiscordOptions>();
-                if (dOpts == null) {
-                    throw new InvalidOperationException($"no discord configuration in the Discord: section configured");
-                }
-
-                if (string.IsNullOrWhiteSpace(dOpts.ClientId)) {
-                    throw new InvalidOperationException($"missing ClientId. did you set Discord:ClientId?");
-                }
-                if (string.IsNullOrWhiteSpace(dOpts.ClientSecret)) {
-                    throw new InvalidOperationException($"missing ClientSecret. did you set Discord:ClientSecret?");
-                }
-
-                options.ClientId = dOpts.ClientId;
-                options.ClientSecret = dOpts.ClientSecret;
-
-                options.CallbackPath = "/auth/callback"; // configured callback
-
-                options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-                options.SaveTokens = true;
-
-                // map the returned JSON from Discord to auth claims
-                options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
-                options.ClaimActions.MapJsonKey(ClaimTypes.Name, "username");
-                options.ClaimActions.MapCustomJson("urn:discord:avatar:url",
-                    user => string.Format(CultureInfo.InvariantCulture, "https://cdn.discordapp.com/avatars/{0}/{1}.{2}",
-                    user.GetString("id"),
-                    user.GetString("avatar"),
-                    user.GetString("avatar")!.StartsWith("a_") ? "gif" : "png")
+            if (Configuration.GetValue<bool>("Instance:LocalhostDeveloperAccount") == true) {
+                services.AddAuthentication(options => {
+                    options.DefaultAuthenticateScheme = LocalhostDeveloperAuthenticationDefaults.AuthenticationScheme;
+                }).AddScheme<LocalhostDeveloperAuthenticationOptions, LocalhostDeveloperAuthentication>(
+                    LocalhostDeveloperAuthenticationDefaults.AuthenticationScheme,
+                    options => { }
                 );
+            } else {
+                AuthenticationBuilder authBuilder = services.AddAuthentication(options => {
+                    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                }).AddCookie(options => {
+                    options.Cookie.Name = "gex-auth";
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                    options.Cookie.SameSite = SameSiteMode.Lax;
 
-                options.Scope.Add("identify");
-            });
+                    options.ForwardChallenge = DiscordAuthenticationDefaults.AuthenticationScheme;
+                });
+                
+                if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
+                    authBuilder.AddDiscord(options => {
+                        DiscordOptions? dOpts = Configuration.GetSection("Discord").Get<DiscordOptions>();
+                        if (dOpts == null) {
+                            throw new InvalidOperationException($"no discord configuration in the Discord: section configured");
+                        }
+
+                        if (string.IsNullOrWhiteSpace(dOpts.ClientId)) {
+                            throw new InvalidOperationException($"missing ClientId. did you set Discord:ClientId?");
+                        }
+                        if (string.IsNullOrWhiteSpace(dOpts.ClientSecret)) {
+                            throw new InvalidOperationException($"missing ClientSecret. did you set Discord:ClientSecret?");
+                        }
+
+                        options.ClientId = dOpts.ClientId;
+                        options.ClientSecret = dOpts.ClientSecret;
+
+                        options.CallbackPath = "/auth/callback"; // configured callback
+
+                        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+                        options.SaveTokens = true;
+
+                        // map the returned JSON from Discord to auth claims
+                        options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+                        options.ClaimActions.MapJsonKey(ClaimTypes.Name, "username");
+                        options.ClaimActions.MapCustomJson("urn:discord:avatar:url",
+                            user => string.Format(CultureInfo.InvariantCulture, "https://cdn.discordapp.com/avatars/{0}/{1}.{2}",
+                            user.GetString("id"),
+                            user.GetString("avatar"),
+                            user.GetString("avatar")!.StartsWith("a_") ? "gif" : "png")
+                        );
+
+                        options.Scope.Add("identify");
+                    });
+                }
+            }
 
             // require all endpoints to be authorized unless another policy is defined
             /*
@@ -273,7 +286,11 @@ namespace gex {
                 services.AddHostedService<DiscordService>();
             }
 
-            services.AddTransient<AppCurrentAccount>();
+            if (Configuration.GetValue<bool>("Instance:LocalhostDeveloperAccount") == true) {
+                services.AddTransient<ICurrentAccount, LocalhostCurrentAccount>();
+            } else {
+                services.AddTransient<ICurrentAccount, AppCurrentAccount>();
+            }
 
             services.Configure<ForwardedHeadersOptions>(options => {
                 // look for the x-forwarded-for headers to know the remote IP

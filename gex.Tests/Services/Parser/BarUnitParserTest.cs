@@ -658,5 +658,112 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(0, unit.Weapons.Count);
         }
 
+        [TestMethod]
+        public async Task Parse_Legelrpcmech_Astraeus() {
+            BarUnit unit = await _ParseUnit("legelrpcmech");
+
+            // basic
+            Assert.AreEqual("legelrpcmech", unit.DefinitionName);
+            Assert.AreEqual(17000d, unit.Health);
+            Assert.AreEqual(11000d, unit.MetalCost);
+            Assert.AreEqual(150000d, unit.EnergyCost);
+            Assert.AreEqual(125000d, unit.BuildTime);
+            Assert.AreEqual(25d, unit.Speed);
+            Assert.AreEqual(265.64999, unit.TurnRate);
+            Assert.AreEqual(0.02645, unit.Acceleration);
+            Assert.AreEqual(0.345, unit.Deceleration);
+            Assert.AreEqual(7d, unit.SizeX);
+            Assert.AreEqual(7d, unit.SizeZ);
+
+            // eco
+            Assert.AreEqual(0d, unit.EnergyProduced);
+            Assert.AreEqual(0d, unit.EnergyStorage);
+            Assert.AreEqual(0d, unit.EnergyUpkeep);
+            Assert.AreEqual(0d, unit.ExtractsMetal);
+            Assert.AreEqual(false, unit.MetalExtractor);
+            Assert.AreEqual(0d, unit.MetalProduced);
+            Assert.AreEqual(0d, unit.MetalStorage);
+
+            // builder
+            Assert.AreEqual(0d, unit.BuildDistance);
+            Assert.AreEqual(0d, unit.BuildPower);
+
+            // los
+            Assert.AreEqual(625d, unit.SightDistance);
+            Assert.AreEqual(625d * 1.5d, unit.AirSightDistance);
+            Assert.AreEqual(0d, unit.RadarDistance);
+            Assert.AreEqual(0d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
+
+            // transport
+            Assert.AreEqual(0d, unit.TransportCapacity);
+            Assert.AreEqual(0d, unit.TransportMass);
+            Assert.AreEqual(0d, unit.TransportSize);
+
+            // misc
+            Assert.AreEqual("ZephyrSkies (Model), Phill-Art (Concept Art)", unit.ModelAuthor);
+            Assert.AreEqual(0d, unit.CloakCostStill);
+            Assert.AreEqual(0d, unit.CloakCostMoving);
+            Assert.AreEqual("explosiont3", unit.ExplodeAs);
+            Assert.AreEqual(5d, unit.SelfDestructCountdown);
+            Assert.AreEqual("explosiont3xl", unit.SelfDestructWeapon);
+            Assert.AreEqual(0d, unit.AutoHeal);
+            Assert.AreEqual(5d, unit.IdleAutoHeal);
+            Assert.AreEqual(1800d, unit.IdleTime);
+            Assert.AreEqual(1d, unit.DamageModifier);
+            Assert.AreEqual(false, unit.OnOffAble);
+
+            // weapons
+            Assert.AreEqual(1, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("SURFACE", weapon.TargetCategory);
+
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual("shocker_low", def.DefinitionName);
+            Assert.AreEqual("Long-Range g2g Heavy Cluster Plasma Cannon", def.Name);
+            Assert.AreEqual(150d, def.AreaOfEffect);
+            Assert.AreEqual(4d, def.Burst);
+            Assert.AreEqual(0.06d, def.BurstRate);
+            Assert.AreEqual(0d, def.FlightTime);
+            Assert.AreEqual(0.5d, def.ImpulseFactor);
+            Assert.AreEqual(3100d, def.Range);
+            Assert.AreEqual(12d, def.ReloadTime);
+            Assert.AreEqual(300d, def.SprayAngle);
+            Assert.AreEqual(1000d, def.Velocity);
+            Assert.AreEqual(false, def.Tracks);
+            Assert.AreEqual(6000d, def.EnergyPerShot);
+            Assert.AreEqual(0d, def.MetalPerShot);
+            Assert.AreEqual("Cannon", def.WeaponType);
+            Assert.AreEqual(false, def.WaterWeapon);
+            Assert.AreEqual(false, def.IsBogus);
+            Assert.AreEqual(500d, def.Damages["default"]);
+            Assert.AreEqual(250d, def.Damages["shields"]);
+            Assert.AreEqual(100d, def.Damages["subs"]);
+            Assert.AreEqual(false, def.IsStockpile);
+            Assert.AreEqual(0d, def.StockpileTime);
+            Assert.AreEqual(0, def.StockpileLimit);
+            Assert.AreEqual(0d, def.ChainForkDamage);
+            Assert.AreEqual(0, def.ChainMaxUnits);
+            Assert.AreEqual(0d, def.ChainForkRange);
+            Assert.AreEqual(0d, def.TimedAreaDamage);
+            Assert.AreEqual(0d, def.TimedAreaRange);
+            Assert.AreEqual(0d, def.TimedAreaTime);
+            Assert.AreEqual("CLUSTER_MUNITION", def.ClusterWeaponDefinition);
+            Assert.AreEqual(4, def.ClusterNumber);
+            Assert.IsNotNull(def.ClusterWeapon);
+
+            BarWeaponDefinition cluster = def.ClusterWeapon;
+            Assert.AreEqual(115d, cluster.AreaOfEffect);
+            Assert.AreEqual(110d, cluster.Range);
+            Assert.AreEqual(11d, cluster.ReloadTime);
+            Assert.AreEqual(0d, cluster.Velocity);
+            Assert.AreEqual(50d, cluster.Damages["default"]);
+            Assert.AreEqual(100d, cluster.Damages["lboats"]);
+            Assert.AreEqual(25d, cluster.Damages["subs"]);
+            Assert.AreEqual(25d, cluster.Damages["vtol"]);
+        }
+
     }
 }

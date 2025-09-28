@@ -34,7 +34,7 @@ namespace gex.Models.Api {
             ChatMessages = match.ChatMessages;
             MapData = match.MapData;
             PlayerCount = match.PlayerCount;
-            UploadedByID = match.UploadedBy;
+            UploadedByID = match.UploadedByID;
             TeamDeaths = match.TeamDeaths;
             WrongSkillValues = match.WrongSkillValues;
         }

@@ -302,13 +302,23 @@ namespace gex.Code.Discord {
             if (_UnitRepository.HasUnit(name) == false) {
                 // if the definition name was not found, try to be helpful and find the unit based on display name
                 List<BarUnitName> names = await _UnitRepository.GetAllNames(cts.Token);
-                List<BarUnitName> nameMatch = names.Where(iter => iter.DisplayName.Equals(name, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                List<BarUnitName> nameMatch = names.Where(iter => iter.DisplayName.StartsWith(name, StringComparison.CurrentCultureIgnoreCase)).ToList();
                 if (nameMatch.Count == 1) {
                     name = nameMatch[0].DefinitionName;
+                } else if (nameMatch.Count >= 2) {
+                    string matchingNames = string.Join(", ", nameMatch.Select(iter => iter.DisplayName));
+
+                    await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
+                        .WithTitle($"Unit lookup: `{name}`")
+                        .WithDescription($"Ambigious unit name found ({nameMatch.Count} units have this name)."
+                            + $"\nPlease use the definition name or wait for the autocomplete to run"
+                            + $"{(matchingNames.Length < 500 ? $"\n**Units**: {matchingNames}" : "")}")
+                        .WithColor(DiscordColor.Red));
+                    return;
                 } else {
                     await ctx.EditResponseEmbed(new DiscordEmbedBuilder()
-                        .WithTitle($"Unit lookup: {name}")
-                        .WithDescription($"Unit does not exist")
+                        .WithTitle($"Unit lookup: `{name}`")
+                        .WithDescription($"No unit with the display name or definition name exists")
                         .WithColor(DiscordColor.Red));
                     return;
                 }
@@ -1232,8 +1242,6 @@ namespace gex.Code.Discord {
                         true
                     );
                 }
-                embed.Description += "\n";
-
             } else if (skill.Count == 0) {
                 embed.AddField("ERROR", "no skill stats found!");
             } else if (factionStats.Count == 0) {

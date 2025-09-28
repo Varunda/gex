@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -193,6 +194,14 @@ namespace gex.Services.Queues {
         ///     <typeparamref name="U"/>, which is used as a key to preventing duplicate entries from being entered into the queue
         /// </returns>
         internal abstract U GetEntryID(T entry);
+
+        public Type GetQueueEntryType() {
+            return typeof(T);
+        }
+
+        public void Clear() {
+            _Items.Clear();
+        }
 
     }
 }

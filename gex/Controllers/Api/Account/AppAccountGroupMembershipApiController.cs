@@ -19,14 +19,14 @@ namespace gex.Controllers.Api.Account {
     public class AppAccountGroupMembershipApiController : ApiControllerBase {
 
         private readonly ILogger<AppAccountGroupMembershipApiController> _Logger;
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
         private readonly AppAccountGroupMembershipRepository _MembershipRepository;
         private readonly AppAccountDbStore _AccountDb;
         private readonly AppGroupRepository _GroupRepository;
 
         public AppAccountGroupMembershipApiController(ILogger<AppAccountGroupMembershipApiController> logger,
             AppAccountGroupMembershipRepository membershipRepository, AppAccountDbStore accountDb,
-            AppGroupRepository groupRepository, AppCurrentAccount currentUser) {
+            AppGroupRepository groupRepository, ICurrentAccount currentUser) {
 
             _Logger = logger;
 

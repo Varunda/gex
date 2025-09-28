@@ -35,7 +35,7 @@ namespace gex.Controllers {
         private readonly HttpUtilService _HttpUtil;
         private readonly IOptions<FileStorageOptions> _Options;
 
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
         private readonly AppAccountDbStore _AccountDb;
 
         private readonly BarMatchRepository _MatchRepository;
@@ -49,7 +49,7 @@ namespace gex.Controllers {
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
             BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository mapRepository, BarUserRepository userRepository,
-            AppCurrentAccount currentUser, AppAccountDbStore accountDb) {
+            ICurrentAccount currentUser, AppAccountDbStore accountDb) {
 
             _Logger = logger;
             _HttpContextAccessor = httpContextAccessor;

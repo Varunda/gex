@@ -167,6 +167,13 @@ namespace gex.Services.Parser {
             }
 
             if (weaponDefsDict.Count > 0) {
+                foreach (BarWeaponDefinition wep in weaponDefsDict.Values) {
+                    if (wep.ClusterWeaponDefinition != null) {
+                        wep.ClusterWeapon = weaponDefsDict.GetValueOrDefault(wep.ClusterWeaponDefinition)
+                            ?? throw new Exception($"missing cluster weapon definition '{wep.ClusterWeaponDefinition}'");
+                    }
+                }
+
                 object? weaponSetupObj = info["weapons"];
                 if (weaponSetupObj == null || weaponSetupObj is not Dictionary<object, object> weaponSetup) {
                     return "failed to find 'weapons' field that goes with weaponDefs";

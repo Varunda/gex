@@ -120,7 +120,7 @@ namespace gex.Code.Commands {
         }
 
         public void Message(string gameID) {
-            _Logger.LogInformation($"forcing subscription messages to be setn [gameID={gameID}]");
+            _Logger.LogInformation($"forcing subscription messages to be sent [gameID={gameID}]");
             _SubscriptionQueue.Queue(new SubscriptionMessageQueueEntry() {
                 GameID = gameID,
                 Force = true

@@ -114,6 +114,10 @@ namespace gex.Services.Hosted.QueueProcessor {
                 //
                 // ack the command, but don't do anything about it /shrug
                 //
+            } else if (entry.Command == "ACCEPTED") {
+                // login was completed, clear the previous state
+                _Logger.LogInformation($"login accepted, clearly previous state");
+                _LobbyManager.Clear();
             } else {
                 _Logger.LogWarning($"unhandled lobby message [command={entry.Command}] [args={entry.Arguments}]");
             }

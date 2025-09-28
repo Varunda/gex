@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace gex.Services.Queues {
 
@@ -9,6 +10,14 @@ namespace gex.Services.Queues {
         int Count();
 
         long Processed();
+
+        /// <summary>
+        ///     get the type of object this queue deals with
+        /// </summary>
+        /// <returns></returns>
+        Type GetQueueEntryType();
+
+        void Clear();
 
     }
 }

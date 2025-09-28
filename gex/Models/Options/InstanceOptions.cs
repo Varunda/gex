@@ -7,5 +7,11 @@
         /// </summary>
         public string Host { get; set; } = "";
 
+        /// <summary>
+        ///     DANGER SETTING:
+        ///     this will treat all requests as coming from an account with all permissions
+        /// </summary>
+        public bool LocalhostDeveloperAccount { get; set; } = false;
+
     }
 }

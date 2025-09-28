@@ -23,7 +23,7 @@ namespace gex.Controllers.Api {
     public class BarMatchApiController : ApiControllerBase {
 
         private readonly ILogger<BarMatchApiController> _Logger;
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
 
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMapRepository _BarMapRepository;
@@ -44,7 +44,7 @@ namespace gex.Controllers.Api {
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
             AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
-            BarMatchProcessingPriorityDb processingPriorityDb, AppCurrentAccount currentUser,
+            BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
             GameOutputStorage gameOutputStorage) {
 
             _Logger = logger;

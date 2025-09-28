@@ -46,7 +46,11 @@ namespace gex.Services.Hosted.BackgroundTasks {
                 ServiceHealthEntry healthEntry = _ServiceHealthMonitor.GetOrCreate(SERVICE_NAME);
                 _ServiceHealthMonitor.Set(SERVICE_NAME, healthEntry);
 
-                await Run(stoppingToken);
+                try {
+                    await Run(stoppingToken);
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"error in background priority runner");
+                }
             }, stoppingToken);
         }
 

@@ -32,7 +32,9 @@
                             <tr v-for="service in health.data.services" :key="service.name">
                                 <td>{{service.name}}</td>
                                 <td>
-                                    {{service.enabled}}
+                                    <span :class="service.enabled == true ? 'text-success' : 'text-warning'">
+                                        {{service.enabled}}
+                                    </span>
                                     <span v-if="canManageServices" class="ms-3">
                                         <button v-if="!service.enabled" class="btn btn-sm btn-success" @click="enableService(service.name)">
                                             Enable
@@ -78,8 +80,17 @@
                         </thead>
 
                         <tbody>
-                            <tr v-for="queue in health.data.queues">
-                                <td>{{queue.queueName}}</td>
+                            <tr v-for="queue in health.data.queues" :key="queue.queueName">
+                                <td>
+                                    <span>
+                                        {{queue.queueName}}
+                                        <span v-if="canManageServices == true">
+                                            <button class="btn btn-danger btn-sm py-0" @click="clearQueue(queue.typeName)">
+                                                Clear
+                                            </button>
+                                        </span>
+                                    </span>
+                                </td>
                                 <td :title="queue.count | locale">
                                     <span v-if="settings.useCompact">
                                         {{ queue.count | compact }}
@@ -205,6 +216,7 @@
     import ToggleButton from "components/ToggleButton";
 
     import AccountUtil from "util/Account";
+import { QueueApi } from "api/QueueApi";
 
     interface EventQueueEntry {
         when: Date;
@@ -287,6 +299,10 @@
             enableService: async function(name: string): Promise<void> {
                 await AppHealthApi.enableService(name);
             },
+
+            clearQueue: async function(name: string): Promise<void> {
+                await QueueApi.clearQueue(name);
+            }
         },
 
         computed: {

@@ -6,9 +6,10 @@
 @using gex.Services.Repositories;
 @using gex.Services.Repositories.Account;
 
-@inject AppCurrentAccount _CurrentUser
+@inject ICurrentAccount _CurrentUser
 @inject AppPermissionRepository _AppPermissionRepository
 @inject AppAccountGroupMembershipRepository _MembershipRepository;
+@inject InstanceInfo _InstanceInfo;
 
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
@@ -109,6 +110,16 @@
                                 Feedback/Bugs
                             </a>
                         </li>
+
+                        @if (_InstanceInfo.IsLocalhostDeveloperMode() == true) {
+                            <li class="nav-item d-flex me-auto ms-auto" style="align-items: center;">
+                                <span class="alert alert-warning py-0 mb-0" title="Localhost developer mode is enabled, all requests will be granted all permissions">
+                                    <span class="bi bi-exclamation-triangle-fill"></span>
+                                    Localhost developer mode enabled
+                                    <span class="bi bi-exclamation-triangle-fill"></span>
+                                </span>
+                            </li>
+                        }
 
                         @if (acc != null) {
                             <li class="ms-auto nav-item dropdown">

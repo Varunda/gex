@@ -60,7 +60,7 @@ export class BarMatch {
             processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),
             usersPrioritizing: elem.usersPrioritizing,
             headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus),
-            uploadedBy: elem.uploadedBy == null ? null : AppAccount.parse(elem.uploadedBy)
+            uploadedBy: !elem.uploadedBy ? null : AppAccount.parse(elem.uploadedBy)
         }
     }
 

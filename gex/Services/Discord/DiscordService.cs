@@ -23,6 +23,7 @@ using static gex.Models.Discord.AppDiscordMessage;
 using gex.Code.Discord;
 using gex.Services.Metrics;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Discord {
 
@@ -45,7 +46,8 @@ namespace gex.Services.Discord {
 
         public DiscordService(ILogger<DiscordService> logger, ILoggerFactory loggerFactory,
             IOptions<DiscordOptions> discordOptions, IServiceProvider services,
-            DiscordWrapper discord, BaseQueue<AppDiscordMessage> messageQueue, DiscordMetric metric) {
+            DiscordWrapper discord, BaseQueue<AppDiscordMessage> messageQueue,
+            DiscordMetric metric) {
 
             _Logger = logger;
             _MessageQueue = messageQueue;

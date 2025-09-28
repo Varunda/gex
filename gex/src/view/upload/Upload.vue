@@ -14,7 +14,7 @@
                 </div>
 
                 <div class="input-group">
-                    <input id="file-upload" type="file" class="form-control" @change="updateName" />
+                    <input id="file-upload" type="file" class="form-control" @change="updateName" multiple="true" />
                     <label class="custom-file-label" for="file-upload"></label>
                 </div>
 
@@ -36,6 +36,10 @@
 
         <hr class="border">
 
+        <div v-if="uploadCount > 1" class="text-center">
+            Games uploaded: {{ uploadedCount }} / {{ uploadCount }}
+        </div>
+
         <div class="text-center">
             <div v-if="match.state == 'idle'"></div>
 
@@ -44,7 +48,8 @@
             </div>
 
             <div v-else-if="match.state == 'loaded'">
-                <a :href="'/match/' + match.data.id">View match</a>
+                Game uploaded:
+                <a :href="'/match/' + match.data.id" target="_blank" ref="nofollow">View match</a>
             </div>
 
             <div v-else-if="match.state == 'error'" class="alert alert-danger d-inline-block">
@@ -89,7 +94,10 @@
             return {
                 file: null as HTMLInputElement | null,
                 fileText: "" as string,
-                match: Loadable.idle() as Loading<BarMatch>
+                match: Loadable.idle() as Loading<BarMatch>,
+
+                uploadCount: 0 as number,
+                uploadedCount: 0 as number
             };
         },
 
@@ -125,6 +133,8 @@
 
                 this.match = Loadable.loading();
 
+                this.uploadCount = files.length;
+                this.uploadedCount = 0;
                 for (let i = 0; i < files.length; ++i) {
                     const f: File | null = files.item(i);
 
@@ -140,6 +150,7 @@
                     }
 
                     this.match = await MatchUploadApi.upload(f);
+                    ++this.uploadedCount;
                     if (this.match.state != "loaded") {
                         Loadable.toastError(this.match, "Upload error");
                         //Toaster.add("Upload error", `error uploading!`, "danger");

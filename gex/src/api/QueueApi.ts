@@ -11,4 +11,8 @@ export class QueueApi extends ApiWrapper<HeadlessRunQueueEntry> {
         return QueueApi.get().readList(`/api/queue/headless`, HeadlessRunQueueEntry.parse);
     }
 
+    public static clearQueue(name: string): Promise<Loading<void>> {
+        return QueueApi.get().post(`/api/queue/clear/${name}`);
+    }
+
 }

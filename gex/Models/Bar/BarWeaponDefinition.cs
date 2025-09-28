@@ -84,6 +84,18 @@ namespace gex.Models.Bar {
         /// </summary>
         public double TimedAreaTime { get; set; }
 
+        /// <summary>
+        ///     weapon definition name of the cluster weapon. normalized to all upper case
+        /// </summary>
+        public string? ClusterWeaponDefinition { get; set; } = null;
+
+        /// <summary>
+        ///     how many shows from the cluster weapon will be fired
+        /// </summary>
+        public int ClusterNumber { get; set; }
+
+        public BarWeaponDefinition? ClusterWeapon { get; set; } = null;
+
         public Dictionary<string, double> Damages { get; set; } = [];
 
         public BarUnitShield? ShieldData { get; set; } = null;

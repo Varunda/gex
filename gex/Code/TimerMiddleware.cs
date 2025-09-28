@@ -14,10 +14,10 @@ namespace gex.Code {
 
         private readonly RequestDelegate _Next;
         private readonly ILogger<TimerMiddleware> _Logger;
-        private readonly AppCurrentAccount _CurrentUser;
+        private readonly ICurrentAccount _CurrentUser;
 
         public TimerMiddleware(RequestDelegate next, ILogger<TimerMiddleware> logger,
-            AppCurrentAccount currentUser) {
+            ICurrentAccount currentUser) {
 
             _Next = next;
 

@@ -15,4 +15,8 @@ export class BarMatchProcessingApi extends ApiWrapper<BarMatchProcessing> {
         return BarMatchProcessingApi.get().post(`/api/match-processing/prioritize/${gameID}`);
     }
 
+    public static forceGameRun(gameID: string): Promise<Loading<void>> {
+        return BarMatchProcessingApi.get().post(`/api/match-processing/run/${gameID}`);
+    }
+
 }

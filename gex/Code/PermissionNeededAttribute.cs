@@ -35,13 +35,13 @@ namespace gex.Code {
         private readonly IHttpContextAccessor _Context;
         private readonly AppAccountDbStore _AppAccountDb;
         private readonly AppPermissionRepository _PermissionRepository;
-        private readonly AppCurrentAccount _CurrentAccount;
+        private readonly ICurrentAccount _CurrentAccount;
 
         public readonly List<string> Permissions;
 
         public PermissionNeededFilter(ILogger<PermissionNeededFilter> logger,
             IHttpContextAccessor context, AppAccountDbStore appAccountDb,
-            AppPermissionRepository permissionRepository, AppCurrentAccount currentAccount,
+            AppPermissionRepository permissionRepository, ICurrentAccount currentAccount,
             string[] perms) {
 
             Permissions = perms.ToList();
@@ -90,7 +90,7 @@ namespace gex.Code {
             _Logger.LogTrace($"checking if user has permission [account={account.ID}/{account.Name}] [Permissions={string.Join(", ", Permissions)}] "
                 + $"[url={context.HttpContext.Request.Path.Value}]");
 
-            if (account.ID <= 1) {
+            if (account.ID == AppAccount.Root) {
                 _Logger.LogTrace($"user has permission as they are the owner [account={account.Name}] [url={context.HttpContext.Request.Path.Value}]");
                 return true;
             }
