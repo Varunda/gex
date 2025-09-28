@@ -282,6 +282,7 @@
     import { GamemodeUtil } from "util/Gamemode";
     import ColorUtils from "util/Color";
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
+import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
     const FactionStatsRow = Vue.extend({
         props: {
@@ -525,11 +526,12 @@
                             continue;
                         }
 
-                        const totalSkill: number = match.players
-                            .filter(iter => iter.allyTeamID != player.allyTeamID)
+                        const enemyPlayers: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID != player.allyTeamID);
+
+                        const totalSkill: number = enemyPlayers
                             .reduce((acc, iter) => acc += iter.skill, 0);
 
-                        const avgSkill: number = totalSkill / match.players.length;
+                        const avgSkill: number = totalSkill / enemyPlayers.length;
 
                         const playerSkill: number = player?.skill ?? 0;
 
