@@ -16,6 +16,7 @@ export class PlayerOpener {
     public playerName: string = "";
     public color: string = "";
     public buildings: OpenerEntry[] = [];
+    public playerFaction: string = "";
 
     public static compute(match: BarMatch, output: GameOutput): PlayerOpener[] {
 
@@ -38,7 +39,8 @@ export class PlayerOpener {
                 teamID: teamID,
                 buildings: [],
                 playerName: "",
-                color: ""
+                color: "",
+                playerFaction: ""
             };
 
             const def: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
@@ -90,6 +92,7 @@ export class PlayerOpener {
             const p: BarMatchPlayer | undefined = match.players.find(iter => iter.teamID == teamID);
             opener.playerName = p?.username ?? `<missing team ${teamID}>`;
             opener.color = p?.hexColor ?? "#000000";
+            opener.playerFaction = p?.faction ?? `<unknown>`;
         });
 
         return Array.from(map.values());
