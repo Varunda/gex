@@ -1,7 +1,11 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using Dapper;
+using gex.Code.ExtensionMethods;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace gex.Services.Db.Event {
 
@@ -15,11 +19,11 @@ namespace gex.Services.Db.Event {
                 INSERT INTO game_event_extra_stats (
                     game_id, frame, team_id,
                     total_value, army_value, defense_value, util_value, eco_value, other_value,
-                    build_power_available, build_power_used
+                    build_power_available, build_power_used, metal_current, energy_current
                 ) VALUES (
                     @GameID, @Frame, @TeamID,
                     @TotalValue, @ArmyValue, @DefenseValue, @UtilValue, @EcoValue, @OtherValue,
-                    @BuildPowerAvailable, @BuildPowerUsed
+                    @BuildPowerAvailable, @BuildPowerUsed, @MetalCurrent, @EnergyCurrent
                 );
             ";
 
@@ -33,6 +37,8 @@ namespace gex.Services.Db.Event {
             cmd.AddParameter("UtilValue", ev.UtilValue);
             cmd.AddParameter("EcoValue", ev.EcoValue);
             cmd.AddParameter("OtherValue", ev.OtherValue);
+            cmd.AddParameter("MetalCurrent", ev.MetalCurrent);
+            cmd.AddParameter("EnergyCurrent", ev.EnergyCurrent);
 
             cmd.AddParameter("BuildPowerAvailable", ev.BuildPowerAvailable);
             cmd.AddParameter("BuildPowerUsed", ev.BuildPowerUsed);

@@ -12,6 +12,8 @@ export class GameEventExtraStatsUpdate {
     public otherValue: number = 0;
     public buildPowerAvailable: number = 0;
     public buildPowerUsed: number = 0;
+    public metalCurrent: number = 0;
+    public energyCurrent: number = 0;
 
     public static parse(elem: any): GameEventExtraStatsUpdate {
         return {
