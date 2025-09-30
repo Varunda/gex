@@ -9,6 +9,10 @@ local frame = 0
 local timer
 local commanders = {}
 
+local units_died_in_frame = {}
+local units_pending_load = {}
+local units_pending_unload = {}
+
 local CMD_RECLAIM = 90
 local CMD_RESTORE = 110
 local CMD_RESURRECT = 125
@@ -105,14 +109,14 @@ local function SendExtraStats()
 			local units = Spring.GetTeamUnits(teamID)
 			local total_metal_cost = 0
 
-            local metalCurrent, metalStorage, metalPull, metalIncome, metalExpense, metalShare, metalSent, metalReceived = Spring.GetTeamResources(teamID, "metal")
-			local energyCurrent, energyStorage, energyPull, energyIncome, energyExpense, energyShare, energySent, energyReceived = Spring.GetTeamResources(teamID, "energy")
-			
             local armyValue = 0
             local defValue = 0
             local utilValue = 0
             local ecoValue = 0
             local otherValue = 0
+            
+            local metalCurrent, metalStorage, metalPull, metalIncome, metalExpense, metalShare, metalSent, metalReceived = Spring.GetTeamResources(teamID, "metal")
+			local energyCurrent, energyStorage, energyPull, energyIncome, energyExpense, energyShare, energySent, energyReceived = Spring.GetTeamResources(teamID, "energy")
 
 			local total_bp = 0
 			local used_bp = 0
@@ -153,8 +157,6 @@ local function SendExtraStats()
                 { "utilValue", utilValue },
                 { "ecoValue", ecoValue },
                 { "otherValue", otherValue },
-                { "metalCurrent", metalCurrent },
-                { "energyCurrent", energyCurrent },
 				{ "buildPowerAvailable", total_bp },
 				{ "buildPowerUsed", used_bp }
 			})
@@ -199,6 +201,23 @@ local function SendUnitPositions()
 end
 
 function widget:GameFrame(n)
+    -- 2025-06-22 HACK:
+    -- ok, this is really fucking stupid code, caused by the classic "what the fuck is a wupget"
+    -- widgets don't get the GameFramePost callin, but Gex still needs to emit this data at the
+    -- end of a frame, so Gex emits this data before the |frame| global is updated so the frame emitted
+    -- is one frame back from what the game's frame actually is :>
+    units_died_in_frame = {} -- reset back to nothing
+
+    for unitID,v in pairs(units_pending_load) do
+        writeJson("transport_loaded", v)
+    end
+    units_pending_load = {}
+
+    for unitID,v in pairs(units_pending_unload) do
+        writeJson("transport_unloaded", v)
+    end
+	units_pending_unload = {}
+
     frame = n
 
     local unitIDs = Spring.GetAllUnits()
@@ -233,12 +252,15 @@ function widget:GameFrame(n)
 
         for _,unitID in pairs(commanders) do
             local posx, posy, posz = Spring.GetUnitPosition(unitID)
-            writeJson("commander_position_update", {
-                { "unitID", unitID },
-                { "posX", posx, },
-                { "posY", posy, },
-                { "posZ", posz, }
-            })
+            -- sometimes this can be nil for reasons ??
+            if (posx ~= nil and posy ~= nil and posz ~= nil) then
+				writeJson("commander_position_update", {
+					{ "unitID", unitID },
+					{ "posX", posx, },
+					{ "posY", posy, },
+					{ "posZ", posz, }
+				})
+            end
         end
     end
 
@@ -280,7 +302,7 @@ function widget:GameOver(winningAllyTeams)
     for unitID,v in pairs(UNIT_RESOURCE_PRODUCTION) do
         -- HACK: for some reason, the UnitKilled callin setting nil does not work,
         -- and they are still iterated thru in this loop. but, GetUnitTeam will return nil for these units
-        if (Spring.GetUnitTeam(unitID) ~= nil) then
+        if ((Spring.GetUnitTeam(unitID) ~= nil) and (units_died_in_frame[unitID] == nil)) then
 			writeJson("unit_resources", {
 				{ "unitID", unitID },
                 { "defID", Spring.GetUnitDefID(unitID) },
@@ -295,7 +317,7 @@ function widget:GameOver(winningAllyTeams)
     end
 
     for unitID,v in pairs(UNIT_DAMAGE) do
-        if (Spring.GetUnitTeam(unitID) ~= nil) then
+        if ((Spring.GetUnitTeam(unitID) ~= nil) and (units_died_in_frame[unitID] == nil)) then
 			writeJson("unit_damage", {
 				{ "unitID", unitID },
 				{ "defID", Spring.GetUnitDefID(unitID) },
@@ -316,7 +338,6 @@ function widget:GameOver(winningAllyTeams)
             local history = Spring.GetTeamStatsHistory(teamID, 0, range)
 
             if (history) then
-
                 for i = 1,range do
                     data = {
                         { "teamID", teamID }
@@ -377,6 +398,19 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
         commanders[unitID] = nil
     end
 
+    units_died_in_frame[unitID] = unitID
+
+    -- if a unit was killed by crashing, assign the kill credit to whatever last hurt the unit
+    -- this is useful for air to air kills, as those mostly end with crashes
+    -- thanks to TheDujin for finding this bug and reporting it!
+    if (weaponDefID == -8) then
+        attackerID = Spring.GetUnitLastAttacker(unitID)
+        if (attackerID ~= nil) then
+            attackerDefID = Spring.GetUnitDefID(attackerID)
+            attackerTeam = Spring.GetUnitTeam(attackerID)
+        end
+    end
+
     local kx, ky, kz = Spring.GetUnitPosition(unitID)
     local ax, ay, az = nil, nil, nil
     if (attackerID ~= nil) then
@@ -428,8 +462,35 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
 end
 
 function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+
+    -- 2025-06-21 HACK:
+    -- a unit can be loaded and unloaded by different transports multiple times per frame.
+    -- instead of sending all of those events, send all of the unit loaded events after the frame is over
+    -- ex:
+    -- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":10061,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":10061,"transportTeamID":0,...}
+	-- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":24424,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":24424,"transportTeamID":0,...}
+	-- {"action":"transport_loaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":29322,"transportTeamID":0,...}
+	-- {"action":"transport_unloaded","frame":47620,"unitID":25692,"defID":452,"teamID":0,"transportUnitID":29322,"transportTeamID":0,...}
+    --
+    -- note the unitID is the same for all events, but the transport ID is different
+    -- only emit the last one of these events per frame
+
     local x, y, z = Spring.GetUnitPosition(unitID)
 
+    units_pending_load[unitID] = {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    }
+
+    --[[
     writeJson("transport_loaded", {
         { "unitID", unitID },
         { "defID", unitDefID },
@@ -440,11 +501,25 @@ function widget:UnitLoaded(unitID, unitDefID, unitTeam, transportID, transportTe
         { "unitY", y },
         { "unitZ", z }
     })
+    ]]
 end
 
 function widget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID, transportTeam)
+
     local x, y, z = Spring.GetUnitPosition(unitID)
 
+    units_pending_unload[unitID] = {
+        { "unitID", unitID },
+        { "defID", unitDefID },
+        { "teamID", unitTeam },
+        { "transportUnitID", transportID },
+        { "transportTeamID", transportTeam },
+        { "unitX", x },
+        { "unitY", y },
+        { "unitZ", z }
+    }
+
+    --[[
     writeJson("transport_unloaded", {
         { "unitID", unitID },
         { "defID", unitDefID },
@@ -455,6 +530,7 @@ function widget:UnitUnloaded(unitID, unitDefID, unitTeam, transportID, transport
         { "unitY", y },
         { "unitZ", z }
     })
+    ]]
 end
 
 function widget:UnitFromFactory(unitID, unitDefID, unitTeam, factID, factDefID, userOrders)
