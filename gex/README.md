@@ -28,12 +28,6 @@ Gex is a c# webserver that fetches public Beyond All Reason games, downloads the
 1. `npm run build`
 1. `dotnet run`
 1. view at https://localhost:6001/
-2. Create and permissions /replays folder
-dotnet user-secrets set Discord:GuildId $VALUE
-
-Create all the folders referenced and erroring out, like 
-/temp/test_write.txt
-
 
 NOTE: type `.close` into the console window to properly close the game. This will kill any BAR games running as well, and properly cancel everything
 
