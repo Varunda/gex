@@ -72,6 +72,8 @@ export default class MergedStats {
                 defenseValue: extra?.defenseValue ?? 0,
                 utilValue: extra?.utilValue ?? 0,
                 otherValue: extra?.otherValue ?? 0,
+                metalCurrent: extra?.metalCurrent ?? 0,
+                energyCurrent: extra?.energyCurrent ?? 0,
                 buildPowerAvailable: extra?.buildPowerAvailable ?? 0,
                 buildPowerUsed: extra?.buildPowerUsed ?? 0,
                 buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100
