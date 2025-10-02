@@ -123,7 +123,6 @@ namespace gex.Services.BarApi {
             }, cancel);
 
             return true;
-
         }
 
         /// <summary>
@@ -135,7 +134,8 @@ namespace gex.Services.BarApi {
         ///     if the map has already been saved for the passed engine
         /// </returns>
         public bool HasMap(string engine, string map) {
-            string mapName = (map + ".sd7").Replace(" ", "_").Replace("'", "_").ToLower();
+            string mapName = (map + ".sd7").EscapeRecoilFilesytemCharacters().ToLower();
+
             // yes, double maps is correct, it's what pr-downloaded just wants i guess, zany
             string path = Path.Join(_EnginePathUtil.Get(engine), "maps", "maps", mapName);
             return File.Exists(path);

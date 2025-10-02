@@ -1,4 +1,5 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using gex.Code.ExtensionMethods;
 using gex.Commands;
 using gex.Models.Discord;
@@ -121,6 +122,27 @@ namespace gex.Code.Commands {
             msg.Message = "Test poke from Gex!";
 
             _MessageQueue.Queue(msg);
+        }
+
+        public async Task GetServerPermissions(ulong guildID) {
+
+            DiscordGuild? guild = await _Discord.Get().TryGetGuild(guildID);
+            if (guild == null) {
+                _Logger.LogInformation($"failed to find guild to get permissions of [guildID={guildID}]");
+                return;
+            }
+
+            ulong botId = _Discord.Get().CurrentUser.Id;
+            DiscordMember? member = await guild.TryGetMember(botId);
+
+            if (member == null) {
+                _Logger.LogInformation($"failed to find bot user within gulid [guildID={guildID}] [botId={botId}]");
+                return;
+            }
+
+            _Logger.LogInformation($"bot permissions: {member.Permissions.ToString()}");
+
+            member.Permissions.HasPermission((DSharpPlus.Permissions)1uL);
         }
 
     }

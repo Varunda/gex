@@ -46,7 +46,7 @@ namespace gex.Services.Hosted.Startup {
             }
 
             if (string.IsNullOrEmpty(_Options.Value.GameLogLocation)) {
-                _Logger.LogError("the option 'GameLocLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'GameLogLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 
@@ -61,7 +61,7 @@ namespace gex.Services.Hosted.Startup {
             }
 
             if (string.IsNullOrEmpty(_Options.Value.UnitPositionLocation)) {
-                _Logger.LogError("the option 'UnitPositionDataLocation' was an empty string or unset. Is this set in env.json?");
+                _Logger.LogError("the option 'UnitPositionLocation' was an empty string or unset. Is this set in env.json?");
                 error = true;
             }
 

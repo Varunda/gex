@@ -191,6 +191,12 @@ export class BarWeaponDefinition {
 
     public carriedUnit: BarUnitCarrierData | null = null;
 
+    public clusterWeaponDefinition: string | null = null;
+
+    public clusterNumber: number = 0;
+
+    public clusterWeapon: BarWeaponDefinition | null = null;
+
     // computed props
 
     public fireRate: number = 0;
@@ -205,7 +211,8 @@ export class BarWeaponDefinition {
         const def: BarWeaponDefinition = {
             ...elem,
             shieldData: (elem.shieldData == null) ? null : BarShieldData.parse(elem.shieldData),
-            carriedUnit: (elem.carriedUnit == null) ? null : BarUnitCarrierData.parse(elem.carriedUnit)
+            carriedUnit: (elem.carriedUnit == null) ? null : BarUnitCarrierData.parse(elem.carriedUnit),
+            clusterWeapon: (elem.clusterWeapon == null) ? null : BarWeaponDefinition.parse(elem.clusterWeapon),
         };
 
         def.damages = new Map<string, number>();

@@ -5,6 +5,7 @@
 
             <h2 class="wt-header bg-light text-dark">
                 Add unit to compare
+                <toggle-button class="text-black" v-model="dumpUnit">Show full json</toggle-button>
             </h2>
 
             <div v-if="unitNames.state == 'loaded'">
@@ -28,25 +29,28 @@
             Loading...
         </div>
 
-        <div v-else-if="rootLoad.state == 'loaded'" class="d-flex flex-wrap justify-content-center" style="gap: 0.5rem;">
-            <div v-if="firstUnit == null">
-                No units given
+        <div v-else-if="rootLoad.state == 'loaded'">
+            <div class="d-flex flex-wrap justify-content-center" style="gap: 0.5rem;">
+                <div v-if="firstUnit == null">
+                    No units given
+                </div>
+
+                <template v-else>
+                    <unit :api-unit="firstUnit" @weaponindexchange="selectedWeaponIndexChanged" @close="removeUnit($event)" @updatedamagetypes="updateDamageTypes"
+                        :damage-types="damageTypeSet" :dump-json="dumpUnit"
+                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :show-cluster-data="showClusterData">
+                    </unit>
+
+                    <unit v-for="otherUnit in otherUnits" class="border-start ps-2" :key="otherUnit.definitionName" :api-unit="otherUnit"
+                        @close="removeUnit($event)"
+                        @updatedamagetypes="updateDamageTypes"
+                        @changeshowshield="changeShowShieldData" @changeshowcarrier="changeShowCarrierData" @changeshowcluster="changeShowClusterData"
+                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :damage-types="damageTypeSet" :show-cluster-data="showClusterData"
+                        :compare="firstUnit" :compare-weapon="firstUnitSelectedWeapon"
+                        :dump-json="dumpUnit">
+                    </unit>
+                </template>
             </div>
-
-            <template v-else>
-                <unit :api-unit="firstUnit" @weaponindexchange="selectedWeaponIndexChanged" @close="removeUnit($event)" @updatedamagetypes="updateDamageTypes"
-                    :damage-types="damageTypeSet"
-                    :show-shield-data="showShieldData" :show-carrier-data="showCarrierData">
-                </unit>
-
-                <unit v-for="otherUnit in otherUnits" class="border-start ps-2" :key="otherUnit.definitionName" :api-unit="otherUnit"
-                    @close="removeUnit($event)"
-                    @updatedamagetypes="updateDamageTypes"
-                    @changeshowshield="changeShowShieldData" @changeshowcarrier="changeShowCarrierData"
-                    :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :damage-types="damageTypeSet"
-                    :compare="firstUnit" :compare-weapon="firstUnitSelectedWeapon">
-                </unit>
-            </template>
         </div>
 
         <div v-else-if="rootLoad.state == 'error'">
@@ -61,6 +65,7 @@
 
     import Busy from "components/Busy.vue";
     import ApiError from "components/ApiError";
+    import ToggleButton from "components/ToggleButton";
 
     import Unit from "./components/Unit.vue";
 
@@ -85,10 +90,13 @@
 
                 showExtraEcoStats: false as boolean,
 
+                dumpUnit: false as boolean,
+
                 selectedWeaponIndex: 0 as number,
                 damageTypeSet: [] as string[],
                 showShieldData: false as boolean,
                 showCarrierData: false as boolean,
+                showClusterData: false as boolean
             }
         },
 
@@ -213,6 +221,11 @@
                 this.showCarrierData = this.showCarrierData || b;
             },
 
+            changeShowClusterData: function(b: boolean): void {
+                console.log(`BarUnit> show cluster data to ${b}`);
+                this.showClusterData ||= b;
+            },
+
             updateDamageTypes: function(types: string[]): void {
                 for (const t of types) {
                     if (t == "default") {
@@ -277,8 +290,8 @@
         },
 
         components: {
-            Busy, ApiError,
-            Unit
+            Busy, ApiError, ToggleButton,
+            Unit, 
         }
     });
     export default BarUnitView;

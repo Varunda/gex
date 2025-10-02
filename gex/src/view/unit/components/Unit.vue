@@ -147,6 +147,22 @@
                     <tr is="Cell" name="Docking helper speed" field="dockingHelperSpeed" :unit="selectUnitCarried" :compare="compareCarriedUnit"></tr>
                 </template>
 
+                <template v-if="ShowClusterData || selectedWeapon.clusterWeapon != null || (compareWeaponDef && compareWeaponDef.clusterWeapon != null)">
+                    <tr is="Header" name="Cluster weapon" :colspan="colspan"></tr>
+
+                    <tr>
+                        <td>Weapon</td>
+                        <td>{{ selectedWeapon.clusterWeaponDefinition }}</td>
+                        <td v-if="compare != null"></td>
+                    </tr>
+
+                    <tr is="Cell" name="Cluster spawn count" field="clusterNumber" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                    <tr is="Cell" name="Damage (per spawn)" field="defaultDamage" :unit="selectClusterWeapon" :compare="compareClusterData"></tr>
+                    <tr is="Cell" name="AoE" field="areaOfEffect" :unit="selectClusterWeapon" :compare="compareClusterData"></tr>
+                    <tr is="Cell" name="Edge effectiviness" field="edgeEffectiveness" :unit="selectClusterWeapon" :compare="compareClusterData"></tr>
+                    <tr is="Cell" name="Impulse factor" field="impulseFactor" :unit="selectClusterWeapon" :compare="compareClusterData"></tr>
+                </template>
+
             </tbody>
 
         </table>
@@ -205,6 +221,8 @@
                 <tr is="Cell" name="Damage modifier" field="damageModifier" :unit="unit" :compare="compareUnit"></tr>
             </tbody>
         </table>
+
+        <pre v-if="DumpJson">{{ JSON.stringify(unit, null, 4) }}</pre>
 
     </div>
 </template>
@@ -471,7 +489,9 @@
             CompareWeapon: { type: Object as PropType<BarUnitWeapon | null>, required: false },
             ShowShieldData: { type: Boolean, required: false, default: false },
             ShowCarrierData: { type: Boolean, required: false, default: false },
-            DamageTypes: { type: Array as PropType<string[]>, required: true }
+            ShowClusterData: { type: Boolean, required: false, default: false },
+            DamageTypes: { type: Array as PropType<string[]>, required: true },
+            DumpJson: { type: Boolean, required: false, default: false }
         },
 
         data: function() {
@@ -483,6 +503,7 @@
         mounted: function(): void {
             this.$emit("changeshowshield", this.selectedWeapon.shieldData != null);
             this.$emit("changeshowcarrier", this.selectedWeapon.carriedUnit != null);
+            this.$emit("changeshowcluster", this.selectedWeapon.clusterWeapon != null);
             this.$emit("updatedamagetypes", Array.from(this.selectedWeapon.damages.keys()));
         },
 
@@ -519,6 +540,10 @@
                 return this.selectedWeapon.carriedUnit ?? new BarUnitCarrierData();
             },
 
+            selectClusterWeapon: function(): BarWeaponDefinition {
+                return this.selectedWeapon.clusterWeapon ?? new BarWeaponDefinition();
+            },
+
             unit: function(): BarUnit {
                 return this.ApiUnit.unit;
             },
@@ -549,6 +574,14 @@
                 }
 
                 return this.CompareWeapon?.weaponDefinition.carriedUnit ?? new BarUnitCarrierData();
+            },
+
+            compareClusterData: function(): BarWeaponDefinition | null {
+                if (this.compare == null) {
+                    return null;
+                }
+
+                return this.CompareWeapon?.weaponDefinition.clusterWeapon ?? new BarWeaponDefinition();
             }
         },
 
