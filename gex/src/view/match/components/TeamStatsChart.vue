@@ -227,12 +227,14 @@
         ["buildPowerPercent", "Build power percent"],
 
         ["metalProduced", "Metal produced"],
+        ["metalCurrent", "Metal Current"],
         ["metalExcess", "Metal excess"],
         ["metalReceived", "Metal receieved"],
         ["metalSent", "Metal sent"],
         //["metalUsed", "Metal used"],
 
         ["energyProduced", "Energy produced"],
+        ["energyCurrent", "Energy Current"],
         ["energyExcess", "Energy excess"],
         ["energyReceived", "Energy receieved"],
         ["energySent", "Energy sent"],
@@ -289,11 +291,13 @@
                 ["metalProduced", "Metal produced"],
                 ["metalExcess", "Metal excess"],
                 ["metalReceived", "Metal receieved"],
+                ["metalCurrent", "Metal Current"],
                 ["metalSent", "Metal sent"],
                 ["energyProduced", "Energy produced"],
                 ["energyExcess", "Energy excess"],
                 ["energyReceived", "Energy receieved"],
                 ["energySent", "Energy sent"],
+                ["energyCurrent", "Energy Current"],
             ]
         },
         {

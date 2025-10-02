@@ -115,6 +115,9 @@ local function SendExtraStats()
             local ecoValue = 0
             local otherValue = 0
 
+            local metalCurrent, metalStorage, metalPull, metalIncome, metalExpense, metalShare, metalSent, metalReceived = Spring.GetTeamResources(teamID, "metal")
+			local energyCurrent, energyStorage, energyPull, energyIncome, energyExpense, energyShare, energySent, energyReceived = Spring.GetTeamResources(teamID, "energy")
+
 			local total_bp = 0
 			local used_bp = 0
 
@@ -152,6 +155,8 @@ local function SendExtraStats()
                 { "armyValue", armyValue },
                 { "defValue", defValue },
                 { "utilValue", utilValue },
+                { "metalCurrent", metalCurrent },
+                { "energyCurrent", energyCurrent },
                 { "ecoValue", ecoValue },
                 { "otherValue", otherValue },
 				{ "buildPowerAvailable", total_bp },
