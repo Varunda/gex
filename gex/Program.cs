@@ -130,24 +130,42 @@ namespace gex {
             logger.LogInformation($"ran host");
             Console.WriteLine($"Ran host");
 
+            bool stop = false;
+            AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs args) => {
+                logger.LogInformation($"process exit called");
+                stop = true;
+            };
+            Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) => {
+                logger.LogInformation($"SIGINT detected, exiting");
+                stop = true;
+            };
+
             string? line = "";
             bool fastStop = false;
             while (line != ".close") {
-                line = Console.ReadLine();
-
-                if (line == ".close" || line == ".closefast") {
-                    if (line == ".closefast") {
-                        fastStop = true;
-                    }
+                if (stop == true) {
                     break;
+                }
+
+                if (Console.KeyAvailable == true) {
+                    line = Console.ReadLine();
+
+                    if (line == ".close" || line == ".closefast") {
+                        if (line == ".closefast") {
+                            fastStop = true;
+                        }
+                        break;
+                    } else {
+                        if (commands == null) {
+                            logger.LogError($"Missing {nameof(CommandBus)} from host, cannot execute '{line}'");
+                            Console.Error.WriteLine($"Missing {nameof(CommandBus)} from host, cannot execute '{line}'");
+                        }
+                        if (line != null && commands != null) {
+                            await commands.Execute(line);
+                        }
+                    }
                 } else {
-                    if (commands == null) {
-                        logger.LogError($"Missing {nameof(CommandBus)} from host, cannot execute '{line}'");
-                        Console.Error.WriteLine($"Missing {nameof(CommandBus)} from host, cannot execute '{line}'");
-                    }
-                    if (line != null && commands != null) {
-                        await commands.Execute(line);
-                    }
+                    await Task.Delay(10);
                 }
             }
 

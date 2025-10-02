@@ -29,5 +29,5 @@ Gex is a c# webserver that fetches public Beyond All Reason games, downloads the
 1. `dotnet run`
 1. view at https://localhost:6001/
 
-NOTE: type `.close` into the console window to properly close the game. This will kill any BAR games running as well, and properly cancel everything
+NOTE: use ^C or type `.close` into the console window to properly close the game. This will properly shutdown Gex, and cancel all running tasks
 
