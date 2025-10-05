@@ -88,6 +88,11 @@ namespace gex.Models.Db {
         /// </summary>
         public bool? LegionEnabled { get; set; }
 
+        /// <summary>
+        ///     id of the <see cref="MatchPool"/> to search for
+        /// </summary>
+        public long? PoolID { get; set; }
+
         public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
 
         public OrderByDirection OrderByDirection { get; set; } = OrderByDirection.ASC;

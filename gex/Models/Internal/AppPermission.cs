@@ -44,5 +44,14 @@ namespace gex.Models.Internal {
         public const string GEX_DEV = "Gex.Dev";
         public readonly static AppPermission GexDev = new(GEX_DEV, "Developer permissions");
 
+        public const string GEX_MATCH_POOL_CREATE = "Gex.MatchPool.Create";
+        public readonly static AppPermission GexMatchPoolCreate = new(GEX_MATCH_POOL_CREATE, "Create a match pool");
+
+        public const string GEX_MATCH_POOL_DELETE = "Gex.MatchPool.Delete";
+        public readonly static AppPermission GexMatchPoolDelete = new(GEX_MATCH_POOL_DELETE, "Delete a match pool");
+
+        public const string GEX_MATCH_POOL_ENTRY_ADDREMOVE = "Gex.MatchPoolEntry.AddRemove";
+        public readonly static AppPermission GexMatchPoolEntryAddRemove = new(GEX_MATCH_POOL_ENTRY_ADDREMOVE, "Add and remove entries to a match pool");
+
     }
 }

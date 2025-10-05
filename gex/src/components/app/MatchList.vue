@@ -204,6 +204,7 @@
 
     import "filters/TimeAgoFilter";
     import "filters/CompactTimeAgoFilter";
+    import "filters/MomentFilter";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";

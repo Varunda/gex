@@ -26,6 +26,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarWeaponDefinitionRepository>();
             services.AddSingleton<BarUnitRepository>();
             services.AddSingleton<BarI18nRepository>();
+            services.AddSingleton<MatchPoolRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

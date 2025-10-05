@@ -388,6 +388,12 @@ namespace gex {
                 );
 
                 endpoints.MapControllerRoute(
+                    name: "pool",
+                    pattern: "/pool/{*.}",
+                    defaults: new { controller = "Home", action = "Pool" }
+                );
+
+                endpoints.MapControllerRoute(
                     name: "mapname",
                     pattern: "/mapname/{mapName}",
                     defaults: new { controller = "Home", action = "MapName" }
@@ -398,7 +404,6 @@ namespace gex {
                     pattern: "/downloadmatch/{gameID}",
                     defaults: new { controller = "Home", action = "DownloadMatch" }
                 );
-
 
                 endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run").DisableHttpMetrics();
 

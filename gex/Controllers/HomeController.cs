@@ -43,13 +43,15 @@ namespace gex.Controllers {
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _MapRepository;
         private readonly BarUserRepository _UserRepository;
+        private readonly MatchPoolRepository _MatchPoolRepository;
 
         public HomeController(ILogger<HomeController> logger,
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
             BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository mapRepository, BarUserRepository userRepository,
-            ICurrentAccount currentUser, AppAccountDbStore accountDb) {
+            ICurrentAccount currentUser, AppAccountDbStore accountDb,
+            MatchPoolRepository matchPoolRepository) {
 
             _Logger = logger;
             _HttpContextAccessor = httpContextAccessor;
@@ -64,6 +66,7 @@ namespace gex.Controllers {
             _PlayerRepository = playerRepository;
             _MapRepository = mapRepository;
             _UserRepository = userRepository;
+            _MatchPoolRepository = matchPoolRepository;
         }
 
         public IActionResult Index() {
@@ -316,6 +319,35 @@ namespace gex.Controllers {
         }
 
         public IActionResult Leaderboard() {
+            return View();
+        }
+
+        public IActionResult Pools() {
+            return View();
+        }
+
+        /// <summary>
+        ///     action to view a match pool
+        /// </summary>
+        public async Task<IActionResult> Pool(long poolID, CancellationToken cancel) {
+            try {
+                string? ogDesc = null;
+
+                await Task.Run(async () => {
+                    MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
+
+                    if (pool == null) {
+                        return;
+                    }
+
+                    ogDesc = $"View matches for {pool.Name}";
+                }, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
+
+                ViewBag.OgDescription = ogDesc;
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to generate og:description for match pool [poolID={poolID}]");
+            }
+
             return View();
         }
 

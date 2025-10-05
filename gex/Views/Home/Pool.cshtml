@@ -1,0 +1,18 @@
+﻿<meta property="og:title" content="Gex" />
+@if (ViewBag.OgDescription == null) {
+    <meta property="og:description" content="View a match pool" />
+} else {
+    <meta property="og:description" content="@ViewBag.OgDescription" />
+}
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="~/dist/view/pool/view.js" defer asp-append-version="true"></script>
+
+<style>
+
+</style>
+
+<div id="app" class="container-fluid" v-cloak>
+    <match-pool-view></match-pool-view>
+</div>
+

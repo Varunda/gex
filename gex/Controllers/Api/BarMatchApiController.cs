@@ -251,6 +251,7 @@ namespace gex.Controllers.Api {
             [FromQuery] int? playerCountMinimum = null,
             [FromQuery] int? playerCountMaximum = null,
             [FromQuery] bool? legionEnabled = null,
+            [FromQuery] long? poolID = null,
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
@@ -300,6 +301,7 @@ namespace gex.Controllers.Api {
             parms.ProcessingReplayed = processingReplayed;
             parms.ProcessingAction = processingAction;
             parms.LegionEnabled = legionEnabled;
+            parms.PoolID = poolID;
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 

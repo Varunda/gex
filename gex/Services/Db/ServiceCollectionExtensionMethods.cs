@@ -74,6 +74,8 @@ namespace gex.Services.Db {
             services.AddSingleton<DiscordSubscriptionMatchProcessedDb>();
             services.AddSingleton<DiscordBarUserLinkDb>();
             services.AddSingleton<LobbyAlertDb>();
+            services.AddSingleton<MatchPoolDb>();
+            services.AddSingleton<MatchPoolEntryDb>();
         }
 
     }

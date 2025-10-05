@@ -203,6 +203,7 @@ namespace gex.Services.Db.Match {
             List<string> conditions = [];
 
             bool joinProcessing = false;
+            bool joinPool = false;
 
             if (parms.EngineVersion != null) {
                 conditions.Add("m.engine = @Engine");
@@ -289,10 +290,17 @@ namespace gex.Services.Db.Match {
                 conditions.Add($"m.game_settings->>'experimentallegionfaction' = {(parms.LegionEnabled.Value == true ? "'1'" : "'0'")}");
             }
 
+            if (parms.PoolID != null) {
+                conditions.Add("mp.pool_id = @PoolID");
+                cmd.AddParameter("PoolID", parms.PoolID.Value);
+                joinPool = true;
+            }
+
             cmd.CommandText = $@"
                 SELECT *
                     FROM bar_match m
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
+                        {((joinPool == true) ? "INNER JOIN match_pool_entry mp ON mp.match_id = m.id " : "")}
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
                     ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}
