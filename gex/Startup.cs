@@ -389,7 +389,7 @@ namespace gex {
 
                 endpoints.MapControllerRoute(
                     name: "pool",
-                    pattern: "/pool/{*.}",
+                    pattern: "/pool/{poolID}",
                     defaults: new { controller = "Home", action = "Pool" }
                 );
 

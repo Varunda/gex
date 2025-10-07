@@ -1,7 +1,11 @@
 ﻿<template>
     <div class="container">
-        <div v-if="hasAddRemovePermission" class="mb-3">
-            <toggle-button v-model="showPoolEdit">show edit</toggle-button>
+        <div v-if="hasAddRemovePermission || hasUpdatePriorityPermission" class="mb-3">
+            <toggle-button v-if="hasAddRemovePermission" v-model="showPoolEdit">show edit</toggle-button>
+
+            <button v-if="hasUpdatePriorityPermission" class="btn btn-secondary" @click="setPriorityToOne">
+                set prio to 1
+            </button>
         </div>
 
         <div class="mb-3">
@@ -79,6 +83,7 @@
     import { BarMatchApi } from "api/BarMatchApi";
 
     import AccountUtil from "util/Account";
+import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
 
     export const MatchPoolView = Vue.extend({
         props: {
@@ -111,6 +116,8 @@
                 if (this.pool.state != "loaded") {
                     return;
                 }
+
+                document.title = `Gex / Pool / ${this.pool.data.name}`;
 
                 this.matches = Loadable.loading();
                 this.matches = await BarMatchApi.search(0, 100, "start_time", "desc", {
@@ -146,6 +153,24 @@
             removeMatchFromPool: async function(matchId: string): Promise<void> {
                 await MatchPoolApi.removeMatchFromPool(this.poolID, matchId);
                 await this.loadPool();
+            },
+
+            setPriorityToOne: async function(): Promise<void> {
+                if (this.matches.state != "loaded") {
+                    return;
+                }
+
+                for (const match of this.matches.data) {
+                    const res = await BarMatchProcessingApi.updatePriority(match.id, 1);
+                    if (res.state == "error") {
+                        console.error(`failed to update prio of ${match.id}: ${JSON.stringify(res.problem)}`);
+                        Toaster.add(`Failed to update prio`, `Failed to update prio of ${match.id} to 1: ${res.problem.detail}`, "danger");
+                    } else if (res.state == "notfound") {
+                        Toaster.add(`Missing match`, `Missing match ${match.id}`, "danger");
+                    } else if (res.state != "loaded") {
+                        Toaster.add(`unchecked response state`, `response state: ${res.state}`, "danger");
+                    }
+                }
             }
 
         },
@@ -153,8 +178,11 @@
         computed: {
             hasAddRemovePermission: function(): boolean {
                 return AccountUtil.hasPermission("Gex.MatchPoolEntry.AddRemove");
-            }
+            },
 
+            hasUpdatePriorityPermission: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Match.ForceReplay");
+            }
         },
 
         components: {

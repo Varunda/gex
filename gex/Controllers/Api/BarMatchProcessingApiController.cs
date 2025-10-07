@@ -147,5 +147,40 @@ namespace gex.Controllers.Api {
             return ApiOk();
         }
 
+        /// <summary>
+        ///     action to change the priority of a <see cref="BarMatchProcessing"/>
+        /// </summary>
+        /// <param name="gameID">ID of the <see cref="BarMatchProcessing"/> to change the <see cref="BarMatchProcessing.Priority"/> of</param>
+        /// <param name="priority">new priority to set. cannot be below -1</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/>
+        ///     of <paramref name="gameID"/> successfully had its <see cref="BarMatchProcessing.Priority"/>
+        ///     set to <paramref name="priority"/>
+        /// </response>
+        /// <response code="404">
+        ///     no <see cref="BarMatchProcessing"/> with <see cref="BarMatchProcessing.GameID"/>
+        ///     of <paramref name="gameID"/> exists
+        /// </response>
+        [HttpPost("update-priority/{gameID}/{priority}")]
+        [PermissionNeeded(AppPermission.GEX_MATCH_FORCE_REPLAY)]
+        public async Task<ApiResponse> SetMatchProcessingPriority(string gameID, short priority, CancellationToken cancel) {
+            if (priority < -1) {
+                return ApiBadRequest($"priority cannot be below -1");
+            }
+
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            if (proc == null) {
+                return ApiNotFound($"{nameof(BarMatch)} {gameID}");
+            }
+
+            _Logger.LogInformation($"updating priority of match [gameID={gameID}] [priority={priority}]");
+
+            proc.Priority = priority;
+            await _ProcessingRepository.Upsert(proc);
+
+            return ApiOk();
+        }
+
     }
 }

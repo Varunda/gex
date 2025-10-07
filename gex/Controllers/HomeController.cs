@@ -335,7 +335,6 @@ namespace gex.Controllers {
 
                 await Task.Run(async () => {
                     MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
-
                     if (pool == null) {
                         return;
                     }

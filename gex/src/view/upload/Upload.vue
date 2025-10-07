@@ -10,7 +10,8 @@
                 </div>
 
                 <div>
-                    Uploading a game makes the game public, and anyone can view it. Do not upload games that others want to keep private
+                    Uploading a game makes the game public, and anyone can view it. Do not upload games that others want
+                    to keep private
                 </div>
 
                 <div class="input-group">
@@ -29,6 +30,39 @@
                 <div class="w-100">
                     <button class="btn btn-primary w-100" @click="doUpload">Upload</button>
                 </div>
+
+                <hr class="border" />
+
+                <div class="w-100 mb-3" v-if="hasAddRemovePermission">
+                    <label>match pool upload</label>
+
+                    <select v-model.number="selectedPoolID" class="form-control">
+                        <option :value="undefined">none</option>
+                        <template v-if="pools.state == 'loaded'">
+                            <option v-for="pool in pools.data" :key="pool.id" :value="pool.id">
+                                {{ pool.name }}
+                            </option>
+                        </template>
+                    </select>
+
+                    <span v-if="selectedPool != null">
+                        matches uploaded will be added to the match pool: {{ selectedPool.name }}
+                    </span>
+                    <span v-else>
+                        matches uploaded will not be added to a match pool
+                    </span>
+                </div>
+
+                <div v-if="hasUpdatePriorityPermission" class="mb-3 w-100">
+                    <label class="d-block">update priority on upload</label>
+                    <toggle-button v-model="updatePrio" class="mb-2">update prio?</toggle-button>
+
+                    <span v-if="updatePrio == true">
+                        <input v-model.number="prioValue" class="form-control" type="number"/>
+
+                        matches once uploaded will be updated with a priority of {{ prioValue }}
+                    </span>
+                </div>
             </div>
 
             <div class="flex-grow-1"></div>
@@ -41,28 +75,23 @@
         </div>
 
         <div class="text-center">
-            <div v-if="match.state == 'idle'"></div>
-
-            <div v-else-if="match.state == 'loading'">
-                Loading...
+            <div v-if="uploadCount > 0">
+                <div class="progress" style="height: 2rem;">
+                    <div class="progress-bar" :style="{ 'width': `${uploadedCount / uploadCount * 100}%`, 'height': '2rem' }"></div>
+                </div>
             </div>
 
-            <div v-else-if="match.state == 'loaded'">
-                Game uploaded:
-                <a :href="'/match/' + match.data.id" target="_blank" ref="nofollow">View match</a>
-            </div>
+            <div>
+                <div>matches uploaded:</div>
 
-            <div v-else-if="match.state == 'error'" class="alert alert-danger d-inline-block">
-                <b>Failed to upload match:</b>
-                <br>
-                <span v-if="match.problem.instance != ''">
-                    {{ match.problem.title }}
-                </span>
-                <span v-else>
-                    {{ match.problem.detail }}
-                </span>
-            </div>
+                <div class="border-bottom pb-3 mb-3">
+                    <a v-for="matchID in matchesUploaded" :key="matchID" :href="'/match/' + matchID" target="_blank" ref="nofollow" class="d-block font-monospace">
+                        {{ matchID }}
+                    </a>
+                </div>
 
+                <pre>{{ uploadedMatchIds }}</pre>
+            </div>
         </div>
     </div>
 </template>
@@ -80,9 +109,13 @@
     import Busy from "components/Busy.vue";
 
     import { MatchUploadApi } from "api/MatchUploadApi";
+    import { MatchPoolApi } from "api/MatchPoolApi";
+    import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
 
     import { BarMatch } from "model/BarMatch";
+    import { MatchPool } from "model/MatchPool";
 
+    import AccountUtil from "util/Account";
     import Toaster from "Toaster";
 
     export const Upload = Vue.extend({
@@ -97,7 +130,15 @@
                 match: Loadable.idle() as Loading<BarMatch>,
 
                 uploadCount: 0 as number,
-                uploadedCount: 0 as number
+                uploadedCount: 0 as number,
+
+                pools: Loadable.idle() as Loading<MatchPool[]>,
+                selectedPoolID: undefined as number | undefined,
+
+                updatePrio: false as boolean,
+                prioValue: 10 as number,
+
+                matchesUploaded: [] as string[]
             };
         },
 
@@ -108,12 +149,18 @@
         mounted: function(): void {
             this.$nextTick(() => {
                 this.makeFile();
+                this.loadPools();
             });
         },
 
         methods: {
             makeFile: function(): void {
                 this.file = document.getElementById("file-upload") as HTMLInputElement | null;
+            },
+
+            loadPools: async function(): Promise<void> {
+                this.pools = Loadable.loading();
+                this.pools = await MatchPoolApi.getAll();
             },
 
             updateName: function(ev: any): void {
@@ -149,18 +196,55 @@
                         continue;
                     }
 
-                    this.match = await MatchUploadApi.upload(f);
+                    const match: Loading<BarMatch> = await MatchUploadApi.upload(f);
                     ++this.uploadedCount;
-                    if (this.match.state != "loaded") {
+                    if (match.state != "loaded") {
                         Loadable.toastError(this.match, "Upload error");
                         //Toaster.add("Upload error", `error uploading!`, "danger");
+                    } else {
+                        const matchID: string = match.data.id;
+                        if (this.matchesUploaded.find(iter => iter == matchID) == undefined) {
+                            this.matchesUploaded.push(matchID);
+                        }
+
+                        if (this.selectedPoolID != undefined) {
+                            console.log(`Upload> adding match to selected pool [poolID=${this.selectedPoolID}] [matchID=${match.data.id}]`);
+                            await MatchPoolApi.addMatchToPool(this.selectedPoolID, match.data.id);
+                        }
+
+                        if (this.updatePrio == true) {
+                            console.log(`Upload> updating match priority [matchID=${matchID}] [priority=${this.prioValue}]`);
+                            await BarMatchProcessingApi.updatePriority(matchID, this.prioValue);
+                        }
                     }
                 }
             }
         },
 
         computed: {
+            selectedPool: function(): MatchPool | null {
+                if (this.selectedPoolID == undefined) {
+                    return null;
+                }
 
+                if (this.pools.state != "loaded") {
+                    return null;
+                }
+
+                return this.pools.data.find(iter => iter.id == this.selectedPoolID) ?? null;
+            },
+
+            hasAddRemovePermission: function(): boolean {
+                return AccountUtil.hasPermission("Gex.MatchPoolEntry.AddRemove");
+            },
+
+            hasUpdatePriorityPermission: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Match.ForceReplay");
+            },
+
+            uploadedMatchIds: function(): string {
+                return this.matchesUploaded.join("\n");
+            }
         },
 
         watch: {
