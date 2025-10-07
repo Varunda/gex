@@ -1,5 +1,4 @@
 
-
 export class GameEventUnitResources {
     public gameID: string = "";
     public frame: number = 0;

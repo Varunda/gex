@@ -10,6 +10,8 @@ import { GameEventUnitKilled } from "./GameEventUnitKilled";
 import { GameEventUnitResources } from "./GameEventUnitResources";
 import { GameEventWindUpdate } from "./GameEventWindUpdate";
 import { GameEventUnitPosition } from "./GameEventUnitPosition";
+import { GameEventUnitsTaken } from "./GameEventUnitsTaken";
+import { GameEventUnitsGiven } from "./GameEventUnitsGiven";
 
 export class GameOutput {
 
@@ -26,6 +28,8 @@ export class GameOutput {
     public unitResources: GameEventUnitResources[] = [];
     public unitDamage: GameEventUnitDamage[] = [];
     public unitPosition: GameEventUnitPosition[] = [];
+    public unitsTaken: GameEventUnitsTaken[] = [];
+    public unitsGiven: GameEventUnitsGiven[] = [];
 
     public static parse(elem: any): GameOutput {
 
@@ -91,7 +95,9 @@ export class GameOutput {
             teamDiedEvents: elem.teamDiedEvents.map((iter: any) => GameEventTeamDied.parse(iter)),
             unitResources: elem.unitResources.map((iter: any) => GameEventUnitResources.parse(iter)),
             unitDamage: elem.unitDamage.map((iter: any) => GameEventUnitDamage.parse(iter)),
-            unitPosition: elem.unitPosition.map((iter: any) => GameEventUnitPosition.parse(iter))
+            unitPosition: elem.unitPosition.map((iter: any) => GameEventUnitPosition.parse(iter)),
+            unitsTaken: elem.unitsTaken.map((iter: any) => GameEventUnitsTaken.parse(iter)),
+            unitsGiven: elem.unitsGiven.map((iter: any) => GameEventUnitsGiven.parse(iter)),
         };
     }
 

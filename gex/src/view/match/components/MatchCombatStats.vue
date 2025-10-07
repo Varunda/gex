@@ -282,6 +282,7 @@
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
 
     import { UnitStats } from "../compute/UnitStatData";
+    import { StatEntity } from "../compute/common";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
 
@@ -292,7 +293,8 @@
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
             UnitStats: { type: Array as PropType<UnitStats[]>, required: true },
-            SelectedTeam: { type: Number, required: true }
+            entities: { type: Array as PropType<StatEntity[]>, required: true },
+            SelectedEntity: { type: String, required: true }
         },
 
         data: function() {
@@ -487,7 +489,7 @@
             },
 
             playerStats: function(): UnitStats[] {
-                return this.UnitStats.filter(iter => iter.teamID == this.SelectedTeam);
+                return this.UnitStats.filter(iter => iter.id == this.SelectedEntity);
             },
 
             playerMostUsed: function(): UnitStats[] {
@@ -500,28 +502,27 @@
 
             dynamicUnits: function(): Loading<UnitStats[]> {
                 return Loadable.loaded(this.UnitStats.filter(iter => {
-                    return iter.teamID == this.SelectedTeam
+                    return iter.id == this.SelectedEntity
                         && (iter.definition?.speed ?? 0) > 0 && (iter.definition?.weaponCount ?? 0) > 0;
                 }));
             },
 
             staticUnits: function(): Loading<UnitStats[]> {
                 return Loadable.loaded(this.UnitStats.filter(iter => {
-                    return iter.teamID == this.SelectedTeam
+                    return iter.id == this.SelectedEntity
                         && (iter.definition?.speed ?? 1) == 0 && (iter.definition?.weaponCount ?? 0) > 0;
                 }));
             },
 
-            selectedPlayer: function(): BarMatchPlayer | null {
-                return this.match.players.find(iter => iter.teamID == this.SelectedTeam) || null;
+            selectedPlayer: function(): StatEntity | null {
+                return this.entities.find(iter => iter.id == this.SelectedEntity) || null;
             }
         },
 
         watch: {
-            SelectedTeam: function(): void {
+            SelectedEntity: function(): void {
                 this.makeCharts();
             }
-
         },
 
         components: {

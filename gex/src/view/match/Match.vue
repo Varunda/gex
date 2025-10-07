@@ -235,21 +235,21 @@
                         <h1 class="wt-header bg-light text-dark">Unit stats</h1>
 
                         <div class="player-stats-container">
-                            <h4 v-if="selectedPlayer" class="text-center">
+                            <h4 v-if="selectedEntity" class="text-center">
                                 Viewing unit stats for
-                                <span :style="{ 'color': selectedPlayer.hexColor }">
-                                    {{ selectedPlayer.username }}
+                                <span :style="{ 'color': selectedEntity.color }">
+                                    {{ selectedEntity.name }}
                                 </span>
                             </h4>
 
                             <div class="d-flex flex-wrap mb-3">
-                                <button v-for="player in match.data.players" :key="player.teamID" class="btn m-1 flex-grow-0" :style=" {
-                                        'background-color': (selectedTeam == player.teamID) ? player.hexColor : 'var(--bs-secondary)',
-                                        'color': (selectedTeam == player.teamID) ? 'white' : player.hexColor
-                                    }" @click="selectedTeam = player.teamID">
+                                <button v-for="entity in statEntities" :key="entity.id" class="btn m-1 flex-grow-0" :style=" {
+                                    'background-color': (selectedEntityId == entity.id) ? entity.color : 'var(--bs-secondary)',
+                                    'color': (selectedEntityId == entity.id) ? 'white' : entity.color
+                                }" @click="selectedEntityId = entity.id">
 
                                     <span style="text-shadow: 1px 1px 1px black">
-                                        {{ player.username }}
+                                        {{ entity.name }}
                                     </span>
                                 </button>
                             </div>
@@ -257,9 +257,9 @@
 
                         <hr class="border">
 
-                        <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :selected-team="selectedTeam" class="my-4"></match-combat-stats>
+                        <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :entities="statEntities" :selected-entity="selectedEntityId" class="my-4"></match-combat-stats>
                         <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
-                            :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-team="selectedTeam" class="my-4">
+                            :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-entity="selectedEntityId" class="my-4">
                         </match-eco-stats>
                     </div>
 
@@ -304,8 +304,6 @@
         font-family: "Atkinson Hyperlegible";
     }
 
-
-    /* <div style="position: sticky; top: 10px; z-index: 9999;" class="bg-dark pt-3 pb-1 px-2 border rounded"> */
     .player-stats-container {
         position: sticky;
         top: 10px;
@@ -383,9 +381,10 @@
     import MergedStats from "./compute/MergedStats";
 
     import AccountUtil from "util/Account";
+    import Toaster from "Toaster";
 
     import "filters/BarGamemodeFilter";
-import Toaster from "Toaster";
+    import { StatEntity } from "./compute/common";
 
     export const ProcessingStep = Vue.extend({
         props: {
@@ -425,7 +424,7 @@ import Toaster from "Toaster";
 
                 unitIdToDefId: new Map as Map<number, number>,
 
-                selectedTeam: 0 as number,
+                selectedEntityId: "team-0" as string,
 
                 computedData: {
                     opener: [] as PlayerOpener[],
@@ -613,7 +612,7 @@ import Toaster from "Toaster";
                 this.computedData.opener = PlayerOpener.compute(this.match.data, this.output.data);
                 this.computedData.unitStats = UnitStats.compute(this.output.data, this.match.data);
                 this.computedData.unitResources = ResourceProductionData.compute(this.match.data, this.output.data);
-                this.computedData.merged = MergedStats.compute(this.output.data);
+                this.computedData.merged = MergedStats.compute(this.match.data, this.output.data);
             },
 
             loadOutput: async function(): Promise<void> {
@@ -765,7 +764,6 @@ import Toaster from "Toaster";
         },
 
         computed: {
-
             unitTweaks: function(): string {
                 if (this.match.state != "loaded") {
                     return "";
@@ -781,12 +779,8 @@ import Toaster from "Toaster";
                 return this.match.data.allyTeams.length > 2 && Math.max(...this.match.data.allyTeams.map(iter => iter.playerCount)) == 1;
             },
 
-            selectedPlayer: function(): BarMatchPlayer | null {
-                if (this.match.state != "loaded") {
-                    return null;
-                }
-
-                return this.match.data.players.find(iter => iter.teamID == this.selectedTeam) || null;
+            selectedEntity: function(): StatEntity | null {
+                return this.statEntities.find(iter => iter.id == this.selectedEntityId) || null;
             },
 
             showHeadlessStatus: function(): boolean {
@@ -861,6 +855,45 @@ import Toaster from "Toaster";
                     return [];
                 }
                 return this.match.data.usersPrioritizing.filter(iter => iter != AccountUtil.getAccountName());
+            },
+
+            statEntities: function(): StatEntity[] {
+                if (this.match.state != "loaded") {
+                    return [];
+                }
+
+                const entities: StatEntity[] = [];
+                if (this.match.data.players.length <= 2) {
+                    for (const player of this.match.data.players) {
+                        entities.push({
+                            id: `team-${player.teamID}`,
+                            color: player.hexColor,
+                            name: player.username
+                        });
+                    }
+                } else {
+                    for (const allyTeam of this.match.data.allyTeams) {
+                        entities.push({
+                            id: `ally-team-${allyTeam.allyTeamID}`,
+                            color: this.match.data.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`,
+                            name: `Team ${allyTeam.allyTeamID + 1}`
+                        });
+
+                        for (const player of this.match.data.players) {
+                            if (player.allyTeamID != allyTeam.allyTeamID) {
+                                continue;
+                            }
+
+                            entities.push({
+                                id: `team-${player.teamID}`,
+                                color: player.hexColor,
+                                name: player.username
+                            });
+                        }
+                    }
+                }
+
+                return entities;
             },
 
             canViewStdout: function(): boolean {

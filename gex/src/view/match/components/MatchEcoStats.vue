@@ -387,7 +387,7 @@
             UnitStats: { type: Array as PropType<UnitStats[]>, required: true },
             UnitResources: { type: Array as PropType<ResourceProductionData[]>, required: true },
             merged: { type: Array as PropType<MergedStats[]>, required: true },
-            SelectedTeam: { type: Number, required: true }
+            SelectedEntity: { type: String, required: true },
         },
 
         data: function() {
@@ -412,6 +412,11 @@
             },
 
             makeInterstingActions: function(): void {
+                const allyTeamMapping: Map<number, number> = new Map();
+                for (const player of this.match.players) {
+                    allyTeamMapping.set(player.teamID, player.allyTeamID);
+                }
+
                 this.interestingActions = [];
 
                 const interest: InterestingEvent[] = [];
@@ -425,8 +430,18 @@
                 let botStart: boolean = false;
 
                 for (const ev of this.output.unitsCreated) {
-                    if (ev.teamID != this.SelectedTeam) {
-                        continue;
+                    if (this.SelectedEntity.startsWith("team-")) {
+                        const teamID: number = Number.parseInt(this.SelectedEntity.split("-")[1]);
+                        if (ev.teamID != teamID) {
+                            continue;
+                        }
+                    } else if (this.SelectedEntity.startsWith("ally-team-")) {
+                        const allyTeamID: number = Number.parseInt(this.SelectedEntity.split("-")[2]);
+                        if (allyTeamMapping.get(ev.teamID) != allyTeamID) {
+                            continue;
+                        }
+                    } else {
+                        throw `unchecked SelectedEntity: ${this.SelectedEntity}`;
                     }
 
                     const def: GameEventUnitDef | undefined = this.output.unitDefinitions.get(ev.definitionID);
@@ -509,13 +524,11 @@
             isEnergyProduction: function(entry: ResourceProductionEntry): boolean {
                 return !!entry.definition && entry.energyMade > 0 && entry.definition.speed == 0;
             }
-
         },
 
         computed: {
-
             playerResourceStats: function(): ResourceProductionEntry[] {
-                return this.UnitResources.find(iter => iter.teamID == this.SelectedTeam)?.units ?? [];
+                return this.UnitResources.find(iter => iter.id == this.SelectedEntity)?.units ?? [];
             },
 
             dataResources: function(): Loading<ResourceProductionEntry[]> {
@@ -580,7 +593,7 @@
             },
 
             highestProductionFactory: function(): FactoryData | undefined {
-                const fac: PlayerFactories | undefined = this.factories.find(iter => iter.teamID == this.SelectedTeam);
+                const fac: PlayerFactories | undefined = this.factories.find(iter => iter.id == this.SelectedEntity);
                 if (fac == undefined || fac.factories.length == 0) {
                     return undefined;
                 }
@@ -591,18 +604,18 @@
             },
 
             buildPowerUsedAverage: function(): number {
-                const team = this.merged.filter(iter => iter.teamID == this.SelectedTeam);
+                const team = this.merged.filter(iter => iter.id == this.SelectedEntity);
                 const sum: number = team.reduce((acc, iter) => acc += (iter.buildPowerUsed / Math.max(1, iter.buildPowerAvailable)) * 100, 0);
 
                 return sum / Math.max(1, team.length);
             },
 
             totalBuildPower: function(): number {
-                return Math.max(...this.merged.filter(iter => iter.teamID == this.SelectedTeam).map(iter => iter.buildPowerAvailable));
+                return Math.max(...this.merged.filter(iter => iter.id == this.SelectedEntity).map(iter => iter.buildPowerAvailable));
             },
 
             playerStats: function(): UnitStats[] {
-                return this.UnitStats.filter(iter => iter.teamID == this.SelectedTeam);
+                return this.UnitStats.filter(iter => iter.id == this.SelectedEntity);
             },
 
             data: function(): Loading<UnitStats[]> {
@@ -611,7 +624,7 @@
         },
 
         watch: {
-            SelectedTeam: function() {
+            SelectedEntity: function() {
                 this.makeInterstingActions();
             }
         },

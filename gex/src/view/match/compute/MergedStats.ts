@@ -1,11 +1,15 @@
-import { GameEventExtraStatsUpdate } from "model/GameEventExtraStatsUpdate";
+import { BarMatch } from "model/BarMatch";
 import { GameOutput } from "model/GameOutput";
+import { GameEventExtraStatsUpdate } from "model/GameEventExtraStatsUpdate";
 
 export default class MergedStats {
 
     public gameID: string = "";
     public frame: number = 0;
+
+    public id: string = "";
     public teamID: number = 0;
+
     public metalProduced: number = 0;
     public metalUsed: number = 0;
     public metalExcess: number = 0;
@@ -34,7 +38,12 @@ export default class MergedStats {
     public buildPowerUsed: number = 0;
     public buildPowerPercent: number = 0;
 
-    public static compute(output: GameOutput): MergedStats[] {
+    public static compute(match: BarMatch, output: GameOutput): MergedStats[] {
+
+        const allyTeamMapping: Map<number, number> = new Map();
+        for (const player of match.players) {
+            allyTeamMapping.set(player.teamID, player.allyTeamID);
+        }
 
         const map: Map<string, GameEventExtraStatsUpdate> = new Map();
 
@@ -49,7 +58,7 @@ export default class MergedStats {
 
         const last: Map<number, GameEventExtraStatsUpdate> = new Map();
 
-        return output.teamStats.map((iter) => {
+        const teamStats: MergedStats[] = output.teamStats.map((iter) => {
             const key = `${iter.teamID}-${iter.frame}`;
             let extra: GameEventExtraStatsUpdate | undefined = map.get(key);
             if (extra == undefined) {
@@ -66,6 +75,7 @@ export default class MergedStats {
 
             return {
                 ...iter,
+                id: `team-${iter.teamID}`,
                 totalValue: extra?.totalValue ?? 0,
                 armyValue: extra?.armyValue ?? 0,
                 ecoValue: extra?.ecoValue ?? 0,
@@ -79,7 +89,56 @@ export default class MergedStats {
                 buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100
             };
         });
-    }
 
+        const stats: MergedStats[] = [ ...teamStats ];
+
+        const ats: Map<string, MergedStats> = new Map();
+
+        for (const stats of teamStats) {
+            const key: string = `ally-team-${allyTeamMapping.get(stats.teamID)}-frame-${stats.frame}`;
+
+            let allyTeamStats: MergedStats | undefined = ats.get(key);
+            if (allyTeamStats == undefined) {
+                allyTeamStats = new MergedStats();
+                allyTeamStats.frame = stats.frame;
+                allyTeamStats.gameID = stats.gameID;
+                allyTeamStats.id = `ally-team-${allyTeamMapping.get(stats.teamID)}`;
+            }
+
+            allyTeamStats.metalProduced += stats.metalProduced;
+            allyTeamStats.metalUsed += stats.metalUsed;
+            allyTeamStats.metalExcess += stats.metalExcess;
+            allyTeamStats.metalSent += stats.metalSent;
+            allyTeamStats.metalReceived += stats.metalReceived;
+            allyTeamStats.energyProduced += stats.energyProduced;
+            allyTeamStats.energyUsed += stats.energyUsed;
+            allyTeamStats.energyExcess += stats.energyExcess;
+            allyTeamStats.energySent += stats.energySent;
+            allyTeamStats.energyReceived += stats.energyReceived;
+            allyTeamStats.damageDealt += stats.damageDealt;
+            allyTeamStats.damageReceived += stats.damageReceived;
+            allyTeamStats.unitsReceived += stats.unitsReceived;
+            allyTeamStats.unitsKilled += stats.unitsKilled;
+            allyTeamStats.unitsProduced += stats.unitsProduced;
+            allyTeamStats.unitsSent += stats.unitsSent;
+            allyTeamStats.unitsCaptured += stats.unitsCaptured;
+            allyTeamStats.unitsOutCaptured += stats.unitsOutCaptured;
+            allyTeamStats.totalValue += stats.totalValue;
+            allyTeamStats.armyValue += stats.armyValue;
+            allyTeamStats.defenseValue += stats.defenseValue;
+            allyTeamStats.utilValue += stats.utilValue;
+            allyTeamStats.ecoValue += stats.ecoValue;
+            allyTeamStats.otherValue += stats.otherValue;
+            allyTeamStats.buildPowerAvailable += stats.buildPowerAvailable;
+            allyTeamStats.buildPowerUsed += stats.buildPowerUsed;
+            allyTeamStats.buildPowerPercent = (stats.buildPowerUsed ?? 0) / Math.max(1, (stats.buildPowerAvailable ?? 0)) * 100;
+
+            ats.set(key, allyTeamStats);
+        }
+
+        stats.push(...Array.from(ats.values()));
+
+        return stats;
+    }
 
 }

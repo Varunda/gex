@@ -1,12 +1,13 @@
 import { BarMatch } from "model/BarMatch";
 import { GameEventUnitDef } from "model/GameEventUnitDef";
+import { GameEventUnitKilled } from "model/GameEventUnitKilled";
 import { GameOutput } from "model/GameOutput";
 
 export class UnitStats {
+    public id: string = "";
     public defID: number = 0;
     public name: string = "";
     public defName: string = "";
-    public teamID: number = 0;
 
     public definition: GameEventUnitDef | undefined = undefined;
 
@@ -38,8 +39,13 @@ export class UnitStats {
             lastFrameBeforeKilled.set(ev.teamID, ev.frame);
         }
 
-        const getUnitStats = function(defID: number, teamID: number): UnitStats {
-            const key: string = `${teamID}-${defID}`;
+        const allyTeamMapping: Map<number, number> = new Map();
+        for (const player of match.players) {
+            allyTeamMapping.set(player.teamID, player.allyTeamID);
+        }
+
+        const getUnitStats = function(type: string, defID: number): UnitStats {
+            const key: string = `${type}-${defID}`;
             let stats: UnitStats | undefined = map.get(key);
             if (stats != undefined) {
                 return stats;
@@ -50,7 +56,7 @@ export class UnitStats {
                 defID: defID,
                 name: unitDef?.name ?? `<missing ${defID}>`,
                 defName: unitDef?.definitionName ?? `missing_${defID}`,
-                teamID: teamID,
+                id: type,
                 definition: unitDef,
 
                 produced: 0,
@@ -79,26 +85,9 @@ export class UnitStats {
             return stats;
         }
 
-        for (const ev of output.unitsCreated) {
-            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
-            stats.produced += 1;
-        }
-
-        for (const ev of output.unitsKilled) {
-            const lastFrame: number | undefined = lastFrameBeforeKilled.get(ev.teamID);
-            if (lastFrame != undefined && ev.frame > lastFrame) {
-                continue;
-            }
-
-            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
-            if (ev.teamID == ev.attackerTeam && ev.weaponDefinitionID == -12) {
-                stats.reclaimed += 1;
-            } else {
-                stats.lost += 1;
-            }
-
+        const updateAttackerStats = (type: string, ev: GameEventUnitKilled): void => {
             if (ev.attackerID != null && ev.attackerDefinitionID != null && ev.attackerTeam != null) {
-                const attacker: UnitStats = getUnitStats(ev.attackerDefinitionID, ev.attackerTeam);
+                const attacker: UnitStats = getUnitStats(type, ev.attackerDefinitionID);
 
                 if (ev.weaponDefinitionID == -12) {
                     attacker.reclaims += 1;
@@ -123,6 +112,48 @@ export class UnitStats {
                     }
                 }
             }
+        };
+
+        for (const ev of output.unitsCreated) {
+            const stats: UnitStats = getUnitStats(`team-${ev.teamID}`, ev.definitionID);
+            stats.produced += 1;
+
+            const stats2: UnitStats = getUnitStats(`ally-team-${allyTeamMapping.get(ev.teamID)}`, ev.definitionID);
+            stats2.produced += 1;
+        }
+
+        for (const ev of output.unitsKilled) {
+            const lastFrame: number | undefined = lastFrameBeforeKilled.get(ev.teamID);
+            if (lastFrame != undefined && ev.frame > lastFrame) {
+                continue;
+            }
+
+            const stats: UnitStats = getUnitStats(`team-${ev.teamID}`, ev.definitionID);
+            if (ev.teamID == ev.attackerTeam && ev.weaponDefinitionID == -12) {
+                stats.reclaimed += 1;
+            } else {
+                stats.lost += 1;
+            }
+
+            const stats2: UnitStats = getUnitStats(`ally-team-${allyTeamMapping.get(ev.teamID)}`, ev.definitionID);
+            if (ev.teamID == ev.attackerTeam && ev.weaponDefinitionID == -12) {
+                stats2.reclaimed += 1;
+            } else {
+                stats2.lost += 1;
+            }
+
+            if (ev.attackerID != null && ev.attackerDefinitionID != null && ev.attackerTeam != null) {
+                updateAttackerStats(`team-${ev.attackerTeam}`, ev);
+                updateAttackerStats(`ally-team-${allyTeamMapping.get(ev.attackerTeam)}`, ev);
+            }
+        }
+
+        for (const ev of output.unitsGiven) {
+            const stats: UnitStats = getUnitStats(`team-${ev.newTeamID}`, ev.definitionID);
+            stats.produced += 1;
+
+            const stats2: UnitStats = getUnitStats(`ally-team-${allyTeamMapping.get(ev.newTeamID)}`, ev.definitionID);
+            stats2.produced += 1;
         }
 
         for (const ev of output.unitDamage) {
@@ -131,10 +162,13 @@ export class UnitStats {
                 continue;
             }
 
-            const stats: UnitStats = getUnitStats(ev.definitionID, ev.teamID);
-
+            const stats: UnitStats = getUnitStats(`team-${ev.teamID}`, ev.definitionID);
             stats.damageDealt += ev.damageDealt;
             stats.damageTaken += ev.damageTaken;
+
+            const stats2: UnitStats = getUnitStats(`ally-team-${allyTeamMapping.get(ev.teamID)}`, ev.definitionID);
+            stats2.damageDealt += ev.damageDealt;
+            stats2.damageTaken += ev.damageTaken;
         }
 
         const arr: UnitStats[] = Array.from(map.values());

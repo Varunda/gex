@@ -1,5 +1,7 @@
 import { BarMatch } from "model/BarMatch";
 import { GameEventUnitDef } from "model/GameEventUnitDef";
+import { GameEventUnitKilled } from "model/GameEventUnitKilled";
+import { GameEventUnitResources } from "model/GameEventUnitResources";
 import { GameOutput } from "model/GameOutput";
 
 export class ResourceProductionEntry {
@@ -20,35 +22,31 @@ export class ResourceProductionEntry {
 }
 
 export class ResourceProductionData {
+    public id: string = "";
     public teamID: number = 0;
+    public allyTeamID: number = 0;
     public units: ResourceProductionEntry[] = [];
     public color: string = "";
     public username: string = "";
 
     public static compute(match: BarMatch, output: GameOutput): ResourceProductionData[] {
 
-        const lastFrameBeforeKilled: Map<number, number> = new Map();
-        for (const ev of output.teamDiedEvents) {
-            lastFrameBeforeKilled.set(ev.teamID, ev.frame);
-        }
-
-        const map: Map<number, ResourceProductionData> = new Map();
-
-        for (const ev of output.unitResources) {
-
-            const entry: ResourceProductionData = map.get(ev.teamID) ?? {
+        const computeUnitResource = (key: string, ev: GameEventUnitResources): void => {
+            const entry: ResourceProductionData = map.get(key) ?? {
+                id: key,
                 teamID: ev.teamID,
+                allyTeamID: allyTeamMapping.get(ev.teamID) ?? -1,
                 units: [],
                 color: "",
                 username: ""
             };
 
-            let unit: ResourceProductionEntry | undefined = entry.units.find(iter => iter.definitionID == ev.definitionID)
+            let unit: ResourceProductionEntry | undefined = entry.units.find(iter => iter.definitionID == ev.definitionID);
             if (unit == undefined) {
                 const def: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
                 if (def == undefined) {
                     console.warn(`ResourceProductionData> missing unit def ${ev.definitionID}!`);
-                    continue;
+                    return;
                 }
 
                 unit = {
@@ -75,23 +73,23 @@ export class ResourceProductionData {
             unit.energyMade += ev.energyMade;
             unit.energyUsed += ev.energyUsed;
 
-            map.set(ev.teamID, entry);
+            map.set(key, entry);
         }
 
-        for (const ev of output.unitsKilled) {
+        const computeUnitsKilled = (key: string, ev: GameEventUnitKilled): void => {
             const lastFrame: number | undefined = lastFrameBeforeKilled.get(ev.teamID);
             if (lastFrame != undefined && ev.frame > lastFrame) {
-                continue;
+                return;
             }
 
-            const entry: ResourceProductionData | undefined = map.get(ev.teamID);
+            const entry: ResourceProductionData | undefined = map.get(key);
             if (entry == undefined) {
-                continue;
+                return;
             }
 
             const unit: ResourceProductionEntry | undefined = entry.units.find(iter => iter.definitionID == ev.definitionID);
             if (unit == undefined) {
-                continue;
+                return;
             }
 
             // -12 is reclaim
@@ -101,6 +99,28 @@ export class ResourceProductionData {
             } else {
                 unit.lost += 1;
             }
+        }
+
+        const lastFrameBeforeKilled: Map<number, number> = new Map();
+        for (const ev of output.teamDiedEvents) {
+            lastFrameBeforeKilled.set(ev.teamID, ev.frame);
+        }
+
+        const allyTeamMapping: Map<number, number> = new Map();
+        for (const player of match.players) {
+            allyTeamMapping.set(player.teamID, player.allyTeamID);
+        }
+
+        const map: Map<string, ResourceProductionData> = new Map();
+
+        for (const ev of output.unitResources) {
+            computeUnitResource(`team-${ev.teamID}`, ev);
+            computeUnitResource(`ally-team-${allyTeamMapping.get(ev.teamID)}`, ev);
+        }
+
+        for (const ev of output.unitsKilled) {
+            computeUnitsKilled(`team-${ev.teamID}`, ev);
+            computeUnitsKilled(`ally-team-${allyTeamMapping.get(ev.teamID)}`, ev);
         }
 
         const ret: ResourceProductionData[] = Array.from(map.values());

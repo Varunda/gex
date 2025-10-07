@@ -27,6 +27,7 @@ export class FactoryData {
 export class PlayerFactories {
     public name: string = "";
     public teamID: number = 0;
+    public id: string = "";
     public color: string = "";
     public colorInt: number = 0;
     public factories: FactoryData[] = [];
@@ -102,11 +103,24 @@ export class PlayerFactories {
         let pf: PlayerFactories[] = [];
         for (const player of match.players) {
             const iter: PlayerFactories = new PlayerFactories();
+            iter.id = `team-${player.teamID}`;
             iter.teamID = player.teamID;
             iter.name = player.username;
             iter.color = player.hexColor;
             iter.colorInt = player.color;
             iter.factories = facs.filter(iter => iter.teamID == player.teamID);
+
+            pf.push(iter);
+        }
+
+        for (const allyTeam of match.allyTeams) {
+            const teamIds: Set<number> = new Set(match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID).map(iter => iter.teamID));
+            const iter: PlayerFactories = new PlayerFactories();
+            iter.id = `ally-team-${allyTeam.allyTeamID}`;
+            iter.name = `Team ${allyTeam.allyTeamID + 1}`;
+            iter.color = match.players.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.hexColor ?? "#333333";
+            iter.colorInt = match.players.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.color ?? 0;
+            iter.factories = facs.filter(iter => teamIds.has(iter.teamID));
 
             pf.push(iter);
         }
