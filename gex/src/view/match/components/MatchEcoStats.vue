@@ -30,24 +30,27 @@
                     <h5>Energy used</h5>
                 </div>
 
-                <div>
-                    <div>Most used factory</div>
-
+                <div class="border text-center position-sticky" style="border-radius: 0.5rem;">
                     <template v-if="highestProductionFactory != undefined">
-                        <img :src="'/image-proxy/UnitPic?defName=' + highestProductionFactory.factoryDefinitionName" height="128" width="128">
+                        <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.25rem 0 0.25rem 0;">
+                            {{ highestProductionFactory.name }}
+                        </div>
 
-                        <div>{{highestProductionFactory.totalMade}} units made</div>
+                        <img :src="'/image-proxy/UnitPic?defName=' + highestProductionFactory.factoryDefinitionName" height="128" width="128" style="border-radius: 0.5rem 0.5rem 0 0">
+
+                        <div>{{ highestProductionFactory.totalMade }} units made</div>
                     </template>
                 </div>
 
-                <div>
-                    <div>Main energy source</div>
-
-                    <img :src="'/image-proxy/UnitPic?defName=' + highestEnergySource.defName" height="128" width="128">
+                <div class="border text-center position-sticky" style="border-radius: 0.5rem;">
+                    <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.25rem 0 0.25rem 0;">
+                        {{ highestEnergySource.name }}
+                    </div>
+                    <img :src="'/image-proxy/UnitPic?defName=' + highestEnergySource.defName" height="128" width="128" style="border-radius: 0.5rem 0.5rem 0 0">
 
                     <div>
-                        {{ highestEnergySource.energy | compact }}
-                        <img src="/img/energy.png" width="24" height="24">
+                        {{ highestEnergySource.energy | compact }} E
+                        ({{ highestEnergySource.energy / totalEnergyMade * 100 | locale(0) }}%)
                     </div>
                 </div>
             </div>
@@ -578,7 +581,7 @@
                 let arr: ResourcesByUnitDef[] = Array.from(map.values());
                 arr = arr.sort((a, b) => {
                     return b.energy - a.energy;
-                })
+                });
 
                 if (arr.length == 0) {
                     return {
@@ -612,6 +615,12 @@
 
             totalBuildPower: function(): number {
                 return Math.max(...this.merged.filter(iter => iter.id == this.SelectedEntity).map(iter => iter.buildPowerAvailable));
+            },
+
+            totalEnergyMade: function(): number {
+                return this.UnitResources.filter(iter => iter.id == this.SelectedEntity)
+                    .map(iter => iter.units.reduce((acc, iter) => acc += iter.energyMade, 0))
+                    .reduce((acc, iter) => acc += iter, 0);
             },
 
             playerStats: function(): UnitStats[] {

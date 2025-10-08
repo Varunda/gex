@@ -291,8 +291,8 @@
                 ["metalProduced", "Metal produced"],
                 ["metalExcess", "Metal excess"],
                 ["metalReceived", "Metal receieved"],
-                ["metalCurrent", "Metal Current"],
                 ["metalSent", "Metal sent"],
+                ["metalCurrent", "Metal Current"],
                 ["energyProduced", "Energy produced"],
                 ["energyExcess", "Energy excess"],
                 ["energyReceived", "Energy receieved"],
@@ -507,6 +507,10 @@
 
                     const map: Map<number, StatEntry[]> = new Map();
                     for (const i of this.stats) {
+                        if (i.id.startsWith("ally-team-")) {
+                            continue;
+                        }
+
                         const v: number | string = i[statName];
                         if (typeof v == "string") {
                             throw `cannot create dataset on ${stat}, this is a string field!`;

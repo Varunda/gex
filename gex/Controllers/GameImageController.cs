@@ -28,6 +28,7 @@ namespace gex.Controllers {
         private readonly BarMapRepository _MapRepository;
         private readonly IMemoryCache _Cache;
 
+        private const string CACHE_KEY_ICON_TYPES = "Gex.ImageProxy.IconTypes";
         private const string CACHE_KEY_PIC_MISSING = "Gex.ImageProxy.Pic.{0}"; // {0} => defName
 
         private static readonly HttpClient _Http = new HttpClient();
@@ -133,21 +134,32 @@ namespace gex.Controllers {
                     _Logger.LogDebug($"have an uncolored icon, can use that one instead of fetching [defName={defName}] [color={color}]");
                     data = await System.IO.File.ReadAllBytesAsync(uncoloredPath);
                 } else {
-                    string url = "https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/gamedata/icontypes.lua";
+
                     _Logger.LogDebug($"missing icon, downloading from GitHub [defName={defName}]");
 
-                    HttpResponseMessage response = await _Http.GetAsync(url);
-                    if (response.StatusCode != HttpStatusCode.OK) {
-                        return StatusCode(500, $"expected 200 OK from {url}, got {response.StatusCode} instead");
+                    if (_Cache.TryGetValue(CACHE_KEY_ICON_TYPES, out string? body) == false || body == null) {
+                        _Logger.LogDebug($"icon types not cached, getting from GitHub");
+                        string url = "https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/gamedata/icontypes.lua";
+
+                        HttpResponseMessage response = await _Http.GetAsync(url);
+                        if (response.StatusCode != HttpStatusCode.OK) {
+                            return StatusCode(500, $"expected 200 OK from {url}, got {response.StatusCode} instead");
+                        }
+
+                        body = await response.Content.ReadAsStringAsync();
+                        _Cache.Set(CACHE_KEY_ICON_TYPES, body, new MemoryCacheEntryOptions() {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                        });
                     }
 
+                    string[] units = body.Split("\n");
                     string? iconName = null;
 
-                    string[] units = (await response.Content.ReadAsStringAsync()).Split("\n");
                     for (int i = 0; i < units.Length; ++i) {
                         string unit = units[i];
 
-                        if (unit.Trim().StartsWith(defName) == false) {
+                        // cormex and cormexp can get mixed up
+                        if (unit.Trim().StartsWith(defName + " =") == false) {
                             continue;
                         }
 

@@ -243,15 +243,19 @@
                             </h4>
 
                             <div class="d-flex flex-wrap mb-3">
-                                <button v-for="entity in statEntities" :key="entity.id" class="btn m-1 flex-grow-0" :style=" {
-                                    'background-color': (selectedEntityId == entity.id) ? entity.color : 'var(--bs-secondary)',
-                                    'color': (selectedEntityId == entity.id) ? 'white' : entity.color
-                                }" @click="selectedEntityId = entity.id">
+                                <template v-for="entity in statEntities">
+                                    <hr v-if="entity.id == 'newline'" style="width: 100%; margin: 0; padding: 0; border: 0;"/>
 
-                                    <span style="text-shadow: 1px 1px 1px black">
-                                        {{ entity.name }}
-                                    </span>
-                                </button>
+                                    <button v-else :key="entity.id" class="btn m-1 flex-grow-0" :style=" {
+                                        'background-color': (selectedEntityId == entity.id) ? entity.color : 'var(--bs-secondary)',
+                                        'color': (selectedEntityId == entity.id) ? 'white' : entity.color
+                                    }" @click="selectedEntityId = entity.id">
+
+                                        <span style="text-shadow: 1px 1px 1px black">
+                                            {{ entity.name }}
+                                        </span>
+                                    </button>
+                                </template>
                             </div>
                         </div>
 
@@ -890,6 +894,12 @@
                                 name: player.username
                             });
                         }
+
+                        entities.push({
+                            id: "newline",
+                            color:"",
+                            name:""
+                        });
                     }
                 }
 
