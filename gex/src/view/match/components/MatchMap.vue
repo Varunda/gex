@@ -98,6 +98,11 @@
                 <button v-if="hasEvents" class="btn btn-sm" @click="playback.useStrategicIcons = !playback.useStrategicIcons" :class="[ playback.useStrategicIcons ? 'btn-primary' : 'btn-secondary' ]">
                     Use strategic icons
                 </button>
+
+                <toggle-button v-if="hasEvents" v-model="playback.scaleStrategicIcons" class="btn-sm">
+                    Scale icons
+                </toggle-button>
+
             </div>
 
             <div class="mt-1">
@@ -216,6 +221,7 @@
                     frame: 0 as number,
                     shownUnits: new Set() as Set<number>,
                     useStrategicIcons: false as boolean,
+                    scaleStrategicIcons: true as boolean,
                 },
 
                 map: {
@@ -290,7 +296,13 @@
                         .translateExtent([[0, 0], [this.imgW, this.imgH]])
                         .on("zoom", (ev: any) => {
                             this.root!.attr("transform", ev.transform);
-                            this.transform = ev.transform;
+
+                            if (this.playback.scaleStrategicIcons == true && ev.transform.k != this.transform.k) {
+                                this.transform = ev.transform;
+                                this.updateIconScale();
+                            } else {
+                                this.transform = ev.transform;
+                            }
                         }
                     );
 
@@ -524,7 +536,7 @@
                             .classed("animate-move", true)
                             .classed("unit-pos-hide", true)
                             .on("mouseenter", (ev: any) => {
-                                this.showTooltip(`${unitDef?.name ?? `<missing def ${defId}>`}`);
+                                this.showTooltip(`${player?.username}'s ${unitDef?.name ?? `<missing def ${defId}>`}`);
                             })
                             .on("mousemove", (ev: any) => {
                                 this.moveTooltip(ev);
@@ -533,7 +545,10 @@
                                 this.hideTooltip();
                             });
 
+                        const radius: number = Math.max(unitDef.sizeX, unitDef.sizeZ);
+
                         unitGroup.append("image")
+                            .classed("strat-icon", true)
                             .attr("width", sizePx).attr("height", sizePx)
                             .style("transform-box", "fill-box").style("transform-origin", "center")
                             .attr("href", `/image-proxy/UnitIcon?defName=${unitDef.definitionName}&color=${player?.color ?? 0}`);
@@ -1076,6 +1091,13 @@
             toImgX(x: number): number { return x / this.mapW * this.imgW; },
             toImgZ(z: number): number { return z / this.mapH * this.imgH; },
 
+            updateIconScale: function(): void {
+                const scale: number = (this.playback.scaleStrategicIcons == true) ? 5 - (this.transform.k / 2.5) : 1;
+
+                this.root!.selectAll(".strat-icon")
+                    .style("transform", `scale(${scale})`);
+            },
+
             /**
              * this is too many arguments
              * @param elemID 
@@ -1200,15 +1222,18 @@
         },
 
         watch: {
-
             "playback.frame": function(): void {
                 this.renderUnitPositionFrame(this.playback.frame);
             },
-            
 
             "playback.useStrategicIcons": function(): void {
                 this.drawInitialUnitPositionFrame();
                 this.renderUnitPositionFrame(this.playback.frame);
+                this.updateIconScale();
+            },
+
+            "playback.scaleStrategicIcons": function(): void {
+                this.updateIconScale();
             },
 
             "map.commanderPositions": function(): void {
