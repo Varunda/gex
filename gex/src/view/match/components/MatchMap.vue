@@ -430,7 +430,6 @@
              * start unit position playback, updating once per second
              */
             startUnitPositionPlayback: function(): void {
-
                 this.map.startingBox = false;
                 this.map.startingPosition = false;
                 this.map.commanderHeatmap = false;
@@ -928,6 +927,10 @@
                 console.log(`MatchMap> adding factories for ${this.computedData.factories.length} players`);
 
                 for (const player of this.computedData.factories) {
+                    if (player.id.startsWith("ally-team-")) {
+                        continue;
+                    }
+
                     for (const fac of player.factories) {
                         const facGroup = this.root.append("g")
                             .attr("x", this.toImgX(fac.position.x - fac.size.x))
@@ -954,7 +957,7 @@
                                     return;
                                 }
 
-                                this.showTooltip(`Factory: ${factory.name}<br>`
+                                this.showTooltip(`${player.name}'s Factory: ${factory.name}<br>`
                                     + `Created at: ${TimeUtils.duration(factory.createdAt / 30)}<br>`
                                     + ((factory.destroyedAt != null) ? `Destroyed at: ${TimeUtils.duration(factory.destroyedAt! / 30)}<br>` : ``)
                                     + `<table class="table table-sm mb-0"><thead><tr><th colspan="2" class="text-center">Units created</th></tr>`
