@@ -5,6 +5,7 @@ local UNIT_DEF_NAMES = {}
 local UNIT_DEF_METAL = {}
 local UNIT_DEF_IS_COMMANDER = {}
 local UNIT_DEF_BUILD_POWER = {}
+local UNIT_DEF_HEALTH = {}
 local frame = 0
 local timer
 local commanders = {}
@@ -586,6 +587,12 @@ local function UnitDamagedReplay(unitID, unitDefID, teamID, damage, paralyzer, w
 		}
 	end
 
+    -- cap damage to the max health of a unit, otherwise things like a D-gun give a lot of efficiency
+    local unitMaxHealth = UNIT_DEF_HEALTH[unitDefID] or damage
+    if (damage > unitMaxHealth) then
+        damage = unitMaxHealth
+    end
+
     UNIT_DAMAGE[unitID].taken = UNIT_DAMAGE[unitID].taken + damage
 
     if (attackerID ~= nil) then
@@ -755,6 +762,7 @@ function widget:Initialize()
         UNIT_DEF_NAMES[k] = v["name"]
         UNIT_DEF_METAL[k] = v["metalCost"]
         UNIT_DEF_IS_COMMANDER[k] = v.customParams.iscommander ~= nil
+        UNIT_DEF_HEALTH[k] = v.health
 
         if ((not v.customParams.iscommander) and (v.weapons and #v.weapons > 0) and (v.speed and v.speed > 0)) then
             UNIT_TYPE_ARMY[k] = v.metalCost

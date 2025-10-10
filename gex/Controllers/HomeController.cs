@@ -350,5 +350,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult MultiStats() {
+            return View();
+        }
+
     }
 }

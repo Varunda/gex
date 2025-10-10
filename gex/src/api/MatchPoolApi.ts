@@ -1,7 +1,7 @@
 import { MatchPool } from "model/MatchPool";
 import ApiWrapper from "./ApiWrapper";
-import Match from "view/match/Match.vue";
 import { Loading } from "Loading";
+import { MatchPoolEntry } from "model/MatchPoolEntry";
 
 export class MatchPoolApi extends ApiWrapper<MatchPool> {
     private static _instance: MatchPoolApi = new MatchPoolApi();
@@ -13,6 +13,10 @@ export class MatchPoolApi extends ApiWrapper<MatchPool> {
 
     public static getByID(poolID: number): Promise<Loading<MatchPool>> {
         return MatchPoolApi.get().readSingle(`/api/match-pool/${poolID}`, MatchPool.parse);
+    }
+
+    public static getEntriesByID(poolID: number): Promise<Loading<MatchPoolEntry[]>> {
+        return MatchPoolApi.get().readList(`/api/match-pool/${poolID}/entries`, MatchPoolEntry.parse);
     }
 
     public static create(name: string): Promise<Loading<MatchPool>> {

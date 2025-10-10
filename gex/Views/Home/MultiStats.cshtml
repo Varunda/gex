@@ -1,0 +1,18 @@
+﻿<meta property="og:title" content="Gex / Multi-Stats" />
+
+@if (ViewBag.OgDescription == null) {
+    <meta property="og:description" content="View match stats for multiple matches" />
+} else {
+    <meta property="og:description" content="@ViewBag.OgDescription" />
+}
+
+<script src="~/lib/signalr/signalr.js"></script>
+<script src="~/dist/view/multistats/view.js" defer asp-append-version="true"></script>
+
+<style>
+
+</style>
+
+<div class="container-fluid" id="app">
+    <multi-stats></multi-stats>
+</div>
