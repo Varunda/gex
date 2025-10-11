@@ -83,7 +83,7 @@
                     <span v-if="showOutcome" :class="'outcome-' + outcome(entry)">
                         {{ outcome(entry) }}
                     </span>
-                    <span v-else @click="showOutcome = true">
+                    <span v-else @click="showOutcome = true" title="Outcome hidden, click here to show, or click the 'Show outcome' button">
                         ??
                     </span>
                 </a-body>

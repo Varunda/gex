@@ -15,7 +15,7 @@ namespace gex.Services.Repositories {
         private readonly BarMapPlayCountDb _Db;
         private readonly IMemoryCache _Cache;
 
-        private const string CACHE_KEY = "Gex.MapPlayCount";
+        private const string CACHE_KEY = "Gex.MapPlayCount.{0}"; // {0} => range
 
         public BarMapPlayCountRepository(ILogger<BarMapPlayCountRepository> logger,
             BarMapPlayCountDb db, IMemoryCache cache) {
@@ -25,9 +25,22 @@ namespace gex.Services.Repositories {
             _Cache = cache;
         }
 
-        public async Task<List<BarMapPlayCountEntry>> Get(CancellationToken cancel) {
-            if (_Cache.TryGetValue(CACHE_KEY, out List<BarMapPlayCountEntry>? entries) == false || entries == null) {
-                entries = await _Db.Get(cancel);
+        public async Task<List<BarMapPlayCountEntry>> GetDaily(CancellationToken cancel) {
+            return await Get("daily", DateTime.UtcNow - TimeSpan.FromDays(1), cancel);
+        }
+
+        public async Task<List<BarMapPlayCountEntry>> Get7Day(CancellationToken cancel) {
+            return await Get("7day", DateTime.UtcNow - TimeSpan.FromDays(7), cancel);
+        }
+
+        public async Task<List<BarMapPlayCountEntry>> Get30Day(CancellationToken cancel) {
+            return await Get("30day", DateTime.UtcNow - TimeSpan.FromDays(30), cancel);
+        }
+
+        private async Task<List<BarMapPlayCountEntry>> Get(string interval, DateTime rangeStart, CancellationToken cancel) {
+            string cacheKey = string.Format(CACHE_KEY, interval);
+            if (_Cache.TryGetValue(cacheKey, out List<BarMapPlayCountEntry>? entries) == false || entries == null) {
+                entries = await _Db.Get(rangeStart, cancel);
 
                 _Cache.Set(CACHE_KEY, entries, new MemoryCacheEntryOptions() {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)

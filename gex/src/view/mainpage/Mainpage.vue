@@ -90,7 +90,32 @@
         </div>
 
         <div class="mb-3">
-            <h2 class="wt-header bg-light text-dark">Recent maps played (24h)</h2>
+            <h2 class="wt-header bg-light text-dark d-flex">
+                <div class="flex-grow-1">
+                    Recent maps played
+                    <span v-if="interval == 'daily'">
+                        (24h)
+                    </span>
+                    <span v-else-if="interval == '7day'">
+                        (7d)
+                    </span>
+                    <span v-else-if="interval == '30day'">
+                        (30d)
+                    </span>
+                </div>
+
+                <div class="btn-group flex-grow-0">
+                    <button class="btn btn-sm" :class="[ interval == 'daily' ? 'btn-primary' : 'btn-secondary' ]" @click="loadInterval('daily')">
+                        24h
+                    </button>
+                    <button class="btn btn-sm" :class="[ interval == '7day' ? 'btn-primary' : 'btn-secondary' ]" @click="loadInterval('7day')">
+                        7 day
+                    </button>
+                    <button class="btn btn-sm" :class="[ interval == '30day' ? 'btn-primary' : 'btn-secondary' ]" @click="loadInterval('30day')">
+                        30 day
+                    </button>
+                </div>
+            </h2>
 
             <div v-if="recentMaps.state == 'loading'" class="text-center">
                 <busy class="busy busy-sm"></busy>
@@ -210,7 +235,9 @@
                 skillHistogram: Loadable.idle() as Loading<SkillHistogramEntry[]>,
                 recentMaps: Loadable.idle() as Loading<MapPlayCountEntry[]>,
 
-                histogramChart: null as Chart | null
+                histogramChart: null as Chart | null,
+
+                interval: "daily" as "daily" | "7day" | "30day"
             }
         },
 
@@ -241,7 +268,22 @@
 
             loadRecentMaps: async function(): Promise<void> {
                 this.recentMaps = Loadable.loading();
-                this.recentMaps = await MapPlayCountApi.getRecent();
+                this.recentMaps = await MapPlayCountApi.getDaily();
+            },
+
+            loadInterval: async function(int: string): Promise<void> {
+                this.recentMaps = Loadable.loading();
+                if (int == "daily") {
+                    this.recentMaps = await MapPlayCountApi.getDaily();
+                } else if (int == "7day") {
+                    this.recentMaps = await MapPlayCountApi.get7Day();
+                } else if (int == "30day") {
+                    this.recentMaps = await MapPlayCountApi.get30Day();
+                } else {
+                    return;
+                }
+
+                this.interval = int;
             },
 
             loadSkillHistogram: async function(): Promise<void> {
