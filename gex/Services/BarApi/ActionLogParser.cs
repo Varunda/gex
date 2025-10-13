@@ -53,6 +53,11 @@ namespace gex.Services.BarApi {
 
                 JsonElement json;
                 try {
+                    // work around for #83
+                    // https://github.com/beyond-all-reason/Beyond-All-Reason/commit/a86b3bfd130f82b45ebd2dbfda55f25a68c8b3e1
+                    if (line.StartsWith("{\"action\":\"end\"") == true) {
+                        continue;
+                    }
                     json = JsonSerializer.Deserialize<JsonElement>(line);
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to deserialize line [gameID={gameID}] [num={lineNumber}] [line={line}]");

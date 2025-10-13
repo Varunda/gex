@@ -296,8 +296,7 @@ function widget:GameOver(winningAllyTeams)
 
     local data = {
         { "realtime", time },
-        { "ingame", Spring.GetGameSeconds() },
-        { "winners", winningAllyTeams }
+        { "ingame", Spring.GetGameSeconds() }
     }
 
     writeJson("end", data)
