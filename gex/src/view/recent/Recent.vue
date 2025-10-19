@@ -1,21 +1,20 @@
 ﻿<template>
     <div style="max-width: 100vw">
-        <div v-if="searching == false">
+        <div v-if="searching == false" class="d-flex" style="gap: 0.5rem;">
             <toggle-button v-model="showUnprocessedGames">
                 Show unprocessed
             </toggle-button>
 
-            <button class="btn btn-primary" @click="searching = true">
-                Search options
+            <button class="btn btn-primary" @click="showSearch">
+                Show search
             </button>
         </div>
 
         <hr class="border" />
 
         <div v-if="searching == true" class="row mb-3">
-
             <div class="col-12">
-                <h4 @click="searching = false">
+                <h4 @click="hideSearch">
                     Search options
                     <span v-if="searching == true">
                         &times;
@@ -182,6 +181,20 @@
                 </div>
             </div>
 
+            <div class="col-12">
+                <label for="user-search-input-bottom">User search</label>
+                <div class="form-control user-input-parent" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
+                    <button v-for="user in search.users" :key="user.userID" class="btn btn-primary btn-sm rounded mx-2">
+                        {{ user.username }}
+                        <span class="close" @click="removeUser(user.userID)">
+                            &times;
+                        </span>
+                    </button>
+                    
+                    <input class="pe-0 d-inline-block form-control border-0" style="background-color: inherit; outline: 0; width: auto;" placeholder="Search..." v-model="userInput" id="user-search-input-bottom" />
+                </div>
+            </div>
+
             <div class="col-12 mt-2">
                 <button class="btn btn-primary" @click="doSearchWrapper">Search</button>
             </div>
@@ -189,7 +202,6 @@
             <div class="col-12">
                 <hr class="border">
             </div>
-
         </div>
 
         <div>
@@ -261,6 +273,10 @@
         }
     }
 
+    .user-input-parent:focus-within {
+        outline: white solid 1px;
+    }
+
 </style>
 
 <script lang="ts">
@@ -278,8 +294,19 @@
     import { BarMatch, SearchKeyValue } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
     import { MatchSearchApi } from "api/MatchSearchApi";
+    import { BarUserApi } from "api/BarUserApi";
+
+    import { BarUser } from "model/BarUser";
+    import { UserSearchResult } from "model/UserSearchResult";
 
     import "filters/MomentFilter";
+
+    import Tribute, { TributeItem } from "tributejs";
+
+    type MinUser = {
+        username: string;
+        userID: number;
+    }
 
     export const Recent = Vue.extend({
         props: {
@@ -292,6 +319,7 @@
                 showUnprocessedGames: false as boolean,
 
                 gameIdRegex: new RegExp(/[0-9a-f]{32}/) as RegExp,
+                enterLockout: 0 as number,
 
                 search: {
                     use: false as boolean,
@@ -311,6 +339,7 @@
                     playerCountMaximum: 0 as number,
                     legionEnabled: null as boolean | null,
                     gameSettings: [] as SearchKeyValue[],
+                    users: [] as MinUser[],
                     processingDownloaded: null as boolean | null,
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
@@ -318,6 +347,12 @@
                     orderBy: "start_time" as string,
                     orderByDir: "desc" as string,
                 },
+
+                userInput: "" as string,
+                inputTimeout: -1 as number,
+                users: Loadable.idle() as Loading<UserSearchResult[]>,
+
+                tribute: null as Tribute<UserSearchResult> | null,
 
                 gameSetting: {
                     key: "" as string,
@@ -357,17 +392,133 @@
                 blob.orderBy ??= "start_time";
                 blob.orderByDir ??= "desc";
                 blob.gameSettings ??= [];
+                blob.users ??= [];
                 this.search = blob;
                 this.performSearch();
             } else {
                 this.loadRecent();
             }
+        },
 
+        mounted: function(): void {
+            this.$nextTick(() => {
+                this.tribute = new Tribute<UserSearchResult>({
+                    trigger: "", // don't trigger on anything special
+                    menuShowMinLength: 3, // tag search requires at least 2 characters
+                    autocompleteMode: true, // autocomplete this, not sure what false does tho
+                    allowSpaces: false, // tags can't have spaces
+
+                    // attribute from a |ExtendedTag| that is inserted into the <textarea>
+                    fillAttr: "username",
+
+                    // big government doesn't want you to know this,
+                    // but despite it being named |itemClass|, you can in fact put classes in here
+                    itemClass: "bg-dark border",
+                    // now this one does require you to not have spaces
+                    selectClass: "fw-bold",
+
+                    //menuContainer: document.getElementById("post-search-parent") || undefined,
+                    //positionMenu: false,
+
+                    // required, otherwise remote search doesn't work
+                    searchOpts: {
+                        pre: "",
+                        post: "",
+                        skip: true // this means don't do a local search
+                    },
+
+                    noMatchTemplate: () => {
+                        return "<li><span class=\"bg-secondary\">not found</span></li>";
+                    },
+
+                    // remote callback
+                    values: (text: string, callback: (r: UserSearchResult[]) => void) => {
+                        if (text.length <= 2) {
+                            return;
+                        }
+
+                        console.log(`Recent> performing user search [text=${text}]`);
+                        BarUserApi.search(text, false, false).then((value: Loading<UserSearchResult[]>) => {
+                            if (value.state == "loaded") {
+                                console.log(`loaded searched tags: [${value.data.map(iter => iter.username).join(" ")}]`);
+                                callback(value.data.slice(0, 10));
+                            }
+                        });
+                    },
+
+                    // change the menu template to have the color of the tag type
+                    menuItemTemplate: (item: TributeItem<UserSearchResult>): string => {
+                        return `<span contentediable="false" data-user-id=${item.original.userID}>${item.original.username}</span>`;
+                    }
+                });
+
+                this.hideSearch();
+            });
         },
 
         methods: {
             showSearch: function(): void {
                 this.searching = true;
+
+                this.$nextTick(() => {
+                    if (this.tribute == null) {
+                        console.log(`Recent> tribute container is not present`);
+                        return;
+                    }
+
+                    const elem = document.getElementById("user-search-input-bottom");
+                    if (!elem) {
+                        throw `failed to find #user-search-input-bottom`;
+                    }
+                    this.tribute.attach(elem);
+                    console.log(`Recent> tribute attached to #user-search-input-bottom`);
+
+                    // i don't think these actually matter
+                    elem.addEventListener("tribute-replaced", (ev: any) => {
+                        this.enterLockout = Date.now() + 200;
+                        this.userInput = "";
+                        this.search.users.push(ev.detail.item.original);
+                    });
+
+                    elem.addEventListener("tribute-no-match", (ev: any) => {
+                        console.log(`Recent> no match event emitted`);
+                    });
+                });
+            },
+
+            hideSearch: function(): void {
+                this.searching = false;
+
+                const elem = document.getElementById("user-search-input-bottom");
+                if (elem) {
+                    this.tribute?.detach(elem);
+                } else {
+                    console.warn(`Recent> missing #user-search-input-bottom to detach tribute from`);
+                }
+            },
+
+            enterPress: function(): void {
+                const lockoutDiff: number = this.enterLockout - Date.now();
+                console.log(`Recent> lockoutDiff is ${lockoutDiff}`);
+                if (lockoutDiff >= 0) {
+                    console.log(`Recent> enter lockout hit (diff is ${lockoutDiff})`);
+                    this.enterLockout = Date.now(); // if the lockout is hit once, let the next enter key do the search
+                    return;
+                }
+
+                const container: HTMLElement | null = document.querySelector(".tribute-container");
+                if (container == null) {
+                    console.warn(`query .tribute-container nothing returned`);
+                    this.performSearch();
+                    return;
+                }
+
+                if (container.style.display != "none") {
+                    console.log(`not sending @do-search, auto-complete tab is opened`);
+                    return;
+                }
+
+                this.performSearch();
             },
 
             loadRecent: async function(): Promise<void> {
@@ -433,10 +584,42 @@
 
             removeGameSetting: function(key: string): void {
                 this.search.gameSettings = this.search.gameSettings.filter(iter => iter.key != key);
+            },
+
+            searchWrapper: function(): void {
+                clearTimeout(this.inputTimeout);
+
+                const searchTerm: string = this.userInput;
+
+                if (searchTerm.length >= 3) {
+                    this.inputTimeout = setTimeout(async () => {
+                        console.log(`Recent> doing user search [searchTerm=${searchTerm}]`);
+                        this.users = Loadable.loaded([]);
+                        const ret: Loading<UserSearchResult[]> = await BarUserApi.search(searchTerm, false, false);
+                        if (ret.state != "loaded") {
+                            this.users = Loadable.rewrap(ret);
+                            return;
+                        }
+
+                        this.users = Loadable.loaded(ret.data.slice(0, 20));
+                    }, 300) as unknown as number;
+                }
+            },
+
+            removeUser: function(userID: number): void {
+                this.search.users = this.search.users.filter(iter => iter.userID != userID);
             }
         },
 
         computed: {
+
+            searchedUsers: function(): UserSearchResult[] {
+                if (this.users.state != "loaded") {
+                    return [];
+                }
+
+                return this.users.data;
+            },
 
             searchParam: function(): string {
                 if (this.showUnprocessedGames == true) {
@@ -500,6 +683,9 @@
                 }
                 if (this.search.gameSettings.length > 0) {
                     options.gameSettings = this.search.gameSettings;
+                }
+                if (this.search.users.length > 0) {
+                    options.users = this.search.users.map(iter => { return { username: iter.username, userID: iter.userID }; });
                 }
 
                 return options;

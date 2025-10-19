@@ -300,10 +300,23 @@ namespace gex.Services.Db.Match {
                 SearchKeyValue svk = parms.GameSettings[i];
                 if (svk.Operation == "eq") {
                     conditions.Add($"m.game_settings->>@sk{i} = @sv{i}");
-                    cmd.AddParameter($"sk{i}", svk.Key);
-                    cmd.AddParameter($"sv{i}", svk.Value);
+                } else if (svk.Operation == "ne") {
+                    conditions.Add($"m.game_settings->>@sk{i} != @sv{i}");
                 } else {
                     throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'");
+                }
+
+                cmd.AddParameter($"sk{i}", svk.Key);
+                cmd.AddParameter($"sv{i}", svk.Value);
+            }
+
+            // need a different join for each player, can't use the same join for the list of players
+            string joinPlayersStr = "";
+            if (parms.UserIDs.Count > 0) {
+                for (int i = 0; i < parms.UserIDs.Count; ++i) {
+                    joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
+                    conditions.Add($"players{i}.user_id = @UserID{i}");
+                    cmd.AddParameter($"UserID{i}", parms.UserIDs[i]);
                 }
             }
 
@@ -312,6 +325,7 @@ namespace gex.Services.Db.Match {
                     FROM bar_match m
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
                         {((joinPool == true) ? "INNER JOIN match_pool_entry mp ON mp.match_id = m.id " : "")}
+                        {joinPlayersStr}
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
                     ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}

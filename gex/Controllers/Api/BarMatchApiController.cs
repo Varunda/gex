@@ -232,8 +232,8 @@ namespace gex.Controllers.Api {
         /// <param name="gameSettings">
         ///     game settings to limit the results to. the key, value and operation are comma seperated.
         ///     for example, <code>techsplit,1,eq</code> would return all matches with <see cref="BarMatch.GameSettings"/>.techsplit = '1'.
-        ///     
         /// </param>
+        /// <param name="userIDs">list of user IDs to include. leave blank for any user</param>
         /// <param name="offset">offset into the results. is a value, not a page number</param>
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
@@ -260,6 +260,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool? legionEnabled = null,
             [FromQuery] long? poolID = null,
             [FromQuery] List<string>? gameSettings = null,
+            [FromQuery] List<long>? userIDs = null,
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
@@ -333,6 +334,7 @@ namespace gex.Controllers.Api {
                     Operation = parts[2]
                 };
             }).ToList() ?? [];
+            parms.UserIDs = userIDs ?? [];
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 

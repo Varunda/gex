@@ -94,7 +94,15 @@ namespace gex.Models.Db {
         /// </summary>
         public long? PoolID { get; set; }
 
+        /// <summary>
+        ///     list of game settings to filter for
+        /// </summary>
         public List<SearchKeyValue> GameSettings { get; set; } = [];
+
+        /// <summary>
+        ///     list of user IDs to search for. if empty, no filter is applied
+        /// </summary>
+        public List<long> UserIDs { get; set; } = [];
 
         public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
 

@@ -29,7 +29,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
             engine?: string, gameVersion?: string, map?: string, startTimeAfter?: Date, startTimeBefore?: Date,
             durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
             playerCountMinimum?: number, playerCountMaximum?: number, legionEnabled?: boolean, poolID?: number,
-            gameSettings?: SearchKeyValue[],
+            gameSettings?: SearchKeyValue[], users?: { username: string, userID: number }[],
             processingDownloaded?: boolean, processingParsed?: boolean, processingReplayed?: boolean, processingAction?: boolean
         }
     ) {
@@ -82,6 +82,11 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         if (options.gameSettings != undefined) {
             for (const gs of options.gameSettings) {
                 search.append("gameSettings", `${gs.key},${gs.value},${gs.operation}`);
+            }
+        }
+        if (options.users != undefined) {
+            for (const user of options.users) {
+                search.append("userIDs", user.userID.toString());
             }
         }
         if (options.processingDownloaded != undefined) {
