@@ -65,3 +65,9 @@ export class BarMatch {
     }
 
 }
+
+export class SearchKeyValue {
+    public key: string = "";
+    public value: string = "";
+    public operation: "eq" | "ne" = "eq";
+}

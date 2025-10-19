@@ -296,6 +296,17 @@ namespace gex.Services.Db.Match {
                 joinPool = true;
             }
 
+            for (int i = 0; i < parms.GameSettings.Count; ++i) {
+                SearchKeyValue svk = parms.GameSettings[i];
+                if (svk.Operation == "eq") {
+                    conditions.Add($"m.game_settings->>@sk{i} = @sv{i}");
+                    cmd.AddParameter($"sk{i}", svk.Key);
+                    cmd.AddParameter($"sv{i}", svk.Value);
+                } else {
+                    throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'");
+                }
+            }
+
             cmd.CommandText = $@"
                 SELECT *
                     FROM bar_match m

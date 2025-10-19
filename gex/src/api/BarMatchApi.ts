@@ -1,6 +1,6 @@
 import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
-import { BarMatch } from "model/BarMatch";
+import { BarMatch, SearchKeyValue } from "model/BarMatch";
 
 export class BarMatchApi extends ApiWrapper<BarMatch> {
     private static _instance: BarMatchApi = new BarMatchApi();
@@ -29,6 +29,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
             engine?: string, gameVersion?: string, map?: string, startTimeAfter?: Date, startTimeBefore?: Date,
             durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
             playerCountMinimum?: number, playerCountMaximum?: number, legionEnabled?: boolean, poolID?: number,
+            gameSettings?: SearchKeyValue[],
             processingDownloaded?: boolean, processingParsed?: boolean, processingReplayed?: boolean, processingAction?: boolean
         }
     ) {
@@ -77,6 +78,11 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         }
         if (options.poolID != undefined) {
             search.set("poolID", options.poolID.toString());
+        }
+        if (options.gameSettings != undefined) {
+            for (const gs of options.gameSettings) {
+                search.append("gameSettings", `${gs.key},${gs.value},${gs.operation}`);
+            }
         }
         if (options.processingDownloaded != undefined) {
             search.set("processingDownloaded", options.processingDownloaded ? "true" : "false");

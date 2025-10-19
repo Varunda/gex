@@ -224,7 +224,9 @@
 
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
-                        <team-stats-chart :stats="computedData.merged" :match="match.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
+                        <div class="my-4">
+                            <team-stats-chart :stats="computedData.merged" :match="match.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
+                        </div>
 
                         <hr class="border">
 
@@ -262,6 +264,9 @@
                         <hr class="border">
 
                         <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :entities="statEntities" :selected-entity="selectedEntityId" class="my-4"></match-combat-stats>
+
+                        <match-unit-value-graph v-if="showArmyValueGraph" :match="match.data" :output="output.data" :entities="statEntities" :selected-entity="selectedEntityId" :show-mobile="showMobile"></match-unit-value-graph>
+
                         <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
                             :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-entity="selectedEntityId" class="my-4">
                         </match-eco-stats>
@@ -365,6 +370,7 @@
     import MatchEcoStats from "./components/MatchEcoStats.vue";
     import MatchActionLog from "./components/MatchActionLog.vue";
     import MatchTweaks from "./components/MatchTweaks.vue";
+    import MatchUnitValueGraph from "./components/MatchUnitValueGraph.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -460,7 +466,8 @@
 
                 containerWidth: 0 as number,
                 containerHeight: 0 as number,
-                showMobile: false as boolean
+                showMobile: false as boolean,
+                showArmyValueGraph: false as boolean
             };
         },
 
@@ -922,7 +929,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph,
             ProcessingStep, Collapsible, Busy
         }
     });

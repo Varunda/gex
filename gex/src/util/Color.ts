@@ -118,6 +118,15 @@ export default class ColorUtils {
         return gradient;
     }
 
+    public static colorGradients(steps: number, c1: RGB, c2: RGB): RGB[] {
+        const ret: RGB[] = [];
+        for (let i = 0; i < steps; ++i) {
+            ret.push(ColorUtils.colorGradient(i / steps, c1, c2));
+        }
+
+        return ret;
+    }
+
     /**
      * Convert a RGB value into a CSS string
      * @param rgb
@@ -126,10 +135,19 @@ export default class ColorUtils {
         return `rgb(${rgb.red}, ${rgb.green}, ${rgb.blue})`;
     }
 
+    public static rgbToHex(rgb: RGB): string {
+        return `#${rgb.red.toString(16).padStart(2, "0")}${rgb.green.toString(16).padStart(2, "0")}${rgb.blue.toString(16).padStart(2, "0")}`;
+    }
+
     public static rgbaToString(rgb: RGB, t: number): string {
         return `rgba(${rgb.red}, ${rgb.green}, ${rgb.blue}, ${t})`;
     }
 
+    /**
+     * 6 digit hex code, with an optional #
+     * @param hex 
+     * @returns 
+     */
     public static hexToRgb(hex: string): RGB {
         let rgb: RGB = { red: 0, green: 0, blue: 0 };
 

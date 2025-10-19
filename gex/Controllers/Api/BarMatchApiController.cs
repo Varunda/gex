@@ -6,6 +6,7 @@ using gex.Models.Internal;
 using gex.Services;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
+using gex.Services.Db.Patches;
 using gex.Services.Repositories;
 using gex.Services.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -224,9 +225,15 @@ namespace gex.Controllers.Api {
         /// <param name="processingParsed"></param>
         /// <param name="processingReplayed"></param>
         /// <param name="processingAction"></param>
-        /// <param name="playerCountMinimum"></param>
-        /// <param name="playerCountMaximum">if not nul</param>
+        /// <param name="playerCountMinimum">if not null, how many players minimum in the match (not including spectators)</param>
+        /// <param name="playerCountMaximum">if not null, how many players maximum in the match (not including spectators)</param>
         /// <param name="legionEnabled">if set to true/false, will limit results to matches that have legion enabled or disabled</param>
+        /// <param name="poolID">ID of the <see cref="MatchPool"/> to search for</param>
+        /// <param name="gameSettings">
+        ///     game settings to limit the results to. the key, value and operation are comma seperated.
+        ///     for example, <code>techsplit,1,eq</code> would return all matches with <see cref="BarMatch.GameSettings"/>.techsplit = '1'.
+        ///     
+        /// </param>
         /// <param name="offset">offset into the results. is a value, not a page number</param>
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
@@ -252,6 +259,7 @@ namespace gex.Controllers.Api {
             [FromQuery] int? playerCountMaximum = null,
             [FromQuery] bool? legionEnabled = null,
             [FromQuery] long? poolID = null,
+            [FromQuery] List<string>? gameSettings = null,
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
@@ -284,6 +292,18 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<List<ApiMatch>>($"{nameof(orderByDir)} can only be 'asc'|'desc'");
             }
 
+            if (gameSettings != null) {
+                foreach (string i in gameSettings) {
+                    string[] parts = i.Split(",");
+                    if (parts.Length != 3) {
+                        return ApiBadRequest<List<ApiMatch>>($"game setting '{i}' expected to have 3 commas, for key,value,operation");
+                    }
+                    if (parts[2] != "eq" && parts[2] != "ne") {
+                        return ApiBadRequest<List<ApiMatch>>($"3rd part of '{i}' must be 'eq' or 'ne', unexpected '{parts[2]}'");
+                    }
+                }
+            }
+
             BarMatchSearchParameters parms = new();
             parms.EngineVersion = engine;
             parms.GameVersion = gameVersion;
@@ -302,6 +322,17 @@ namespace gex.Controllers.Api {
             parms.ProcessingAction = processingAction;
             parms.LegionEnabled = legionEnabled;
             parms.PoolID = poolID;
+            parms.GameSettings = gameSettings?.Select(iter => {
+                string[] parts = iter.Split(",");
+                if (parts.Length != 3) {
+                    throw new Exception($"validation failed above, expected {iter} to split into 3 parts based on comma");
+                }
+                return new SearchKeyValue() {
+                    Key = parts[0],
+                    Value = parts[1],
+                    Operation = parts[2]
+                };
+            }).ToList() ?? [];
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 

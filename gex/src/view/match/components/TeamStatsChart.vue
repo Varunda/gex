@@ -374,7 +374,9 @@
 
                 perSecond: false as boolean,
 
-                showedStat: "armyValue" as StatKey
+                showedStat: "armyValue" as StatKey, 
+
+                unitDefNameFilter: null as string | null
             }
         },
 

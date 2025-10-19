@@ -24,8 +24,8 @@
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Engine</label>
-                <dropdown-search v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
+                <label for="search-engine">Engine</label>
+                <dropdown-search name="search-engine" v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
@@ -49,6 +49,26 @@
                     <option :value="5">Team FFA</option>
                     <option :value="0">Other</option>
                 </select>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Start time before</label>
+                <date-time-input v-model="search.startTimeBefore" :allow-null="true"></date-time-input>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Start time after</label>
+                <date-time-input v-model="search.startTimeAfter" :allow-null="true"></date-time-input>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Minimum player count</label>
+                <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Maximum player count</label>
+                <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
@@ -88,22 +108,12 @@
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Ranked?</label>
-                <select v-model="search.ranked" class="form-control">
+                <label for="search-ranked">Ranked?</label>
+                <select v-model="search.ranked" class="form-control" name="search-ranked">
                     <option :value="null">Unset</option>
                     <option :value="false">No</option>
                     <option :value="true">Yes</option>
                 </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Minimum player count</label>
-                <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Maximum player count</label>
-                <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
@@ -121,6 +131,19 @@
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Game settings</label>
+                <div class="input-group">
+                    <input v-model="gameSetting.key" class="form-control"/>
+                    <select v-model="gameSetting.operation" class="form-control">
+                        <option value="eq">equals</option>
+                        <option value="ne">not equals</option>
+                    </select>
+                    <input v-model="gameSetting.value" class="form-control" placeholder="game setting value"/>
+                    <button class="btn btn-success" @click="addGameSetting" :disabled="gameSetting.key == ''" :title="gameSetting.key == '' ? 'cannot add as there is no key' : ''">add</button>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                 <label>Order by</label>
                 <select v-model="search.orderBy" class="form-control">
                     <option value="start_time">Start time</option>
@@ -135,6 +158,28 @@
                     <option value="desc">Desc</option>
                     <option value="asc">Asc</option>
                 </select>
+            </div>
+
+            <div v-if="search.gameSettings.length > 0" class="col-12 mt-2">
+                <label>Game setting search values</label>
+                <div class="">
+                    <div v-for="gs in search.gameSettings" :key="gs.key" class="my-3 mx-2 d-flex">
+                        <span class="flex-grow-0">
+                            {{ gs.key }}
+                            <span v-if="gs.operation == 'eq'">
+                                =
+                            </span>
+                            <span v-else-if="gs.operation == 'ne'">
+                                !=
+                            </span>
+                            {{ gs.value }}
+                        </span>
+
+                        <span class="flex-grow-0 text-danger border px-1 py-0 ms-3 rounded" @click="removeGameSetting(gs.key)">
+                            &times;
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <div class="col-12 mt-2">
@@ -191,7 +236,7 @@
 
                     <div class="flex-grow-1"></div>
 
-                    <span class="text-center fetch-interval">Matches are fetched every 5 minutes. Only public matches without AI are included</span>
+                    <span class="text-center fetch-interval">Matches are fetched every 5 minutes. Only public PvP matches without any bots are included</span>
 
                     <div class="flex-grow-1"></div>
 
@@ -228,8 +273,9 @@
     import DropdownSearch from "components/DropdownSearch.vue";
     import ToggleButton from "components/ToggleButton";
     import ApiError from "components/ApiError";
+    import DateTimeInput from "components/DateTimeInput.vue";
 
-    import { BarMatch } from "model/BarMatch";
+    import { BarMatch, SearchKeyValue } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
     import { MatchSearchApi } from "api/MatchSearchApi";
 
@@ -264,12 +310,19 @@
                     playerCountMinimum: 0 as number,
                     playerCountMaximum: 0 as number,
                     legionEnabled: null as boolean | null,
+                    gameSettings: [] as SearchKeyValue[],
                     processingDownloaded: null as boolean | null,
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
                     processingAction: null as boolean | null,
                     orderBy: "start_time" as string,
                     orderByDir: "desc" as string,
+                },
+
+                gameSetting: {
+                    key: "" as string,
+                    value: "" as string,
+                    operation: "eq" as "eq" | "ne"
                 },
 
                 offset: 0 as number,
@@ -294,9 +347,17 @@
 
             if (search.has("search") && search.get("search") != "") {
                 const b64: string = search.get("search")!;
-                this.search = JSON.parse(atob(b64));
-                this.search.orderBy ??= "start_time";
-                this.search.orderByDir ??= "desc";
+                const blob = JSON.parse(atob(b64));
+                if (blob.startTimeBefore) {
+                    blob.startTimeBefore = new Date(blob.startTimeBefore);
+                }
+                if (blob.startTimeAfter) {
+                    blob.startTimeAfter = new Date(blob.startTimeAfter);
+                }
+                blob.orderBy ??= "start_time";
+                blob.orderByDir ??= "desc";
+                blob.gameSettings ??= [];
+                this.search = blob;
                 this.performSearch();
             } else {
                 this.loadRecent();
@@ -305,7 +366,6 @@
         },
 
         methods: {
-
             showSearch: function(): void {
                 this.searching = true;
             },
@@ -338,7 +398,6 @@
 
                 if (this.search.gameID != "") {
                     const reg: RegExpExecArray | null = this.gameIdRegex.exec(this.search.gameID);
-                    console.log(reg);
                     if (reg != null && reg.length > 0) {
                         const first: string | undefined = reg.at(0);
                         if (first != undefined) {
@@ -356,6 +415,24 @@
                 }
 
                 this.recent = await BarMatchApi.search(this.offset, 24, this.search.orderBy, this.search.orderByDir, this.searchOptions);
+            },
+
+            addGameSetting: function(): void {
+                this.removeGameSetting(this.gameSetting.key);
+
+                this.search.gameSettings.push({
+                    key: this.gameSetting.key,
+                    value: this.gameSetting.value,
+                    operation: this.gameSetting.operation,
+                })
+
+                this.gameSetting.key = "";
+                this.gameSetting.value = "";
+                this.gameSetting.operation = "eq";
+            },
+
+            removeGameSetting: function(key: string): void {
+                this.search.gameSettings = this.search.gameSettings.filter(iter => iter.key != key);
             }
         },
 
@@ -394,6 +471,12 @@
                 if (this.search.ranked != null) {
                     options.ranked = this.search.ranked;
                 }
+                if (this.search.startTimeBefore != null) {
+                    options.startTimeBefore = this.search.startTimeBefore;
+                }
+                if (this.search.startTimeAfter != null) {
+                    options.startTimeAfter = this.search.startTimeAfter;
+                }
                 if (this.search.playerCountMinimum != 0 && this.search.playerCountMinimum != undefined) {
                     options.playerCountMinimum = this.search.playerCountMinimum;
                 }
@@ -414,6 +497,9 @@
                 }
                 if (this.search.processingAction != null) {
                     options.processingAction = this.search.processingAction;
+                }
+                if (this.search.gameSettings.length > 0) {
+                    options.gameSettings = this.search.gameSettings;
                 }
 
                 return options;
@@ -437,7 +523,7 @@
 
         components: {
             InfoHover, GexMenu,
-            MatchList, DropdownSearch, ToggleButton, ApiError
+            MatchList, DropdownSearch, ToggleButton, ApiError, DateTimeInput
         }
     });
 

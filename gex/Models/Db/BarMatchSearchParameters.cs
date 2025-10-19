@@ -1,5 +1,6 @@
 ﻿using gex.Code.Constants;
 using System;
+using System.Collections.Generic;
 
 namespace gex.Models.Db {
 
@@ -92,6 +93,8 @@ namespace gex.Models.Db {
         ///     id of the <see cref="MatchPool"/> to search for
         /// </summary>
         public long? PoolID { get; set; }
+
+        public List<SearchKeyValue> GameSettings { get; set; } = [];
 
         public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
 
