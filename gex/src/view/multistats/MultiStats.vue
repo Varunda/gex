@@ -35,62 +35,76 @@
                 loading...
             </div>
 
-            <table v-else-if="matches.state == 'loaded'" class="table">
-                <thead>
-                    <tr>
-                        <th>match</th>
-                        <th>map</th>
-                        <th>start time</th>
-                        <th>duration</th>
-                        <th>no team</th>
-                        <th v-for="i in maxAllyTeamCount" :key="i">
-                            ally team {{ i }}
-                        </th>
-                    </tr>
-                </thead>
+            <div v-else-if="matches.state == 'loaded'">
 
-                <tbody>
-                    <tr v-for="match in matches.data" :key="match.id">
-                        <td>
-                            <a :href="'/match/' + match.id">{{ match.id }}</a>
-                        </td>
-                        <td>
-                            {{ match.map }}
-                        </td>
-                        <td>
-                            {{ match.startTime | moment }}
-                        </td>
-                        <td>
-                            {{ match.durationMs / 1000 | mduration }}
-                        </td>
-                        <td>
-                            <button class="btn" @click="match.pickedAllyTeam = undefined"
-                                :class="[ match.pickedAllyTeam == undefined ? 'btn-primary' : 'btn-secondary' ]">
-                                
-                                skip match
-                            </button>
-                        </td>
-                        <td v-for="i in maxAllyTeamCount" :key="match.id + '-' + i">
-                            <span v-if="i > match.allyTeams.length"></span>
+                <div class="mb-3 border-bottom pb-3">
+                    <h6>select matches of player</h6>
+                    <div>
+                        <button v-for="player in allPlayers" :key="player.userID" class="btn btn-primary me-2" @click="selectMatchesOfPlayer(player.userID)">
+                            {{ player.username }}
+                        </button>
+                    </div>
+                </div>
 
-                            <button v-else class="btn" @click="match.pickedAllyTeam = match.allyTeams.at(i - 1).allyTeamID"
-                                :class="[ match.pickedAllyTeam == match.allyTeams.at(i - 1).allyTeamID ? 'btn-primary' : 'btn-secondary' ]">
+                <table class="table">
+                    <thead>
+                        <tr class="table-secondary">
+                            <th>match</th>
+                            <th>map</th>
+                            <th>start time</th>
+                            <th>duration</th>
+                            <th>no team</th>
+                            <th v-for="i in maxAllyTeamCount" :key="i">
+                                ally team {{ i }}
+                            </th>
+                        </tr>
+                    </thead>
 
-                                ally team {{ match.allyTeams.at(i - 1).allyTeamID }}
-                                -
-                                <span v-for="player in match.players.filter(iter => iter.allyTeamID == match.allyTeams.at(i - 1).allyTeamID)">
-                                    {{ player.username }}
-                                </span>
-                            </button>
-                        </td>
+                    <tbody>
+                        <tr v-for="match in matches.data" :key="match.id">
+                            <td>
+                                <a :href="'/match/' + match.id">{{ match.id }}</a>
+                            </td>
+                            <td>
+                                {{ match.map }}
+                            </td>
+                            <td>
+                                {{ match.startTime | moment }}
+                            </td>
+                            <td>
+                                {{ match.durationMs / 1000 | mduration }}
+                            </td>
+                            <td>
+                                <button class="btn" @click="match.pickedAllyTeam = undefined"
+                                    :class="[ match.pickedAllyTeam == undefined ? 'btn-primary' : 'btn-secondary' ]">
+                                    
+                                    skip match
+                                </button>
+                            </td>
+                            <td v-for="i in maxAllyTeamCount" :key="match.id + '-' + i">
+                                <span v-if="i > match.allyTeams.length"></span>
 
-                    </tr>
+                                <button v-else class="btn" @click="match.pickedAllyTeam = match.allyTeams.at(i - 1).allyTeamID"
+                                    :class="[ match.pickedAllyTeam == match.allyTeams.at(i - 1).allyTeamID ? 'btn-primary' : 'btn-secondary' ]">
 
-                </tbody>
-            </table>
+                                    ally team {{ match.allyTeams.at(i - 1).allyTeamID }}
+                                    -
+                                    <span v-for="player in match.players.filter(iter => iter.allyTeamID == match.allyTeams.at(i - 1).allyTeamID)">
+                                        {{ player.username }}
+                                    </span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <button class="btn btn-primary" @click="loadMatchStats">
                 load stats for {{ selectedMatches.length }} matches
+            </button>
+
+            <button class="btn btn-danger" @click="clearSelection">
+                clear selection
             </button>
         </div>
 
@@ -1020,6 +1034,31 @@
                 }));
             },
 
+            clearSelection: function(): void {
+                if (this.matches.state != "loaded") {
+                    return;
+                }
+
+                for (const match of this.matches.data) {
+                    match.pickedAllyTeam = undefined;
+                }
+            },
+
+            selectMatchesOfPlayer: function(userID: number): void {
+                if (this.matches.state != "loaded") {
+                    return;
+                }
+
+                for (const match of this.matches.data) {
+                    let p: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == userID);
+                    if (p == undefined) {
+                        continue;
+                    }
+
+                    match.pickedAllyTeam = p.allyTeamID;
+                }
+            },
+
             loadMatchStats: async function(): Promise<void> {
                 this.step = "show";
 
@@ -1504,6 +1543,23 @@
                 }
 
                 return Array.from(map.values());
+            },
+
+            allPlayers: function(): BarMatchPlayer[] {
+                if (this.matches.state != "loaded") {
+                    return [];
+                }
+
+                const map: Map<number, BarMatchPlayer> = new Map();
+                for (const match of this.matches.data) {
+                    for (const player of match.players) {
+                        map.set(player.userID, player);
+                    }
+                }
+
+                return Array.from(map.values()).sort((a: BarMatchPlayer, b: BarMatchPlayer) => {
+                    return a.username.localeCompare(b.username);
+                });
             },
 
             saveUrl: function(): string {
