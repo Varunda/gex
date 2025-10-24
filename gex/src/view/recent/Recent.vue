@@ -183,7 +183,7 @@
 
             <div class="col-12">
                 <label for="user-search-input-bottom">User search</label>
-                <div class="form-control user-input-parent" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
+                <div class="form-control user-input-parent px-0" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
                     <button v-for="user in search.users" :key="user.userID" class="btn btn-primary btn-sm rounded mx-2">
                         {{ user.username }}
                         <span class="close" @click="removeUser(user.userID)">

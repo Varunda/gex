@@ -1,4 +1,6 @@
-﻿namespace gex.Models.Options {
+﻿using System.Collections.Generic;
+
+namespace gex.Models.Options {
 
     public class SpringLobbyOptions {
 
@@ -17,15 +19,15 @@
         /// </summary>
         public int Port { get; set; }
 
-        /// <summary>
-        ///     username to use when connecting
-        /// </summary>
         public string Username { get; set; } = "";
 
-        /// <summary>
-        ///     password to the user
-        /// </summary>
         public string Password { get; set; } = "";
 
+        /// <summary>
+        ///     worker drones that record games or process them in real time
+        /// </summary>
+        public List<string> Drones { get; set; } = [];
+
     }
+
 }

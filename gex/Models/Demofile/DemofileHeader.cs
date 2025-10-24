@@ -8,7 +8,7 @@
 
         public int HeaderSize { get; set; }
 
-        public string GameVersion { get; set; } = "";
+        public string EngineVersion { get; set; } = "";
 
         public string GameID { get; set; } = "";
 

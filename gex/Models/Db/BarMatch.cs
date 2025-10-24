@@ -56,6 +56,8 @@ namespace gex.Models.Db {
 
         public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
 
+        public List<BarMatchMapDraw> MapDraws { get; set; } = [];
+
         public int PlayerCount { get; set; }
 
         public long? UploadedByID { get; set; }
@@ -65,6 +67,8 @@ namespace gex.Models.Db {
         ///     in the <see cref="BarMatchPlayer"/> entries for this match?
         /// </summary>
         public bool WrongSkillValues { get; set; }
+
+        public bool OfflineGame { get; set; }
 
         public BarMap? MapData { get; set; }
 

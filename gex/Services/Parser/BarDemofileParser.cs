@@ -2,8 +2,10 @@
 using gex.Code.Constants;
 using gex.Code.ExtensionMethods;
 using gex.Models;
+using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Demofile;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
@@ -17,6 +19,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ZstdSharp.Unsafe;
 
 namespace gex.Services.Parser {
 
@@ -77,6 +80,8 @@ namespace gex.Services.Parser {
         }
 
         private Result<BarMatch, string> ReadBytes(string filename, byte[] data) {
+            Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch stepTimer = Stopwatch.StartNew();
             ByteArrayReader reader = new(data);
 
             Demofile demofile = new();
@@ -91,9 +96,13 @@ namespace gex.Services.Parser {
             }
 
             header.HeaderVersion = reader.ReadInt32LE();
+            if (header.HeaderVersion != 5) {
+                return $"unhandled header version {header.HeaderVersion}";
+            }
+
             header.HeaderSize = reader.ReadInt32LE();
-            header.GameVersion = reader.ReadAsciiString(256);
-            header.GameVersion = header.GameVersion[..header.GameVersion.IndexOf('\0')]; // remove all the null terms at the end
+            header.EngineVersion = reader.ReadAsciiString(256);
+            header.EngineVersion = header.EngineVersion[..header.EngineVersion.IndexOf('\0')]; // remove all the null terms at the end
             header.GameID = BitConverter.ToString(reader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
             header.StartTime = reader.ReadInt64LE();
             header.ScriptSize = reader.ReadInt32LE();
@@ -111,6 +120,7 @@ namespace gex.Services.Parser {
             demofile.Header = header;
 
             match.ID = header.GameID;
+            long readHeaderMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             if (reader.Index != 0x0160) {
                 return $"expected reader index to be at {0x0160}, was at {reader.Index} instead";
@@ -127,6 +137,8 @@ namespace gex.Services.Parser {
 
             JsonElement modJson = JsonSerializer.Deserialize<JsonElement>(modConfig);
             JsonElement game = modJson.GetRequiredChild("game");
+
+            match.OfflineGame = game.NullableString("hostip") == "127.0.0.1";
 
             Dictionary<int, BarMatchPlayer> players = []; // <teamID, player>
 
@@ -173,30 +185,45 @@ namespace gex.Services.Parser {
                     // player parsing, also spectator
                     else if (iter.Name.StartsWith("player")) {
 
-                        if (iter.Value.GetRequiredString("spectator") == "1") {
-                            if (iter.Value.GetChild("accountid") == null) {
-                                _Logger.LogWarning($"missing accountid from {iter.Value}");
-                            } else {
-                                BarMatchSpectator spec = new();
-                                spec.GameID = match.ID;
-                                spec.PlayerID = int.Parse(iter.Name.Split("player")[1]);
-                                spec.UserID = iter.Value.GetRequiredInt64("accountid");
-                                spec.Name = iter.Value.GetRequiredString("name");
-
-                                match.Spectators.Add(spec);
-                            }
-                        } else {
+                        if (iter.Value.NullableString("spectator") == null && match.OfflineGame == true) {
                             int teamID = iter.Value.GetRequiredInt32("team");
                             BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
                             player.TeamID = teamID;
                             player.GameID = match.ID;
                             player.PlayerID = int.Parse(iter.Name.Split("player")[1]);
-                            player.UserID = iter.Value.GetRequiredInt64("accountid");
                             player.Name = iter.Value.GetRequiredString("name");
-                            player.SkillUncertainty = double.Parse(iter.Value.GetProperty("skilluncertainty").GetString()!);
-                            player.Skill = double.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
+                            player.UserID = -1;
+                            player.SkillUncertainty = 0d;
+                            player.Skill = 0d;
 
                             players[player.TeamID] = player;
+
+                        } else {
+                            if (iter.Value.GetRequiredString("spectator") == "1") {
+                                if (iter.Value.GetChild("accountid") == null) {
+                                    _Logger.LogWarning($"missing accountid from {iter.Value}");
+                                } else {
+                                    BarMatchSpectator spec = new();
+                                    spec.GameID = match.ID;
+                                    spec.PlayerID = int.Parse(iter.Name.Split("player")[1]);
+                                    spec.UserID = iter.Value.GetRequiredInt64("accountid");
+                                    spec.Name = iter.Value.GetRequiredString("name");
+
+                                    match.Spectators.Add(spec);
+                                }
+                            } else {
+                                int teamID = iter.Value.GetRequiredInt32("team");
+                                BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
+                                player.TeamID = teamID;
+                                player.GameID = match.ID;
+                                player.PlayerID = int.Parse(iter.Name.Split("player")[1]);
+                                player.Name = iter.Value.GetRequiredString("name");
+                                player.UserID = iter.Value.GetRequiredInt64("accountid");
+                                player.SkillUncertainty = double.Parse(iter.Value.GetProperty("skilluncertainty").GetString()!);
+                                player.Skill = double.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
+
+                                players[player.TeamID] = player;
+                            }
                         }
                     } else if (iter.Name.StartsWith("ai")) {
                         // [ai0]
@@ -215,16 +242,18 @@ namespace gex.Services.Parser {
 
             match.HostSettings = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(hostSettings));
 
+            JsonElement emptyObject = JsonSerializer.Deserialize<JsonElement>("{}");
             match.GameSettings = game.GetRequiredChild("modoptions");
-            match.MapSettings = game.GetRequiredChild("mapoptions");
-            match.SpadsSettings = game.GetRequiredChild("hostoptions");
-            match.Restrictions = game.GetRequiredChild("restrict");
+            match.MapSettings = game.GetChild("mapoptions") ?? emptyObject;
+            match.SpadsSettings = game.GetChild("hostoptions") ?? emptyObject;
+            match.Restrictions = game.GetChild("restrict") ?? emptyObject;
 
-            match.Engine = header.GameVersion;
+            match.Engine = header.EngineVersion;
             match.GameVersion = hostSettings.GetValueOrDefault("gametype") ?? "";
             match.Map = hostSettings.GetValueOrDefault("mapname") ?? "";
             match.StartTime = DateTimeOffset.FromUnixTimeMilliseconds(header.StartTime * 1000).ToUniversalTime().DateTime;
             match.DurationMs = header.WallClockTime * 1000;
+            long modSettingsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             if (header.PacketOffset != reader.Index) {
                 return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
@@ -233,6 +262,18 @@ namespace gex.Services.Parser {
             Dictionary<int, string> unitDefDict = [];
 
             byte[] winningAllyTeams = [];
+
+            // ok, this is fun
+            // this commit changes MAPDRAW to use u32: https://github.com/beyond-all-reason/RecoilEngine/commit/cfc599994ec5d22e31f83b0aa1925404bb048126
+            // this commit changes the MAPDRAW packet from 31 to 32: https://github.com/beyond-all-reason/RecoilEngine/commit/5e8a5c123ee8dba3b88a308db42a4f0103fd40e9
+            // 
+            // HOWEVER, the commit to use packet ID 32 is NOT part of 2025.04.xx, but the commit to use u32 IS part of 2025.04.xx
+            // which means for only version 2025.04.xx, packet ID 31 uses u32 coords
+            //bool hasWrongPacket31CoordSize = (header.EngineVersion == "2025.04.01" || header.EngineVersion == "2025.04.04" || header.EngineVersion == "2025.04.08");
+            BarEngineVersion wrongPacketIdStart = new("2025.03.01");
+            BarEngineVersion wrongPacketIdEnd = new("2025.06.01");
+            BarEngineVersion matchEngineVersion = new(header.EngineVersion);
+            bool hasWrongPacket31CoordSize = (matchEngineVersion >= wrongPacketIdStart) && (matchEngineVersion < wrongPacketIdEnd);
 
             int packetCount = 0;
             int frameCount = 0;
@@ -266,7 +307,100 @@ namespace gex.Services.Parser {
                     if (packetGameID != header.GameID) {
                         return $"inconsistent gameID found, refusing to process further";
                     }
+                } else if (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte size = packetReader.ReadByte();
+                    byte playerID = packetReader.ReadByte();
+                    // 0 = point, 1 = erase, 2 = line
+                    byte drawType = packetReader.ReadByte();
+                    int x = packetReader.ReadInt16LE();
+                    int z = packetReader.ReadInt16LE();
 
+                    if (drawType == BarMapDrawActionType.POINT) {
+                        byte fromLua = packetReader.ReadByte();
+                        string label = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+
+                        match.MapDraws.Add(new BarMatchMapDrawPoint() {
+                            Action = "point",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            Label = label,
+                            X = x,
+                            Z = z,
+                            FromLua = fromLua
+                        });
+                    } else if (drawType == BarMapDrawActionType.LINE) {
+                        int x2 = packetReader.ReadInt16LE();
+                        int z2 = packetReader.ReadInt16LE();
+                        byte fromLua = packetReader.ReadByte();
+
+                        match.MapDraws.Add(new BarMatchMapDrawLine() {
+                            Action = "line",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            X = x,
+                            EndX = x2,
+                            Z = z,
+                            EndZ = z2,
+                            FromLua = fromLua,
+                        });
+                    } else if (drawType == BarMapDrawActionType.ERASE) {
+                        match.MapDraws.Add(new BarMatchMapDrawErase() {
+                            Action = "erase",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            X = x,
+                            Z = z,
+                        });
+                    } else {
+                        _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
+                    }
+                } else if (packet.PacketType == BarPacketType.MAP_DRAW || (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize)) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte size = packetReader.ReadByte();
+                    byte playerID = packetReader.ReadByte();
+                    // 0 = point, 1 = erase, 2 = line
+                    byte drawType = packetReader.ReadByte();
+                    int x = packetReader.ReadInt32LE();
+                    int z = packetReader.ReadInt32LE();
+
+                    if (drawType == BarMapDrawActionType.POINT) {
+                        byte fromLua = packetReader.ReadByte();
+                        string label = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+
+                        match.MapDraws.Add(new BarMatchMapDrawPoint() {
+                            Action = "point",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            Label = label,
+                            X = x,
+                            Z = z,
+                        });
+                    } else if (drawType == BarMapDrawActionType.LINE) {
+                        int x2 = packetReader.ReadInt32LE();
+                        int z2 = packetReader.ReadInt32LE();
+                        byte fromLua = packetReader.ReadByte();
+
+                        match.MapDraws.Add(new BarMatchMapDrawLine() {
+                            Action = "line",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            X = x,
+                            EndX = x2,
+                            Z = z,
+                            EndZ = z2,
+                        });
+                    } else if (drawType == BarMapDrawActionType.ERASE) {
+                        match.MapDraws.Add(new BarMatchMapDrawErase() {
+                            Action = "erase",
+                            PlayerID = playerID,
+                            GameTime = packet.GameTime,
+                            X = x,
+                            Z = z
+                        });
+                    } else {
+                        _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
+                    }
                 } else if (packet.PacketType == BarPacketType.START_POS) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte playerID = packetReader.ReadByte();
@@ -339,26 +473,28 @@ namespace gex.Services.Parser {
                         }
 
                     } else if (msg.StartsWith("unitdefs:")) {
-                        Span<byte> input = bytes.AsSpan("unitdefs:".Length);
-                        using MemoryStream stream = new(input.ToArray());
-                        using ZLibStream zlib = new(stream, CompressionMode.Decompress);
-                        using MemoryStream output = new();
-                        zlib.CopyTo(output);
-                        byte[] unitDefs = output.ToArray();
+                        if (unitDefDict.Count == 0) {
+                            Span<byte> input = bytes.AsSpan("unitdefs:".Length);
+                            using MemoryStream stream = new(input.ToArray());
+                            using ZLibStream zlib = new(stream, CompressionMode.Decompress);
+                            using MemoryStream output = new();
+                            zlib.CopyTo(output);
+                            byte[] unitDefs = output.ToArray();
 
-                        JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
+                            JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
 
-                        int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
-                        foreach (JsonElement iter in json.EnumerateArray()) {
-                            string defName = iter.GetString()!;
-                            if (unitDefDict.ContainsKey(index)) {
-                                if (unitDefDict[index] != defName) {
-                                    _Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+                            int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
+                            foreach (JsonElement iter in json.EnumerateArray()) {
+                                string defName = iter.GetString()!;
+                                if (unitDefDict.ContainsKey(index)) {
+                                    if (unitDefDict[index] != defName) {
+                                        _Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+                                    }
+                                } else {
+                                    unitDefDict.Add(index, iter.GetString()!);
                                 }
-                            } else {
-                                unitDefDict.Add(index, iter.GetString()!);
+                                index += 1;
                             }
-                            index += 1;
                         }
                     }
                 } else if (packet.PacketType == BarPacketType.KEYFRAME) {
@@ -410,6 +546,8 @@ namespace gex.Services.Parser {
                     break;
                 }
             }
+
+            long packetReadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             if (header.StatOffset != reader.Index) {
                 return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
@@ -493,6 +631,8 @@ namespace gex.Services.Parser {
             int allyTeamCount = match.AllyTeams.Count;
             match.Gamemode = BarGamemode.GetByPlayers(allyTeamCount, largestAllyTeam);
 
+            long statParsingMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
             if (match.Gamemode != BarGamemode.DEFAULT) {
                 int spadsTeamCount = match.SpadsSettings.GetRequiredInt32("nbteams");
                 int spadsTeamSize = match.SpadsSettings.GetRequiredInt32("teamsize");
@@ -505,7 +645,8 @@ namespace gex.Services.Parser {
                 _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
             }
 
-            _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [gamemode={match.Gamemode}] [packets={packetCount}]");
+            _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [timer={timer.ElapsedMilliseconds}ms] [gamemode={match.Gamemode}] [packets={packetCount}]"
+                + $" [header={readHeaderMs}ms] [mod options={modSettingsMs}ms] [packet parsing={packetReadMs}ms] [stat parsing={statParsingMs}ms]");
 
             return match;
         }

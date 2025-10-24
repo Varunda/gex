@@ -33,6 +33,13 @@
 
             <div v-else-if="matches.state == 'loading'">
                 loading...
+
+                <div v-if="loading.show" class="mb-2">
+                    {{ loading.done }}/{{ loading.total }}
+                    <div class="progress" style="height: 2rem;">
+                        <div class="progress-bar" :style="{ 'width': `${loading.done / loading.total * 100}%`, 'height': '2rem' }"></div>
+                    </div>
+                </div>
             </div>
 
             <div v-else-if="matches.state == 'loaded'">
@@ -898,6 +905,12 @@
                 matches: Loadable.idle() as Loading<BarMatchAndSide[]>,
                 outputs: Loadable.idle() as Loading<GameOutput[]>,
 
+                loading: {
+                    show: false as boolean,
+                    done: 0 as number,
+                    total: 0 as number
+                },
+
                 show: {
                     tables: false as boolean,
                     name: "" as string
@@ -1014,10 +1027,15 @@
             loadMatches: async function(): Promise<void> {
                 this.step = "pick_ally_teams";
 
+                this.loading.show = true;
+                this.loading.total = this.matchIds.length;
+                this.loading.done = 0;
+
                 this.matches = Loadable.loading();
                 const loaded: BarMatch[] = [];
                 for (const matchId of this.matchIds) {
                     const res: Loading<BarMatch> = await BarMatchApi.getByID(matchId);
+                    this.loading.done += 1;
 
                     if (res.state == "loaded") {
                         loaded.push(res.data);
@@ -1025,6 +1043,8 @@
                         console.error(`MultiStats> failed to load match [matchId=${matchId}] [state=${res.state}]`);
                     }
                 }
+
+                this.loading.show = false;
 
                 this.matches = Loadable.loaded(loaded.map(iter => {
                     return {

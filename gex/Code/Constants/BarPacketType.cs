@@ -14,6 +14,14 @@
 
         public const int GAME_OVER = 30;
 
+        public const int MAP_DRAW_OLD = 31;
+
+        /// <summary>
+        ///     new map draw command as of 2025.04
+        ///     https://github.com/beyond-all-reason/RecoilEngine/blob/55e41dff5c551684c69c8e79b957180965973493/doc/site/content/changelogs/changelog-2025-04.markdown?plain=1#L10
+        /// </summary>
+        public const int MAP_DRAW = 32;
+
         public const int START_POS = 36;
 
         public const int LUA_MSG = 50;

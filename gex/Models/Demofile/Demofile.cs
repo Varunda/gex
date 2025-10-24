@@ -18,5 +18,7 @@ namespace gex.Models.Demofile {
 
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
+        public List<DemofileLabelPing> TextPings { get; set; } = [];
+
     }
 }
