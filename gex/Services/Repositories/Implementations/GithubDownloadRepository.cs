@@ -1,5 +1,5 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models;
+using gex.Common.Models;
 using gex.Models.Options;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Logging;

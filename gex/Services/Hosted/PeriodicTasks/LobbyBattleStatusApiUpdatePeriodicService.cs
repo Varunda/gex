@@ -1,6 +1,4 @@
-﻿using DSharpPlus.EventArgs;
-using gex.Models;
-using gex.Models.Lobby;
+﻿using gex.Common.Models;
 using gex.Services.BarApi;
 using gex.Services.Lobby;
 using Microsoft.Extensions.Logging;
@@ -8,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Models.Lobby;
+using gex.Common.Services.Lobby;
 
 namespace gex.Services.Hosted.PeriodicTasks {
 

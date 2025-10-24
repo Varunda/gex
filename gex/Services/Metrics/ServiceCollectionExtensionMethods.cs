@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using gex.Common.Services.Metrics;
 
 namespace gex.Services.Metrics {
 

@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using gex.Models.Options;
 using gex.Services.BarApi;
 using Microsoft.Extensions.Logging;

@@ -1,6 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
-using gex.Code.Constants;
+using gex.Common.Code.Constants;
 
 namespace gex.Models.Db {
 

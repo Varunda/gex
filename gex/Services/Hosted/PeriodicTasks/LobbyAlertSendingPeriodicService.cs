@@ -1,8 +1,8 @@
 ﻿using DSharpPlus.Entities;
-using gex.Code.Constants;
+using gex.Common.Code.Constants;
 using gex.Models.Db;
 using gex.Models.Discord;
-using gex.Models.Lobby;
+using gex.Common.Models.Lobby;
 using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.UserStats;
@@ -18,6 +18,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Services.Lobby;
 
 namespace gex.Services.Hosted.PeriodicTasks {
 

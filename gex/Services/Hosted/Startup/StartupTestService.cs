@@ -1,6 +1,6 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using gex.Models.Bar;
-using gex.Models.Lobby;
+using gex.Models;
 using gex.Models.Options;
 using gex.Services.Db.Event;
 using gex.Services.Lobby;

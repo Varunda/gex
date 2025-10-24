@@ -1,5 +1,5 @@
 ﻿using gex.Commands;
-using gex.Models;
+using gex.Common.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Queues;

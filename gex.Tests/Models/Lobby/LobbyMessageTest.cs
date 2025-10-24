@@ -1,4 +1,4 @@
-﻿using gex.Models.Lobby;
+﻿using gex.Common.Models.Lobby;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;

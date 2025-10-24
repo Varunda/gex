@@ -1,5 +1,6 @@
-﻿using gex.Models;
-using gex.Models.Lobby;
+﻿using gex.Common.Models;
+using gex.Common.Models.Lobby;
+using gex.Common.Services.Lobby;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Lobby;

@@ -1,12 +1,10 @@
-﻿using gex.Code.Constants;
+﻿using gex.Common.Code.Constants;
+using gex.Common.Models;
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
-using gex.Services.BarApi;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;

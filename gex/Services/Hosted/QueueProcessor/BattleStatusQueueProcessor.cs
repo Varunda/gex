@@ -1,9 +1,9 @@
-﻿using gex.Models;
-using gex.Models.Lobby;
+﻿using gex.Common.Models;
+using gex.Common.Models.Lobby;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Lobby;
-using gex.Services.Metrics;
+using gex.Common.Services.Metrics;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Services.Lobby;
 
 namespace gex.Services.Hosted.QueueProcessor {
 

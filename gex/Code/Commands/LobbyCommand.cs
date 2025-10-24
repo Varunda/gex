@@ -1,7 +1,6 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Commands;
-using gex.Models;
-using gex.Models.Lobby;
+using gex.Common.Models.Lobby;
 using gex.Services.Lobby;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,6 +10,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Models;
+using gex.Common.Services.Lobby;
 
 namespace gex.Code.Commands {
 

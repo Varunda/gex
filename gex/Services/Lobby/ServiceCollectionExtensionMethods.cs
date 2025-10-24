@@ -1,5 +1,4 @@
 ﻿using gex.Services.Lobby.Implementations;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Lobby {
@@ -13,7 +12,7 @@ namespace gex.Services.Lobby {
                 services.AddSingleton<ILobbyClient, EmptyLobbyClient>();
             }
 
-            services.AddSingleton<LobbyManager>();
+            services.AddSingleton<gex.Common.Services.Lobby.LobbyManager>();
         }
 
     }

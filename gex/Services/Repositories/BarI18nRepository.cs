@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;

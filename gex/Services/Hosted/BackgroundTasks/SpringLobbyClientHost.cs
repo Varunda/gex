@@ -1,7 +1,8 @@
-﻿using gex.Models;
-using gex.Models.Lobby;
+﻿using gex.Common.Models;
+using gex.Common.Models.Lobby;
 using gex.Models.Options;
 using gex.Services.Lobby;
+using gex.Services.Queues;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,18 +15,25 @@ namespace gex.Services.Hosted.BackgroundTasks {
     /// <summary>
     ///     background service that hosts the spring lobby client (if enabled), performing the login and such
     /// </summary>
-    public class SpringLobbyClientHost : IHostedService {
+    public class SpringLobbyClientHost : IHostedService, IDisposable {
 
         private readonly ILogger<SpringLobbyClientHost> _Logger;
         private readonly IOptions<SpringLobbyOptions> _Options;
         private readonly ILobbyClient _LobbyClient;
+        private readonly BaseQueue<LobbyMessage> _LobbyMessageQueue;
 
         public SpringLobbyClientHost(ILogger<SpringLobbyClientHost> logger,
-            IOptions<SpringLobbyOptions> options, ILobbyClient lobbyClient) {
+            IOptions<SpringLobbyOptions> options, ILobbyClient lobbyClient,
+            BaseQueue<LobbyMessage> lobbyMessageQueue) {
 
             _Logger = logger;
             _Options = options;
             _LobbyClient = lobbyClient;
+            _LobbyMessageQueue = lobbyMessageQueue;
+        }
+
+        public void Dispose() {
+            _LobbyClient.OnMessageReceived -= _HandleMessage;
         }
 
         public Task StartAsync(CancellationToken cancel) {
@@ -34,11 +42,30 @@ namespace gex.Services.Hosted.BackgroundTasks {
                 return Task.CompletedTask;
             }
 
+            if (_Options.Value.Host == "") {
+                throw new Exception($"missing Spring:Host. is this set in secrets.json?");
+            }
+            if (_Options.Value.Port == 0) {
+                throw new Exception($"missing Spring:Port. is this set in secrets.json?");
+            }
+            if (_Options.Value.Username == "") {
+                throw new Exception($"missing Spring:Username. is this set in secrets.json?");
+            }
+            if (_Options.Value.Password == "") {
+                throw new Exception($"missing Spring:Password. is this set in secrets.json?");
+            }
+
+            _LobbyClient.OnMessageReceived += _HandleMessage;
+
             Task.Run(async () => {
                 await Loop(cancel);
             }, cancel);
 
             return Task.CompletedTask;
+        }
+
+        private void _HandleMessage(object? sender, LobbyMessage message) {
+            _LobbyMessageQueue.Queue(message);
         }
 
         private async Task Loop(CancellationToken cancel) {
@@ -56,7 +83,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
 
                         if (cancel.IsCancellationRequested == true) { break; }
 
-                        Result<bool, string> connect = await _LobbyClient.Connect(cancel);
+                        Result<bool, string> connect = await _LobbyClient.Connect(_Options.Value.Host, _Options.Value.Port, cancel);
                         if (connect.IsOk == false) {
                             _Logger.LogWarning($"failed to connect to lobby [error={connect.Error}]");
                             ++repeatedFailures;
@@ -69,7 +96,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
                     } else if (_LobbyClient.IsLoggedIn() == false && _LobbyClient.IsLoggingIn() == false) {
                         _Logger.LogInformation($"client is not logged in, logging in");
 
-                        Result<LobbyMessage, string> login = await _LobbyClient.Login(cancel);
+                        Result<LobbyMessage, string> login = await _LobbyClient.Login(_Options.Value.Username, _Options.Value.Password, cancel);
                         if (login.IsOk == false) {
                             _Logger.LogWarning($"failed to login to lobby [error={login.Error}]");
                             ++repeatedFailures;
@@ -129,6 +156,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
                 _Logger.LogInformation($"disconnected safely from Spring");
             }
         }
+
 
     }
 }

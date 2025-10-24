@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;

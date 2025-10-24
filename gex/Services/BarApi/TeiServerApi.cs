@@ -1,5 +1,5 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models;
+using gex.Common.Models;
 using gex.Models.Bar;
 using gex.Models.Options;
 using gex.Services.Metrics;

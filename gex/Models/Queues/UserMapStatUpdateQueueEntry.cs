@@ -1,4 +1,4 @@
-﻿using gex.Code.Constants;
+﻿using gex.Common.Code.Constants;
 
 namespace gex.Models.Queues {
 

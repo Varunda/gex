@@ -1,4 +1,5 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Models;
 using gex.Models;
 using gex.Services;
 using gex.Tests.Util;

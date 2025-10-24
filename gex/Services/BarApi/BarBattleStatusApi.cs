@@ -1,6 +1,6 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models;
-using gex.Models.Lobby;
+using gex.Common.Models;
+using gex.Common.Models.Lobby;
 using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using System;

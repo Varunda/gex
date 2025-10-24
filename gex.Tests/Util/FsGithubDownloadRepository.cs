@@ -1,4 +1,5 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
+using gex.Models;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;

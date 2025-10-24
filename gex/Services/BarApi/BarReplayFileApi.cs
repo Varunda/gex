@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;

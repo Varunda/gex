@@ -1,6 +1,6 @@
 ﻿using gex.Models.Api;
 using gex.Models.Discord;
-using gex.Models.Lobby;
+using gex.Common.Models.Lobby;
 using gex.Models.Queues;
 using Microsoft.Extensions.DependencyInjection;
 

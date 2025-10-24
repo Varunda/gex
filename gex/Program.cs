@@ -2,6 +2,9 @@ using Dapper;
 using Dapper.ColumnMapper;
 using gex.Code;
 using gex.Code.Tracking;
+using gex.Common;
+using gex.Common.Code;
+using gex.Common.Models;
 using gex.Models;
 using gex.Services;
 using Microsoft.AspNetCore.Hosting;
@@ -57,6 +60,7 @@ namespace gex {
             MeterProviderBuilder meterProvider = Sdk.CreateMeterProviderBuilder()
                 .AddAspNetCoreInstrumentation()
                 .AddMeter("System.Runtime")
+                .AddMeter("Gex.LobbyClient")
                 .AddMeter("Npgsql");
 
             foreach (string metricName in GetMetricNames()) {
@@ -226,10 +230,26 @@ namespace gex {
         /// </summary>
         /// <returns></returns>
         private static List<string> GetMetricNames() {
-            Type[] types = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(iter => iter.GetCustomAttribute<MetricNameAttribute>() != null).ToArray();
-
             List<string> metricNames = [];
+
+            AppDomain.CurrentDomain.GetAssemblies().ToList().ForEach(iter => {
+                Console.WriteLine($"getting metric services from assembly [assembly={iter.FullName}]");
+                metricNames.AddRange(GetAssemblyMetrics(iter));
+            });
+
+            Assembly common = Assembly.GetAssembly(typeof(GexCommon))
+                ?? throw new Exception($"failed to get assembly of type GexCommon");
+
+            metricNames.AddRange(GetAssemblyMetrics(common));
+
+            return metricNames;
+        }
+
+        private static List<string> GetAssemblyMetrics(Assembly ass) {
+            List<string> metricNames = [];
+
+            Type[] types = ass.GetTypes()
+                .Where(iter => iter.GetCustomAttribute<MetricNameAttribute>() != null).ToArray();
 
             foreach (Type t in types) {
                 MetricNameAttribute? attr = t.GetCustomAttribute<MetricNameAttribute>();

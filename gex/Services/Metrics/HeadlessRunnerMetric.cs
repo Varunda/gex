@@ -1,4 +1,4 @@
-﻿using gex.Code;
+﻿using gex.Common.Code;
 using System.Diagnostics.Metrics;
 
 namespace gex.Services.Metrics {

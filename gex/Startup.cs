@@ -2,6 +2,7 @@ using AspNet.Security.OAuth.Discord;
 using gex.Code;
 using gex.Code.Converters;
 using gex.Code.Hubs;
+using gex.Common.Models;
 using gex.Models;
 using gex.Models.Options;
 using gex.Services;

@@ -1,5 +1,5 @@
 ﻿using gex.Code.Hubs;
-using gex.Models;
+using gex.Common.Models;
 using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Event;

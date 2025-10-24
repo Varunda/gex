@@ -1,8 +1,8 @@
 ﻿using gex.Models;
+using gex.Common.Models;
 using gex.Models.Api;
 using gex.Models.Bar;
 using gex.Services.Repositories;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;

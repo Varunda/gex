@@ -1,4 +1,5 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
+using gex.Models;
 using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.Queues;

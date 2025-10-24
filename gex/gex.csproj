@@ -110,4 +110,8 @@
     <None Include="C:\Users\Hdt\source\repos\gex\gex\.editorconfig" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\gex.Common\gex.Common.csproj" />
+  </ItemGroup>
+
 </Project>

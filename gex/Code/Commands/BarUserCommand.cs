@@ -1,4 +1,4 @@
-﻿using gex.Code.Constants;
+﻿using gex.Common.Code.Constants;
 using gex.Commands;
 using gex.Models.Bar;
 using gex.Models.Db;

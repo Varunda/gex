@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Common.Models;
 using gex.Models.Event;
 using gex.Models.Options;
 using Microsoft.Extensions.Logging;

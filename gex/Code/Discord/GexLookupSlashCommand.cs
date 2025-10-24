@@ -1,13 +1,12 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
-using gex.Code.Constants;
+using gex.Common.Code.Constants;
 using gex.Code.ExtensionMethods;
-using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Discord;
-using gex.Models.Lobby;
+using gex.Common.Models.Lobby;
 using gex.Models.Options;
 using gex.Models.UserStats;
 using gex.Services;
@@ -29,6 +28,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Models;
+using gex.Common.Services.Lobby;
 
 namespace gex.Code.Discord {
 

@@ -1,7 +1,7 @@
 ﻿using gex.Code;
-using gex.Code.Constants;
+using gex.Common.Code.Constants;
 using gex.Code.ExtensionMethods;
-using gex.Models;
+using gex.Common.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Demofile;
