@@ -34,17 +34,19 @@ namespace gex.Services.Db.UserStats {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_user (
-                    id, username, last_updated
+                    id, username, last_updated, country_code
                 ) VALUES (
-                    @ID, @Username, @LastUpdated
+                    @ID, @Username, @LastUpdated, @CountryCode
                 ) ON CONFLICT (id) DO UPDATE SET
                     username = @Username,
-                    last_updated = @LastUpdated;
+                    last_updated = @LastUpdated,
+                    country_code = @CountryCode;
             ", cancel);
 
             cmd.AddParameter("ID", userID);
             cmd.AddParameter("Username", user.Username);
             cmd.AddParameter("LastUpdated", user.LastUpdated);
+            cmd.AddParameter("CountryCode", user.CountryCode);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);

@@ -221,6 +221,7 @@ namespace gex.Services.Parser {
                                 player.UserID = iter.Value.GetRequiredInt64("accountid");
                                 player.SkillUncertainty = double.Parse(iter.Value.GetProperty("skilluncertainty").GetString()!);
                                 player.Skill = double.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
+                                player.CountryCode = iter.Value.GetProperty("countrycode").GetString();
 
                                 players[player.TeamID] = player;
                             }

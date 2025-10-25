@@ -35,7 +35,7 @@ namespace gex.Code.Commands {
                 _Logger.LogInformation($"downloading i18n in languages/en");
                 using CancellationTokenSource cts = new(TimeSpan.FromMinutes(10));
 
-                await _GithubDownloadRepository.DownloadFolder("languages/en", true, cts.Token);
+                await _GithubDownloadRepository.DownloadFolder("language/en", true, cts.Token);
             });
 
             return Task.CompletedTask;

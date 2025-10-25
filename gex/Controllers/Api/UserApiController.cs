@@ -4,10 +4,12 @@ using gex.Models.Api;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.MapStats;
+using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
+using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -33,13 +35,15 @@ namespace gex.Controllers.Api {
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchPlayerRepository _MatchPlayerRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly BaseQueue<FixCountryCodeQueueEntry> _FixCountryCodeQueue;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserRepository userRepository, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
             BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
             BarUserUnitsMadeRepository unitsMadeRepository, BarMatchPlayerRepository matchPlayerRepository,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb) {
+            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
+            BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue) {
 
             _Logger = logger;
             _UserRepository = userRepository;
@@ -52,6 +56,7 @@ namespace gex.Controllers.Api {
             _MatchPlayerRepository = matchPlayerRepository;
             _MatchRepository = matchRepository;
             _AllyTeamDb = allyTeamDb;
+            _FixCountryCodeQueue = fixCountryCodeQueue;
         }
 
         /// <summary>
@@ -86,9 +91,16 @@ namespace gex.Controllers.Api {
                 return ApiNoContent<ApiBarUser>();
             }
 
+            if (user.CountryCode == null) {
+                _FixCountryCodeQueue.Queue(new FixCountryCodeQueueEntry() {
+                    UserID = user.UserID
+                });
+            }
+
             ApiBarUser response = new();
             response.UserID = user.UserID;
             response.Username = user.Username;
+            response.CountryCode = user.CountryCode;
 
             if (includeSkill == true) {
                 response.Skill = await _SkillDb.GetByUserID(userID, cancel);

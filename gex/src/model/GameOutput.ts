@@ -55,7 +55,7 @@ export class GameOutput {
                 continue;
             }
 
-            console.log(`GameOutput> clashing name found '${key}' between [${value}]`);
+            //console.log(`GameOutput> clashing name found '${key}' between [${value}]`);
 
             for (const defID of value) {
                 const entry: GameEventUnitDef | undefined = map.get(defID);

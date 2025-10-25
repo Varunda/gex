@@ -1,11 +1,83 @@
 ﻿<template>
     <div class="container">
-        <div v-if="hasAddRemovePermission || hasUpdatePriorityPermission" class="mb-3">
+        <div class="mb-3">
+            <toggle-button v-model="showMapStats">show map stats</toggle-button>
+
+            <toggle-button v-model="showPlayerStats">show player stats</toggle-button>
+
             <toggle-button v-if="hasAddRemovePermission" v-model="showPoolEdit">show edit</toggle-button>
 
             <button v-if="hasUpdatePriorityPermission" class="btn btn-secondary" @click="setPriorityToOne">
                 set prio to 1
             </button>
+        </div>
+
+        <div v-if="showMapStats == true" class="d-flex flex-wrap mb-4 justify-content-center" style="gap: 1rem;">
+            <div v-for="map in mapStats" :key="map.mapFilename" class="mb-1 text-start" style="height: 114px; width: 434px;">
+                <div class="img-overlay max-width"></div>
+
+                <div class="position-absolute max-width img-map-parent" style="z-index: 0; font-size: 0">
+                    <div :style="mapBackground(map)" class="img-map-side img-map-left"></div>
+                    <div :style="mapBackground(map)" class="img-map-center"></div>
+                    <div :style="mapBackground(map)" class="img-map-side img-map-right"></div>
+                </div>
+
+                <div style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
+                    <img :src="'/image-proxy/MapNameBackground?map=' + map.mapName + '&size=texture-thumb'" width="80" height="80" class="d-inline corner-img me-2"/>
+
+                    <div class="d-inline-flex flex-column align-items-start text-outline" style="vertical-align: top;">
+                        <h5 class="mb-0 text-outline2">
+                            {{ mapNameWithoutVersion(map.mapName) }} - {{ map.plays }} play{{ map.plays == 1 ? '' : 's' }}
+                        </h5>
+
+                        <div>
+                            <img src="/img/armada.png" width="24" height="24" title="Armada"/>
+                            {{ map.armadaPlays }} pick{{ map.armadaPlays == 1 ? '' : 's' }}, {{ map.armadaWins }} win{{ map.armadaWins == 1 ? '' : 's' }} ({{ map.armadaWins / Math.max(map.armadaPlays) * 100 | locale(0) }}%)
+                        </div>
+
+                        <div>
+                            <img src="/img/cortex.png" width="24" height="24" title="Cortex"/>
+                            {{ map.cortexPlays }} pick{{ map.cortexPlays == 1 ? '' : 's' }}, {{ map.cortexWins }} win{{ map.cortexWins == 1 ? '' : 's' }} ({{ map.cortexWins / Math.max(map.cortexPlays) * 100 | locale(0) }}%)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showPlayerStats == true" class="d-flex flex-wrap mb-4 justify-content-center" style="gap: 1rem;">
+            <div v-for="player in playerStats" :key="player.userID" class="mb-1 text-start" style="height: 114px; width: 360px;">
+                <div class="img-overlay-player max-width border" :class="'img-overlay-' + player.factionPref"></div>
+
+                <div class="position-absolute img-map-parent" style="z-index: 0; font-size: 0; max-width: 360px; background-color: #0004">
+                    <img :src="'/img/banner/' + player.factionPref + '_large.jpg'" height="114px" style="transform: scaleX(-1) translateX(15%);">
+                </div>
+
+                <div style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
+                    <div class="d-inline-flex flex-column align-items-start text-outline2" style="vertical-align: top;">
+                        <h4 class="d-inline mb-2 text-outline2">
+                            <img v-if="player.flag == undefined || player.flag == '??' || player.flag == 'ARM' || player.flag == 'COR'"
+                                :src="'/img/' + player.factionPref + '.png'" width="24" height="24" class="d-inline"/>
+                            <img v-else :src="'/img/flags/' + player.flag.toLowerCase() + '.png'" width="32" height="24" class="d-inline" :title="'country flag for ' + player.flag"/>
+                            {{ player.username}} ({{ player.wins }} - {{ player.plays - player.wins }})
+                        </h4>
+
+                        <div>
+                            <img src="/img/armada.png" width="24" height="24" title="Armada"/>
+                            {{ player.armadaPlays }} pick{{ player.armadaPlays == 1 ? '' : 's' }}, {{ player.armadaWins }} win{{ player.armadaWins == 1 ? '' : 's' }}
+                            ({{ player.armadaWins / Math.max(1, player.armadaPlays) * 100 | locale(0) }}%)
+                        </div>
+
+                        <div>
+                            <img src="/img/cortex.png" width="24" height="24" title="Cortex"/>
+                            {{ player.cortexPlays }} pick{{ player.cortexPlays == 1 ? '' : 's' }}, {{ player.cortexWins }} win{{ player.cortexWins == 1 ? '' : 's' }}
+                            ({{ player.cortexWins / Math.max(1, player.cortexPlays) * 100 | locale(0) }}%)
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
         </div>
 
         <div class="mb-3">
@@ -65,6 +137,87 @@
     </div>
 </template>
 
+<style scoped>
+    /* from: https://stackoverflow.com/a/61913549 by Temani Afif */
+    .corner-img {
+        --s: 8px; /* size on corner */
+        --t: 1px; /* thickness of border */
+        --g: 0px; /* gap between border//image */
+        
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid var(--bs-white); /* color here */
+        outline-offset: calc(-1*var(--t));
+        mask:
+            conic-gradient(at var(--s) var(--s),#0000 75%,#000 0)
+            0 0/calc(100% - var(--s)) calc(100% - var(--s)),
+            conic-gradient(#000 0 0) content-box;
+    }
+
+    .max-width {
+        max-width: calc(100vw - (var(--bs-gutter-x) * 0.5)) !important;
+    }
+
+    .img-map-parent {
+        max-width: 100vw;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .img-overlay {
+        width: 434px;
+        height: 114px;
+        position: absolute;
+        background: #000a;
+        /*
+        background: linear-gradient(to right, #0008, var(--bs-body-bg));
+        */
+        z-index: 1;
+    }
+
+    .img-overlay-player {
+        width: 360px;
+        height: 114px;
+        position: absolute;
+        background: #000a;
+        background: linear-gradient(to right, var(--bs-body-bg), #0008);
+        z-index: 1;
+    }
+
+    .img-overlay-armada {
+        background-color: #487edb44;
+    }
+
+    .img-overlay-cortex {
+        background-color: #b93d3244;
+    }
+
+    .img-map-side {
+        display: inline-block;
+        width: 124px;
+        height: 114px;
+        transform: scaleX(-1);
+        background-repeat: no-repeat !important;
+        background-size: 150% !important;
+    }
+
+    .img-map-left {
+        background-position: left -36px !important;
+    }
+
+    .img-map-center {
+        display: inline-block;
+        width: 186px;
+        height: 114px;
+        background-position: center -36px !important;
+        background-size: cover !important;
+        background-repeat: no-repeat !important;
+    }
+
+    .img-map-right {
+        background-position: right -36px !important;
+    }
+</style>
+
 <script lang="ts">
     import Vue from "vue";
     import { Loadable, Loading } from "Loading";
@@ -78,12 +231,51 @@
 
     import { MatchPool } from "model/MatchPool";
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import { MatchPoolApi } from "api/MatchPoolApi";
     import { BarMatchApi } from "api/BarMatchApi";
+    import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
 
     import AccountUtil from "util/Account";
-import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
+    import { MapUtil } from "util/MapUtil";
+    import ColorUtils from "util/Color";
+
+    import "filters/LocaleFilter";
+import { BarUserApi } from "api/BarUserApi";
+import { BarUser } from "model/BarUser";
+
+    type MapStats = {
+        mapName: string;
+        mapFilename: string;
+        plays: number;
+        cortexPlays: number;
+        cortexWins: number;
+        armadaPlays: number;
+        armadaWins: number;
+        legionPlays: number;
+        legionWins: number;
+        durations: number[];
+        averageDurationMs: number;
+    }
+
+    type PlayerStats = {
+        userID: number;
+        username: string;
+        plays: number;
+        wins: number;
+        factionPref: string;
+        flag: string | undefined;
+
+        cortexPlays: number;
+        cortexWins: number;
+        armadaPlays: number;
+        armadaWins: number;
+        legionPlays: number;
+        legionWins: number;
+        durations: number[];
+        averageDurationMs: number;
+    }
 
     export const MatchPoolView = Vue.extend({
         props: {
@@ -98,7 +290,13 @@ import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
                 matches: Loadable.idle() as Loading<BarMatch[]>,
 
                 showPoolEdit: false as boolean,
-                addMatch: "" as string
+                addMatch: "" as string,
+
+                showMapStats: false as boolean,
+                mapStats: [] as MapStats[],
+
+                showPlayerStats: false as boolean,
+                playerStats: [] as PlayerStats[]
             }
         },
 
@@ -120,8 +318,166 @@ import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
                 document.title = `Gex / Pool / ${this.pool.data.name}`;
 
                 this.matches = Loadable.loading();
-                this.matches = await BarMatchApi.search(0, 100, "start_time", "desc", {
-                    poolID: this.poolID
+
+                const loadedMatches: BarMatch[] = [];
+                let offset: number = 0;
+                while (true) {
+                    const res = await BarMatchApi.search(offset, 100, "start_time", "desc", {
+                        poolID: this.poolID
+                    });
+
+                    if (res.state != "loaded") {
+                        this.matches = Loadable.rewrap(res);
+                        break;
+                    }
+
+                    loadedMatches.push(...res.data);
+                    if (res.data.length == 100) {
+                        offset += 100;
+                        console.log(`MatchPoolView> got 100/100 entries, checking for next page`);
+                    } else {
+                        this.matches = Loadable.loaded(loadedMatches);
+                        break;
+                    }
+                }
+
+                if (this.matches.state == "loaded") {
+                    this.loadMapStats();
+                    this.loadPlayerStats();
+                }
+            },
+
+            loadMapStats: function(): void {
+                if (this.matches.state != "loaded") {
+                    console.warn(`MatchPoolView> cannot make map stats, matches is not loaded (is ${this.matches.state})`);
+                    return;
+                }
+
+                this.mapStats = [];
+
+                const map: Map<string, MapStats> = new Map();
+                for (const match of this.matches.data) {
+                    
+                    if (match.allyTeams.find(iter => iter.won == true) == undefined) {
+                        console.log(`MatchPoolView> skipping match that had no winner [gameID=${match.id}]`);
+                        continue;
+                    }
+
+                    const stat: MapStats = map.get(match.mapName) ?? {
+                        mapFilename: match.mapName,
+                        mapName: match.map,
+                        plays: 0,
+                        cortexPlays: 0,
+                        cortexWins: 0,
+                        armadaPlays: 0,
+                        armadaWins: 0,
+                        legionPlays: 0,
+                        legionWins: 0,
+                        durations: [],
+                        averageDurationMs: 0
+                    };
+
+                    stat.durations.push(match.durationMs);
+                    ++stat.plays;
+
+                    for (const allyTeam of match.allyTeams) {
+                        const players: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
+
+                        for (const p of players) {
+                            const addWin: number = allyTeam.won ? 1 : 0;
+                            if (p.faction == "Cortex") {
+                                ++stat.cortexPlays;
+                                stat.cortexWins += addWin;
+                            } else if (p.faction == "Armada") {
+                                ++stat.armadaPlays;
+                                stat.armadaWins += addWin;
+                            } else if (p.faction == "Legion") {
+                                ++stat.legionPlays;
+                                stat.legionWins += addWin;
+                            }
+                        }
+                    }
+
+                    map.set(stat.mapFilename, stat);
+                }
+
+                this.mapStats = Array.from(map.values()).sort((a, b) => {
+                    return a.mapName.localeCompare(b.mapName);
+                }).map(iter => {
+                    iter.averageDurationMs = iter.durations.reduce((acc, iter) => acc += iter, 0) / Math.max(1, iter.durations.length);
+                    return iter;
+                });
+            },
+
+            loadPlayerStats: async function(): Promise<void> {
+                if (this.matches.state != "loaded") {
+                    console.warn(`MatchPoolView> cannot make map stats, matches is not loaded (is ${this.matches.state})`);
+                    return;
+                }
+
+                this.playerStats = [];
+
+                const map: Map<number, PlayerStats> = new Map();
+                for (const match of this.matches.data) {
+
+                    for (const allyTeam of match.allyTeams) {
+                        const players: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
+
+                        for (const p of players) {
+                            const stat: PlayerStats = map.get(p.userID) ?? {
+                                userID: p.userID,
+                                username: p.username,
+                                plays: 0,
+                                wins: 0,
+                                factionPref: "",
+                                flag: undefined,
+                                cortexPlays: 0,
+                                cortexWins: 0,
+                                armadaPlays: 0,
+                                armadaWins: 0,
+                                legionPlays: 0,
+                                legionWins: 0,
+                                durations: [],
+                                averageDurationMs: 0
+                            };
+
+                            if (stat.plays == 0) {
+                                const user: Loading<BarUser> = await BarUserApi.getSimpleByUserID(p.userID);
+                                if (user.state == "loaded") {
+                                    stat.flag = user.data.countryCode ?? undefined;
+                                }
+                            }
+
+                            stat.durations.push(match.durationMs);
+                            ++stat.plays;
+                            const addWin: number = allyTeam.won ? 1 : 0;
+                            if (p.faction == "Cortex") {
+                                ++stat.cortexPlays;
+                                stat.cortexWins += addWin;
+                            } else if (p.faction == "Armada") {
+                                ++stat.armadaPlays;
+                                stat.armadaWins += addWin;
+                            } else if (p.faction == "Legion") {
+                                ++stat.legionPlays;
+                                stat.legionWins += addWin;
+                            }
+
+                            map.set(p.userID, stat);
+                        }
+                    }
+                }
+
+                this.playerStats = Array.from(map.values()).sort((a, b) => {
+                    return a.username.localeCompare(b.username);
+                }).map(iter => {
+                    iter.averageDurationMs = iter.durations.reduce((acc, iter) => acc += iter, 0) / Math.max(1, iter.durations.length);
+                    iter.wins = iter.armadaWins + iter.cortexWins + iter.legionWins;
+                    if (iter.armadaPlays > iter.cortexPlays) {
+                        iter.factionPref = "armada";
+                    } else {
+                        iter.factionPref = "cortex";
+                    }
+                    return iter;
                 });
             },
 
@@ -171,7 +527,17 @@ import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
                         Toaster.add(`unchecked response state`, `response state: ${res.state}`, "danger");
                     }
                 }
-            }
+            },
+
+            mapBackground: function(map: MapStats): any {
+                return {
+                    "background": `url("/image-proxy/MapNameBackground?map=${map.mapName}&size=texture-thumb")`
+                };
+            },
+
+            mapNameWithoutVersion: function(name: string): string {
+                return MapUtil.getNameNameWithoutVersion(name);
+            },
 
         },
 
@@ -182,6 +548,14 @@ import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
 
             hasUpdatePriorityPermission: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Match.ForceReplay");
+            },
+
+            colors: function() {
+                return {
+                    "Armada": ColorUtils.Armada + "11",
+                    "Cortex": ColorUtils.Cortex + "11",
+                    "Legion": ColorUtils.Legion + "11",
+                };
             }
         },
 

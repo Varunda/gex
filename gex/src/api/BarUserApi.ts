@@ -14,6 +14,10 @@ export class BarUserApi extends ApiWrapper<BarUser> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true&includeUnitsMade=false`, BarUser.parse);
     }
 
+    public static getSimpleByUserID(userID: number): Promise<Loading<BarUser>> {
+        return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=false&includeMapStats=false&includeFactionStats=false&includePreviousNames=false&includeUnitsMade=false`, BarUser.parse);
+    }
+
     public static getUnitsMadeByUserID(userID: number): Promise<Loading<BarUser>> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=false&includeMapStats=false&includeFactionStats=false&includePreviousNames=false&includeUnitsMade=true`, BarUser.parse);
     }

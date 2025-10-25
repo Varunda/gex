@@ -208,6 +208,10 @@
     text-shadow: 1px 1px 1px #000000;
 }
 
+.text-outline2 {
+    text-shadow: 2px 2px 2px #000000;
+}
+
 .remove-container-padding {
     padding-left: 0 !important;
     padding-right: 0 !important;

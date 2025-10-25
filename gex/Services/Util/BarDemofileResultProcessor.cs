@@ -119,7 +119,8 @@ namespace gex.Services.Util {
                     await _UserRepository.Upsert(player.UserID, new BarUser() {
                         UserID = player.UserID,
                         Username = player.Name,
-                        LastUpdated = match.StartTime
+                        LastUpdated = match.StartTime,
+                        CountryCode = player.CountryCode
                     }, cancel);
 
                     if (match.Gamemode != BarGamemode.DEFAULT && match.WrongSkillValues == false) {

@@ -65,5 +65,10 @@ namespace gex.Models.Db {
         /// </summary>
         public decimal Handicap { get; set; }
 
+        /// <summary>
+        ///     2 letter country code. only used in parsing, not returned from API
+        /// </summary>
+        public string? CountryCode { get; set; }
+
     }
 }

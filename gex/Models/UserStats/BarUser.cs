@@ -16,5 +16,8 @@ namespace gex.Models.UserStats {
         [ColumnMapping("last_updated")]
         public DateTime LastUpdated { get; set; }
 
+        [ColumnMapping("country_code")]
+        public string? CountryCode { get; set; }
+
     }
 }

@@ -22,6 +22,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<HeadlessRunQueueProcessor>();
             services.AddHostedService<ActionLogParseQueueProcessor>();
             services.AddHostedService<SubscriptionMessageQueueProcessor>();
+            services.AddHostedService<FixCountryCodeQueueProcessor>();
 
             services.AddHostedService<UserMapStatUpdateQueueProcessor>();
             services.AddHostedService<UserFactionStatUpdateQueueProcessor>();

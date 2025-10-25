@@ -13,6 +13,8 @@ namespace gex.Models.Api {
 
         public DateTime LastUpdated { get; set; }
 
+        public string? CountryCode { get; set; }
+
         public List<BarUserSkill> Skill { get; set; } = [];
 
         public List<BarUserMapStats> MapStats { get; set; } = [];

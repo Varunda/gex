@@ -1,6 +1,11 @@
 <template>
     <div>
         <h1 class="text-center border-bottom pb-2 mb-4" :style="usernameStyle">
+            <img v-if="user.countryCode != null && user.countryCode != '??' && user.countryCode != 'ARM' && user.countryCode != 'COR'"
+                :src="'/img/flags/' + user.countryCode.toLowerCase() + '.png'" width="32" height="24"
+                :title="'country flag for ' + user.countryCode"
+            />
+
             {{ user.username }}
         </h1>
 
