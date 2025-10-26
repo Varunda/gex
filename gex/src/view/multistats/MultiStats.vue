@@ -532,7 +532,7 @@
                     </a-col>
                 </a-table>
 
-                <div v-if="show.tables" class="d-flex flex-wrap mb-5" style="gap: 1rem;">
+                <div v-if="show.tables" class="d-flex flex-wrap" style="gap: 1rem;">
                     <div class="flex-grow-1" style="flex-basis: 48%">
                         <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :default-page-size="10">
                             <a-col sort-field="name">
@@ -658,151 +658,165 @@
                     </div>
                 </div>
 
-                <div v-if="show.tables" class="d-flex flex-wrap" style="gap: 1rem;">
-                    <div class="flex-grow-1" style="flex-basis: 48%">
-                        <a-table :entries="factoryStats" default-sort-field="produced" default-sort-order="desc" :hide-paginate="true" :default-page-size="10">
-                            <a-col sort-field="name">
-                                <a-header>
-                                    <h4 class="mb-0" style="min-width: 12rem;">
-                                        <b>Factories</b>
-                                    </h4>
-                                </a-header>
+                <a-table v-if="show.tables" :entries="factoryStats" default-sort-field="produced" default-sort-order="desc" :hide-paginate="true" :default-page-size="10">
+                    <a-col sort-field="name">
+                        <a-header>
+                            <h4 class="mb-0" style="min-width: 12rem;">
+                                <b>Factories</b>
+                            </h4>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    <unit-icon :name="entry.definitionName" :color="entry.definition.color" :size="24"></unit-icon>
-                                    {{ entry.name }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            <unit-icon :name="entry.definitionName" :color="entry.definition.color" :size="24"></unit-icon>
+                            {{ entry.name }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="produced">
-                                <a-header>
-                                    <b>Created</b>
-                                </a-header>
+                    <a-col sort-field="produced">
+                        <a-header>
+                            <b>Created</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.produced }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.produced }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="lost">
-                                <a-header>
-                                    <b>Lost</b>
-                                </a-header>
+                    <a-col sort-field="lost">
+                        <a-header>
+                            <b>Lost</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.lost }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.lost }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="reclaimed">
-                                <a-header>
-                                    <b>Reclaimed</b>
-                                </a-header>
+                    <a-col sort-field="reclaimed">
+                        <a-header>
+                            <b>Reclaimed</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.reclaimed | locale(0) }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.reclaimed | locale(0) }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="unitsMade">
-                                <a-header>
-                                    <b>Units made</b>
-                                </a-header>
+                    <a-col sort-field="gamesUsedCount">
+                        <a-header>
+                            <b>Games used</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.unitsMade | compact }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.gamesUsed.size | locale(0) }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="metalUsed">
-                                <a-header>
-                                    <b>M used</b>
-                                </a-header>
+                    <a-col sort-field="unitsMade">
+                        <a-header>
+                            <b>Units made</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.metalUsed | compact }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.unitsMade | compact }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="energyUsed">
-                                <a-header>
-                                    <b>E used</b>
-                                </a-header>
+                    <a-col sort-field="metalUsed">
+                        <a-header>
+                            <b>M used</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.energyUsed | compact }}
-                                </a-body>
-                            </a-col>
-                        </a-table>
-                    </div>
+                        <a-body v-slot="entry">
+                            {{ entry.metalUsed | compact }}
+                        </a-body>
+                    </a-col>
 
-                    <div class="flex-grow-1" style="flex-basis: 48%">
-                        <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :default-page-size="10">
-                            <a-col sort-field="name">
-                                <a-header>
-                                    <h4 class="mb-0" style="min-width: 12rem;">
-                                        <b>Other buildings</b>
-                                    </h4>
-                                </a-header>
+                    <a-col sort-field="energyUsed">
+                        <a-header>
+                            <b>E used</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                                    {{ entry.name }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.energyUsed | compact }}
+                        </a-body>
+                    </a-col>
+                </a-table>
 
-                            <a-col sort-field="count">
-                                <a-header>
-                                    <b>Created</b>
-                                </a-header>
+                <a-table v-if="show.tables" :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :default-page-size="10">
+                    <a-col sort-field="name">
+                        <a-header>
+                            <h4 class="mb-0" style="min-width: 12rem;">
+                                <b>Other buildings</b>
+                            </h4>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.count }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                            {{ entry.name }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="lost">
-                                <a-header>
-                                    <b>Lost</b>
-                                </a-header>
+                    <a-col sort-field="count">
+                        <a-header>
+                            <b>Created</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.lost }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.count }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="reclaimed">
-                                <a-header>
-                                    <b>Reclaimed</b>
-                                </a-header>
+                    <a-col sort-field="lost">
+                        <a-header>
+                            <b>Lost</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.reclaimed | locale(0) }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.lost }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="metalUsed">
-                                <a-header>
-                                    <b>M used</b>
-                                </a-header>
+                    <a-col sort-field="reclaimed">
+                        <a-header>
+                            <b>Reclaimed</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.metalUsed | compact }}
-                                </a-body>
-                            </a-col>
+                        <a-body v-slot="entry">
+                            {{ entry.reclaimed | locale(0) }}
+                        </a-body>
+                    </a-col>
 
-                            <a-col sort-field="energyUsed">
-                                <a-header>
-                                    <b>E used</b>
-                                </a-header>
+                    <a-col>
+                        <a-header>
+                            <b>Games used</b>
+                        </a-header>
 
-                                <a-body v-slot="entry">
-                                    {{ entry.energyUsed | compact }}
-                                </a-body>
-                            </a-col>
-                        </a-table>
-                    </div>
-                </div>
+                        <a-body v-slot="entry">
+                            {{ entry.gamesUsed.size | locale(0) }}
+                        </a-body>
+                    </a-col>
+
+                    <a-col sort-field="metalUsed">
+                        <a-header>
+                            <b>M used</b>
+                        </a-header>
+
+                        <a-body v-slot="entry">
+                            {{ entry.metalUsed | compact }}
+                        </a-body>
+                    </a-col>
+
+                    <a-col sort-field="energyUsed">
+                        <a-header>
+                            <b>E used</b>
+                        </a-header>
+
+                        <a-body v-slot="entry">
+                            {{ entry.energyUsed | compact }}
+                        </a-body>
+                    </a-col>
+                </a-table>
             </div>
 
             <div>
@@ -877,6 +891,8 @@
         lost: number;
         energyUsed: number;
         metalUsed: number;
+        gamesUsed: Set<string>;
+        gamesUsedCount: number;
     };
 
     type TotalEcoProduced = {
@@ -1296,10 +1312,13 @@
                                 metalUsed: 0,
                                 produced: 0,
                                 lost: 0,
-                                reclaimed: 0
+                                reclaimed: 0,
+                                gamesUsed: new Set(),
+                                gamesUsedCount: 0
                             };
 
                             facStats.unitsMade += fac.totalMade;
+                            facStats.gamesUsed.add(match.id);
 
                             map.set(facStats.definitionName, facStats);
                         }
@@ -1319,6 +1338,7 @@
                     fs.produced = prodStats.count;
                     fs.lost = prodStats.lost;
                     fs.reclaimed = prodStats.reclaimed;
+                    fs.gamesUsedCount = fs.gamesUsed.size;
                 }
 
                 this.stats.factory = arr.filter(iter => iter.produced > 0);
