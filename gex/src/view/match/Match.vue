@@ -842,7 +842,7 @@
 
                 for (const key of tweaks) {
                     const t = gs[key];
-                    if (t != "" && t != "Ow") { // 'Ow' => ';'
+                    if (t != "" && t != "Ow" && t != "0") { // 'Ow' => ';'
                         return true;
                     }
                 }

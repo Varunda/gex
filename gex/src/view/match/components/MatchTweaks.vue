@@ -87,7 +87,7 @@
                 for (const key of this.tweaks) {
                     const t = this.match.gameSettings[key];
                     // 'Ow' => ';'
-                    if (t != "" && t != "Ow") {
+                    if (t != "" && t != "Ow" && t != "0") {
                         found.push([key, t]);
                     }
                 }

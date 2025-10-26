@@ -15,6 +15,13 @@ namespace gex.Services.Util {
         private readonly MapPriorityModDb _MapPriorityModDb;
         private readonly UnitTweakPriorityExemptionDb _UnitTweakExemptDb;
 
+        private static readonly List<string> _TweakDefNames = [
+            "tweakdefs",
+            "tweakdefs1", "tweakdefs2", "tweakdefs3",
+            "tweakdefs4", "tweakdefs5", "tweakdefs5",
+            "tweakdefs7", "tweakdefs8", "tweakdefs9",
+        ];
+
         public BarMatchPriorityCalculator(ILogger<BarMatchPriorityCalculator> logger,
             MapPriorityModDb priorityModDb, UnitTweakPriorityExemptionDb unitTweakExemptDb) {
 
@@ -62,24 +69,28 @@ namespace gex.Services.Util {
                 why += $"unranked game; ";
             }
 
-            // games that tweak units are likely to last longer
-            if (match.GameSettings.GetString("tweakunits", "") != "") {
-                string tweakUnits = match.GameSettings.GetString("tweakunits", "");
-                string? exempt = null;
+            // games that tweak defs are likely to last longer
+            foreach (string tweakName in _TweakDefNames) {
+                string tweakUnits = match.GameSettings.GetString(tweakName, "");
+                if (tweakUnits != "" && tweakUnits != "0") {
+                    string? exempt = null;
 
-                List<UnitTweakPriorityExemption> exemptions = await _UnitTweakExemptDb.GetAll(cancel);
-                foreach (UnitTweakPriorityExemption iter in exemptions) {
-                    if (tweakUnits.StartsWith(iter.UnitTweak)) {
-                        exempt = iter.UnitTweak;
-                        break;
+                    List<UnitTweakPriorityExemption> exemptions = await _UnitTweakExemptDb.GetAll(cancel);
+                    foreach (UnitTweakPriorityExemption iter in exemptions) {
+                        if (tweakUnits.StartsWith(iter.UnitTweak)) {
+                            exempt = iter.UnitTweak;
+                            break;
+                        }
                     }
-                }
 
-                if (exempt != null) {
-                    why += $"tweaked units ('{exempt}' is exempt!); ";
-                } else {
-                    priority += 40;
-                    why += $"tweaked units; ";
+                    if (exempt != null) {
+                        why += $"tweaked defs '{tweakName}' ('{exempt}' is exempt!); ";
+                    } else {
+                        priority += 40;
+                        why += $"tweaked defs '{tweakName}'; ";
+                    }
+
+                    break;
                 }
             }
 
