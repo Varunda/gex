@@ -47,6 +47,10 @@
                 <div class="mb-3 border-bottom pb-3">
                     <h6>select matches of player</h6>
                     <div>
+                        <button class="btn btn-primary" @click="selectAllAllyTeams">
+                            select all
+                        </button>
+
                         <button v-for="player in allPlayers" :key="player.userID" class="btn btn-primary me-2" @click="selectMatchesOfPlayer(player.userID)">
                             {{ player.username }}
                         </button>
@@ -70,7 +74,9 @@
                     <tbody>
                         <tr v-for="match in matches.data" :key="match.id">
                             <td>
-                                <a :href="'/match/' + match.id">{{ match.id }}</a>
+                                <a :href="'/match/' + match.id" class="font-monospace">{{ match.id }}</a>
+                                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
+                                    title="This game has not been fully processed!"></span>
                             </td>
                             <td>
                                 {{ match.map }}
@@ -82,8 +88,8 @@
                                 {{ match.durationMs / 1000 | mduration }}
                             </td>
                             <td>
-                                <button class="btn" @click="match.pickedAllyTeam = undefined"
-                                    :class="[ match.pickedAllyTeam == undefined ? 'btn-primary' : 'btn-secondary' ]">
+                                <button class="btn" @click="match.pickedAllyTeams = []"
+                                    :class="[ match.pickedAllyTeams.length == 0 ? 'btn-primary' : 'btn-secondary' ]">
                                     
                                     skip match
                                 </button>
@@ -91,8 +97,8 @@
                             <td v-for="i in maxAllyTeamCount" :key="match.id + '-' + i">
                                 <span v-if="i > match.allyTeams.length"></span>
 
-                                <button v-else class="btn" @click="match.pickedAllyTeam = match.allyTeams.at(i - 1).allyTeamID"
-                                    :class="[ match.pickedAllyTeam == match.allyTeams.at(i - 1).allyTeamID ? 'btn-primary' : 'btn-secondary' ]">
+                                <button v-else class="btn" @click="toggleAllyTeam(match, match.allyTeams.at(i - 1).allyTeamID)"
+                                    :class="[ (match.pickedAllyTeams.indexOf(match.allyTeams.at(i - 1).allyTeamID) > -1) ? 'btn-primary' : 'btn-secondary' ]">
 
                                     ally team {{ match.allyTeams.at(i - 1).allyTeamID }}
                                     -
@@ -134,7 +140,14 @@
 
             <div v-else-if="stats.load.state == 'loading'">
                 <busy></busy>
-                loading...
+                loading game events...
+
+                <div v-if="loading.show" class="mb-2">
+                    {{ loading.done }}/{{ loading.total }}
+                    <div class="progress" style="height: 2rem;">
+                        <div class="progress-bar" :style="{ 'width': `${loading.done / loading.total * 100}%`, 'height': '2rem' }"></div>
+                    </div>
+                </div>
             </div>
 
             <div v-else-if="stats.load.state == 'loaded'">
@@ -158,11 +171,11 @@
                         <img :src="'/image-proxy/UnitPic?defName=' + mostUsed.defName" height="128" width="128" :title="mostUsed.name" style="border-radius: 0.5rem 0.5rem 0 0;">
                         <div>
                             <div>
-                                {{ mostUsed.produced }} made
+                                {{ mostUsed.produced | locale(0) }} made
                             </div>
 
                             <div>
-                                {{ mostUsed.kills }} kills
+                                {{ mostUsed.kills | locale(0) }} kills
                             </div>
                         </div>
                     </div>
@@ -430,7 +443,7 @@
                     </div>
 
                     <div v-for="mostUsed in ecoMostEnergy" class="text-center border position-sticky" :key="mostUsed.definitionID" style="border-radius: 0.5rem;">
-                        <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.25rem 0 0.25rem 0;">
+                        <div class="text-outline px-2 py-1" style="position: absolute; top: 0; background-color: #00000066; border-radius: 0.5rem 0 0.5rem 0;">
                             {{ mostUsed.name }}
                         </div>
 
@@ -441,7 +454,7 @@
                             </div>
 
                             <div>
-                                {{ mostUsed.count }} constructed
+                                {{ mostUsed.count | locale(0) }} constructed
                             </div>
                         </div>
                     </div>
@@ -817,6 +830,44 @@
                         </a-body>
                     </a-col>
                 </a-table>
+
+                <h2 class="wt-header bg-light text-dark">
+                    Fun stats
+                    <h4 class="d-inline">
+                        (of a single unit)
+                    </h4>
+                </h2>
+
+                <div class="d-flex flex-wrap mb-4 justify-content-center" style="gap: 1rem;">
+                    <div v-for="stat in stats.fun" :key="stat.statName" class="mb-1 text-start" style="height: 114px; width: 434px;">
+                        <div class="img-overlay max-width"></div>
+
+                        <div class="position-absolute max-width img-map-parent" style="z-index: 0; font-size: 0">
+                            <div :style="mapBackground(stat.map)" class="img-map-side img-map-left"></div>
+                            <div :style="mapBackground(stat.map)" class="img-map-center"></div>
+                            <div :style="mapBackground(stat.map)" class="img-map-side img-map-right"></div>
+                        </div>
+
+                        <div style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
+                            <img :src="'/image-proxy/UnitPic?defName=' + stat.defName" width="80" height="80" class="d-inline corner-img me-2"/>
+
+                            <div class="d-inline-flex flex-column align-items-start text-outline" style="vertical-align: top; max-width: calc(100% - 80px - 20px - 1rem);">
+                                <h4 class="mb-0 text-outline2">
+                                    {{ stat.statHeader }}
+                                </h4>
+
+                                <div>
+                                    {{ stat.player }}'s {{ stat.unitName }}
+                                    {{ stat.valueDisplay }}
+                                </div>
+
+                                <div>
+                                    on {{ mapNameWithoutVersion(stat.map) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div>
@@ -832,6 +883,87 @@
         </div>
     </div>
 </template>
+
+<style scoped>
+    /* from: https://stackoverflow.com/a/61913549 by Temani Afif */
+    .corner-img {
+        --s: 8px; /* size on corner */
+        --t: 1px; /* thickness of border */
+        --g: 0px; /* gap between border//image */
+        
+        padding: calc(var(--g) + var(--t));
+        outline: var(--t) solid var(--bs-white); /* color here */
+        outline-offset: calc(-1*var(--t));
+        mask:
+            conic-gradient(at var(--s) var(--s),#0000 75%,#000 0)
+            0 0/calc(100% - var(--s)) calc(100% - var(--s)),
+            conic-gradient(#000 0 0) content-box;
+    }
+
+    .max-width {
+        max-width: calc(100vw - (var(--bs-gutter-x) * 0.5)) !important;
+    }
+
+    .img-map-parent {
+        max-width: 100vw;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .img-overlay {
+        width: 434px;
+        height: 114px;
+        position: absolute;
+        background: #000a;
+        /*
+        background: linear-gradient(to right, #0008, var(--bs-body-bg));
+        */
+        z-index: 1;
+    }
+
+    .img-overlay-player {
+        width: 360px;
+        height: 114px;
+        position: absolute;
+        background: #000a;
+        background: linear-gradient(to right, var(--bs-body-bg), #0008);
+        z-index: 1;
+    }
+
+    .img-overlay-armada {
+        background-color: #487edb44;
+    }
+
+    .img-overlay-cortex {
+        background-color: #b93d3244;
+    }
+
+    .img-map-side {
+        display: inline-block;
+        width: 124px;
+        height: 114px;
+        transform: scaleX(-1);
+        background-repeat: no-repeat !important;
+        background-size: 150% !important;
+    }
+
+    .img-map-left {
+        background-position: left -36px !important;
+    }
+
+    .img-map-center {
+        display: inline-block;
+        width: 186px;
+        height: 114px;
+        background-position: center -36px !important;
+        background-size: cover !important;
+        background-repeat: no-repeat !important;
+    }
+
+    .img-map-right {
+        background-position: right -36px !important;
+    }
+</style>
 
 <script lang="ts">
     import Vue from "vue";
@@ -869,12 +1001,16 @@
     import { ResourceProductionData, ResourceProductionEntry } from "view/match/compute/ResourceProductionData";
     import { UnitStats } from "view/match/compute/UnitStatData";
     import MergedStats from "view/match/compute/MergedStats";
-
-    import CompactUtils from "util/Compact";
+    import { UnitPositionFrame } from "view/match/compute/UnitPositionFrame";
     import { FactoryData, PlayerFactories } from "view/match/compute/FactoryData";
 
+    import CompactUtils from "util/Compact";
+    import { MapUtil } from "util/MapUtil";
+import LocaleUtil from "util/Locale";
+import TimeUtils from "util/Time";
+
     type BarMatchAndSide = BarMatch & {
-        pickedAllyTeam: number | undefined;
+        pickedAllyTeams: number[];
     };
 
     type ResourceProductionEntryGameCount = ResourceProductionEntry & {
@@ -900,6 +1036,21 @@
         metalExcess: number;
         energyProduced: number;
         energyExcess: number;
+    }
+
+    class UnitInstance {
+        public unitID: number = 0;
+        public defName: string = "";
+        public statName: string = "";
+        public statHeader: string = "";
+
+        public unitName: string = "";
+        public value: number = 0;
+        public valueDisplay: string = "";
+
+        public gameID: string = "";
+        public map: string = "";
+        public player: string = "";
     }
 
     export const MultiStats = Vue.extend({
@@ -937,7 +1088,8 @@
                     production: [] as ResourceProductionEntryGameCount[],
                     unitStats: [] as UnitStats[],
                     merged: [] as MergedStats[],
-                    factory: [] as FactoryStats[]
+                    factory: [] as FactoryStats[],
+                    fun: [] as UnitInstance[],
                 },
 
                 chart: {
@@ -964,7 +1116,6 @@
         },
 
         methods: {
-
             loadFromUrl: async function(): Promise<void> {
                 const searchParams: URLSearchParams = new URLSearchParams(location.search);
                 const matches: string | null = searchParams.get("matches");
@@ -1001,11 +1152,7 @@
                     }
 
                     const matchId: string = parts[0];
-                    const allyTeam: number = Number.parseInt(parts[1]);
-                    if (Number.isNaN(allyTeam)) {
-                        console.warn(`MultiStats> found NaN ally team [matchID=${matchId}] [allyTeam=${parts[1]}]`);
-                        continue;
-                    }
+                    const allyTeams: string[] = parts[1].split("-");
 
                     const match: BarMatchAndSide | undefined = this.matches.data.find(iter => iter.id == matchId);
                     if (match == undefined) {
@@ -1013,7 +1160,7 @@
                         continue;
                     }
 
-                    match.pickedAllyTeam = allyTeam;
+                    match.pickedAllyTeams = allyTeams.map(iter => Number.parseInt(iter));
                 }
 
                 await this.loadMatchStats();
@@ -1065,7 +1212,7 @@
                 this.matches = Loadable.loaded(loaded.map(iter => {
                     return {
                         ...iter,
-                        pickedAllyTeam: undefined
+                        pickedAllyTeams: []
                     }
                 }));
             },
@@ -1076,7 +1223,17 @@
                 }
 
                 for (const match of this.matches.data) {
-                    match.pickedAllyTeam = undefined;
+                    match.pickedAllyTeams = [];
+                }
+            },
+
+            selectAllAllyTeams: function(): void {
+                if (this.matches.state != "loaded") {
+                    return;
+                }
+
+                for (const match of this.matches.data) {
+                    match.pickedAllyTeams = match.allyTeams.map(iter => iter.allyTeamID);
                 }
             },
 
@@ -1091,7 +1248,17 @@
                         continue;
                     }
 
-                    match.pickedAllyTeam = p.allyTeamID;
+                    match.pickedAllyTeams.push(p.allyTeamID);
+                }
+            },
+
+            toggleAllyTeam: function(match: BarMatchAndSide, allyTeamID: number): void {
+                if (match.pickedAllyTeams.indexOf(allyTeamID) == -1) {
+                    console.log(`MultiStats> adding ally team to match [id=${match.id}] [allyTeamID=${allyTeamID}]`);
+                    match.pickedAllyTeams.push(allyTeamID);
+                } else {
+                    console.log(`MultiStats> removing ally team from match [id=${match.id}] [allyTeamID=${allyTeamID}]`);
+                    match.pickedAllyTeams = match.pickedAllyTeams.filter(iter => iter != allyTeamID);
                 }
             },
 
@@ -1100,10 +1267,16 @@
 
                 this.stats.load = Loadable.loading();
                 this.outputs = Loadable.loading();
+
+                this.loading.show = true;
+                this.loading.total = this.selectedMatches.length;
+                this.loading.done = 0;
+
                 const outputs: GameOutput[] = [];
                 for (const match of this.selectedMatches) {
                     console.log(`MultiStats> loading game output [matchId=${match.id}]`);
                     const res: Loading<GameOutput> = await GameOutputApi.getEvents(match.id);
+                    ++this.loading.done;
                     
                     if (res.state == "loaded") {
                         outputs.push(res.data);
@@ -1113,13 +1286,33 @@
                 }
 
                 this.outputs = Loadable.loaded(outputs);
+                console.log(`MultiStats> outputs loaded, computing stats`);
 
+                // compute stats
                 await this.$nextTick();
+                console.time("MultiStats> resource data");
                 this.computeResourceData();
+                console.timeEnd("MultiStats> resource data");
+
+                console.time("MultiStats> unit data");
                 this.computeUnitStats();
+                console.timeEnd("MultiStats> unit data");
+
+                console.time("MultiStats> merged data");
                 this.computeMergedStats();
+                console.timeEnd("MultiStats> merged data");
+
+                console.time("MultiStats> factory data");
                 this.computeFactoryData();
+                console.timeEnd("MultiStats> factory data");
+
+                console.time("MultiStats> fun stats");
+                this.makeFunStats();
+                console.timeEnd("MultiStats> fun stats");
+
+                // done
                 this.stats.load = Loadable.loaded(0);
+                console.log(`MultiStats> stats computed, generating charts`);
 
                 await this.$nextTick();
                 this.makeCharts();
@@ -1139,14 +1332,16 @@
                         console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
                         continue;
                     }
-                    if (match.pickedAllyTeam == undefined) {
+                    if (match.pickedAllyTeams.length == 0) {
                         console.error(`MultiStats> match does not have a pickedAllyTeam`);
                         continue;
                     }
 
+                    const interestedKeys: Set<string> = new Set(match.pickedAllyTeams.map(iter => `ally-team-${iter}`));
+
                     const pdata: ResourceProductionData[] = ResourceProductionData.compute(match, output);
                     for (const pd of pdata) {
-                        if (pd.id != `ally-team-${match.pickedAllyTeam}`) {
+                        if (interestedKeys.has(pd.id) == false) {
                             continue;
                         }
 
@@ -1192,15 +1387,15 @@
                         console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
                         continue;
                     }
-                    if (match.pickedAllyTeam == undefined) {
+                    if (match.pickedAllyTeams.length == 0) {
                         console.error(`MultiStats> match does not have a pickedAllyTeam`);
                         continue;
                     }
 
-                    const id: string = `ally-team-${match.pickedAllyTeam}`;
+                    const interestedKeys: Set<string> = new Set(match.pickedAllyTeams.map(iter => `ally-team-${iter}`));
                     const stats: UnitStats[] = UnitStats.compute(output, match);
                     for (const stat of stats) {
-                        if (stat.id != id) {
+                        if (interestedKeys.has(stat.id) == false) {
                             continue;
                         }
 
@@ -1246,13 +1441,13 @@
                         console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
                         continue;
                     }
-                    if (match.pickedAllyTeam == undefined) {
+                    if (match.pickedAllyTeams.length == 0) {
                         console.error(`MultiStats> match does not have a pickedAllyTeam`);
                         continue;
                     }
 
                     const interestedTeamIds: Set<number> = new Set([
-                        ...match.players.filter(iter => iter.allyTeamID == match.pickedAllyTeam).map(iter => iter.teamID)
+                        ...match.players.filter(iter => match.pickedAllyTeams.indexOf(iter.allyTeamID) > -1).map(iter => iter.teamID)
                     ]);
 
                     const merged: MergedStats[] = MergedStats.compute(match, output);
@@ -1281,13 +1476,13 @@
                         console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
                         continue;
                     }
-                    if (match.pickedAllyTeam == undefined) {
+                    if (match.pickedAllyTeams.length == 0) {
                         console.error(`MultiStats> match does not have a pickedAllyTeam`);
                         continue;
                     }
 
                     const interestedTeamIds: Set<number> = new Set([
-                        ...match.players.filter(iter => iter.allyTeamID == match.pickedAllyTeam).map(iter => iter.teamID)
+                        ...match.players.filter(iter => match.pickedAllyTeams.indexOf(iter.allyTeamID) > -1).map(iter => iter.teamID)
                     ]);
 
                     const pfs: PlayerFactories[] = PlayerFactories.compute(match, output);
@@ -1532,6 +1727,200 @@
                 });
             },
 
+            makeFunStats: function(): void {
+                if (this.matches.state != "loaded" || this.outputs.state != "loaded") {
+                    return;
+                }
+
+                const killsMap: Map<string, UnitInstance> = new Map();
+                const posMap: Map<string, UnitInstance> = new Map();
+                const dmgTakenMap: Map<string, UnitInstance> = new Map();
+                const dmgPerMinMap: Map<string, UnitInstance> = new Map();
+
+                const createdAtMap: Map<string, number> = new Map();
+                const killedMap: Map<string, number> = new Map();
+                const damageMap: Map<string, number> = new Map();
+
+                for (const output of this.outputs.data) {
+                    const match: BarMatchAndSide | undefined = this.matches.data.find(iter => iter.id == output.gameID);
+                    if (match == undefined) {
+                        console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
+                        continue;
+                    }
+                    if (match.pickedAllyTeams.length == 0) {
+                        console.error(`MultiStats> match does not have a pickedAllyTeam`);
+                        continue;
+                    }
+
+                    const interestedTeamIds: Set<number> = new Set([
+                        ...match.players.filter(iter => match.pickedAllyTeams.indexOf(iter.allyTeamID) > -1).map(iter => iter.teamID)
+                    ]);
+
+                    const unitToDefMap: Map<string, number> = new Map();
+                    for (const made of output.unitsCreated) {
+                        if (interestedTeamIds.has(made.teamID) == false) {
+                            continue;
+                        }
+
+                        const key: string = `${output.gameID}-${made.unitID}`;
+                        unitToDefMap.set(key, made.definitionID);
+                        createdAtMap.set(key, made.frame);
+                    }
+
+                    for (const killed of output.unitsKilled) {
+                        const key: string = `${output.gameID}-${killed.unitID}`;
+                        killedMap.set(key, killed.frame);
+                    }
+
+                    for (const unit of output.unitDamage) {
+                        const key: string = `${output.gameID}-${unit.unitID}`;
+                        damageMap.set(key, unit.damageDealt);
+                    }
+
+                    for (const killed of output.unitsKilled) {
+                        if (killed.attackerTeam == null || killed.attackerDefinitionID == null || killed.attackerID == null || interestedTeamIds.has(killed.attackerTeam) == false) {
+                            continue;
+                        }
+
+                        const key: string = `${output.gameID}-${killed.attackerID}`;
+                        const def: GameEventUnitDef | undefined = output.unitDefinitions.get(killed.attackerDefinitionID);
+
+                        const inst: UnitInstance = killsMap.get(key) ?? {
+                            unitID: killed.attackerID,
+                            defName: def?.definitionName ?? `<no def ${killed.attackerDefinitionID}>`,
+                            statHeader: "Most kills",
+                            unitName: def?.name ?? `<no name ${killed.attackerDefinitionID}>`,
+                            statName: "killed",
+                            value: 0,
+                            valueDisplay: "0",
+                            gameID: killed.gameID,
+                            player: match.players.find(iter => iter.teamID == killed.attackerTeam)?.username ?? `<missing team ${killed.attackerTeam}>`,
+                            map: match.map
+                        };
+
+                        ++inst.value;
+
+                        killsMap.set(key, inst);
+                    }
+
+                    const unitPositions: UnitPositionFrame[] = UnitPositionFrame.compute(match, output);
+
+                    const prevPos: Map<string, UnitPositionFrame> = new Map();
+                    for (const pos of unitPositions) {
+                        if (interestedTeamIds.has(pos.teamID) == false) {
+                            continue;
+                        }
+
+                        const key: string = `${output.gameID}-${pos.unitID}`;
+
+                        const prevFrame: UnitPositionFrame | undefined = prevPos.get(key);
+                        if (prevFrame == undefined) {
+                            prevPos.set(key, pos);
+                            continue;
+                        }
+
+                        const defID: number | undefined = unitToDefMap.get(key);
+                        if (defID == undefined) {
+                            continue;
+                        }
+
+                        const def: GameEventUnitDef | undefined = output.unitDefinitions.get(defID);
+                        if (def?.definitionName == "armcom" || def?.definitionName == "corcom") {
+                            continue;
+                        }
+
+                        const inst: UnitInstance = posMap.get(key) ?? {
+                            unitID: pos.unitID,
+                            defName: def?.definitionName ?? `<no def ${defID}>`,
+                            statName: "Furthest traveled",
+                            statHeader: "Furthest traveled",
+                            unitName: def?.name ?? `<no def ${defID}>`,
+                            value: 0,
+                            valueDisplay: "0",
+                            gameID: match.id,
+                            player: match.players.find(iter => iter.teamID == pos.teamID)?.username ?? `<missing team ${pos.teamID}>`,
+                            map: match.map
+                        };
+
+                        const dist: number = Math.sqrt(Math.pow(prevFrame.x - pos.x, 2) + Math.pow(prevFrame.z - pos.z, 2));
+                        inst.value += dist;
+
+                        posMap.set(key, inst);
+                    }
+
+                    for (const unit of output.unitDamage) {
+                        const key: string = `${output.gameID}-${unit.unitID}`;
+                        const def: GameEventUnitDef | undefined = output.unitDefinitions.get(unit.definitionID);
+
+                        const inst: UnitInstance = dmgTakenMap.get(key) ?? {
+                            unitID: unit.unitID,
+                            defName: def?.definitionName ?? `<no def ${unit.definitionID}>`,
+                            statHeader: "Most damage taken",
+                            unitName: def?.name ?? `<no name ${unit.definitionID}>`,
+                            statName: "tanked",
+                            value: 0,
+                            valueDisplay: "0",
+                            gameID: unit.gameID,
+                            player: match.players.find(iter => iter.teamID == unit.teamID)?.username ?? `<missing team ${unit.teamID}>`,
+                            map: match.map
+                        };
+
+                        inst.value = unit.damageTaken;
+
+                        dmgTakenMap.set(key, inst);
+
+                        const createdAtFrame: number | undefined = createdAtMap.get(key);
+                        const killedAtFrame: number | undefined = killedMap.get(key);
+
+                        if (createdAtFrame == undefined || killedAtFrame == undefined) {
+                            continue;
+                        }
+
+                        const lifespan: number = (killedAtFrame - createdAtFrame) / 30;
+                        const dmgDealtInst: UnitInstance = {
+                            unitID: unit.unitID,
+                            defName: def?.definitionName ?? `<no def ${unit.definitionID}>`,
+                            statHeader: "Highest damage per minute",
+                            unitName: def?.name ?? `<no name ${unit.definitionID}>`,
+                            statName: "dealt",
+                            value: unit.damageDealt / lifespan,
+                            valueDisplay: `${CompactUtils.compact(unit.damageDealt)} dmg in ${TimeUtils.duration(lifespan)}`,
+                            gameID: unit.gameID,
+                            player: match.players.find(iter => iter.teamID == unit.teamID)?.username ?? `<missing team ${unit.teamID}>`,
+                            map: match.map
+                        };
+
+                        // ignore corbw (shuriken), as the dmg dealt isn't correctly capped
+                        if (lifespan > 0.5 && dmgDealtInst.defName != "corbw") {
+                            dmgPerMinMap.set(key, dmgDealtInst);
+                        }
+                    }
+                }
+
+                const mostKills = Array.from(killsMap.values()).sort((a, b) => {
+                    return b.value - a.value;
+                }).at(0) ?? new UnitInstance();
+                mostKills.valueDisplay = `killed ${mostKills.value} units`;
+                this.stats.fun.push(mostKills);
+
+                const mostDist = Array.from(posMap.values()).sort((a, b) => {
+                    return b.value - a.value;
+                }).at(0) ?? new UnitInstance();
+                mostDist.valueDisplay = `traveled ${CompactUtils.compact(mostDist.value)} elmos`;
+                this.stats.fun.push(mostDist);
+
+                const mostDmgTaken = Array.from(dmgTakenMap.values()).sort((a, b) => {
+                    return b.value - a.value;
+                }).at(0) ?? new UnitInstance();
+                mostDmgTaken.valueDisplay = `took ${CompactUtils.compact(mostDmgTaken.value)} damage`;
+                this.stats.fun.push(mostDmgTaken);
+
+                const mostDmgDealt = Array.from(dmgPerMinMap.values()).sort((a, b) => {
+                    return b.value - a.value;
+                }).at(0) ?? new UnitInstance();
+                this.stats.fun.push(mostDmgDealt);
+            },
+
             isBuilder: function(entry: ResourceProductionEntry): boolean {
                 return !!entry.definition && entry.definition.buildPower > 0 && entry.definition.isFactory == false;
             },
@@ -1550,7 +1939,17 @@
 
                 const url = new URL(location.href);
                 history.pushState({ path: url.href }, "", `/multistats?${parms.toString()}`);
-            }
+            },
+
+            mapBackground: function(map: string): any {
+                return {
+                    "background": `url("/image-proxy/MapNameBackground?map=${map}&size=texture-thumb")`
+                };
+            },
+
+            mapNameWithoutVersion: function(name: string): string {
+                return MapUtil.getNameNameWithoutVersion(name);
+            },
         },
 
         computed: {
@@ -1567,14 +1966,14 @@
                     return [];
                 }
 
-                return this.matches.data.filter(iter => iter.pickedAllyTeam != undefined);
+                return this.matches.data.filter(iter => iter.pickedAllyTeams.length > 0);
             },
 
             selectedPlayers: function(): BarMatchPlayer[] {
                 const map: Map<number, BarMatchPlayer> = new Map();
                 for (const match of this.selectedMatches) {
                     for (const player of match.players) {
-                        if (player.allyTeamID != match.pickedAllyTeam) {
+                        if (match.pickedAllyTeams.indexOf(player.allyTeamID) == -1) {
                             continue;
                         }
 
@@ -1603,7 +2002,7 @@
             },
 
             saveUrl: function(): string {
-                return `${this.selectedMatches.map(iter => `${iter.id},${iter.pickedAllyTeam}`).join(";")}`;
+                return `${this.selectedMatches.map(iter => `${iter.id},${iter.pickedAllyTeams.join("-")}`).join(";")}`;
             },
 
             playerMostUsed: function(): UnitStats[] {
@@ -1674,13 +2073,13 @@
                         console.error(`MultiStats> missing match from game output [output.gameID=${output.gameID}]`);
                         continue;
                     }
-                    if (match.pickedAllyTeam == undefined) {
+                    if (match.pickedAllyTeams.length == 0) {
                         console.error(`MultiStats> match does not have a pickedAllyTeam`);
                         continue;
                     }
 
                     const interestedTeamIds: Set<number> = new Set([
-                        ...match.players.filter(iter => iter.allyTeamID == match.pickedAllyTeam).map(iter => iter.teamID)
+                        ...match.players.filter(iter => match.pickedAllyTeams.indexOf(iter.allyTeamID) > -1).map(iter => iter.teamID)
                     ]);
 
                     const lastFrame: number = Math.max(...output.teamStats.map(iter => iter.frame));

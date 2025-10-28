@@ -74,10 +74,7 @@
                         </div>
                     </div>
                 </div>
-
-
             </div>
-
         </div>
 
         <div class="mb-3">
@@ -232,18 +229,18 @@
     import { MatchPool } from "model/MatchPool";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarUser } from "model/BarUser";
 
     import { MatchPoolApi } from "api/MatchPoolApi";
     import { BarMatchApi } from "api/BarMatchApi";
     import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
+    import { BarUserApi } from "api/BarUserApi";
 
     import AccountUtil from "util/Account";
     import { MapUtil } from "util/MapUtil";
     import ColorUtils from "util/Color";
 
     import "filters/LocaleFilter";
-import { BarUserApi } from "api/BarUserApi";
-import { BarUser } from "model/BarUser";
 
     type MapStats = {
         mapName: string;
