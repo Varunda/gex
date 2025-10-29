@@ -488,7 +488,7 @@
                     return a.username.localeCompare(b.username);
                 }).map(iter => {
                     iter.averageDurationMs = iter.durations.reduce((acc, iter) => acc += iter, 0) / Math.max(1, iter.durations.length);
-                    iter.wins = iter.armadaWins + iter.cortexWins + iter.legionWins;
+                    iter.wins = iter.armadaWins + iter.cortexWins + iter.legionWins + iter.randomWins;
                     if (iter.armadaPlays > iter.cortexPlays) {
                         iter.factionPref = "armada";
                     } else {
