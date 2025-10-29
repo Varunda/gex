@@ -52,8 +52,8 @@
                     <img :src="'/img/banner/' + player.factionPref + '_large.jpg'" height="114px" style="transform: scaleX(-1) translateX(15%);">
                 </div>
 
-                <div style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
-                    <div class="d-inline-flex flex-column align-items-start text-outline2" style="vertical-align: top;">
+                <div class="" style="z-index: 10; position: relative; top: 50%; transform: translateY(-50%); left: 20px;">
+                    <div class="d-flex flex-column align-items-start text-outline2" style="vertical-align: top;">
                         <h4 class="d-inline mb-2 text-outline2">
                             <img v-if="player.flag == undefined || player.flag == '??' || player.flag == 'ARM' || player.flag == 'COR'"
                                 :src="'/img/' + player.factionPref + '.png'" width="24" height="24" class="d-inline"/>
@@ -61,16 +61,27 @@
                             {{ player.username}} ({{ player.wins }} - {{ player.plays - player.wins }})
                         </h4>
 
-                        <div>
-                            <img src="/img/armada.png" width="24" height="24" title="Armada"/>
-                            {{ player.armadaPlays }} pick{{ player.armadaPlays == 1 ? '' : 's' }}, {{ player.armadaWins }} win{{ player.armadaWins == 1 ? '' : 's' }}
-                            ({{ player.armadaWins / Math.max(1, player.armadaPlays) * 100 | locale(0) }}%)
-                        </div>
-
-                        <div>
-                            <img src="/img/cortex.png" width="24" height="24" title="Cortex"/>
-                            {{ player.cortexPlays }} pick{{ player.cortexPlays == 1 ? '' : 's' }}, {{ player.cortexWins }} win{{ player.cortexWins == 1 ? '' : 's' }}
-                            ({{ player.cortexWins / Math.max(1, player.cortexPlays) * 100 | locale(0) }}%)
+                        <div class="d-grid" style="grid-template-columns: 1fr 1fr; row-gap: 0.5rem; column-gap: 1rem;">
+                            <div>
+                                <img src="/img/armada.png" width="24" height="24" title="Armada"/>
+                                {{ player.armadaWins }} - {{ player.armadaPlays - player.armadaWins }}
+                                ({{ player.armadaWins / Math.max(1, player.armadaPlays) * 100 | locale(0) }}%)
+                            </div>
+                            <div>
+                                <img src="/img/random.png" width="24" height="24" title="Random"/>
+                                {{ player.randomWins }} - {{ player.randomPlays - player.randomWins }}
+                                ({{ player.randomWins / Math.max(1, player.randomPlays) * 100 | locale(0) }}%)
+                            </div>
+                            <div>
+                                <img src="/img/cortex.png" width="24" height="24" title="Cortex"/>
+                                {{ player.cortexWins }} - {{ player.cortexPlays - player.cortexWins }}
+                                ({{ player.cortexWins / Math.max(1, player.cortexPlays) * 100 | locale(0) }}%)
+                            </div>
+                            <div v-if="player.legionPlays > 0">
+                                <img src="/img/legion.png" width="24" height="24" title="Legion"/>
+                                {{ player.legionWins }} - {{ player.legionPlays - player.legionWins }}
+                                ({{ player.legionWins / Math.max(1, player.legionPlays) * 100 | locale(0) }}%)
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -270,6 +281,8 @@
         armadaWins: number;
         legionPlays: number;
         legionWins: number;
+        randomPlays: number;
+        randomWins: number;
         durations: number[];
         averageDurationMs: number;
     }
@@ -432,6 +445,8 @@
                                 cortexWins: 0,
                                 armadaPlays: 0,
                                 armadaWins: 0,
+                                randomPlays: 0,
+                                randomWins: 0,
                                 legionPlays: 0,
                                 legionWins: 0,
                                 durations: [],
@@ -447,7 +462,7 @@
 
                             stat.durations.push(match.durationMs);
                             ++stat.plays;
-                            const addWin: number = allyTeam.won ? 1 : 0;
+                            const addWin: number = (allyTeam.won == true) ? 1 : 0;
                             if (p.faction == "Cortex") {
                                 ++stat.cortexPlays;
                                 stat.cortexWins += addWin;
@@ -457,6 +472,11 @@
                             } else if (p.faction == "Legion") {
                                 ++stat.legionPlays;
                                 stat.legionWins += addWin;
+                            } else if (p.faction == "Random") {
+                                ++stat.randomPlays;
+                                stat.randomWins += addWin;
+                            } else {
+                                console.warn(`MatchPoolView> unhandled faction '${p.faction}' from player ${p.username} in game ${match.id}`);
                             }
 
                             map.set(p.userID, stat);
