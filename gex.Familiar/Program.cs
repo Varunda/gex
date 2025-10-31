@@ -67,7 +67,6 @@ namespace gex.Familiar {
 
             services.AddHostedService<SpringLobbyFamiliarHost>();
             services.AddHostedService<CoordinatorConnectionHost>();
-            services.AddHostedService<StartupTestService>();
         }
 
     }
