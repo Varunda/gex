@@ -1,4 +1,5 @@
-﻿using gex.Services.Lobby.Implementations;
+﻿using gex.Common.Services.Lobby;
+using gex.Common.Services.Lobby.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Lobby {
@@ -13,6 +14,7 @@ namespace gex.Services.Lobby {
             }
 
             services.AddSingleton<gex.Common.Services.Lobby.LobbyManager>();
+            services.AddSingleton<FamiliarCoordinator>();
         }
 
     }

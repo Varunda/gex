@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using gex.Common.Services.Bar;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.BarApi {
 

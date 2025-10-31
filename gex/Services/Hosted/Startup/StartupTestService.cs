@@ -1,20 +1,11 @@
-﻿using gex.Common.Models;
-using gex.Models.Bar;
-using gex.Models;
-using gex.Models.Options;
+﻿using gex.Common.Models.Options;
 using gex.Services.Db.Event;
-using gex.Services.Lobby;
-using gex.Services.Lobby.Implementations;
 using gex.Services.Parser;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 

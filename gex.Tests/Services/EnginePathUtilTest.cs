@@ -1,5 +1,5 @@
-﻿using gex.Models.Options;
-using gex.Services;
+﻿using gex.Common.Models.Options;
+using gex.Common.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

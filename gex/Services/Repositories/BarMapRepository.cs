@@ -1,4 +1,5 @@
 ﻿using gex.Common.Models;
+using gex.Common.Services.Bar;
 using gex.Models.Bar;
 using gex.Services.BarApi;
 using gex.Services.Db;

@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models;
 using gex.Models.Event;
-using gex.Models.Options;
 using gex.Services.Storage;
 using gex.Tests.Util;
 using Microsoft.Extensions.Options;

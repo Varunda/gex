@@ -187,6 +187,17 @@ namespace gex.Common.Services.Lobby {
             return user;
         }
 
+        public LobbyBattle? GetBattleOfUser(long userID) {
+            List<LobbyBattle> battles = GetBattles();
+            foreach (LobbyBattle battle in battles) {
+                if (battle.Users.Contains(userID)) {
+                    return battle;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         ///     add a new <see cref="LobbyUser"/> being tracked
         /// </summary>

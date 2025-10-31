@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Lobby;
+using gex.Common.Services.Lobby;
 using gex.Models.Options;
-using gex.Services.Lobby;
 using gex.Services.Queues;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

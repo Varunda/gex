@@ -1,6 +1,6 @@
 ﻿using System.Collections.Specialized;
 
-namespace gex.Code.ExtensionMethods {
+namespace gex.Common.Code.ExtensionMethods {
 
     public static class StringDictionaryExtensionMethods {
 

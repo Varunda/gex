@@ -1,4 +1,5 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Services;
+using gex.Models.Db;
 using gex.Services.Db;
 using Microsoft.Extensions.Logging;
 using System;

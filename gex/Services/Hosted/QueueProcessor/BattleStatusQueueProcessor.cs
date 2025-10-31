@@ -2,7 +2,6 @@
 using gex.Common.Models.Lobby;
 using gex.Models.Options;
 using gex.Models.Queues;
-using gex.Services.Lobby;
 using gex.Common.Services.Metrics;
 using gex.Services.Queues;
 using Microsoft.Extensions.Logging;

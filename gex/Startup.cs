@@ -2,7 +2,10 @@ using AspNet.Security.OAuth.Discord;
 using gex.Code;
 using gex.Code.Converters;
 using gex.Code.Hubs;
+using gex.Code.Hubs.Implementations;
 using gex.Common.Models;
+using gex.Common.Models.Options;
+using gex.Common.Services;
 using gex.Models;
 using gex.Models.Options;
 using gex.Services;
@@ -22,6 +25,7 @@ using gex.Services.Storage;
 using gex.Services.Util;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -32,9 +36,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi.Models;
 using NReco.Logging.File;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -102,11 +108,18 @@ namespace gex {
                     options => { }
                 );
             } else {
+
+                bool usingJwtAuth = Configuration.GetValue<bool>("Jwt:Enabled");
+
                 AuthenticationBuilder authBuilder = services.AddAuthentication(options => {
+                    options.DefaultScheme = "gex-policy-auth";
+                    /*
                     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     options.DefaultForbidScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    */
+                    options.DefaultChallengeScheme = "gex-policy-auth";
                 }).AddCookie(options => {
                     options.Cookie.Name = "gex-auth";
                     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
@@ -114,7 +127,32 @@ namespace gex {
 
                     options.ForwardChallenge = DiscordAuthenticationDefaults.AuthenticationScheme;
                 });
-                
+
+                if (usingJwtAuth == true) {
+                    authBuilder.AddJwtBearer((JwtBearerOptions options) => {
+                        options.ForwardChallenge = CookieAuthenticationDefaults.AuthenticationScheme;
+
+                        options.Authority = Configuration.GetValue<string>("Jwt:Authority")
+                            ?? throw new Exception($"if Jwt:Enabled is true, then Jwt:Authority must be given as well");
+
+                        options.Events = new JwtBearerEvents() {
+                            OnMessageReceived = (MessageReceivedContext ctx) => {
+                                StringValues accessToken = ctx.Request.Query["access_token"];
+                                PathString path = ctx.HttpContext.Request.Path;
+
+                                // only use JWT tokens for auth to the familiar hub
+                                if (string.IsNullOrEmpty(accessToken) == false 
+                                    && path.StartsWithSegments("/ws/familiar")) {
+
+                                    ctx.Token = accessToken;
+                                }
+
+                                return Task.CompletedTask;
+                            }
+                        };
+                    });
+                }
+
                 if (Configuration.GetValue<bool>("Discord:Enabled") == true) {
                     authBuilder.AddDiscord(options => {
                         DiscordOptions? dOpts = Configuration.GetSection("Discord").Get<DiscordOptions>();
@@ -123,10 +161,10 @@ namespace gex {
                         }
 
                         if (string.IsNullOrWhiteSpace(dOpts.ClientId)) {
-                            throw new InvalidOperationException($"missing ClientId. did you set Discord:ClientId?");
+                            throw new InvalidOperationException($"missing ClientId. is Discord:ClientId set?");
                         }
                         if (string.IsNullOrWhiteSpace(dOpts.ClientSecret)) {
-                            throw new InvalidOperationException($"missing ClientSecret. did you set Discord:ClientSecret?");
+                            throw new InvalidOperationException($"missing ClientSecret. is Discord:ClientSecret set?");
                         }
 
                         options.ClientId = dOpts.ClientId;
@@ -151,6 +189,29 @@ namespace gex {
                         options.Scope.Add("identify");
                     });
                 }
+
+                // policy scheme that decides to use the JWT auth or cookie auth by default
+                // JWT auth is used only if the authorization is given and it's on the familiar hub,
+                // otherwise cookie auth it is
+                authBuilder.AddPolicyScheme("gex-policy-auth", displayName: null, options => {
+                    options.ForwardDefaultSelector = (HttpContext ctx) => {
+                        StringValues accessToken = ctx.Request.Query["access_token"];
+                        if (string.IsNullOrEmpty(accessToken)) {
+                            accessToken = ctx.Request.Headers.Authorization;
+                        }
+
+                        PathString path = ctx.Request.Path;
+
+                        // only use JWT tokens for auth to the familiar hub
+                        if (string.IsNullOrEmpty(accessToken) == false 
+                            && (path.StartsWithSegments("/ws/familiar") || path.StartsWithSegments("/api/match-upload/upload-familiar"))) {
+
+                            return JwtBearerDefaults.AuthenticationScheme;
+                        }
+
+                        return CookieAuthenticationDefaults.AuthenticationScheme;
+                    };
+                });
             }
 
             // require all endpoints to be authorized unless another policy is defined
@@ -198,8 +259,8 @@ namespace gex {
 
                     // 
                     PartitionedRateLimiter.Create<HttpContext, IPAddress>(context => {
-                        // non-api endpoints have 0 rate limits
-                        if (!context.Request.Path.StartsWithSegments("/api")) {
+                        // rate limit api and ws connections
+                        if (!context.Request.Path.StartsWithSegments("/api") && !context.Request.Path.StartsWithSegments("/ws")) {
                             return RateLimitPartition.GetNoLimiter(IPAddress.None);
                         }
 
@@ -296,9 +357,27 @@ namespace gex {
             services.Configure<ForwardedHeadersOptions>(options => {
                 // look for the x-forwarded-for headers to know the remote IP
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.ForwardLimit = 3; // behind 2 proxies, cloudflare and nginx
 
-                // needed for Gex on production, which is behind Nginx, will accept the Cookie for Google OAuth2 
-                options.KnownProxies.Add(IPAddress.Parse("64.227.19.86"));
+                // from https://www.cloudflare.com/ips/
+                List<string> cfips = [
+                    "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
+                    "108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17",
+                    "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
+
+                    "2400:cb00::/32", "2606:4700::/32", "2803:f800::/32", "2405:b500::/32",
+                    "2405:8100::/32", "2a06:98c0::/29", "2c0f:f248::/32"
+                ];
+
+                foreach (string s in cfips) {
+                    options.KnownNetworks.Add(Microsoft.AspNetCore.HttpOverrides.IPNetwork.Parse(s));
+                }
+
+                // add any additional proxies used
+                List<string> proxies = Configuration.GetValue<List<string>>("Instance:Proxies") ?? [];
+                foreach (string proxy in proxies) {
+                    options.KnownProxies.Add(IPAddress.Parse(proxy));
+                }
             });
 
             services.AddHostedService<StartupTestService>();
@@ -407,6 +486,7 @@ namespace gex {
                 );
 
                 endpoints.MapHub<HeadlessReplayHub>("/ws/headless-run").DisableHttpMetrics();
+                endpoints.MapHub<FamiliarHub>("/ws/familiar").DisableHttpMetrics();
 
                 endpoints.MapSwagger();
             });

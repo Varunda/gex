@@ -1,9 +1,11 @@
 ﻿using gex.Code.Hubs;
 using gex.Common.Models;
+using gex.Common.Models.Options;
+using gex.Common.Services;
+using gex.Common.Services.Bar;
 using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Event;
-using gex.Models.Options;
 using gex.Services.Db;
 using gex.Services.Metrics;
 using gex.Services.Queues;

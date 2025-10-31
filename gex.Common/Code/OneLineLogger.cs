@@ -1,5 +1,5 @@
-﻿using gex.Code.ExtensionMethods;
-using gex.Models;
+﻿using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
@@ -38,7 +38,7 @@ using System.IO;
     SOFTWARE.
  */
 
-namespace gex.Code {
+namespace gex.Common.Code {
 
     public class OneLineLogger : ConsoleFormatter, IDisposable {
 

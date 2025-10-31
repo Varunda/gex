@@ -1,5 +1,4 @@
-﻿using gex.Models.Options;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -9,12 +8,11 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.BarApi {
+namespace gex.Common.Services.Bar {
 
     public class BarEngineDownloader {
 
         private readonly ILogger<BarEngineDownloader> _Logger;
-        private readonly IOptions<FileStorageOptions> _Options;
         private readonly PathEnvironmentService _PathUtil;
         private readonly EnginePathUtil _EnginePathUtil;
 
@@ -32,11 +30,9 @@ namespace gex.Services.BarApi {
         }
 
         public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
-            IOptions<FileStorageOptions> options, PathEnvironmentService pathUtil,
-            EnginePathUtil enginePathUtil) {
+            PathEnvironmentService pathUtil, EnginePathUtil enginePathUtil) {
 
             _Logger = logger;
-            _Options = options;
             _PathUtil = pathUtil;
             _EnginePathUtil = enginePathUtil;
         }
@@ -52,7 +48,7 @@ namespace gex.Services.BarApi {
         /// <param name="version">name of the version to download</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
-        /// <exception cref="System.Exception"></exception>
+        /// <exception cref="Exception"></exception>
         public async Task DownloadEngine(string version, CancellationToken cancel) {
             string path = _EnginePathUtil.Get(version);
             if (Directory.Exists(path)) {
@@ -68,7 +64,7 @@ namespace gex.Services.BarApi {
             foreach (string template in VERSION_PATH_TEMPLATES) {
                 string versionPath = string.Format(template, version, OperatingSystem.IsWindows() ? "windows" : "linux");
                 _Logger.LogTrace($"trying to get engine version [template={template}] [versionPath={versionPath}]");
-                response = await _Http.GetAsync(BASE_URL + "/" + versionPath);
+                response = await _Http.GetAsync(BASE_URL + "/" + versionPath, cancel);
 
                 if (response.IsSuccessStatusCode == false) {
                     _Logger.LogWarning($"failed to download engine [version={version}] [status code={response.StatusCode}]");
@@ -88,7 +84,7 @@ namespace gex.Services.BarApi {
                 await response.Content.CopyToAsync(output, cancel);
             }
 
-            string sevenzipApp = _PathUtil.FindExecutable("7z") ?? throw new System.Exception($"failed to find 7z in PATH");
+            string sevenzipApp = _PathUtil.FindExecutable("7z") ?? throw new Exception($"failed to find 7z in PATH");
 
             using Process sevenZipProc = new();
             sevenZipProc.StartInfo.FileName = sevenzipApp;

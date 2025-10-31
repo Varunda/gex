@@ -1,6 +1,5 @@
 ﻿using gex.Common.Models;
 using gex.Services.BarApi;
-using gex.Services.Lobby;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

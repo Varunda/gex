@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models.Bar;
 using gex.Models.Db;
-using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
 using gex.Services.Db.Match;

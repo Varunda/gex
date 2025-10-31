@@ -134,7 +134,7 @@ namespace gex.Controllers.Api {
             _Logger.LogInformation($"forcing game to be ran headlessly [gameID={gameID}]");
 
             ServiceHealthEntry? runQueueService = _ServiceHealthMonitor.Get("headless_run_queue_processor");
-            if (runQueueService?.Enabled ?? false == false) {
+            if ((runQueueService?.Enabled ?? false) == false) {
                 _Logger.LogWarning($"while game was forced to be ran, "
                     + $"please note the headless_run_queue_processor service is disabled, so this game will NOT be ran [gameID={gameID}]");
             }

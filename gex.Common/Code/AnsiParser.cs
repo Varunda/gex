@@ -30,7 +30,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace gex.Code {
+namespace gex.Common.Code {
 
     public class AnsiParser {
 
@@ -86,8 +86,9 @@ namespace gex.Code {
                                 startIndex = -1;
                                 length = 0;
                             }
-                            if (escapeCode == 1)
+                            if (escapeCode == 1) {
                                 isBright = true;
+                            }
                             i += 3;
                             continue;
                         }

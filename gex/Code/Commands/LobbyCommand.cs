@@ -1,7 +1,6 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Commands;
 using gex.Common.Models.Lobby;
-using gex.Services.Lobby;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,6 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using gex.Common.Models;
 using gex.Common.Services.Lobby;
+using gex.Services.Lobby;
+using gex.Common.Models.Familiar;
 
 namespace gex.Code.Commands {
 
@@ -21,11 +22,13 @@ namespace gex.Code.Commands {
         private readonly ILogger<LobbyCommand> _Logger;
         private readonly LobbyManager _LobbyManager;
         private readonly ILobbyClient _LobbyClient;
+        private readonly FamiliarCoordinator _Familiars;
 
         public LobbyCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<LobbyCommand>>();
             _LobbyManager = services.GetRequiredService<LobbyManager>();
             _LobbyClient = services.GetRequiredService<ILobbyClient>();
+            _Familiars = services.GetRequiredService<FamiliarCoordinator>();
         }
 
         public void Summary() {
@@ -92,7 +95,7 @@ namespace gex.Code.Commands {
             LobbyUser? founder = _LobbyManager.GetUser(battle.FounderUsername);
 
             _Logger.LogInformation($"found battle [battleID={battleID}] [running={founder?.InGame ?? false}] [map={battle.Map}] [title={battle.Title}] "
-                + $"[teamSize={battle.TeamSize}] [teamCount={battle.TeamCount}]");
+                + $"[teamSize={battle.TeamSize}] [teamCount={battle.TeamCount}] [ip={battle.IP}] [port={battle.Port}]");
             _Logger.LogInformation(JsonSerializer.Serialize(battle));
         }
 
@@ -145,6 +148,31 @@ namespace gex.Code.Commands {
             } else {
                 _Logger.LogWarning($"failed to get battle status [error={res.Error}]");
             }
+        }
+
+        public async Task SendFamiliar(int battleID, string? password) {
+            _Logger.LogInformation($"sending familiar to spec battle [battleID={battleID}]");
+
+            FamiliarStatus? status = _Familiars.GetAvailableFamiliar();
+            if (status == null) {
+                _Logger.LogWarning($"no available familiars to spectate battle [battleID={battleID}]");
+                return;
+            }
+
+            LobbyBattle? battle = _LobbyManager.GetBattle(battleID);
+            if (battle == null) {
+                _Logger.LogWarning($"battle does not exist [battleID={battleID}]");
+                return;
+            }
+
+            FamiliarJoinBattleMessage msg = new() {
+                BattleID = battleID,
+                Password = password,
+                InvitedBy = "varunda",
+            };
+
+            await _Familiars.SendFamiliarToBattle(status.Name, msg);
+            _Logger.LogInformation($"sent familiar to spectate battle [battleID={battleID}] [familiar={status.Name}]");
         }
 
     }

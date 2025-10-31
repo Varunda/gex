@@ -1,10 +1,10 @@
 ﻿using gex.Code;
 using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Internal;
-using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services;
 using gex.Services.Db;
@@ -19,9 +19,12 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Microsoft.VisualBasic;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,6 +45,7 @@ namespace gex.Controllers.Api {
         private readonly BarMapRepository _MapRepository;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BaseQueue<HeadlessRunQueueEntry> _RunQueue;
+        private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
         private readonly ICurrentAccount _CurrentAccount;
 
         public MatchUploadApiController(ILogger<MatchUploadApiController> logger,
@@ -50,7 +54,7 @@ namespace gex.Controllers.Api {
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayDb replayDb,
             BarDemofileResultProcessor demofileProcessor, BarMapRepository mapRepository,
             BarMatchPriorityCalculator priorityCalculator, BaseQueue<HeadlessRunQueueEntry> runQueue,
-            ICurrentAccount currentAccount) {
+            ICurrentAccount currentAccount, BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -64,6 +68,7 @@ namespace gex.Controllers.Api {
             _PriorityCalculator = priorityCalculator;
             _RunQueue = runQueue;
             _CurrentAccount = currentAccount;
+            _ActionLogParseQueue = actionLogParseQueue;
         }
 
         [HttpPost("upload")]
@@ -220,6 +225,193 @@ namespace gex.Controllers.Api {
             }
 
             _Logger.LogInformation($"user uploaded match [gameID={match.ID}]");
+
+            return ApiOk(match);
+        }
+
+        [HttpPost("upload-familiar")]
+        [RequestTimeout(1000 * 60)] // allow 60 secs to upload
+        [DisableFormValueModelBinding]
+        [Authorize]
+        public async Task<ApiResponse<BarMatch>> UploadFamiliar(CancellationToken cancel) {
+            Claim? familiarClaim = Request.HttpContext.User.Claims.FirstOrDefault(iter => iter.Type == "familiar");
+            if (familiarClaim == null) {
+                return ApiForbidden<BarMatch>($"");
+            }
+
+            Stopwatch stepTimer = Stopwatch.StartNew();
+
+            BarMatchProcessing processing = new();
+            processing.ReplayDownloaded = DateTime.UtcNow;
+
+            string contentType = Request.ContentType ?? "";
+            if (string.IsNullOrWhiteSpace(contentType) || !contentType.Contains("multipart/", StringComparison.OrdinalIgnoreCase)) {
+                return ApiBadRequest<BarMatch>($"ContentType '{contentType}' is not a multipart-upload");
+            }
+
+            MediaTypeHeaderValue type = MediaTypeHeaderValue.Parse(Request.ContentType);
+            string boundary = HeaderUtilities.RemoveQuotes(type.Boundary).Value ?? "";
+
+            if (string.IsNullOrWhiteSpace(boundary)) {
+                return ApiBadRequest<BarMatch>($"boundary from ContentType '{Request.ContentType}' was is null or empty ({type}) ({type.Boundary})");
+            }
+
+            MultipartReader reader = new(boundary, Request.Body);
+            MultipartSection? part = await reader.ReadNextSectionAsync(cancel);
+            if (part == null) {
+                return ApiBadRequest<BarMatch>($"Multipart section missing");
+            }
+
+            byte[] demofileBytes = [];
+            byte[] actionsBytes = [];
+            byte[] stdoutBytes = [];
+            byte[] stderrBytes = [];
+
+            do {
+                bool hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(part.ContentDisposition, out ContentDispositionHeaderValue? contentDisposition);
+                if (hasContentDispositionHeader == false) {
+                    return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition}");
+                }
+
+                if (contentDisposition == null) {
+                    return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition}");
+                }
+
+                if (!HasFileContentDisposition(contentDisposition)) {
+                    _Logger.LogError($"not a file content disposition [contentDisposition={contentDisposition}]");
+                    return ApiBadRequest<BarMatch>($"not a file content disposition");
+                }
+
+                string? originalName = HeaderUtilities.RemoveQuotes(contentDisposition.FileName.Value ?? "").Value;
+                using MemoryStream ms = new();
+                await part.Body.CopyToAsync(ms, cancel);
+
+                if (originalName == "demofile.sdfz") {
+                    if (demofileBytes.Length > 0) {
+                        return ApiBadRequest<BarMatch>($"demofile.sdfz already given");
+                    }
+                    demofileBytes = ms.ToArray();
+                } else if (originalName == "actions.json") {
+                    if (actionsBytes.Length > 0) {
+                        return ApiBadRequest<BarMatch>($"actions.json already given");
+                    }
+                    actionsBytes = ms.ToArray();
+                } else if (originalName == "stdout.txt") {
+                    if (stdoutBytes.Length > 0) {
+                        return ApiBadRequest<BarMatch>($"stdout.txt already given");
+                    }
+                    stdoutBytes = ms.ToArray();
+                } else if (originalName == "stderr.txt") {
+                    if (stderrBytes.Length > 0) {
+                        return ApiBadRequest<BarMatch>($"stderr.txt already given");
+                    }
+                    stderrBytes = ms.ToArray();
+                } else {
+                    return ApiBadRequest<BarMatch>($"unexpected filename '{originalName}'");
+                }
+
+                part = await reader.ReadNextSectionAsync(cancel);
+            } while (part != null);
+
+            if (demofileBytes.Length == 0 || actionsBytes.Length == 0 || stdoutBytes.Length == 0 || stderrBytes.Length == 0) {
+                return ApiBadRequest<BarMatch>($"missing file from upload");
+            }
+
+            long uploadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            processing.ReplayDownloadedMs = (int)uploadMs;
+
+            Result<BarMatch, string> parsed = await _DemofileParser.Parse("demofile.sdfz", demofileBytes, cancel);
+            if (parsed.IsOk == false) {
+                return ApiBadRequest<BarMatch>($"failed to parse replay file: {parsed.Error}");
+            }
+            long parseMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+            processing.ReplayParsedMs = (int)parseMs;
+            processing.ReplayParsed = DateTime.UtcNow;
+
+            BarMatch match = parsed.Value;
+
+            BarMatch? existing = await _MatchRepository.GetByID(match.ID, cancel);
+            if (existing != null) {
+                _Logger.LogDebug($"demofile already exists in the database [gameID={match.ID}]");
+                return ApiOk(existing);
+            }
+
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(match.ID, cancel);
+            if (proc != null) {
+                _Logger.LogDebug($"this game has been noticed and is processing in some way, but hasn't been parsed into a match yet");
+                return ApiBadRequest<BarMatch>($"this game has already been seen, but is being processed, please wait!");
+            }
+
+            if (match.AiPlayers.Count > 0) {
+                return ApiBadRequest<BarMatch>($"Games with AI players are not allowed to be uploaded");
+            }
+
+            _Logger.LogInformation($"new demofile has been uploaded [gameID={match.ID}]");
+
+            // 2025-02-02_20-35-40-247_Special Reef 1_2025.01.6.sdfz
+            // {DATE}_{TIME_UTC}_{Map}_{Engine}.sdfz
+            // it's impossible to recreate the correct demofile name from the info in the demofile
+            //		(demofile does not have the millisecond start time, which the demofile uses)
+
+            // https://github.com/beyond-all-reason/RecoilEngine/blob/0aa5469497c42b9066a304f13f76ea460aa69b07/rts/System/LoadSave/DemoRecorder.cpp#L156
+            // map name gets truncated by one '.' for some reason
+            //		ex: Map name_1.1 => Map_name_1
+            string parsedName = $"{match.StartTime:yyyy-MM-dd}_{match.StartTime:HH-mm-ss-fff}_{match.Map}_{match.Engine}.sdfz";
+            match.FileName = parsedName;
+
+            string replayLocation = Path.Join(_Options.Value.ReplayLocation, parsedName);
+            if (System.IO.File.Exists(replayLocation) == true) {
+                _Logger.LogError($"the replay file exists, but the DB data is missing! [gameID={match.ID}] [replayLocation='{replayLocation}']");
+                return ApiInternalError<BarMatch>($"failsafe: the database has inconsistent data, this is an unexpected state");
+            }
+
+            match.MapName = (await _MapRepository.GetByName(match.Map, CancellationToken.None))?.FileName ?? "";
+
+            // at this point, we do NOT want to respect a user cancellation, as this could lead to inconsistent/half-written files
+            using FileStream fileStream = System.IO.File.OpenWrite(replayLocation);
+            await fileStream.WriteAsync(demofileBytes, CancellationToken.None);
+
+            if (System.IO.File.Exists(replayLocation) == false) {
+                _Logger.LogError($"failsafe: the replay file must exist at the expected location at this point [replayLocation='{replayLocation}']");
+                return ApiInternalError<BarMatch>($"failsafe: missing replay file after copying it to the disk?");
+            }
+
+            processing.GameID = match.ID;
+            processing.Priority = await _PriorityCalculator.Calculate(match, CancellationToken.None);
+            await _ProcessingRepository.Upsert(processing);
+
+            // while this isn't strictly necessary due to the info already being here, this is needed if re-parsing locally
+            BarReplay replay = new();
+            replay.ID = match.ID;
+            replay.MapName = match.MapName;
+            replay.FileName = parsedName;
+            await _ReplayDb.Insert(replay, CancellationToken.None);
+
+            await _DemofileProcessor.Process(match, CancellationToken.None);
+
+            string gamePrefixLocation = Path.Join(_Options.Value.GameLogLocation, match.ID.Substring(0, 2));
+            Directory.CreateDirectory(gamePrefixLocation);
+
+            string gameLogLocation = Path.Join(gamePrefixLocation, match.ID);
+            string gameActionLogPath = gameLogLocation + Path.DirectorySeparatorChar + "actions.json";
+
+            // copy logs to folder
+            if (Directory.Exists(gameLogLocation) == false) {
+                Directory.CreateDirectory(gameLogLocation);
+            }
+
+            string stdoutLogs = gameLogLocation + Path.DirectorySeparatorChar + "stdout.txt";
+            string stderrLogs = gameLogLocation + Path.DirectorySeparatorChar + "stderr.txt";
+            await System.IO.File.WriteAllBytesAsync(stdoutLogs, stdoutBytes, cancel);
+            await System.IO.File.WriteAllBytesAsync(stderrLogs, stderrBytes, cancel);
+
+            _Logger.LogDebug($"writing action log [loc={Path.Join(gameLogLocation, "actions.json")}");
+            await System.IO.File.WriteAllBytesAsync(Path.Join(gameLogLocation, "actions.json"), actionsBytes);
+            _ActionLogParseQueue.Queue(new ActionLogParseQueueEntry() {
+                GameID = match.ID,
+            });
+
+            _Logger.LogInformation($"familiar uploaded match [gameID={match.ID}]");
 
             return ApiOk(match);
         }

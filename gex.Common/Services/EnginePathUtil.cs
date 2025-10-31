@@ -1,9 +1,9 @@
-﻿using gex.Models.Options;
+﻿using gex.Common.Models.Options;
 using Microsoft.Extensions.Options;
 using System;
 using System.IO;
 
-namespace gex.Services {
+namespace gex.Common.Services {
 
     /// <summary>
     ///     util service to get the path of an engine version (which is specific if running on linux or windows)

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging.Console;
 
-namespace gex.Models {
+namespace gex.Common.Models {
 
     public class AppFormatterOptions : ConsoleFormatterOptions {
 

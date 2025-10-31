@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace gex.Services {
+namespace gex.Common.Services {
 
     public class PathEnvironmentService {
 

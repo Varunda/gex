@@ -10,12 +10,12 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
-namespace gex.Services.Lobby.Implementations {
+namespace gex.Common.Services.Lobby.Implementations {
 
     public class LobbyClient : ILobbyClient {
 
         private readonly ILogger<LobbyClient> _Logger;
-        private readonly LobbyClientMetric _Metric;
+        private readonly LobbyClientMetric? _Metric;
         private readonly LobbyManager _LobbyManager;
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace gex.Services.Lobby.Implementations {
         private LobbyMessage? _PendingBattleStatusResponse = null;
 
         public LobbyClient(ILogger<LobbyClient> logger,
-            LobbyClientMetric metric, LobbyManager lobbyManager) {
+            LobbyManager lobbyManager, LobbyClientMetric? metric = null) {
 
             _TcpSocket = new TcpClient();
 
@@ -277,13 +277,13 @@ namespace gex.Services.Lobby.Implementations {
                 return "not connected";
             }
 
-            string cmd = $"{(msgId != null ? $"#{msgId} ": "")}{command}{(message != "" ? $" {message}" : "")}\n";
+            string cmd = $"{(msgId != null ? $"#{msgId} " : "")}{command}{(message != "" ? $" {message}" : "")}\n";
             //_Logger.LogTrace($"SEND>> {cmd}");
             byte[] msg = Encoding.UTF8.GetBytes(cmd);
             try {
                 await _TcpSocket.GetStream().WriteAsync(msg, cancel);
             } catch (Exception ex) {
-                _Metric.RecordWriteError(command);
+                _Metric?.RecordWriteError(command);
                 _Logger.LogError(ex, $"failed to write message [message={message}]");
 
                 if (ex.Message == "Unable to write data to the transport connection: An established connection was aborted by the software in your host machine.") {
@@ -293,7 +293,7 @@ namespace gex.Services.Lobby.Implementations {
                 return ex.Message;
             }
 
-            _Metric.RecordCommandSent(command);
+            _Metric?.RecordCommandSent(command);
 
             return true;
         }
@@ -391,7 +391,7 @@ namespace gex.Services.Lobby.Implementations {
                     return $"expected response to start with '!#JSONRPC', started with '{_PendingBattleStatusResponse.Arguments[..8]}' instead";
                 }
 
-                JsonObject? json = JsonSerializer.Deserialize<JsonObject>(jsonStr[("!#JSONRPC ".Length)..]);
+                JsonObject? json = JsonSerializer.Deserialize<JsonObject>(jsonStr["!#JSONRPC ".Length..]);
                 if (json == null) {
                     return "got a null json object when deserialized";
                 }
@@ -559,7 +559,7 @@ namespace gex.Services.Lobby.Implementations {
                         }
                     } else if (i == 1) {
                         if (msgContent.StartsWith("Previous name: ")) {
-                            whois.PreviousNames = [..msgContent["Previous names: ".Length..].Split(", ")];
+                            whois.PreviousNames = [.. msgContent["Previous names: ".Length..].Split(", ")];
                         }
                     } else if (i == 2) {
                         if (msgContent.StartsWith("Profile link: ")) {
@@ -689,7 +689,7 @@ namespace gex.Services.Lobby.Implementations {
                             break;
                         }
 
-                        _Metric.RecordCommandReceived(msg.Command);
+                        _Metric?.RecordCommandReceived(msg.Command);
 
                         //_Logger.LogDebug($"RECV || {msg.Command}: {msg.Arguments}");
 

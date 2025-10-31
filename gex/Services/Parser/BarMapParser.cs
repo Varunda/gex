@@ -1,7 +1,9 @@
 ﻿using gex.Code;
+using gex.Common.Code;
 using gex.Common.Models;
+using gex.Common.Models.Options;
+using gex.Common.Services;
 using gex.Models.Bar;
-using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;

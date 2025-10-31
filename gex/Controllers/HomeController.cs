@@ -1,10 +1,10 @@
 ﻿using gex.Code;
 using gex.Common.Code.Constants;
+using gex.Common.Models.Options;
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Internal;
-using gex.Models.Options;
 using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db.Account;

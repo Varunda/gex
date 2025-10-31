@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models.Event;
-using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;

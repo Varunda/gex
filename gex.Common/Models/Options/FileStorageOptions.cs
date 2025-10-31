@@ -1,4 +1,4 @@
-﻿namespace gex.Models.Options {
+﻿namespace gex.Common.Models.Options {
 
     public class FileStorageOptions {
 

@@ -5,7 +5,7 @@ using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Lobby {
+namespace gex.Common.Services.Lobby {
 
     public interface ILobbyClient {
 

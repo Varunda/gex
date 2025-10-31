@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace gex.Code {
+namespace gex.Common.Code {
 
     public class ProcessWrapper {
 

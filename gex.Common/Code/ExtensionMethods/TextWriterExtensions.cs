@@ -31,7 +31,7 @@
 using System;
 using System.IO;
 
-namespace gex.Code.ExtensionMethods {
+namespace gex.Common.Code.ExtensionMethods {
 
     public static class TextWriterExtensions {
 

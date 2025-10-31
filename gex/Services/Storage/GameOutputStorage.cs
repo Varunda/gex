@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Options;
+using gex.Common.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IO;

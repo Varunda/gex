@@ -1,12 +1,16 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Familiar;
 using gex.Common.Models.Lobby;
 using gex.Common.Services.Lobby;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +27,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly LobbyManager _LobbyManager;
         private readonly BarUserRepository _UserRepository;
         private readonly ILobbyClient _LobbyClient;
+        private readonly IOptions<SpringLobbyOptions> _Options;
+        private readonly FamiliarCoordinator _Familiars;
         private readonly BaseQueue<BattleStatusUpdateQueueEntry> _BattleStatusUpdateQueue;
 
         private readonly Dictionary<string, int> _DmVelocity = [];
@@ -32,13 +38,16 @@ namespace gex.Services.Hosted.QueueProcessor {
         public LobbyMessageQueueProcessor(ILoggerFactory factory,
             BaseQueue<LobbyMessage> queue, ServiceHealthMonitor serviceHealthMonitor,
             LobbyManager lobbyManager, ILobbyClient lobbyClient,
-            BarUserRepository userRepository, BaseQueue<BattleStatusUpdateQueueEntry> battleStatusUpdateQueue)
+            BarUserRepository userRepository, BaseQueue<BattleStatusUpdateQueueEntry> battleStatusUpdateQueue,
+            IOptions<SpringLobbyOptions> options, FamiliarCoordinator familiars)
         : base("lobby_message_queue", factory, queue, serviceHealthMonitor) {
 
             _LobbyManager = lobbyManager;
             _LobbyClient = lobbyClient;
             _UserRepository = userRepository;
             _BattleStatusUpdateQueue = battleStatusUpdateQueue;
+            _Options = options;
+            _Familiars = familiars;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken) {
@@ -154,7 +163,63 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             if (msg == "/help") {
                 await _LobbyClient.Write("SAYPRIVATE", $"{username} howdy! this is the Gex coordinator. "
-                    + $"eventually users will be able to ask Gex to watch a game for live analysis, but not yet!", cancel);
+                    + $"use \"/invite <password>\" (with password provided if needed) to invite a bot to watch this match live", cancel);
+            } else if (msg.StartsWith("/invite") || msg.StartsWith("/summon")) {
+                LobbyUser? user = _LobbyManager.GetUser(username);
+                if (user == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not see this user, and does not know what battle to use", cancel);
+                    return;
+                }
+
+                LobbyBattle? usersBattle = _LobbyManager.GetBattleOfUser(user.UserID);
+                if (usersBattle == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} must be in a battle to use this", cancel);
+                    return;
+                }
+
+                FamiliarStatus? freeFamiliar = _Familiars.GetAvailableFamiliar();
+                if (freeFamiliar == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not have any accounts free to join, please try later", cancel);
+                    return;
+                }
+
+                string[] parts = msg.Split(" ");
+                if (usersBattle.Passworded == true && parts.Length < 2) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} that battle is passworded, please give the password, e.g. \"/invite abcd\"", cancel);
+                    return;
+                }
+
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} sending a user to record this game in realtime", cancel);
+
+                await _Familiars.SendFamiliarToBattle(freeFamiliar.Name, new() {
+                    BattleID = usersBattle.BattleID,
+                    Password = parts.Length >= 2 ? parts[1] : null,
+                    InvitedBy = username,
+                    Secret = Random.Shared.Next()
+                });
+            } else if (msg == "/dismiss") {
+                LobbyUser? user = _LobbyManager.GetUser(username);
+                if (user == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not see this user, and does not know what battle to use", cancel);
+                    return;
+                }
+
+                LobbyBattle? usersBattle = _LobbyManager.GetBattleOfUser(user.UserID);
+                if (usersBattle == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} must be in a battle to use this", cancel);
+                    return;
+                }
+
+                FamiliarStatus? status = _Familiars.GetStatuses()
+                    .FirstOrDefault(iter => iter.BattleID == usersBattle.BattleID);
+
+                if (status == null) {
+                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex is not watching this game", cancel);
+                    return;
+                }
+
+                await _Familiars.LeaveLobby(status.Name, new FamiliarLeaveLobbyMessage());
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} sending {status.Name} away", cancel);
             } else if (msg == ":3") {
                 await _LobbyClient.Write("SAYPRIVATE", $"{username} :3", cancel);
             } else {
@@ -262,12 +327,22 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return;
             }
 
+            if (int.TryParse(port, out int p) == false) {
+                _Logger.LogWarning($"failed to parse port to a valid int32 [port={port}] [args={entry.Arguments}]");
+                return;
+            }
+
+            battle.IP = ip;
+            battle.Port = p;
             battle.BattleID = bID;
             battle.FounderUsername = founderUsername;
             battle.Map = map;
             battle.MaxPlayers = mp;
             battle.Title = title;
             battle.Passworded = passworded == "1";
+            battle.Engine = engineName;
+            battle.EngineVersion = engineVersion;
+            battle.GameName = gameName;
 
             _LobbyManager.AddBattle(battle);
 
@@ -292,7 +367,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         ///     handle a CLIENTSTATUS command
         /// </summary>
         /// <param name="entry"></param>
-        private void HandleClientStatus(LobbyMessage entry) {
+        private async void HandleClientStatus(LobbyMessage entry) {
             // CLIENTSTATUS userName status
 
             string? username = entry.GetWord();
@@ -313,6 +388,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return;
             }
 
+            bool wasInGame = user.InGame;
+
             // https://springrts.com/dl/LobbyProtocol/ProtocolDescription.html#MYSTATUS:client
             user.InGame = (state & 0x01) == 0x01;
             user.Away = (state & 0x02) == 0x02;
@@ -321,6 +398,64 @@ namespace gex.Services.Hosted.QueueProcessor {
             user.IsBot = (state & 0x40) == 0x40;
 
             _LobbyManager.UpdateUserStatus(username, user);
+
+            List<FamiliarStatus> statuses = _Familiars.GetStatuses();
+            if (statuses.Count > 0) {
+
+                LobbyBattle? usersBattle = null;
+                List<LobbyBattle> battles = _LobbyManager.GetBattles();
+                foreach (LobbyBattle battle in battles) {
+                    if (battle.FounderUsername == user.Username) {
+                        usersBattle = battle;
+                        break;
+                    } 
+                }
+
+                if (usersBattle == null) {
+                    return;
+                }
+
+                foreach (FamiliarStatus status in statuses) {
+                    if (status.BattleID != usersBattle.BattleID) {
+                        continue;
+                    }
+
+                    if (wasInGame == true && user.InGame == false) {
+                        _Logger.LogInformation($"battle familiar ended [familiar={status.Name}]");
+                        await _Familiars.LeaveLobby(status.Name, new FamiliarLeaveLobbyMessage() {
+
+                        });
+                    } else if (wasInGame == false && user.InGame == true) {
+                        if (status.Secret == null || status.Secret == 0) {
+                            _Logger.LogWarning($"familiar is missing secret from status [familiar={status.Name}]");
+                            continue;
+                        }
+
+                        if (usersBattle.Engine == "" || usersBattle.EngineVersion == "" || usersBattle.Map == "") {
+                            _Logger.LogWarning($"missing required info to launch game "
+                                + $"[engine={usersBattle.Engine}] [game={usersBattle.EngineVersion}] [map={usersBattle.Map}]");
+                            continue;
+                        }
+
+                        _Logger.LogInformation($"battle for familiar started [battleID={usersBattle.BattleID}] [familiar={status.Name}]" 
+                            + $" [user={user.Username}] [in game={user.InGame}] [wasInGame={wasInGame}]");
+
+                        await _Familiars.LaunchFamiliarGame(status.Name, new FamiliarLaunchGameMessage() {
+                            BattleID = usersBattle.BattleID,
+                            Engine = usersBattle.EngineVersion,
+                            GameVersion = usersBattle.GameName,
+                            Map = usersBattle.Map,
+                            HostIP = usersBattle.IP,
+                            Port = usersBattle.Port,
+                            Secret = status.Secret.Value,
+                        });
+                    } else {
+                        _Logger.LogWarning($"unhandled state of in game for user [user={user.Username}] [wasInGame={wasInGame}] [in game={user.InGame}]");
+                    }
+
+                    break;
+                }
+            }
         }
 
         /// <summary>

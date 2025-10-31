@@ -1,5 +1,5 @@
-﻿using gex.Models.Bar;
-using gex.Models.Options;
+﻿using gex.Common.Models.Options;
+using gex.Models.Bar;
 using gex.Services.Repositories;
 using ImageMagick;
 using Microsoft.AspNetCore.Mvc;

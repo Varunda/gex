@@ -14,7 +14,6 @@ using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
-using gex.Services.Lobby;
 using gex.Services.Parser;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Caching.Memory;
@@ -30,6 +29,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using gex.Common.Models;
 using gex.Common.Services.Lobby;
+using gex.Common.Code.ExtensionMethods;
 
 namespace gex.Code.Discord {
 

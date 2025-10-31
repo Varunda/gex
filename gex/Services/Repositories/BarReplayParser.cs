@@ -1,8 +1,8 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models;
 using gex.Models.Db;
-using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;

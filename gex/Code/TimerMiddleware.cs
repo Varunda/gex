@@ -1,4 +1,4 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Models;
 using gex.Services;
 using Microsoft.AspNetCore.Http;

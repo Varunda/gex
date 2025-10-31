@@ -62,13 +62,12 @@ namespace gex.Services {
             if (httpContext.User.Identity.IsAuthenticated == false) {
                 return Task.FromResult((ulong?)null);
             } else if (httpContext.User is ClaimsPrincipal claims) {
-                /*
-                string s = "";
-                foreach (Claim claim in claims.Claims) {
-                    s += $"{claim.Type} = {claim.Value};";
+
+                // familiars don't use discord IDs for identity
+                Claim? isFamiliar = claims.FindFirst("familiar");
+                if (isFamiliar != null && string.IsNullOrEmpty(isFamiliar.Value) == false) {
+                    return Task.FromResult((ulong?)null);
                 }
-                _Logger.LogDebug($"{s}");
-                */
 
                 Claim? idClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
                 if (idClaim == null || string.IsNullOrEmpty(idClaim.Value)) {
@@ -105,14 +104,6 @@ namespace gex.Services {
             if (httpContext.User.Identity.IsAuthenticated == false) {
                 return Task.FromResult((string?)null);
             } else if (httpContext.User is ClaimsPrincipal claims) {
-                /*
-                string s = "";
-                foreach (Claim claim in claims.Claims) {
-                    s += $"{claim.Type} = {claim.Value};";
-                }
-                _Logger.LogDebug($"{s}");
-                */
-
                 Claim? claim = claims.FindFirst(claimType);
                 return Task.FromResult(claim?.Value);
             } else {
@@ -142,13 +133,11 @@ namespace gex.Services {
             if (httpContext.User.Identity.IsAuthenticated == false) {
                 return null;
             } else if (httpContext.User is ClaimsPrincipal claims) {
-                /*
-                string s = "";
-                foreach (Claim claim in claims.Claims) {
-                    s += $"{claim.Type} = {claim.Value};";
+                // familiars don't use discord IDs for identity
+                Claim? isFamiliar = claims.FindFirst("familiar");
+                if (isFamiliar != null && string.IsNullOrEmpty(isFamiliar.Value) == false) {
+                    return null;
                 }
-                _Logger.LogDebug($"{s}");
-                */
 
                 Claim? idClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
                 if (idClaim == null || string.IsNullOrEmpty(idClaim.Value)) {

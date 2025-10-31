@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace gex.Code.ExtensionMethods {
+namespace gex.Common.Code.ExtensionMethods {
 
     public static class StringExtensionMethods {
 

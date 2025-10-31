@@ -1,7 +1,6 @@
-﻿using gex.Code;
-using gex.Code.ExtensionMethods;
-using gex.Models.Db;
-using gex.Services.Db;
+﻿using gex.Common.Code;
+using gex.Common.Code.ExtensionMethods;
+using gex.Common.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -10,21 +9,19 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.BarApi {
+namespace gex.Common.Services.Bar {
 
     public class PrDownloaderService {
 
         private readonly ILogger<PrDownloaderService> _Logger;
         private readonly EnginePathUtil _EnginePathUtil;
-        private readonly GameVersionUsageDb _VersionUsageDb;
 
         private static Dictionary<string, Task<bool>> _PendingDownloads = [];
 
         public PrDownloaderService(ILogger<PrDownloaderService> logger,
-            GameVersionUsageDb versionUsageDb, EnginePathUtil enginePathUtil) {
+            EnginePathUtil enginePathUtil) {
 
             _Logger = logger;
-            _VersionUsageDb = versionUsageDb;
             _EnginePathUtil = enginePathUtil;
         }
 
@@ -115,12 +112,6 @@ namespace gex.Services.BarApi {
             await done.WriteAsync(new byte[] { 0x00 }, cancel);
 
             _Logger.LogInformation($"game version fetched [version={version}] [engine={engine}] [timer={timer.ElapsedMilliseconds}ms] [exit code={exitCode}]");
-
-            await _VersionUsageDb.Upsert(new GameVersionUsage() {
-                Engine = engine,
-                Version = version,
-                LastUsed = DateTime.UtcNow
-            }, cancel);
 
             return true;
         }

@@ -1,10 +1,11 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Lobby;
+using gex.Common.Services.Lobby;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Lobby.Implementations {
+namespace gex.Common.Services.Lobby.Implementations {
 
     /// <summary>
     ///     an emtpy used when Spring is disabled in secrets.json

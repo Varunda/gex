@@ -1,4 +1,4 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
