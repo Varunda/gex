@@ -319,6 +319,72 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
+        ///     get multiple users by usernames. A max of 50 usernames can be looked up at once.
+        ///     This endpoint performs case-sensitive username matching.
+        /// </summary>
+        /// <param name="usernames">list of usernames to find</param>
+        /// <param name="includeSkill">if <see cref="ApiBarUser.Skill"/> will be populated. defaults to false</param>
+        /// <param name="includePreviousNames">will previous names be searched against as well? defaults to false</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="ApiBarUser"/>s that match any of the usernames
+        /// </response>
+        /// <response code="400">
+        ///     one or more usernames are empty, or no usernames provided
+        /// </response>
+        [HttpPost("batch")]
+        public async Task<ApiResponse<List<ApiBarUser>>> GetUsersByUsernames(
+            [FromBody] List<string> usernames,
+            [FromQuery] bool includeSkill = false,
+            [FromQuery] bool includePreviousNames = false,
+            CancellationToken cancel = default
+        ) {
+
+            if (usernames == null || usernames.Count == 0) {
+                return ApiBadRequest<List<ApiBarUser>>($"usernames list cannot be empty");
+            }
+
+            if (usernames.Count >= 50) {
+                return ApiBadRequest<List<ApiBarUser>>($"usernames list cannot contain more than 50 items");
+            }
+
+            foreach (string username in usernames) {
+                if (string.IsNullOrWhiteSpace(username)) {
+                    return ApiBadRequest<List<ApiBarUser>>($"all usernames must be non-empty, found empty or whitespace-only username");
+                }
+            }
+
+            List<ApiBarUser> apiUsers = await _UserRepository.GetByUsernames(usernames, includePreviousNames, cancel);
+            _Logger.LogInformation($"Found {apiUsers.Count} users matching usernames");
+
+            // Get unique users by UserID (in case there are duplicates from previous name searches)
+            apiUsers = apiUsers
+                .GroupBy(u => u.UserID)
+                .Select(g => g.First())
+                .ToList();
+
+            // Fetch skills if requested
+            if (includeSkill == true && apiUsers.Count > 0) {
+                List<long> userIds = apiUsers.Select(u => u.UserID).ToList();
+                Dictionary<long, List<BarUserSkill>> skillsDict = await _SkillDb.GetByUserIDs(userIds, cancel);
+                
+                // Populate skills for each user
+                foreach (ApiBarUser user in apiUsers) {
+                    user.Skill = skillsDict.GetValueOrDefault(user.UserID) ?? new List<BarUserSkill>();
+                }
+            }
+
+            // Fetch previous names if requested
+            if (includePreviousNames == true && apiUsers.Count > 0) {
+                foreach (ApiBarUser user in apiUsers) {
+                    user.PreviousNames = await _UserRepository.GetUserNames(user.UserID, cancel);
+                }
+            }
+
+            return ApiOk(apiUsers);
+        }
+
+        /// <summary>
         ///     get the start spots of a user on a specific map, either by map name or map filename
         /// </summary>
         /// <param name="userID">ID of the user</param>

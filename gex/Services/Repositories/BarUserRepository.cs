@@ -1,10 +1,12 @@
-﻿using gex.Models.Db;
+﻿using gex.Models.Api;
+using gex.Models.Db;
 using gex.Models.UserStats;
 using gex.Services.Db.UserStats;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -81,6 +83,27 @@ namespace gex.Services.Repositories {
         /// <returns>a list of <see cref="UserSearchResult"/>s</returns>
         public Task<List<UserSearchResult>> SearchByName(string name, bool includePreviousNames, CancellationToken cancel) {
             return _UserDb.SearchByName(name, includePreviousNames, cancel);
+        }
+
+        /// <summary>
+        ///     get users by username matches, and optionally previous names. case-insensitive
+        /// </summary>
+        /// <param name="usernames">list of usernames to find</param>
+        /// <param name="includePreviousNames">will previous names be searched as well</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>a list of <see cref="ApiBarUser"/>s</returns>
+        public async Task<List<ApiBarUser>> GetByUsernames(List<string> usernames, bool includePreviousNames, CancellationToken cancel) {
+            List<BarUser> dbUsers = await _UserDb.GetByUsernames(usernames, includePreviousNames, cancel);
+            
+            // Convert BarUser to ApiBarUser
+            return dbUsers
+                .Select(u => new ApiBarUser {
+                    UserID = u.UserID,
+                    Username = u.Username,
+                    LastUpdated = u.LastUpdated,
+                    CountryCode = u.CountryCode
+                })
+                .ToList();
         }
 
         /// <summary>

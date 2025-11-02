@@ -102,6 +102,68 @@ namespace gex.Services.Db.UserStats {
         }
 
         /// <summary>
+        ///     Search for users by a list of names using LIKE pattern matching, and optionally previous names. Case-insensitive.
+        ///     Uses the ANY operator for efficient searching of multiple patterns.
+        /// </summary>
+        /// <param name="names">List of names to search for (each will be wrapped with % for LIKE matching)</param>
+        /// <param name="includePreviousNames">If true, previous names will be searched as well</param>
+        /// <param name="cancel">Cancellation token</param>
+        /// <returns>A list of <see cref="UserSearchResult"/>s</returns>
+        public async Task<List<UserSearchResult>> SearchByNames(List<string> names, bool includePreviousNames, CancellationToken cancel) {
+            if (names == null || names.Count == 0) {
+                return new List<UserSearchResult>();
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            
+            // Convert names to LIKE patterns
+            string[] searchPatterns = names.Select(n => $"%{n.ToLower()}%").ToArray();
+            
+            return await conn.QueryListAsync<UserSearchResult>(
+                includePreviousNames == true
+                    ? @"SELECT distinct(u.id) ""user_id"", u.username, u.last_updated, p.user_name ""previous_name""
+                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
+                            WHERE lower(u.username) LIKE ANY(@SearchPatterns) OR lower(p.user_name) LIKE ANY(@SearchPatterns)"
+                    : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" 
+                        FROM bar_user 
+                        WHERE lower(username) LIKE ANY(@SearchPatterns)",
+                new { SearchPatterns = searchPatterns },
+                cancellationToken: cancel
+            );
+        }
+
+        /// <summary>
+        ///     Get users by username matches, and optionally previous names. Case-insensitive.
+        ///     Uses equality matching instead of LIKE pattern matching.
+        /// </summary>
+        /// <param name="usernames">List of usernames to find</param>
+        /// <param name="includePreviousNames">If true, previous names will be searched as well</param>
+        /// <param name="cancel">Cancellation token</param>
+        /// <returns>A list of <see cref="BarUser"/>s</returns>
+        public async Task<List<BarUser>> GetByUsernames(List<string> usernames, bool includePreviousNames, CancellationToken cancel) {
+            if (usernames == null || usernames.Count == 0) {
+                return new List<BarUser>();
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            
+            // Convert usernames to lowercase for case-insensitive matching
+            string[] lowercaseUsernames = usernames.Select(n => n.ToLower()).ToArray();
+
+            return await conn.QueryListAsync<BarUser>(
+                includePreviousNames == true
+                    ? @"SELECT DISTINCT u.id, u.username, u.last_updated, u.country_code
+                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
+                            WHERE lower(u.username) = ANY(@Usernames) OR lower(p.user_name) = ANY(@Usernames)"
+                    : @"SELECT id, username, last_updated, country_code 
+                        FROM bar_user 
+                        WHERE lower(username) = ANY(@Usernames)",
+                new { Usernames = lowercaseUsernames },
+                cancellationToken: cancel
+            );
+        }
+
+        /// <summary>
         ///     get all names that a user has used
         /// </summary>
         /// <param name="userID">ID of the user to get the previous names of</param>
