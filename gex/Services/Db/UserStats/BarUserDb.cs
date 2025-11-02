@@ -103,8 +103,7 @@ namespace gex.Services.Db.UserStats {
 
 
         /// <summary>
-        ///     Get users by username matches, and optionally previous names. Case-insensitive.
-        ///     Uses equality matching instead of LIKE pattern matching.
+        ///     Get users by username matches, and optionally previous names. Case-sensitive.
         /// </summary>
         /// <param name="usernames">List of usernames to find</param>
         /// <param name="includePreviousNames">If true, previous names will be searched as well</param>
@@ -116,9 +115,6 @@ namespace gex.Services.Db.UserStats {
             }
 
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            
-            // Convert usernames to lowercase for case-insensitive matching
-            string[] lowercaseUsernames = usernames.Select(n => n.ToLower()).ToArray();
 
             return await conn.QueryListAsync<BarUser>(
                 includePreviousNames == true
@@ -127,8 +123,8 @@ namespace gex.Services.Db.UserStats {
                             WHERE lower(u.username) = ANY(@Usernames) OR lower(p.user_name) = ANY(@Usernames)"
                     : @"SELECT id, username, last_updated, country_code 
                         FROM bar_user 
-                        WHERE lower(username) = ANY(@Usernames)",
-                new { Usernames = lowercaseUsernames },
+                        WHERE username = ANY(@Usernames)",
+                new { Usernames = usernames },
                 cancellationToken: cancel
             );
         }
