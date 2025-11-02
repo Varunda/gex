@@ -101,36 +101,6 @@ namespace gex.Services.Db.UserStats {
             );
         }
 
-        /// <summary>
-        ///     Search for users by a list of names using LIKE pattern matching, and optionally previous names. Case-insensitive.
-        ///     Uses the ANY operator for efficient searching of multiple patterns.
-        /// </summary>
-        /// <param name="names">List of names to search for (each will be wrapped with % for LIKE matching)</param>
-        /// <param name="includePreviousNames">If true, previous names will be searched as well</param>
-        /// <param name="cancel">Cancellation token</param>
-        /// <returns>A list of <see cref="UserSearchResult"/>s</returns>
-        public async Task<List<UserSearchResult>> SearchByNames(List<string> names, bool includePreviousNames, CancellationToken cancel) {
-            if (names == null || names.Count == 0) {
-                return new List<UserSearchResult>();
-            }
-
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            
-            // Convert names to LIKE patterns
-            string[] searchPatterns = names.Select(n => $"%{n.ToLower()}%").ToArray();
-            
-            return await conn.QueryListAsync<UserSearchResult>(
-                includePreviousNames == true
-                    ? @"SELECT distinct(u.id) ""user_id"", u.username, u.last_updated, p.user_name ""previous_name""
-                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
-                            WHERE lower(u.username) LIKE ANY(@SearchPatterns) OR lower(p.user_name) LIKE ANY(@SearchPatterns)"
-                    : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" 
-                        FROM bar_user 
-                        WHERE lower(username) LIKE ANY(@SearchPatterns)",
-                new { SearchPatterns = searchPatterns },
-                cancellationToken: cancel
-            );
-        }
 
         /// <summary>
         ///     Get users by username matches, and optionally previous names. Case-insensitive.
