@@ -32,12 +32,12 @@
 
                         <div>
                             <img src="/img/armada.png" width="24" height="24" title="Armada"/>
-                            {{ map.armadaPlays }} pick{{ map.armadaPlays == 1 ? '' : 's' }}, {{ map.armadaWins }} win{{ map.armadaWins == 1 ? '' : 's' }} ({{ map.armadaWins / Math.max(map.armadaPlays) * 100 | locale(0) }}%)
+                            {{ map.armadaPlays }} pick{{ map.armadaPlays == 1 ? '' : 's' }}, {{ map.armadaWins }} win{{ map.armadaWins == 1 ? '' : 's' }} ({{ map.armadaWins / Math.max(1, map.armadaPlays) * 100 | locale(0) }}%)
                         </div>
 
                         <div>
                             <img src="/img/cortex.png" width="24" height="24" title="Cortex"/>
-                            {{ map.cortexPlays }} pick{{ map.cortexPlays == 1 ? '' : 's' }}, {{ map.cortexWins }} win{{ map.cortexWins == 1 ? '' : 's' }} ({{ map.cortexWins / Math.max(map.cortexPlays) * 100 | locale(0) }}%)
+                            {{ map.cortexPlays }} pick{{ map.cortexPlays == 1 ? '' : 's' }}, {{ map.cortexWins }} win{{ map.cortexWins == 1 ? '' : 's' }} ({{ map.cortexWins / Math.max(1, map.cortexPlays) * 100 | locale(0) }}%)
                         </div>
                     </div>
                 </div>
