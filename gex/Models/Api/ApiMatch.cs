@@ -18,6 +18,7 @@ namespace gex.Models.Api {
             Engine = match.Engine;
             GameVersion = match.GameVersion;
             StartTime = match.StartTime;
+            StartOffset = match.StartOffset;
             Map = match.Map;
             MapName = match.MapName;
             FileName = match.FileName;
@@ -37,6 +38,8 @@ namespace gex.Models.Api {
             UploadedByID = match.UploadedByID;
             TeamDeaths = match.TeamDeaths;
             WrongSkillValues = match.WrongSkillValues;
+            Commands = match.Commands;
+            MapDraws = match.MapDraws;
         }
 
         public string ID { get; set; } = "";
@@ -46,6 +49,8 @@ namespace gex.Models.Api {
         public string GameVersion { get; set; } = "";
 
         public DateTime StartTime { get; set; }
+
+        public float StartOffset { get; set; }
 
         public string Map { get; set; } = "";
 
@@ -80,6 +85,10 @@ namespace gex.Models.Api {
         public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
 
         public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
+
+        public List<BarMatchMapDraw> MapDraws { get; set; } = [];
+
+        public List<BarCommand> Commands { get; set; } = [];
 
         public BarMap? MapData { get; set; }
 

@@ -60,7 +60,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                     continue;
                 }
 
-                Result<BarMatch, string> parsed = await _DemofileParser.Parse(match.FileName, demofile.Value, cancel);
+                Result<BarMatch, string> parsed = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions(), cancel);
                 if (parsed.IsOk == false) {
                     _Logger.LogError($"failed to parse demofile [gameID={match.ID}] [error={parsed.Error}]");
                     continue;

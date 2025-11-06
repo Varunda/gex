@@ -39,6 +39,7 @@ export default class MergedStats {
     public buildPowerAvailable: number = 0;
     public buildPowerUsed: number = 0;
     public buildPowerPercent: number = 0;
+    public actions: number = 0;
 
     public static compute(match: BarMatch, output: GameOutput): MergedStats[] {
 
@@ -88,6 +89,7 @@ export default class MergedStats {
                 energyCurrent: extra?.energyCurrent ?? 0,
                 buildPowerAvailable: extra?.buildPowerAvailable ?? 0,
                 buildPowerUsed: extra?.buildPowerUsed ?? 0,
+                actions: extra?.actions ?? 0,
                 buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100
             };
         });

@@ -64,6 +64,7 @@
         to: string;
         color: string;
         timestamp: string;
+        gametime: number;
         message: string;
         playerColor: string; 
     }
@@ -128,7 +129,7 @@
         computed: {
 
             messages: function(): FullMessage[] {
-                return this.match.chatMessages.map((iter, index) => {
+                const messages: FullMessage[] = this.match.chatMessages.map((iter, index) => {
                     const allyTeamID = this.getPlayerAllyTeamId(iter.fromId);
 
                     return {
@@ -138,8 +139,26 @@
                         color: this.getIdColor(iter.toId, allyTeamID),
                         playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(iter.gameTimestamp),
+                        gametime: iter.gameTimestamp,
                         message: iter.message
                     }
+                });
+
+                if (this.match.startOffset > 0) {
+                    messages.push({
+                        id: messages[messages.length - 1].id + 1,
+                        from: "HOST",
+                        to: "Everyone",
+                        color: this.getIdColor(254),
+                        playerColor: this.getPlayerColor(255),
+                        timestamp: TimeUtils.duration(this.match.startOffset),
+                        gametime: this.match.startOffset,
+                        message: "Game started"
+                    });
+                }
+
+                return messages.sort((a, b) => {
+                    return a.gametime - b.gametime;
                 });
             }
 

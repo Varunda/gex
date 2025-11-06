@@ -51,5 +51,9 @@ namespace gex.Models.Event {
         [ColumnMapping("energy_current")]
         public double EnergyCurrent { get; set; }
 
+        [JsonActionLogPropertyName("actions")]
+        [ColumnMapping("actions")]
+        public int Actions { get; set; }
+
     }
 }

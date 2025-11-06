@@ -19,11 +19,11 @@ namespace gex.Services.Db.Event {
                 INSERT INTO game_event_extra_stats (
                     game_id, frame, team_id,
                     total_value, army_value, defense_value, util_value, eco_value, other_value,
-                    build_power_available, build_power_used, metal_current, energy_current
+                    build_power_available, build_power_used, metal_current, energy_current, actions
                 ) VALUES (
                     @GameID, @Frame, @TeamID,
                     @TotalValue, @ArmyValue, @DefenseValue, @UtilValue, @EcoValue, @OtherValue,
-                    @BuildPowerAvailable, @BuildPowerUsed, @MetalCurrent, @EnergyCurrent
+                    @BuildPowerAvailable, @BuildPowerUsed, @MetalCurrent, @EnergyCurrent, @Actions
                 );
             ";
 
@@ -42,6 +42,7 @@ namespace gex.Services.Db.Event {
 
             cmd.AddParameter("BuildPowerAvailable", ev.BuildPowerAvailable);
             cmd.AddParameter("BuildPowerUsed", ev.BuildPowerUsed);
+            cmd.AddParameter("Actions", ev.Actions);
         }
 
     }

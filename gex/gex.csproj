@@ -71,7 +71,6 @@
 
   <ItemGroup>
     <Folder Include="build\" />
-    <Folder Include="Models\Familiar\" />
     <Folder Include="wwwroot\dist\" />
     <Folder Include="wwwroot\js\" />
     <Folder Include="wwwroot\lib\" />

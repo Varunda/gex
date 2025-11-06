@@ -215,6 +215,7 @@
 
         ["damageDealt", "Damage dealt"],
         ["damageReceived", "Damage receieved"],
+        ["actions", "Actions"],
 
         ["totalValue", "Total value"],
         ["defenseValue", "Defense value"],
@@ -260,6 +261,7 @@
                 ["armyValue", "Army value"],
                 ["unitsProduced", "Units created"],
                 ["unitsKilled", "Units killed"],
+                ["actions", "Actions"],
                 ["damageDealt", "Damage dealt"],
                 ["damageReceived", "Damage receieved"],
             ]

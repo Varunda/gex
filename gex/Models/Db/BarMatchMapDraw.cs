@@ -1,5 +1,10 @@
-﻿namespace gex.Models.Db {
+﻿using System.Text.Json.Serialization;
 
+namespace gex.Models.Db {
+
+    [JsonDerivedType(typeof(BarMatchMapDrawPoint))]
+    [JsonDerivedType(typeof(BarMatchMapDrawLine))]
+    [JsonDerivedType(typeof(BarMatchMapDrawErase))]
     public class BarMatchMapDraw {
 
         public byte PlayerID { get; set; }

@@ -36,9 +36,12 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger);
+            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
 
-            Result<BarMatch, string> output = await parser.Parse("", input, CancellationToken.None);
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
+                IncludeMapDraws = true,
+                IncludeCommands = true,
+            }, CancellationToken.None);
             if (output.IsOk == false) {
                 logger.LogError(output.Error);
             }
@@ -58,9 +61,12 @@ namespace gex.Tests.Services.Repository {
             logger.LogInformation($"cwd: {Environment.CurrentDirectory}");
 
             byte[] comp = await File.ReadAllBytesAsync($"./resources/bomb.gzip");
-            BarDemofileParser parser = new(logger);
+            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
 
-            Result<BarMatch, string> output = await parser.Parse("", comp, CancellationToken.None);
+            Result<BarMatch, string> output = await parser.Parse("", comp, new DemofileParserOptions() {
+                IncludeCommands = true,
+                IncludeMapDraws = true,
+            }, CancellationToken.None);
             Assert.IsTrue(!output.IsOk);
         }
 
@@ -78,9 +84,12 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger);
+            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
 
-            Result<BarMatch, string> output = await parser.Parse("", input, CancellationToken.None);
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
+                IncludeMapDraws = true,
+                IncludeCommands = true,
+            }, CancellationToken.None);
             if (output.IsOk == false) {
                 logger.LogError(output.Error);
             }
@@ -126,9 +135,12 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger);
+            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
 
-            Result<BarMatch, string> output = await parser.Parse("", input, CancellationToken.None);
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
+                IncludeMapDraws = true,
+                IncludeCommands = true,
+            }, CancellationToken.None);
             if (output.IsOk == false) {
                 logger.LogError(output.Error);
             }

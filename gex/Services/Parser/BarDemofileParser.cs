@@ -30,9 +30,13 @@ namespace gex.Services.Parser {
     public class BarDemofileParser {
 
         private readonly ILogger<BarDemofileParser> _Logger;
+        private readonly LuaCommandParser _CommandParser;
 
-        public BarDemofileParser(ILogger<BarDemofileParser> logger) {
+        public BarDemofileParser(ILogger<BarDemofileParser> logger,
+            LuaCommandParser commandParser) {
+
             _Logger = logger;
+            _CommandParser = commandParser;
         }
 
         /// <summary>
@@ -46,7 +50,7 @@ namespace gex.Services.Parser {
         ///     was successfully parsed, or the error value will contain a string indicating what error took place
         ///     during parsing 
         /// </returns>
-        public async Task<Result<BarMatch, string>> Parse(string filename, byte[] demofile, CancellationToken cancel) {
+        public async Task<Result<BarMatch, string>> Parse(string filename, byte[] demofile, DemofileParserOptions options, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             using MemoryStream stream = new(demofile);
             using GZipStream zlib = new(stream, CompressionMode.Decompress);
@@ -76,10 +80,10 @@ namespace gex.Services.Parser {
             byte[] data = output.ToArray();
             _Logger.LogDebug($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
 
-            return ReadBytes(filename, data);
+            return ReadBytes(filename, data, options);
         }
 
-        private Result<BarMatch, string> ReadBytes(string filename, byte[] data) {
+        private Result<BarMatch, string> ReadBytes(string filename, byte[] data, DemofileParserOptions options) {
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
             ByteArrayReader reader = new(data);
@@ -276,6 +280,8 @@ namespace gex.Services.Parser {
             BarEngineVersion matchEngineVersion = new(header.EngineVersion);
             bool hasWrongPacket31CoordSize = (matchEngineVersion >= wrongPacketIdStart) && (matchEngineVersion < wrongPacketIdEnd);
 
+            Dictionary<byte, List<ushort>> selectedUnitIds = [];
+
             int packetCount = 0;
             int frameCount = 0;
             int maxFrame = 0;
@@ -288,8 +294,15 @@ namespace gex.Services.Parser {
                 Span<byte> packetData = reader.Read(packet.Length - 1);
                 packet.Data = packetData.ToArray();
                 ++packetCount;
+                
+                if (packet.PacketType == BarPacketType.START_PLAYING) {
+                    ByteArrayReader pr = new(packet.Data);
 
-                if (packet.PacketType == BarPacketType.CHAT) {
+                    float countdown = pr.ReadFloat32LE();
+                    if (countdown == 0) {
+                        match.StartOffset = packet.GameTime;
+                    }
+                } else if (packet.PacketType == BarPacketType.CHAT) {
                     ByteArrayReader packetReader = new(packet.Data);
 
                     BarMatchChatMessage msg = new();
@@ -308,7 +321,120 @@ namespace gex.Services.Parser {
                     if (packetGameID != header.GameID) {
                         return $"inconsistent gameID found, refusing to process further";
                     }
-                } else if (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
+                } else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
+                    ByteArrayReader pr = new(packet.Data);
+
+                    short size = pr.ReadInt16LE();
+                    byte playerNum = pr.ReadByte();
+                    int commandId = pr.ReadInt32LE(); // a negative command ID is for a unit def ID
+                    int timeout = pr.ReadInt32LE();
+                    byte cmdOpts = pr.ReadByte();
+                    uint paramCount = pr.ReadUInt32LE();
+                    List<float> parms = [];
+                    for (uint i = 0; i < paramCount; ++i) {
+                        parms.Add(pr.ReadFloat32LE());
+                    }
+
+                    Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
+                    if (cmd.IsOk == false) {
+                        _Logger.LogError($"failed to parse command [error={cmd.Error}]");
+                        continue;
+                    }
+
+                    BarCommand command = cmd.Value;
+                    command.UnitIDs = selectedUnitIds.GetValueOrDefault(playerNum) ?? [];
+                    command.FullGameTime = packet.GameTime;
+                    command.PlayerID = playerNum;
+                    match.Commands.Add(command);
+                } else if (packet.PacketType == BarPacketType.SELECT && options.IncludeCommands == true) {
+                    ByteArrayReader pr = new(packet.Data);
+
+                    short size = pr.ReadInt16LE();
+                    byte playerNum = pr.ReadByte();
+
+                    byte[] left = pr.ReadAll();
+                    List<ushort> unitIDs = [];
+                    for (int i = 0; i < left.Length; i += 2) {
+                        ushort unitID = (ushort)((left[i]) | ((ushort)(left[i + 1] << 8)));
+                        unitIDs.Add(unitID);
+                    }
+
+                    selectedUnitIds[playerNum] = unitIDs;
+                } else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
+                    ByteArrayReader pr = new(packet.Data);
+                    short size = pr.ReadInt16LE();
+                    byte playerNum = pr.ReadByte();
+                    byte aiId = pr.ReadByte();
+                    byte aiTeamId = pr.ReadByte();
+                    ushort unitID = pr.ReadUInt16LE();
+                    int commandId = pr.ReadInt32LE();
+                    int timeout = pr.ReadInt32LE();
+                    byte cmdOpts = pr.ReadByte();
+                    uint paramCount = pr.ReadUInt32LE();
+
+                    List<float> parms = [];
+                    for (uint i = 0; i < paramCount; ++i) {
+                        parms.Add(pr.ReadFloat32LE());
+                    }
+
+                    Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
+                    if (cmd.IsOk == false) {
+                        _Logger.LogError($"failed to parse command [error={cmd.Error}]");
+                        continue;
+                    }
+
+                    BarCommand command = cmd.Value;
+                    command.UnitIDs = [unitID];
+                    command.FullGameTime = packet.GameTime;
+                    command.PlayerID = playerNum;
+                    match.Commands.Add(command);
+
+                } else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
+                    ByteArrayReader pr = new(packet.Data);
+
+                    short size = pr.ReadInt16LE();
+                    byte playerNum = pr.ReadByte();
+                    byte aiId = pr.ReadByte();
+                    byte pairwise = pr.ReadByte();
+                    uint refCmdId = pr.ReadUInt32LE();
+                    byte refCmdOpts = pr.ReadByte();
+                    ushort refCmdSize = pr.ReadUInt16LE();
+                    short unitCount = pr.ReadInt16LE();
+
+                    List<ushort> unitIds = [];
+                    for (int i = 0; i < unitCount; ++i) {
+                        unitIds.Add(pr.ReadUInt16LE());
+                    }
+
+                    ushort commandCount = pr.ReadUInt16LE();
+
+                    List<BarCommand> commands = [];
+                    for (int i = 0; i < commandCount; ++i) {
+                        uint id = refCmdId == 0 ? pr.ReadUInt32LE() : refCmdId;
+                        byte optionBitmask = refCmdOpts == 0xFF ? pr.ReadByte() : refCmdOpts;
+                        ushort cmdSize = refCmdSize == 0xFFFF ? pr.ReadUInt16LE() : refCmdSize;
+
+                        List<float> parms = [];
+                        for (int j = 0; j < cmdSize; ++j) {
+                            parms.Add(pr.ReadFloat32LE());
+                        }
+
+                        Result<BarCommand, string> cmd = _CommandParser.Parse((int)id, optionBitmask, new Span<float>([.. parms]));
+                        if (cmd.IsOk == false) {
+                            _Logger.LogError($"failed to parse command [error={cmd.Error}]");
+                            continue;
+                        }
+
+                        BarCommand command = cmd.Value;
+                        command.PlayerID = playerNum;
+                        if (i < unitIds.Count) {
+                            command.UnitIDs = [unitIds[i]];
+                        }
+                        command.FullGameTime = packet.GameTime;
+
+                        match.Commands.Add(command);
+                    }
+                } else if (options.IncludeMapDraws == true && packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte size = packetReader.ReadByte();
                     byte playerID = packetReader.ReadByte();
@@ -356,7 +482,9 @@ namespace gex.Services.Parser {
                     } else {
                         _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
                     }
-                } else if (packet.PacketType == BarPacketType.MAP_DRAW || (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize)) {
+                } else if (options.IncludeMapDraws == true 
+                    && packet.PacketType == BarPacketType.MAP_DRAW || (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize)) {
+
                     ByteArrayReader packetReader = new(packet.Data);
                     byte size = packetReader.ReadByte();
                     byte playerID = packetReader.ReadByte();
@@ -543,7 +671,7 @@ namespace gex.Services.Parser {
                         match.TeamDeaths.Add(death);
                     }
                 } else if (packet.PacketType == BarPacketType.QUIT) {
-                    _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}]");
+                    _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
                     break;
                 }
             }
@@ -653,4 +781,13 @@ namespace gex.Services.Parser {
         }
 
     }
+
+    public class DemofileParserOptions {
+
+        public bool IncludeCommands { get; set; } = false;
+
+        public bool IncludeMapDraws { get; set; } = false;
+
+    }
+
 }

@@ -133,7 +133,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogDebug($"opening game replay [gameID={entry.GameID}] [path={replayPath}]");
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
 
-                Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, cancel);
+                Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, new DemofileParserOptions(), cancel);
                 long parseReplayMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 _Logger.LogDebug($"parsed replay file into match [ID={entry.GameID}]");

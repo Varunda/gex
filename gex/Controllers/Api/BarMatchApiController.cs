@@ -8,12 +8,15 @@ using gex.Services;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Db.Patches;
+using gex.Services.Parser;
 using gex.Services.Repositories;
 using gex.Services.Storage;
+using gex.Services.Util;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +42,9 @@ namespace gex.Controllers.Api {
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly AppAccountDbStore _AccountDb;
         private readonly GameOutputStorage _GameOutputStorage;
+        private readonly BarDemofileParser _DemofileParser;
+        private readonly DemofileStorage _DemofileStorage;
+        private readonly ApmCalculatorUtil _ApmCalculator;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -47,7 +53,8 @@ namespace gex.Controllers.Api {
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
             AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
             BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
-            GameOutputStorage gameOutputStorage) {
+            GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
+            DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -63,6 +70,9 @@ namespace gex.Controllers.Api {
             _ProcessingPriorityDb = processingPriorityDb;
             _CurrentUser = currentUser;
             _GameOutputStorage = gameOutputStorage;
+            _DemofileParser = demofileParser;
+            _DemofileStorage = demofileStorage;
+            _ApmCalculator = apmCalculator;
         }
 
         /// <summary>
@@ -75,6 +85,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
         /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
         /// <param name="includeTeamDeaths">will <see cref="BarMatch.TeamDeaths"/> be populated? defaults to false</param>
+        /// <param name="includeMapDraws">will <see cref="BarMatch.MapDraws"/> be populated? defaults to false</param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
@@ -83,7 +94,8 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includePlayers = false,
             [FromQuery] bool includeChat = false,
             [FromQuery] bool includeSpectators = false,
-            [FromQuery] bool includeTeamDeaths = false
+            [FromQuery] bool includeTeamDeaths = false,
+            [FromQuery] bool includeMapDraws = false
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
@@ -108,6 +120,25 @@ namespace gex.Controllers.Api {
 
             if (includeTeamDeaths == true) {
                 match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
+            }
+
+            if (includeMapDraws == true) {
+                Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
+                if (demofile.IsOk == false) {
+                    _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
+                    return ApiInternalError<ApiMatch>($"failed to load demofile from storage");
+                }
+
+                Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions() {
+                    IncludeCommands = false,
+                    IncludeMapDraws = includeMapDraws,
+                }, cancel);
+                if (fromDemofile.IsOk == false) {
+                    _Logger.LogError($"failed to parse demofile [error={demofile.Error}] [matchID={match.ID}]");
+                    return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
+                }
+
+                match.MapDraws = fromDemofile.Value.MapDraws;
             }
 
             ApiMatch ret = new(match);

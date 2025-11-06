@@ -22,6 +22,8 @@ namespace gex.Models.Db {
 
         public string FileName { get; set; } = "";
 
+        public float StartOffset { get; set; }
+
         public long DurationMs { get; set; }
 
         /// <summary>
@@ -57,6 +59,8 @@ namespace gex.Models.Db {
         public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
 
         public List<BarMatchMapDraw> MapDraws { get; set; } = [];
+
+        public List<BarCommand> Commands { get; set; } = [];
 
         public int PlayerCount { get; set; }
 

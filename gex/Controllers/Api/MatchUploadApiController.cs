@@ -139,7 +139,7 @@ namespace gex.Controllers.Api {
             long uploadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
             processing.ReplayDownloadedMs = (int)uploadMs;
 
-            Result<BarMatch, string> parsed = await _DemofileParser.Parse(originalName, data, cancel);
+            Result<BarMatch, string> parsed = await _DemofileParser.Parse(originalName, data, new DemofileParserOptions(), cancel);
             if (parsed.IsOk == false) {
                 return ApiBadRequest<BarMatch>($"failed to parse replay file: {parsed.Error}");
             }
@@ -229,6 +229,13 @@ namespace gex.Controllers.Api {
             return ApiOk(match);
         }
 
+        /// <summary>
+        ///     upload method for remote processing. upload contains 4 files,
+        ///     the demofile, actions.json, stdout and stderr. only usable via JWT auth and if the user claims
+        ///     contains a familiar name claim
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [HttpPost("upload-familiar")]
         [RequestTimeout(1000 * 60)] // allow 60 secs to upload
         [DisableFormValueModelBinding]
@@ -320,7 +327,7 @@ namespace gex.Controllers.Api {
             long uploadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
             processing.ReplayDownloadedMs = (int)uploadMs;
 
-            Result<BarMatch, string> parsed = await _DemofileParser.Parse("demofile.sdfz", demofileBytes, cancel);
+            Result<BarMatch, string> parsed = await _DemofileParser.Parse("demofile.sdfz", demofileBytes, new DemofileParserOptions(), cancel);
             if (parsed.IsOk == false) {
                 return ApiBadRequest<BarMatch>($"failed to parse replay file: {parsed.Error}");
             }

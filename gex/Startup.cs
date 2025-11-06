@@ -331,6 +331,7 @@ namespace gex {
 
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarMatchTitleUtilService>();
+            services.AddSingleton<ApmCalculatorUtil>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist

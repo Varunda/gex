@@ -19,6 +19,23 @@ local CMD_RESTORE = 110
 local CMD_RESURRECT = 125
 local CMD_CAPTURE = 130
 
+-- apm calculations are copied from
+-- copied from https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luarules/gadgets/game_apm_broadcast.lua
+local teamAddedActionFrame = {}
+local ignoreUnits = {}
+local spGetUnitIsBeingBuilt = Spring.GetUnitIsBeingBuilt
+
+local totalTeamActions = {}
+for _, teamID in ipairs(Spring.GetTeamList()) do
+	totalTeamActions[teamID] = 0
+end
+local ignoreUnitDefs = {}
+for uDefID, uDef in pairs(UnitDefs) do
+	if uDef.customParams.drone then
+		ignoreUnitDefs[uDefID] = true
+	end
+end
+
 function writeJson(action, data, includeFrame)
     file = io.open("actions.json", "a")
     io.output(file)
@@ -103,7 +120,26 @@ local UNIT_TYPE_DEF = {}
 local UNIT_TYPE_UTIL = {}
 local UNIT_TYPE_ECO = {}
 
+local lastFrameUpdate = 0
+
 local function SendExtraStats()
+
+    local teamApms = {}
+	for teamID, totalActions in pairs(totalTeamActions) do
+		if (teamID ~= Spring.GetGaiaTeamID()) then
+			if (frame - lastFrameUpdate == 0) then
+				teamApms[teamID] = 0
+			else
+				Spring.Echo("[Gex] team", teamID, "had", totalActions, "between frames", frame, "and", lastFrameUpdate)
+				local apm = totalActions
+				teamApms[teamID] = apm
+			end
+			--totalTeamActions[teamID] = 0
+        end
+	end
+
+    lastFrameUpdate = frame
+
 	local teamList = Spring.GetTeamList()
 	for _,teamID in ipairs(teamList) do
 		if (teamID ~= Spring.GetGaiaTeamID()) then
@@ -161,7 +197,8 @@ local function SendExtraStats()
                 { "ecoValue", ecoValue },
                 { "otherValue", otherValue },
 				{ "buildPowerAvailable", total_bp },
-				{ "buildPowerUsed", used_bp }
+				{ "buildPowerUsed", used_bp },
+                { "actions", teamApms[teamID] or 0 }
 			})
 		end
 	end
@@ -267,6 +304,7 @@ function widget:GameFrame(n)
         end
     end
 
+	teamAddedActionFrame = {}
     -- every 15 seconds
     if (frame % 450 == 0) then
         SendExtraStats()
@@ -281,6 +319,12 @@ function widget:GameFrame(n)
     if (frame % 600 == 0) then
         Spring.Echo("[Gex] on frame " .. frame)
     end
+
+	for unitID, f in pairs(ignoreUnits) do
+		if f == frame then
+			ignoreUnits[unitID] = nil
+		end
+	end
 end
 
 function widget:TeamDied(teamID)
@@ -373,6 +417,7 @@ function widget:GameOver(winningAllyTeams)
 end
 
 function widget:UnitCreated(unitID, unitDefID, teamID)
+	ignoreUnits[unitID] = frame + 1
 
     if (UNIT_DEF_IS_COMMANDER[unitDefID] == true) then
         Spring.Echo("commander unit created", unitID, "defID", unitDefID)
@@ -669,6 +714,18 @@ function widget:UnitTaken(unitID, unitDefID, oldTeamID, teamID)
         { "unitY", y },
         { "unitZ", z },
     })
+end
+
+-- be aware that these arent exclusively user actioned commands
+function widget:UnitCommand(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions, cmdTag)
+	-- limit to 1 action per gameframe
+	if not teamAddedActionFrame[teamID] and totalTeamActions[teamID] and not ignoreUnitDefs[unitID] then
+		if not ignoreUnits[unitID] and not spGetUnitIsBeingBuilt(unitID) then	-- believe it or not but unitcreated can come after AllowCommand (with nocost at least)
+			totalTeamActions[teamID] = totalTeamActions[teamID] + 1
+			teamAddedActionFrame[teamID] = true
+		end
+	end
+	ignoreUnits[unitID] = frame + 7	-- dont count severe cmd spam
 end
 
 function widget:Initialize()

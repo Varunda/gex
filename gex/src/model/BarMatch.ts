@@ -1,4 +1,5 @@
 import { AppAccount } from "./account/AppAccount";
+import { ApmStats } from "./ApmStats";
 import { BarMap } from "./BarMap";
 import { BarMatchAllyTeam } from "./BarMatchAllyTeam";
 import { BarMatchChatMessage } from "./BarMatchChatMessage";
@@ -13,6 +14,7 @@ export class BarMatch {
     public engine: string = "";
     public gameVersion: string = "";
     public startTime: Date = new Date();
+    public startOffset: number = 0;
     public endTime: Date = new Date();
     public map: string = "";
     public mapName: string = "";
@@ -43,6 +45,7 @@ export class BarMatch {
         return {
             ...elem,
             startTime: new Date(elem.startTime),
+            startOffset: elem.startOffset,
             endTime: new Date((new Date(elem.startTime)).getTime() + elem.durationMs),
 
             hostSettings: elem.hostSettings,

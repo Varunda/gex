@@ -9,6 +9,7 @@ namespace gex.Services.Parser {
             services.AddSingleton<BarMapParser>();
             services.AddSingleton<BarUnitParser>();
             services.AddSingleton<BarWeaponDefinitionParser>();
+            services.AddSingleton<LuaCommandParser>();
         }
 
     }

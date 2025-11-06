@@ -222,6 +222,12 @@
                 <div v-if="output.state == 'loaded'">
                     <match-map :match="match.data" :output="output.data" :screen-width="containerWidth" class="my-3"></match-map>
 
+                    <match-apm v-if="showApm" :match="match.data" :output="output.data" class="my-3"></match-apm>
+
+                    <div v-else class="text-muted border-top mt-3 pt-3">
+                        APM is not available, as this replay was simulated without collecting this data
+                    </div>
+
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
                         <div class="my-4">
@@ -371,6 +377,7 @@
     import MatchActionLog from "./components/MatchActionLog.vue";
     import MatchTweaks from "./components/MatchTweaks.vue";
     import MatchUnitValueGraph from "./components/MatchUnitValueGraph.vue";
+    import MatchApm from "./components/MatchApm.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -818,6 +825,11 @@
                     && this.replay.status == null;
             },
 
+            showApm: function(): boolean {
+                return this.output.state == "loaded"
+                    && this.output.data.extraStats.find(iter => iter.actions > 0) != undefined;
+            },
+
             isLoggedIn: function(): boolean {
                 return AccountUtil.isLoggedIn();
             },
@@ -928,7 +940,7 @@
 
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
-            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction,
+            MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction, MatchApm,
             MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph,
             ProcessingStep, Collapsible, Busy
         }

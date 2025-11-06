@@ -40,11 +40,11 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match (
-                    id, start_time, map, duration_ms, duration_frame_count,
+                    id, start_time, start_offset, map, duration_ms, duration_frame_count,
 					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
-                    @ID, @StartTime, @Map, @DurationMs, @DurationFrameCount,
+                    @ID, @StartTime, @StartOffset, @Map, @DurationMs, @DurationFrameCount,
 					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy, @WrongSkillValues,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
@@ -52,6 +52,7 @@ namespace gex.Services.Db.Match {
 
             cmd.AddParameter("ID", match.ID);
             cmd.AddParameter("StartTime", match.StartTime);
+            cmd.AddParameter("StartOffset", match.StartOffset);
             cmd.AddParameter("Map", match.Map);
             cmd.AddParameter("DurationMs", match.DurationMs);
             cmd.AddParameter("DurationFrameCount", match.DurationFrameCount);
@@ -89,6 +90,27 @@ namespace gex.Services.Db.Match {
             ", cancel);
 
             cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
+            cmd.AddParameter("ID", match.ID);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     update just the <see cref="BarMatch.StartOffset"/> of a <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to update. uses <see cref="BarMatch.ID"/> and <see cref="BarMatch.WrongSkillValues"/></param>
+        /// <param name="cancel">cancellation token</param>
+        public async Task UpdateStartOffset(BarMatch match, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET start_offset = @StartOffset
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("StartOffset", match.StartOffset);
             cmd.AddParameter("ID", match.ID);
             await cmd.PrepareAsync(cancel);
 

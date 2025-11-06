@@ -84,6 +84,12 @@ namespace gex.Code {
             return value;
         }
 
+        public ushort ReadUInt16LE() {
+            ushort value = BinaryPrimitives.ReadUInt16LittleEndian(_Data.AsSpan(_Index, 2));
+            _Index += 2;
+            return value;
+        }
+
         public int ReadInt32BE() {
             int value = BinaryPrimitives.ReadInt32BigEndian(_Data.AsSpan(_Index, 4));
             _Index += 4;
