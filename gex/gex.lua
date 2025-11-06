@@ -127,14 +127,7 @@ local function SendExtraStats()
     local teamApms = {}
 	for teamID, totalActions in pairs(totalTeamActions) do
 		if (teamID ~= Spring.GetGaiaTeamID()) then
-			if (frame - lastFrameUpdate == 0) then
-				teamApms[teamID] = 0
-			else
-				Spring.Echo("[Gex] team", teamID, "had", totalActions, "between frames", frame, "and", lastFrameUpdate)
-				local apm = totalActions
-				teamApms[teamID] = apm
-			end
-			--totalTeamActions[teamID] = 0
+            teamApms[teamID] = totalActions
         end
 	end
 
