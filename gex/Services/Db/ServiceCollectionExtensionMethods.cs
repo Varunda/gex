@@ -76,6 +76,7 @@ namespace gex.Services.Db {
             services.AddSingleton<LobbyAlertDb>();
             services.AddSingleton<MatchPoolDb>();
             services.AddSingleton<MatchPoolEntryDb>();
+            services.AddSingleton<BadGameVersionDb>();
         }
 
     }

@@ -92,7 +92,7 @@ namespace gex.Familiar.Services {
         }
 
         private async Task OnHello(string familiarName) {
-            _Logger.LogDebug($"gex said hello [name={familiarName}]");
+            _Logger.LogDebug($"hello gex :3 [name={familiarName}]");
 
             await _UpdateStatus(status => status.Name = familiarName);
         }

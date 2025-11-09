@@ -184,7 +184,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 }
 
                 string[] parts = msg.Split(" ");
-                if (usersBattle.Passworded == true && parts.Length < 2) {
+                if (usersBattle.Passworded == true && parts.Length < 2 && _Options.Value.FamiliarsHaveCasterPerms == false) {
                     await _LobbyClient.Write("SAYPRIVATE", $"{username} that battle is passworded, please give the password, e.g. \"/invite abcd\"", cancel);
                     return;
                 }

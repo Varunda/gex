@@ -23,10 +23,7 @@ namespace gex.Models.Options {
 
         public string Password { get; set; } = "";
 
-        /// <summary>
-        ///     worker drones that record games or process them in real time
-        /// </summary>
-        public List<string> Drones { get; set; } = [];
+        public bool FamiliarsHaveCasterPerms { get; set; } = false;
 
     }
 

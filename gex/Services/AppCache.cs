@@ -37,7 +37,9 @@ namespace gex.Services {
                     lock (TrackedKeys) {
                         TrackedKeys.Remove(key.ToString()!);
                     }
-                    _Metadata.Remove(key.ToString()!);
+                    lock (_Metadata) {
+                        _Metadata.Remove(key.ToString()!);
+                    }
                 }
             }
         };

@@ -19,4 +19,8 @@ export class MapPlayCountApi extends ApiWrapper<MapPlayCountEntry> {
         return MapPlayCountApi.get().readList(`/api/map-play-count/recent/30day`, MapPlayCountEntry.parse);
     }
 
+    public static getRecent(): Promise<Loading<MapPlayCountEntry[]>> {
+        return MapPlayCountApi.get().readList(`/api/map-play-count/recent`, MapPlayCountEntry.parse);
+    }
+
 }

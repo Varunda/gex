@@ -50,5 +50,33 @@ namespace gex.Services.Db {
             ", new { RangeStart = rangeStart }, cancel);
         }
 
+        public async Task<List<BarMapPlayCountEntry>> GetWithDate(DateTime rangeStart, CancellationToken cancel) {
+            if (rangeStart > DateTime.UtcNow) {
+                throw new Exception($"{nameof(rangeStart)} cannot be in the future");
+            }
+
+            if ((DateTime.UtcNow - rangeStart) > TimeSpan.FromDays(31)) {
+                throw new Exception($"{nameof(rangeStart)} can be at most 31 days ago");
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
+                WITH matches AS (
+                    select date_trunc('day', start_time) ""timestamp"", gamemode, map, count(*) from bar_match 
+                    WHERE start_time >= @RangeStart
+                    GROUP BY 1, gamemode, map
+                )
+                (select timestamp, gamemode, map, count from matches WHERE gamemode = 1)
+                UNION
+                (select timestamp, gamemode, map, count from matches WHERE gamemode = 2)
+                UNION
+                (select timestamp, gamemode, map, count from matches WHERE gamemode = 3)
+                UNION
+                (select timestamp, gamemode, map, count from matches WHERE gamemode = 4)
+                UNION
+                (select timestamp, gamemode, map, count from matches WHERE gamemode = 5)
+            ", new { RangeStart = rangeStart }, cancel);
+        }
+
     }
 }

@@ -37,6 +37,10 @@ namespace gex.Services.Repositories {
             return await Get("30day", DateTime.UtcNow - TimeSpan.FromDays(30), cancel);
         }
 
+        public Task<List<BarMapPlayCountEntry>> GetWithDate(CancellationToken cancel) {
+            return _Db.GetWithDate(DateTime.UtcNow - TimeSpan.FromDays(30), cancel);
+        }
+
         private async Task<List<BarMapPlayCountEntry>> Get(string interval, DateTime rangeStart, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, interval);
             if (_Cache.TryGetValue(cacheKey, out List<BarMapPlayCountEntry>? entries) == false || entries == null) {

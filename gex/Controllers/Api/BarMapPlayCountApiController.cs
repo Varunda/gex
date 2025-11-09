@@ -34,7 +34,6 @@ namespace gex.Controllers.Api {
         [HttpGet("recent/daily")]
         public async Task<ApiResponse<List<BarMapPlayCountEntry>>> GetDaily(CancellationToken cancel = default) {
             return ApiOk(await _Repository.GetDaily(cancel));
-
         }
 
         /// <summary>
@@ -61,6 +60,11 @@ namespace gex.Controllers.Api {
         [HttpGet("recent/30day")]
         public async Task<ApiResponse<List<BarMapPlayCountEntry>>> Get30Days(CancellationToken cancel = default) {
             return ApiOk(await _Repository.Get30Day(cancel));
+        }
+
+        [HttpGet("recent")]
+        public async Task<ApiResponse<List<BarMapPlayCountEntry>>> GetWithDate(CancellationToken cancel = default) {
+            return ApiOk(await _Repository.GetWithDate(cancel));
         }
 
     }

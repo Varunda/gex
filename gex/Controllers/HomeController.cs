@@ -353,5 +353,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult RecentMaps() {
+            return View();
+        }
+
     }
 }
