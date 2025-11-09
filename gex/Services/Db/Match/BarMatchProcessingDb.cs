@@ -147,6 +147,7 @@ namespace gex.Services.Db.Match {
                         AND mp.demofile_fetched is not null
                         AND mp.demofile_parsed is not null
                         AND mp.headless_ran IS NULL
+                        AND m.game_version NOT IN (select game_version from bad_game_version)
                     ORDER BY
                         GREATEST(1, priority - COALESCE(c.mod, 0::bigint)) ASC, 
                         m.start_time DESC
