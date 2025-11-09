@@ -397,6 +397,7 @@ namespace gex.Services.BarApi {
                 increasePriority = true;
                 _HeadlessRunStatusRepository.Remove(gameID);
                 _Logger.LogWarning($"hit game processing timeout, increasing priority by 100 [gameID={gameID}] [timeout={processingTimeout}]");
+                bar.Kill();
             }
 
             if (increasePriority == true) {
