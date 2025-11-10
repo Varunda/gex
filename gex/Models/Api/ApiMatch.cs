@@ -102,5 +102,7 @@ namespace gex.Models.Api {
 
         public bool WrongSkillValues { get; set; }
 
+        public bool IsBadGameVersion { get; set; }
+
     }
 }

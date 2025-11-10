@@ -185,6 +185,10 @@
                     </span>
                 </h4>
 
+                <h4 v-if="match.state == 'loaded' && match.data.isBadGameVersion == true" class="alert alert-warning text-center">
+                    This game version is broken, and Gex is unable to locally replay it
+                </h4>
+
                 <div v-if="hasTweaks">
                     <match-tweaks :match="match.data"></match-tweaks>
                 </div>

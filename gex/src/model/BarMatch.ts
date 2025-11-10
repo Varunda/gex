@@ -40,6 +40,7 @@ export class BarMatch {
     public usersPrioritizing: string[] = [];
     public headlessRunStatus: HeadlessRunStatus | null = null;
     public uploadedBy: AppAccount | null = null;
+    public isBadGameVersion: boolean = false;
 
     public static parse(elem: any): BarMatch {
         return {

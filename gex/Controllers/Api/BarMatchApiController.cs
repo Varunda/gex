@@ -5,6 +5,7 @@ using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Services;
+using gex.Services.Db;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Db.Patches;
@@ -45,6 +46,7 @@ namespace gex.Controllers.Api {
         private readonly BarDemofileParser _DemofileParser;
         private readonly DemofileStorage _DemofileStorage;
         private readonly ApmCalculatorUtil _ApmCalculator;
+        private readonly BadGameVersionDb _BadGameVersionDb;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -54,7 +56,8 @@ namespace gex.Controllers.Api {
             AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
             BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
             GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
-            DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator) {
+            DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
+            BadGameVersionDb badGameVersionDb) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -73,6 +76,7 @@ namespace gex.Controllers.Api {
             _DemofileParser = demofileParser;
             _DemofileStorage = demofileStorage;
             _ApmCalculator = apmCalculator;
+            _BadGameVersionDb = badGameVersionDb;
         }
 
         /// <summary>
@@ -144,6 +148,7 @@ namespace gex.Controllers.Api {
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            ret.IsBadGameVersion = (await _BadGameVersionDb.GetByGameVersion(match.GameVersion, cancel) != null);
 
             // if the user looking at the match is not logged in, don't show the users who prioritized the game
             List<ulong> discordIds = await _ProcessingPriorityDb.GetByGameID(gameID, cancel);
