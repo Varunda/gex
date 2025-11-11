@@ -92,7 +92,7 @@
                     <h2 class="wt-header">Play stats</h2>
 
                     <span v-if="stats.data.stats.length == 0">
-                        Gex does not have any games played on this map!
+                        Gex does not have any matches played on this map!
                     </span>
                     
                     <template v-else>
@@ -251,7 +251,7 @@
                 </div>
             </div>
 
-            <h2 class="wt-header">Recent games</h2>
+            <h2 class="wt-header">Recent matches</h2>
             <div v-if="recent.state == 'loaded'">
                 <match-list :matches="recent.data"></match-list>
             </div>

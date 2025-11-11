@@ -10,7 +10,7 @@
                 </div>
 
                 <div>
-                    Uploading a game makes the game public, and anyone can view it. Do not upload games that others want
+                    Uploading a match makes the match public, and anyone can view it. Do not upload matches that others want
                     to keep private
                 </div>
 
@@ -24,7 +24,7 @@
                 </div>
 
                 <div>
-                    Replays are located within the demos file of your game install
+                    Replays are located within the demos file of the game install
                 </div>
 
                 <div class="w-100">

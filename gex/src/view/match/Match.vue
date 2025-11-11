@@ -185,8 +185,8 @@
                     </span>
                 </h4>
 
-                <h4 v-if="match.state == 'loaded' && match.data.isBadGameVersion == true" class="alert alert-warning text-center">
-                    This game version is broken, and Gex is unable to locally replay it
+                <h4 v-if="isBadGameVersion" class="alert alert-danger text-center">
+                    The game version for this match is broken, and Gex is unable to locally replay it. <a href="/faq#bad-game-version">More info</a>
                 </h4>
 
                 <div v-if="hasTweaks">
@@ -195,9 +195,9 @@
 
                 <hr class="border"/>
 
-                <div v-if="output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info">
+                <div v-if="isBadGameVersion == false && output.state == 'loaded' && (!match.data.processing || match.data.processing.actionsParsed == null)" class="text-center alert alert-info">
                     <div class="mb-2">
-                        Request Gex puts more priority on replaying this game. Users can only prioritize one game at a time.
+                        Request Gex puts more priority on replaying this match. Users can only prioritize one match at a time.
                     </div>
 
                     <button @click="prioritizeGame" class="btn btn-primary btn-sm" :disabled="!isLoggedIn || currentUserPriotizing">
@@ -228,7 +228,7 @@
 
                     <match-apm v-if="showApm" :match="match.data" :output="output.data" class="my-3"></match-apm>
 
-                    <div v-else class="text-muted border-top mt-3 pt-3">
+                    <div v-else-if="match.data.processing && match.data.processing.actionsParsed != null" class="text-muted border-top mt-3 pt-3">
                         APM is not available, as this replay was simulated without collecting this data
                     </div>
 
@@ -780,7 +780,7 @@
             forceGameRun: async function(): Promise<void> {
                 const r: Loading<void> = await BarMatchProcessingApi.forceGameRun(this.gameID);
                 if (r.state == "loaded") {
-                    Toaster.add("Game force queued", "Game has been inserted into replay queue", "success");
+                    Toaster.add("Match force queued", "Match has been inserted into replay queue", "success");
                 }
             }
         },
@@ -935,6 +935,10 @@
 
             canForceHeadlessRun: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Match.ForceReplay");
+            },
+
+            isBadGameVersion: function(): boolean {
+                return this.match.state == "loaded" && this.match.data.isBadGameVersion;
             }
         },
 

@@ -105,24 +105,26 @@ namespace gex.Services.Db.Match {
         public async Task<List<BarMatchProcessing>> GetPending(CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-            return (await conn.QueryAsync<BarMatchProcessing>(new CommandDefinition(
+            return await conn.QueryListAsync<BarMatchProcessing>(
                 @"
                     SELECT
                         mp.* 
                     FROM 
                         bar_match_processing mp
+                        LEFT JOIN bar_match m ON mp.game_id = m.id
                     WHERE 
                         mp.demofile_fetched is null
                         OR mp.demofile_parsed is null
                         OR (
 							mp.priority = -1
                             AND mp.headless_ran IS NULL
+                            AND m.game_version NOT IN (select game_version from bad_game_version)
                         )
                         OR (mp.actions_parsed IS NULL AND mp.headless_ran IS NOT NULL)
                     ;
                 ",
                 cancellationToken: cancel
-            ))).ToList();
+            );
         }
 
         public async Task<BarMatchProcessing?> GetLowestPriority(CancellationToken cancel) {

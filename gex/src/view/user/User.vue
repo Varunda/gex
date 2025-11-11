@@ -25,7 +25,7 @@
                 <wbr/>
 
                 <h6 class="d-inline-block mb-0">
-                    Only includes public PvP games
+                    Only includes public PvP matches
                 </h6>
             </div>
 

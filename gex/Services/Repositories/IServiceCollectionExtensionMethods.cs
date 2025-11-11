@@ -27,6 +27,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarUnitRepository>();
             services.AddSingleton<BarI18nRepository>();
             services.AddSingleton<MatchPoolRepository>();
+            services.AddSingleton<BadGameVersionRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

@@ -37,7 +37,7 @@ namespace gex.Services.BarApi {
         private readonly IHubContext<HeadlessReplayHub, IHeadlessReplayHub> _HeadlessReplayHub;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly HeadlessRunnerMetric _Metric;
-        private readonly BadGameVersionDb _BadGameVersionDb;
+        private readonly BadGameVersionRepository _BadGameVersionRepository;
 
         private static int _PortOffset = 0;
 
@@ -79,7 +79,7 @@ namespace gex.Services.BarApi {
             HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
             IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,
             BarMatchProcessingRepository processingRepository, HeadlessRunnerMetric metric,
-            BadGameVersionDb badGameVersionDb) {
+            BadGameVersionRepository badGameVersionRepository) {
 
             _Logger = logger;
             _Options = options;
@@ -93,7 +93,7 @@ namespace gex.Services.BarApi {
             _HeadlessReplayHub = headlessReplayHub;
             _ProcessingRepository = processingRepository;
             _Metric = metric;
-            _BadGameVersionDb = badGameVersionDb;
+            _BadGameVersionRepository = badGameVersionRepository;
         }
 
         public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -105,8 +105,8 @@ namespace gex.Services.BarApi {
                 return $"cannot find game with ID '{gameID}' (missing from repository)";
             }
 
-            BadGameVersion? badVersion = await _BadGameVersionDb.GetByGameVersion(match.GameVersion, cancel);
-            if (badVersion != null) {
+            bool badVersion = await _BadGameVersionRepository.IsBadGameVersion(match.GameVersion, cancel);
+            if (badVersion == true) {
                 return $"game version {match.GameVersion} is broken, refusing to simulate";
             }
 

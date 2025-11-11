@@ -2,8 +2,37 @@
 <meta property="og:description" content="Frequently asked Questions about Gex" />
 
 <style>
+    .header {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        display: flex;
+    }
 
+    .header:hover {
+        background-color: var(--bs-secondary-bg);
+        border-radius: 0.25rem;
+    }
 </style>
+
+<script>
+
+    window.addEventListener("load", () => {
+        const hash = location.hash;
+        if (hash != undefined && hash != null && hash != "") {
+            const id = hash.slice(1);
+            console.log(`Faq> looking for '${id}' to highlight`);
+            const elem = document.getElementById(id);
+            if (elem == null) {
+                console.log(`Faq> missing #${id}`);
+            } else {
+                elem.classList.add("bg-secondary");
+                elem.classList.add("rounded");
+            }
+        }
+    });
+
+    document.title = "Gex / FAQ";
+</script>
 
 <div class="container">
 
@@ -17,21 +46,35 @@
 
     <hr class="border" />
 
-    <h3>What does Gex mean?</h3>
+    <h3 id="what-is-gex" class="header">
+        <span class="flex-grow-1">
+            What does Gex mean?
+        </span>
+        <a href="/faq#what-is-gex" class="ms-auto">
+            <span class="bi bi-link" title="link"></span>
+        </a>
+    </h3>
     <p>Gex stands for Game Extractor, named after a metal extractor (mex)</p>
 
-    <h3>What games are processed?</h3>
+    <h3 id="which-games" class="header">
+        <span class="flex-grow-1">
+            Which matches are processed?
+        </span>
+        <a href="/faq#which-games" class="ms-auto">
+            <span class="bi bi-link" title="link"></span>
+        </a>
+    </h3>
     <p>
-        Gex downloads all public games without an AI in them. Once downloaded, Gex will parse them to get some basic information about each game.
+        Gex downloads all PvP public matches (meaning no matches with bots). Once downloaded, Gex will parse the replays to get some basic information about each match.
     </p>
     <div>
-        Under certain conditions, Gex will also run the replay file locally to generate in-depth stats
+        Under certain conditions, Gex will also simulated the replay file locally to generate in-depth stats
         <ul>
-            <li>If the game has 6 or less players, is not on a metal map, and is shorter than an hour, Gex will process these games</li>
+            <li>If the match has 6 or less players, is not on a metal map, and is shorter than an hour, Gex will process these matches</li>
             <li>
-                If the game has more than 6 players, or is on a metal map, Gex might process the game, based on a priority system.
+                If the match has more than 6 players, or is on a metal map, Gex might process the match, based on a priority system.
                 <br>
-                Gex will prioritize games that are quicker to process. A game will be less likely to be processed if it:
+                Gex will prioritize matches that are quicker to process. A match will be less likely to be processed if it:
                 <ul>
                     <li>Is longer than 30 minutes</li>
                     <li>Is on a metal map</li>
@@ -40,26 +83,55 @@
                     <li>Contains unit tweaks</li>
                     <li>Changes any of the default mod options (increased starting resources, resource multipliers, etc.)</li>
                 </ul>
-                Games that meet these conditions are de-prioritized as these games usually take longer to process, and Gex tries to process quicker games first
+                Matches that meet these conditions are de-prioritized, as these matches usually take longer to process, and Gex tries to process quicker matches first
             </li>
         </ul>
     </div>
     <p>
-        Users that are logged in can request Gex puts more priority on a game. A user can only prioritize one game at a time.
+        Users that are logged in can request Gex puts more priority on a match. A user can only prioritize one match at a time.
     </p>
 
-    <h3 id="gamemode-demofile-ratings">Gamemode and demofile rating inconsistency</h3>
+    <h3 id="gamemode-demofile-ratings" class="header">
+        <span>
+            Gamemode and demofile rating inconsistency
+        </span>
+        <a href="/faq#gamemode-demofile-ratings" class="ms-auto">
+            <span class="bi bi-link" title="link"></span>
+        </a>
+    </h3>
     <p>
-        The demofile can contain incorrect rating information for a game depending on how the game is setup.
+        The demofile can contain incorrect rating information for a match depending on how the lobby is setup.
         <br />
         For example, if a duel is created with a team size of 8 in the lobby,
         the demofile will contain the ratings for the large team gamemode, not the duel gamemode.
     </p>
 
-    <h3>Why are PvE games not processed?</h3>
+    <h3 id="why-no-pve" class="header">
+        <span class="flex-grow-1">
+            Why are PvE matches not processed?
+        </span>
+        <a href="/faq#why-no-pve" class="ms-auto">
+            <span class="bi bi-link" title="link"></span>
+        </a>
+    </h3>
     <p>
-        PvE games take much longer on average to process than PvP games,
+        PvE matches take much longer on average to process than PvP matches,
         and in general is not a particularly competitive format where the data Gex provides is useful (tho it may be interesting for some, sorry!)
+    </p>
+    
+    <h3 id="bad-game-version" class="header">
+        <span class="flex-grow-1">
+            What is a broken game version?
+        </span>
+        <a href="/faq#bad-game-version" class="ms-auto">
+            <span class="bi bi-link" title="link"></span>
+        </a>
+    </h3>
+    <p>
+        Sometimes, patches to BAR prevent Gex from running the replay file locally to generate in-depth stats
+        <br />
+        This most often occurs when a bug specific to spring-headless prevents the replay from starting correctly.
+        Any match with this is marked when viewing it.
     </p>
 
 </div>

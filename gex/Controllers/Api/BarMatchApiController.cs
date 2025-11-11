@@ -46,7 +46,7 @@ namespace gex.Controllers.Api {
         private readonly BarDemofileParser _DemofileParser;
         private readonly DemofileStorage _DemofileStorage;
         private readonly ApmCalculatorUtil _ApmCalculator;
-        private readonly BadGameVersionDb _BadGameVersionDb;
+        private readonly BadGameVersionRepository _BadGameVersionRepository;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -57,7 +57,7 @@ namespace gex.Controllers.Api {
             BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
             GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
-            BadGameVersionDb badGameVersionDb) {
+            BadGameVersionRepository badGameVersionRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -76,7 +76,7 @@ namespace gex.Controllers.Api {
             _DemofileParser = demofileParser;
             _DemofileStorage = demofileStorage;
             _ApmCalculator = apmCalculator;
-            _BadGameVersionDb = badGameVersionDb;
+            _BadGameVersionRepository = badGameVersionRepository;
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace gex.Controllers.Api {
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
-            ret.IsBadGameVersion = (await _BadGameVersionDb.GetByGameVersion(match.GameVersion, cancel) != null);
+            ret.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(match.GameVersion, cancel);
 
             // if the user looking at the match is not logged in, don't show the users who prioritized the game
             List<ulong> discordIds = await _ProcessingPriorityDb.GetByGameID(gameID, cancel);
@@ -239,6 +239,7 @@ namespace gex.Controllers.Api {
 
                 ApiMatch api = new(m);
                 api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+                api.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(m.GameVersion, cancel);
 
                 ret.Add(api);
             }
@@ -383,6 +384,7 @@ namespace gex.Controllers.Api {
 
                 ApiMatch api = new(m);
                 api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+                api.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(m.GameVersion, cancel);
 
                 ret.Add(api);
             }

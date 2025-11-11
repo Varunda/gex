@@ -10,9 +10,9 @@
             </div>
 
             <div>
-                This data only includes public PvP games after Gex started, and only when a game is fully processed. 
+                This data only includes public PvP matches after Gex started, and only when a match is fully processed. 
                 <br/>
-                See what conditions Gex processes a game <a href="/faq">here</a>
+                See what conditions Gex processes a match <a href="/faq">here</a>
             </div>
         </div>
 

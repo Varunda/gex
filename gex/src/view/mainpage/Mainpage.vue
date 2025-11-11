@@ -161,7 +161,7 @@
         <div class="mb-3">
             <h2 class="wt-header bg-light text-dark">
                 Match rating distribution
-                <info-hover text="Excludes players with less than 5 games played, and exludes the default match rating (16.67). Match rating is equal to (skill - uncertainity)"></info-hover>
+                <info-hover text="Excludes players with less than 5 matches played, and exludes the default match rating (16.67). Match rating is equal to (skill - uncertainity)"></info-hover>
             </h2>
 
             <div v-if="skillHistogram.state == 'loading'" class="text-center">

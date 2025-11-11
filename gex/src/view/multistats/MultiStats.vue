@@ -76,7 +76,7 @@
                             <td>
                                 <a :href="'/match/' + match.id" class="font-monospace">{{ match.id }}</a>
                                 <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
-                                    title="This game has not been fully processed!"></span>
+                                    title="This match has not been fully processed!"></span>
                             </td>
                             <td>
                                 {{ match.map }}
@@ -140,7 +140,7 @@
 
             <div v-else-if="stats.load.state == 'loading'">
                 <busy></busy>
-                loading game events...
+                loading match events...
 
                 <div v-if="loading.show" class="mb-2">
                     {{ loading.done }}/{{ loading.total }}
@@ -717,7 +717,7 @@
 
                     <a-col sort-field="gamesUsedCount">
                         <a-header>
-                            <b>Games used</b>
+                            <b>Matches used</b>
                         </a-header>
 
                         <a-body v-slot="entry">
@@ -802,7 +802,7 @@
 
                     <a-col>
                         <a-header>
-                            <b>Games used</b>
+                            <b>Matches used</b>
                         </a-header>
 
                         <a-body v-slot="entry">

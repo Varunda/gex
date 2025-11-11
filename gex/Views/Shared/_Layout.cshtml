@@ -73,8 +73,15 @@
         console.log(`current user ${appCurrentAccountName}/${appCurrentAccountID}`);
     </script>
 
+    <style>
+        .nav-item:hover {
+            background-color: var(--bs-secondary-bg);
+            border-radius: 0.25rem;
+        }
+    </style>
+
     @if (ViewBag.HideHeader != true) {
-        <nav class="navbar navbar-expand-lg bg-body-tertiary pt-0 mb-2 container-fluid-negative px-3">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary py-1 mb-2 container-fluid-negative px-3">
             <div class="navbar-collapse">
                 <a class="navbar-brand py-0" href="/">
                     <img src="/img/logo0.png" style="height: 100%; width: 48px;" title="homepage" />
@@ -91,7 +98,7 @@
                             <a class="nav-link" href="/">Home page</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/recent">Recent games</a>
+                            <a class="nav-link" href="/recent">Recent matches</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/users">User search</a>
@@ -101,6 +108,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/pools">Match pools</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/unit">Units</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/faq">FAQ</a>

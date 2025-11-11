@@ -2,6 +2,7 @@
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +18,14 @@ namespace gex.Services.Db {
 
             _Logger = logger;
             _DbHelper = dbHelper;
+        }
+
+        public async Task<List<BadGameVersion>> GetAll(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BadGameVersion>(
+                "SELECT * FROM bad_game_version",
+                cancel
+            );
         }
 
         public async Task<BadGameVersion?> GetByGameVersion(string gameVersion, CancellationToken cancel) {

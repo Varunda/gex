@@ -125,7 +125,7 @@
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Game link</label>
+                <label>Match link</label>
                 <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
             </div>
 
