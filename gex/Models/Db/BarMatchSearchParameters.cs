@@ -104,6 +104,14 @@ namespace gex.Models.Db {
         /// </summary>
         public List<long> UserIDs { get; set; } = [];
 
+        public double? MinimumOS { get; set; }
+
+        public double? MaximumOS { get; set; }
+
+        public double? MinimumAverageOS { get; set; }
+
+        public double? MaximumAverageOS { get; set; }
+
         public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
 
         public OrderByDirection OrderByDirection { get; set; } = OrderByDirection.ASC;

@@ -30,6 +30,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
             durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
             playerCountMinimum?: number, playerCountMaximum?: number, legionEnabled?: boolean, poolID?: number,
             gameSettings?: SearchKeyValue[], users?: { username: string, userID: number }[],
+            minOS?: number, maxOS?: number, minAvgOS?: number, maxAvgOS?: number,
             processingDownloaded?: boolean, processingParsed?: boolean, processingReplayed?: boolean, processingAction?: boolean
         }
     ) {
@@ -88,6 +89,18 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
             for (const user of options.users) {
                 search.append("userIDs", user.userID.toString());
             }
+        }
+        if (options.minOS != undefined) {
+            search.set("minimumOS", options.minOS.toString());
+        }
+        if (options.maxOS != undefined) {
+            search.set("maximumOS", options.maxOS.toString());
+        }
+        if (options.minAvgOS != undefined) {
+            search.set("minimumAverageOS", options.minAvgOS.toString());
+        }
+        if (options.maxAvgOS != undefined) {
+            search.set("maximumAverageOS", options.maxAvgOS.toString());
         }
         if (options.processingDownloaded != undefined) {
             search.set("processingDownloaded", options.processingDownloaded ? "true" : "false");

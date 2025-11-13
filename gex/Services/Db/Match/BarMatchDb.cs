@@ -223,9 +223,13 @@ namespace gex.Services.Db.Match {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, ""); // command text will be set later
 
             List<string> conditions = [];
+            List<string> withs = [];
 
             bool joinProcessing = false;
             bool joinPool = false;
+            bool minOs = false;
+            bool maxOs = false;
+            bool avgOs = false;
 
             if (parms.EngineVersion != null) {
                 conditions.Add("m.engine = @Engine");
@@ -324,6 +328,12 @@ namespace gex.Services.Db.Match {
                     conditions.Add($"m.game_settings->>@sk{i} = @sv{i}");
                 } else if (svk.Operation == "ne") {
                     conditions.Add($"m.game_settings->>@sk{i} != @sv{i}");
+                } else if (svk.Operation == "st") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE (@sv{i} || '%')");
+                } else if (svk.Operation == "en") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE ('%' || @sv{i})");
+                } else if (svk.Operation == "in") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE ('%' || @sv{i} || '%')");
                 } else {
                     throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'");
                 }
@@ -342,11 +352,45 @@ namespace gex.Services.Db.Match {
                 }
             }
 
+            if (parms.MinimumOS != null) {
+                conditions.Add($"min_os.skill > @MinOS");
+                withs.Add(@"min_os AS (select game_id, min(skill) ""skill"" from bar_match_player group by game_id)");
+                cmd.AddParameter("MinOS", parms.MinimumOS.Value);
+                minOs = true;
+            }
+
+            if (parms.MaximumOS != null) {
+                conditions.Add($"max_os.skill <= @MaxOS");
+                withs.Add(@"max_os AS (select game_id, max(skill) ""skill"" from bar_match_player group by game_id)");
+                cmd.AddParameter("MaxOS", parms.MaximumOS.Value);
+                maxOs = true;
+            }
+
+            if (parms.MinimumAverageOS != null || parms.MaximumAverageOS != null) {
+                // can use the same CTE for avg os!
+                withs.Add(@"avg_os AS (select game_id, avg(skill) ""skill"" from bar_match_player group by game_id)");
+                avgOs = true;
+
+                if (parms.MinimumAverageOS != null) {
+                    conditions.Add($"avg_os.skill > @MinAvgOS");
+                    cmd.AddParameter("MinAvgOS", parms.MinimumAverageOS.Value);
+                }
+
+                if (parms.MaximumAverageOS != null) {
+                    conditions.Add($"avg_os.skill <= @MaxAvgOS");
+                    cmd.AddParameter("MaxAvgOS", parms.MaximumAverageOS.Value);
+                }
+            }
+
             cmd.CommandText = $@"
+                {((withs.Count > 0 ? $"WITH {string.Join(",\n", withs)}" : "" ))}
                 SELECT *
                     FROM bar_match m
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
                         {((joinPool == true) ? "INNER JOIN match_pool_entry mp ON mp.match_id = m.id " : "")}
+                        {((minOs == true) ? "INNER JOIN min_os ON min_os.game_id = m.id" : "")}
+                        {((maxOs == true) ? "INNER JOIN max_os ON max_os.game_id = m.id" : "")}
+                        {((avgOs == true) ? "INNER JOIN avg_os ON avg_os.game_id = m.id" : "")}
                         {joinPlayersStr}
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}

@@ -136,10 +136,33 @@
                     <select v-model="gameSetting.operation" class="form-control">
                         <option value="eq">equals</option>
                         <option value="ne">not equals</option>
+                        <option value="st">starts with</option>
+                        <option value="en">ends with</option>
+                        <option value="in">contains</option>
                     </select>
                     <input v-model="gameSetting.value" class="form-control" placeholder="game setting value"/>
                     <button class="btn btn-success" @click="addGameSetting" :disabled="gameSetting.key == ''" :title="gameSetting.key == '' ? 'cannot add as there is no key' : ''">add</button>
                 </div>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Minimum OS (all players)</label>
+                <input v-model.number="search.minOS" class="form-control" type="number" placeholder="Minimum OS in match (exclusive)">
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Maximum OS (all players)</label>
+                <input v-model.number="search.maxOS" class="form-control" type="number" placeholder="Maximum OS in match (inclusive)">
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Minimum average OS (all players)</label>
+                <input v-model.number="search.minAvgOS" class="form-control" type="number" placeholder="Minimum average OS in match (exclusive)">
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                <label>Maximum average OS (all players)</label>
+                <input v-model.number="search.maxAvgOS" class="form-control" type="number" placeholder="Maximum average OS in match (inclusive)">
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
@@ -164,14 +187,26 @@
                 <div class="">
                     <div v-for="gs in search.gameSettings" :key="gs.key" class="my-3 mx-2 d-flex">
                         <span class="flex-grow-0">
-                            {{ gs.key }}
+                            <code>{{ gs.key }}</code>
                             <span v-if="gs.operation == 'eq'">
                                 =
                             </span>
                             <span v-else-if="gs.operation == 'ne'">
                                 !=
                             </span>
-                            {{ gs.value }}
+                            <span v-else-if="gs.operation == 'st'">
+                                starts with
+                            </span>
+                            <span v-else-if="gs.operation == 'en'">
+                                ends with
+                            </span>
+                            <span v-else-if="gs.operation == 'in'">
+                                contains
+                            </span>
+                            <span v-else>
+                                unknown {{ gs.operation }}
+                            </span>
+                            <code>{{ gs.value }}</code>
                         </span>
 
                         <span class="flex-grow-0 text-danger border px-1 py-0 ms-3 rounded" @click="removeGameSetting(gs.key)">
@@ -344,6 +379,10 @@
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
                     processingAction: null as boolean | null,
+                    minOS: null as number | null,
+                    maxOS: null as number | null,
+                    minAvgOS: null as number | null,
+                    maxAvgOS: null as number | null,
                     orderBy: "start_time" as string,
                     orderByDir: "desc" as string,
                 },
@@ -686,6 +725,18 @@
                 }
                 if (this.search.users.length > 0) {
                     options.users = this.search.users.map(iter => { return { username: iter.username, userID: iter.userID }; });
+                }
+                if (this.search.minOS != null && this.search.minOS != "" && this.search.minOS != undefined) {
+                    options.minOS = this.search.minOS;
+                }
+                if (this.search.maxOS != null && this.search.maxOS != "" && this.search.maxOS != undefined) {
+                    options.maxOS = this.search.maxOS;
+                }
+                if (this.search.minAvgOS != null && this.search.minAvgOS != "" && this.search.minAvgOS != undefined) {
+                    options.minAvgOS = this.search.minAvgOS;
+                }
+                if (this.search.maxAvgOS != null && this.search.maxAvgOS != "" && this.search.maxAvgOS != undefined) {
+                    options.maxAvgOS = this.search.maxAvgOS;
                 }
 
                 return options;

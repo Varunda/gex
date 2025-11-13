@@ -248,36 +248,54 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///		perform a search across all matches
+        ///		perform a search across all matches. if any parameters is null, it is not considered in the search
         /// </summary>
-        /// <param name="engine"></param>
-        /// <param name="gameVersion"></param>
-        /// <param name="map"></param>
-        /// <param name="startTimeAfter"></param>
-        /// <param name="startTimeBefore"></param>
-        /// <param name="durationMinimum"></param>
-        /// <param name="durationMaximum"></param>
-        /// <param name="ranked"></param>
-        /// <param name="gamemode"></param>
-        /// <param name="processingDownloaded"></param>
-        /// <param name="processingParsed"></param>
-        /// <param name="processingReplayed"></param>
-        /// <param name="processingAction"></param>
+        /// <param name="engine">string containing the engine version</param>
+        /// <param name="gameVersion">game version</param>
+        /// <param name="map">map name, not the map filename</param>
+        /// <param name="startTimeAfter">when the match started, exclusive</param>
+        /// <param name="startTimeBefore">when the match started, inclusive</param>
+        /// <param name="durationMinimum">duration in milliseconds, exclusive</param>
+        /// <param name="durationMaximum">duration in milliseconds, inclusive</param>
+        /// <param name="ranked">boolean, is the match ranked or not</param>
+        /// <param name="gamemode">number indicating the gamemode. 1 = duel, 2 = small teams, 3 = large teams, 4 = ffa, 5 = team ffa, 0 = unknown</param>
+        /// <param name="processingDownloaded">if the download has been done on this match</param>
+        /// <param name="processingParsed">if the parsing has been done on this match</param>
+        /// <param name="processingReplayed">if this match has been locally replayed</param>
+        /// <param name="processingAction">if the action log has been parsed and inserted into the DB</param>
         /// <param name="playerCountMinimum">if not null, how many players minimum in the match (not including spectators)</param>
         /// <param name="playerCountMaximum">if not null, how many players maximum in the match (not including spectators)</param>
         /// <param name="legionEnabled">if set to true/false, will limit results to matches that have legion enabled or disabled</param>
         /// <param name="poolID">ID of the <see cref="MatchPool"/> to search for</param>
         /// <param name="gameSettings">
         ///     game settings to limit the results to. the key, value and operation are comma seperated.
+        ///     <br/>
         ///     for example, <code>techsplit,1,eq</code> would return all matches with <see cref="BarMatch.GameSettings"/>.techsplit = '1'.
+        ///     <br/>
+        ///     the valid operations are: eq (equals), ne (not equals), st (starts with), en (ends with), and in (contains)
         /// </param>
         /// <param name="userIDs">list of user IDs to include. leave blank for any user</param>
+        /// <param name="minimumOS">minimum OS of all players in the match, exclusive</param>
+        /// <param name="maximumOS">maximum OS of all players in the match, inclusive</param>
         /// <param name="offset">offset into the results. is a value, not a page number</param>
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
         /// <param name="orderByDir">how to order the results. can only be: asc, desc</param>
         /// <param name="cancel"></param>
-        /// <returns></returns>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="ApiMatch"/>s that meet the conditions set in the parameters.
+        ///     any parameter set to null or excluded (which would default to null) is not used
+        /// </response>
+        /// <reponse code="400">
+        ///     one of the following conditions was not met:
+        ///     <ul>
+        ///         <li><paramref name="offset"/> was less than 0</li>
+        ///         <li><paramref name="limit"/> was not between 1 and 100</li>
+        ///         <li><paramref name="orderBy"/> was an invalid value</li>
+        ///         <li><paramref name="orderByDir"/> was an invalid value</li>
+        ///         <li><paramref name="gameSettings"/> was not formatted correctly</li>
+        ///     </ul>
+        /// </reponse>
         [HttpGet("search")]
         public async Task<ApiResponse<List<ApiMatch>>> Search(
             [FromQuery] string? engine = null,
@@ -299,6 +317,10 @@ namespace gex.Controllers.Api {
             [FromQuery] long? poolID = null,
             [FromQuery] List<string>? gameSettings = null,
             [FromQuery] List<long>? userIDs = null,
+            [FromQuery] double? minimumOS = null,
+            [FromQuery] double? maximumOS = null,
+            [FromQuery] double? minimumAverageOS = null,
+            [FromQuery] double? maximumAverageOS = null,
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
@@ -337,8 +359,8 @@ namespace gex.Controllers.Api {
                     if (parts.Length != 3) {
                         return ApiBadRequest<List<ApiMatch>>($"game setting '{i}' expected to have 3 commas, for key,value,operation");
                     }
-                    if (parts[2] != "eq" && parts[2] != "ne") {
-                        return ApiBadRequest<List<ApiMatch>>($"3rd part of '{i}' must be 'eq' or 'ne', unexpected '{parts[2]}'");
+                    if (parts[2] != "eq" && parts[2] != "ne" && parts[2] != "st" && parts[2] != "en" && parts[2] != "in") {
+                        return ApiBadRequest<List<ApiMatch>>($"3rd part of '{i}' must be 'eq'|'ne'|'st'|'en'|'in', unexpected '{parts[2]}'");
                     }
                 }
             }
@@ -373,6 +395,10 @@ namespace gex.Controllers.Api {
                 };
             }).ToList() ?? [];
             parms.UserIDs = userIDs ?? [];
+            parms.MinimumOS = minimumOS;
+            parms.MaximumOS = maximumOS;
+            parms.MinimumAverageOS = minimumAverageOS;
+            parms.MaximumAverageOS = maximumAverageOS;
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 
