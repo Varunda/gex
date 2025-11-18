@@ -335,7 +335,7 @@ namespace gex.Services.Db.Match {
                 } else if (svk.Operation == "in") {
                     conditions.Add($"m.game_settings->>@sk{i} LIKE ('%' || @sv{i} || '%')");
                 } else {
-                    throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'");
+                    throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'|'st'|'en'|'in'");
                 }
 
                 cmd.AddParameter($"sk{i}", svk.Key);

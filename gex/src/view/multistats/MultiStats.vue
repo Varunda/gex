@@ -75,7 +75,11 @@
                         <tr v-for="match in matches.data" :key="match.id">
                             <td>
                                 <a :href="'/match/' + match.id" class="font-monospace">{{ match.id }}</a>
-                                <span v-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
+
+                                <span v-if="match.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
+                                    title="This match is for a bad version and cannot be processed"></span>
+
+                                <span v-else-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
                                     title="This match has not been fully processed!"></span>
                             </td>
                             <td>
