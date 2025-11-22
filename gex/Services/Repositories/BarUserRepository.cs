@@ -50,6 +50,24 @@ namespace gex.Services.Repositories {
         }
 
         /// <summary>
+        ///     get a list of <see cref="BarUser"/>s
+        /// </summary>
+        /// <param name="userIDs">list of user ids to get</param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<List<BarUser>> GetByIDs(IEnumerable<long> userIDs, CancellationToken cancel) {
+            List<BarUser> users = [];
+            foreach (long userID in userIDs) {
+                BarUser? user = await GetByID(userID, cancel);
+                if (user != null) {
+                    users.Add(user);
+                }
+            }
+
+            return users;
+        }
+
+        /// <summary>
         ///     update/insert (upsert) a <see cref="BarUser"/>
         /// </summary>
         /// <param name="userID"></param>

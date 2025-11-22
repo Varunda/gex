@@ -1,4 +1,4 @@
-import { Loading } from "Loading";
+import { Loadable, Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
 import { BarUser } from "model/BarUser";
 import { BarUserInteractions } from "model/BarUserInteractions";
@@ -12,6 +12,24 @@ export class BarUserApi extends ApiWrapper<BarUser> {
 
     public static getByUserID(userID: number): Promise<Loading<BarUser>> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=true&includeMapStats=true&includeFactionStats=true&includePreviousNames=true&includeUnitsMade=false`, BarUser.parse);
+    }
+
+    public static async getByUserIDs(userIDs: number[]): Promise<Loading<BarUser[]>> {
+        if (userIDs.length == 0) {
+            return Loadable.loaded([]);
+        }
+
+        const ret: BarUser[] = [];
+        for (let i = 0; i < userIDs.length; i += 100) {
+            const slice: Loading<BarUser[]> = await BarUserApi.get().readList(`/api/user/users?${userIDs.slice(i, i + 100).map(iter => `userIDs=${iter}`).join("&")}`, BarUser.parse);
+            if (slice.state != "loaded") {
+                return slice;
+            }
+
+            ret.push(...slice.data);
+        }
+
+        return Loadable.loaded(ret);
     }
 
     public static getSimpleByUserID(userID: number): Promise<Loading<BarUser>> {

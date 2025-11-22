@@ -44,6 +44,7 @@ namespace gex.Services.Parser {
         /// </summary>
         /// <param name="filename">name of the demofile</param>
         /// <param name="demofile">compressed bytes of the demofile</param>
+        /// <param name="options">options used to parse the demofile, such as will commands be included</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns>
         ///     a <see cref="Result{T, E}"/> that contains a <see cref="BarMatch"/> if <paramref name="demofile"/>

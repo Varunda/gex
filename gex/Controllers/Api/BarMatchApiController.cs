@@ -277,6 +277,8 @@ namespace gex.Controllers.Api {
         /// <param name="userIDs">list of user IDs to include. leave blank for any user</param>
         /// <param name="minimumOS">minimum OS of all players in the match, exclusive</param>
         /// <param name="maximumOS">maximum OS of all players in the match, inclusive</param>
+        /// <param name="minimumAverageOS">minimum average OS of all players in the match, exclusive</param>
+        /// <param name="maximumAverageOS">maximum average OS of all players in the match, exclusive</param>
         /// <param name="offset">offset into the results. is a value, not a page number</param>
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>

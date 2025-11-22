@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -269,11 +270,11 @@ namespace gex.Services.Repositories.Implementations {
             _Logger.LogDebug($"getting url [url={url}]");
             HttpResponseMessage res = await _Http.GetAsync(url, cancel);
             _Logger.LogTrace($"got url [url={url}] [statusCode={res.StatusCode}]");
+            byte[] body = await res.Content.ReadAsByteArrayAsync(cancel);
             if (res.IsSuccessStatusCode == false) {
+                _Logger.LogWarning($"non success status code [body={Encoding.UTF8.GetString(body)}]");
                 return $"got status code {res.StatusCode}";
             }
-
-            byte[] body = await res.Content.ReadAsByteArrayAsync(cancel);
 
             JsonElement json = JsonSerializer.Deserialize<JsonElement>(body);
             if (json.ValueKind != JsonValueKind.Array) {

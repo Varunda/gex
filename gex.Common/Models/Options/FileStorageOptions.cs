@@ -37,5 +37,10 @@
         /// </summary>
         public string UnitPositionLocation { get; set; } = "";
 
+        /// <summary>
+        ///     where maps are stored
+        /// </summary>
+        public string MapLocation { get; set; } = "";
+
     }
 }

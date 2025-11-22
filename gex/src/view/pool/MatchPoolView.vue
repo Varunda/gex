@@ -427,6 +427,24 @@
 
                 this.playerStats = [];
 
+                const playerIDs: number[] = this.matches.data.map(iter => iter.players.map(i2 => i2.userID)).reduce((acc, iter) => {
+                    acc.push(...iter);
+                    return acc;
+                }, []);
+
+                let apiUsers: Loading<BarUser[]> = await BarUserApi.getByUserIDs(playerIDs);
+                if (apiUsers.state != "loaded") {
+                    Toaster.add("Failed to load users", "failed to load users, see console for more", "danger");
+                    console.error(`MatchPoolView> failed to load user stats: ${JSON.stringify(apiUsers)}`);
+                    return;
+                }
+
+                const userDict: Map<number, BarUser> = new Map();
+                for (const user of apiUsers.data) {
+                    userDict.set(user.userID, user);
+                }
+                console.log(`MatchPoolView> loaded user data for ${userDict.size} users`);
+
                 const map: Map<number, PlayerStats> = new Map();
                 for (const match of this.matches.data) {
 
@@ -454,9 +472,11 @@
                             };
 
                             if (stat.plays == 0) {
-                                const user: Loading<BarUser> = await BarUserApi.getSimpleByUserID(p.userID);
-                                if (user.state == "loaded") {
-                                    stat.flag = user.data.countryCode ?? undefined;
+                                const u: BarUser | undefined = userDict.get(p.userID);
+                                if (u == undefined) {
+                                    console.warn(`MatchPoolView> missing userDict entry for user [userID=${p.userID}]`);
+                                } else {
+                                    stat.flag = u.countryCode ?? undefined;
                                 }
                             }
 

@@ -77,6 +77,7 @@ namespace gex.Services.Db {
             services.AddSingleton<MatchPoolDb>();
             services.AddSingleton<MatchPoolEntryDb>();
             services.AddSingleton<BadGameVersionDb>();
+            services.AddSingleton<MapEngineUsageDb>();
         }
 
     }

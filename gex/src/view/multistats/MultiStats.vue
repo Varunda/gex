@@ -1010,8 +1010,10 @@
 
     import CompactUtils from "util/Compact";
     import { MapUtil } from "util/MapUtil";
-import LocaleUtil from "util/Locale";
-import TimeUtils from "util/Time";
+    import LocaleUtil from "util/Locale";
+    import TimeUtils from "util/Time";
+
+    // 2025-11-21: pain
 
     type BarMatchAndSide = BarMatch & {
         pickedAllyTeams: number[];

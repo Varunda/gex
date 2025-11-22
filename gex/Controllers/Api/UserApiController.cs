@@ -126,6 +126,45 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
+        ///     get a list of <see cref="ApiBarUser"/>s
+        /// </summary>
+        /// <param name="userIDs"></param>
+        /// <param name="includeSkill"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("users")]
+        public async Task<ApiResponse<List<ApiBarUser>>> GetByUserIDs([FromQuery] List<long> userIDs,
+            [FromQuery] bool includeSkill = false,
+            CancellationToken cancel = default) {
+
+            if (userIDs.Count == 0) {
+                return ApiBadRequest<List<ApiBarUser>>($"must provided at least one user ID in {nameof(userIDs)}");
+            }
+
+            if (userIDs.Count > 100) {
+                return ApiBadRequest<List<ApiBarUser>>($"cannot provide more than 100 user IDs");
+            }
+
+            List<BarUser> users = await _UserRepository.GetByIDs(userIDs, cancel);
+
+            List<ApiBarUser> ret = [];
+            foreach (BarUser user in users) {
+                ApiBarUser api = new();
+                api.UserID = user.UserID;
+                api.Username = user.Username;
+                api.CountryCode = user.CountryCode;
+
+                if (includeSkill == true) {
+                    api.Skill = await _SkillDb.GetByUserID(api.UserID, cancel);
+                }
+
+                ret.Add(api);
+            }
+
+            return ApiOk(ret);
+        }
+
+        /// <summary>
         ///     get the skill changes of a user over time
         /// </summary>
         /// <param name="userID">ID of the user to get the skill changes of</param>

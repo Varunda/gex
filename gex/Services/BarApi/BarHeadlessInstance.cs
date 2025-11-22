@@ -32,6 +32,7 @@ namespace gex.Services.BarApi {
         private readonly BarEngineDownloader _EngineDownloader;
         private readonly EnginePathUtil _EnginePathUtil;
         private readonly GameVersionUsageDb _VersionUsageDb;
+        private readonly MapEngineUsageDb _MapEngineUsageDb;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
         private readonly BaseQueue<HeadlessRunStatus> _HeadlessRunStatusQueue;
         private readonly IHubContext<HeadlessReplayHub, IHeadlessReplayHub> _HeadlessReplayHub;
@@ -79,7 +80,7 @@ namespace gex.Services.BarApi {
             HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
             IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,
             BarMatchProcessingRepository processingRepository, HeadlessRunnerMetric metric,
-            BadGameVersionRepository badGameVersionRepository) {
+            BadGameVersionRepository badGameVersionRepository, MapEngineUsageDb mapEngineUsageDb) {
 
             _Logger = logger;
             _Options = options;
@@ -94,6 +95,7 @@ namespace gex.Services.BarApi {
             _ProcessingRepository = processingRepository;
             _Metric = metric;
             _BadGameVersionRepository = badGameVersionRepository;
+            _MapEngineUsageDb = mapEngineUsageDb;
         }
 
         public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -170,6 +172,12 @@ namespace gex.Services.BarApi {
             }
             File.Copy("./BYAR.lua", luaUiConfig);
 
+            await _VersionUsageDb.Upsert(new GameVersionUsage() {
+                Engine = match.Engine,
+                Version = match.GameVersion,
+                LastUsed = DateTime.UtcNow
+            }, cancel);
+
             int attempts = 3;
 
             do {
@@ -197,20 +205,21 @@ namespace gex.Services.BarApi {
                 return $"failed to download game version ({match.GameVersion})";
             }
 
-            await _VersionUsageDb.Upsert(new GameVersionUsage() {
+            await _MapEngineUsageDb.Upsert(new MapEngineUsage() {
                 Engine = match.Engine,
-                Version = match.GameVersion,
+                Map = match.Map,
                 LastUsed = DateTime.UtcNow
             }, cancel);
 
             // ensure map is downloaded
             if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
-                _Logger.LogDebug($"missing map, downloading [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
+                _Logger.LogDebug($"missing map, fetching [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
                 await _PrDownloader.GetMap(match.Engine, match.Map, cancel);
             }
 
             if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
-                _Logger.LogError($"failed to download map [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
+                _Logger.LogError($"failed to fetch map [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
+                Debug.Assert(false, $"failed to fetch map");
                 return $"failed to download map ({match.Map})";
             }
 

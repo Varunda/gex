@@ -1,7 +1,10 @@
 ﻿using gex.Common.Code;
 using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Common.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,14 +18,16 @@ namespace gex.Common.Services.Bar {
 
         private readonly ILogger<PrDownloaderService> _Logger;
         private readonly EnginePathUtil _EnginePathUtil;
+        private readonly IOptions<FileStorageOptions> _Options;
 
         private static Dictionary<string, Task<bool>> _PendingDownloads = [];
 
         public PrDownloaderService(ILogger<PrDownloaderService> logger,
-            EnginePathUtil enginePathUtil) {
+            EnginePathUtil enginePathUtil, IOptions<FileStorageOptions> options) {
 
             _Logger = logger;
             _EnginePathUtil = enginePathUtil;
+            _Options = options;
         }
 
         /// <summary>
@@ -119,7 +124,6 @@ namespace gex.Common.Services.Bar {
         /// <summary>
         ///     check if a map has already been downloaded for a specific engine version
         /// </summary>
-        /// <param name="engine">name of the engine</param>
         /// <param name="map">name of the map</param>
         /// <returns>
         ///     if the map has already been saved for the passed engine
@@ -128,6 +132,7 @@ namespace gex.Common.Services.Bar {
             string mapName = (map + ".sd7").EscapeRecoilFilesytemCharacters().ToLower();
 
             // yes, double maps is correct, it's what pr-downloaded just wants i guess, zany
+            //string path = Path.Join(_Options.Value.MapLocation, "maps", "maps", mapName);
             string path = Path.Join(_EnginePathUtil.Get(engine), "maps", "maps", mapName);
             return File.Exists(path);
         }
@@ -140,32 +145,59 @@ namespace gex.Common.Services.Bar {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public Task GetMap(string engine, string mapName, CancellationToken cancel) {
-
             if (HasMap(engine, mapName) == true) {
-                _Logger.LogDebug($"map already downloaded [engine={engine}] [map={mapName}]");
+                _Logger.LogDebug($"map already in engine [engine={engine}] [map={mapName}]");
                 return Task.CompletedTask;
             }
 
-            // pr-downloader.exe --filesystem-writepath "./maps" --download-map "All That Glitters v2.2"
+            if (InMapCache(mapName) == false) {
+                // pr-downloader.exe --filesystem-writepath "./maps" --download-map "All That Glitters v2.2"
+                //string mapOutput = Path.Join(_EnginePathUtil.Get(engine), "maps");
+                string mapOutput = Path.Join(_Options.Value.MapLocation);
 
-            string mapOutput = Path.Join(_EnginePathUtil.Get(engine), "maps");
+                ProcessStartInfo startInfo = GetForEngine(engine, $"--filesystem-writepath \"{mapOutput}\" --download-map \"{mapName}\"");
+                _Logger.LogDebug($"downloading map into map cache [map={mapName}] [args={startInfo.Arguments}]");
 
-            ProcessStartInfo startInfo = GetForEngine(engine, $"--filesystem-writepath \"{mapOutput}\" --download-map \"{mapName}\"");
-            _Logger.LogDebug($"getting map [version={mapName}] [engine={engine}] [args={startInfo.Arguments}]");
+                Stopwatch timer = Stopwatch.StartNew();
+                ProcessWrapper proc = ProcessWrapper.Create(startInfo, TimeSpan.FromMinutes(2));
+                int exitCode = proc.ExitCode;
 
-            Stopwatch timer = Stopwatch.StartNew();
-            ProcessWrapper proc = ProcessWrapper.Create(startInfo, TimeSpan.FromMinutes(2));
-            int exitCode = proc.ExitCode;
+                if (InMapCache(mapName) == false) {
+                    throw new Exception($"expected map to exist in map cache [map={mapName}]");
+                }
+            }
+
+            string safeName = (mapName + ".sd7").EscapeRecoilFilesytemCharacters().ToLower();
+            string mapCacheLoc = Path.Join(_Options.Value.MapLocation, "maps", safeName);
+            Debug.Assert(File.Exists(mapCacheLoc), $"missing map located at '{mapCacheLoc}'");
+
+            Directory.CreateDirectory(Path.Join(_EnginePathUtil.Get(engine), "maps", "maps"));
+
+            string mapEngLoc = Path.Join(_EnginePathUtil.Get(engine), "maps", "maps", safeName);
+            _Logger.LogDebug($"map is in map cache, moving to engine [map={mapName}] [engine={engine}] [cache loc={mapCacheLoc}] [engine loc={mapEngLoc}]");
+
+            File.Copy(mapCacheLoc, mapEngLoc);
 
             if (HasMap(engine, mapName) == false) {
-                throw new Exception($"expected map to exist [map={mapName}] [engine={engine}]");
+                throw new Exception($"expected map to exist in engine [map={mapName}] [engine={engine}]");
             }
 
             return Task.CompletedTask;
         }
 
-        private ProcessStartInfo GetForEngine(string engine, string arguments) {
+        /// <summary>
+        ///     check if a map is in the map cache
+        /// </summary>
+        /// <param name="map"></param>
+        /// <returns></returns>
+        private bool InMapCache(string map) {
+            string mapName = (map + ".sd7").EscapeRecoilFilesytemCharacters().ToLower();
 
+            string path = Path.Join(_Options.Value.MapLocation, "maps", mapName);
+            return File.Exists(path);
+        }
+
+        private ProcessStartInfo GetForEngine(string engine, string arguments) {
             string path = Path.Join(_EnginePathUtil.Get(engine), "pr-downloader");
             if (OperatingSystem.IsWindows()) { path += ".exe"; }
 

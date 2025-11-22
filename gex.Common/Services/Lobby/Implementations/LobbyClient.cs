@@ -144,7 +144,7 @@ namespace gex.Common.Services.Lobby.Implementations {
             }
 
             try {
-                _Logger.LogInformation($"lobby client connecting to host [host={host}:{port}]");
+                _Logger.LogInformation($"lobby client connecting to host [host={host}:{port}] [connected={_TcpSocket.Connected}]");
                 await _TcpSocket.ConnectAsync(host, port, cancel);
                 _Logger.LogDebug($"lobby client TCP connection made [connected={_TcpSocket.Connected}]");
 
@@ -172,8 +172,14 @@ namespace gex.Common.Services.Lobby.Implementations {
                     _Logger.LogDebug($"ping task done");
                 }, _Cancel.Token);
             } catch (Exception ex) {
-                _Logger.LogError(ex, "failed to connect to host");
-                return ex.Message;
+                if (ex is SocketException sx && sx.Message.StartsWith("A connect request was made on an already connected socket.")) {
+                    _Logger.LogWarning($"socket is connected but isn't?");
+                    _TcpSocket.Close();
+                    _TcpSocket = new TcpClient();
+                } else {
+                    _Logger.LogError(ex, "failed to connect to host");
+                    return ex.Message;
+                }
             }
 
             return true;

@@ -90,7 +90,19 @@ namespace gex {
             }).AddRazorRuntimeCompilation();
 
             services.AddSwaggerGen(doc => {
-                doc.SwaggerDoc("api", new OpenApiInfo() { Title = "API", Version = "v0.1" });
+                doc.SwaggerDoc("api", new OpenApiInfo() {
+                    Title = "Gex API",
+                    Version = "v0.1",
+                    Description = "<h2><img src=\"/favicon-96x96.png\" title=\"gex logo\" width=\"48\">Gex API</h2>"
+                        + "<h3>user agents</h3>"
+                        + "<p>users of this API must include a user agent that contains contact info. failure to do so may result in projects being blocked</p>"
+                        + "<p>example: <code>project-name (discord: username)</code></p>"
+                        + "<h3>rate limits</h3>"
+                        + "<p>gex uses a bucketing rate limiting. users start with 300 requests, and refill 60 requests per minute (up to 300). "
+                        + "additonally, please limit to 1 concurrent request.</p>"
+                        + "<p>finally, if API requests are repeated needlessly (such as getting the same user every 5 seconds),"
+                        + " developers may be contacted to fix this (or blocked, if contact info is not provided)</p>",
+                });
 
                 Console.Write("Including XML documentation in: ");
                 foreach (string file in Directory.GetFiles(AppContext.BaseDirectory, "*.xml")) {

@@ -65,6 +65,11 @@ namespace gex.Services.Hosted.Startup {
                 error = true;
             }
 
+            if (string.IsNullOrEmpty(_Options.Value.MapLocation)) {
+                _Logger.LogError("the option 'MapLocation' was an empty string or unset. Is this set in env.json?");
+                error = true;
+            }
+
             if (error == true) {
                 throw new Exception($"one or more storage locations were not set. logs above will contain more info");
             }
@@ -75,6 +80,7 @@ namespace gex.Services.Hosted.Startup {
             await _TestFile(_Options.Value.GameLogLocation, cancel);
             await _TestFile(_Options.Value.WebImageLocation, cancel);
             await _TestFile(_Options.Value.GitHubDataLocation, cancel);
+            await _TestFile(_Options.Value.MapLocation, cancel);
 
             _Logger.LogInformation($"write test complete!");
         }

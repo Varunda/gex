@@ -25,22 +25,18 @@
                     </div>
 
                     <div class="text-center">
+                        <h4>Metal efficiency - {{ totalMetalKilled / totalMetalLost * 100 | locale(0) }}%</h4>
+
                         <div style="height: 200px; max-height: 200px">
                             <canvas id="combat-metal-efficiency" height="200"></canvas>
-                        </div>
-
-                        <div>
-                            Metal efficiency
                         </div>
                     </div>
 
                     <div class="text-center">
+                        <h4>Damage efficiency - {{ totalDamageDealt / totalDamageTaken * 100 | locale(0) }}%</h4>
+
                         <div style="height: 200px; max-height: 200px">
                             <canvas id="combat-damage" height="200"></canvas>
-                        </div>
-
-                        <div>
-                            Damage dealt
                         </div>
                     </div>
 
@@ -279,11 +275,15 @@
     import UnitIcon from "components/app/UnitIcon.vue";
 
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
+    import ChartDataLabels from "chartjs-plugin-datalabels";
+    Chart.defaults.color = "white";
 
     import { UnitStats } from "../compute/UnitStatData";
     import { StatEntity } from "../compute/common";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+
+    import CompactUtils from "util/Compact";
 
     import "filters/LocaleFilter";
     import "filters/CompactFilter";
@@ -330,18 +330,22 @@
                 }
 
                 this.chart.metalEff = new Chart(canvas.getContext("2d")!, {
-                    type: "pie",
+                    type: "bar",
                     data: {
-                        labels: [ "Metal killed", "Metal lost" ],
+                        labels: [ "Killed", "Lost" ],
                         datasets: [{
                             data: [
-                                this.playerStats.reduce((acc, iter) => acc += iter.metalKilled, 0),
-                                this.playerStats.reduce((acc, iter) => acc += (iter.lost * (iter.definition?.metalCost ?? 1)), 0),
+                                this.totalMetalKilled,
+                                this.totalMetalLost,
                             ],
                             backgroundColor: [
                                 "#419d49",
                                 "#ba3e33"
-                            ]
+                            ],
+                            datalabels: {
+                                align: "top",
+                                anchor: "center"
+                            }
                         }]
                     },
                     options: {
@@ -351,49 +355,28 @@
                             },
                             tooltip: {
                                 enabled: false
+                            },
+                            datalabels: {
+                                display: true,
+                                color: "white",
+                                font: {
+                                    family: "Atkinson Hyperlegible",
+                                    size: 18,
+                                },
+                                formatter: CompactUtils.compact
                             }
                         },
                         responsive: true,
                         maintainAspectRatio: false,
-
-                        animation: {
-                            onComplete: (ev) => {
-                                const chart: Chart = ev.chart;
-                                const ctx: CanvasRenderingContext2D = chart.ctx;
-
-                                const centerX = chart.width / 2;
-                                const centerY = chart.height / 2;
-
-                                ctx.font = `18px "Atkinson Hyperlegible"`;
-                                ctx.fillStyle = "#ffffff";
-                                ctx.textAlign = "center";
-
-                                chart.data.datasets.forEach((dataset: ChartDataset, i: number) => {
-                                    const meta = chart.getDatasetMeta(i);
-
-                                    meta.data.forEach((bar: Element, index: number) => {
-                                        const data = dataset.data[index];
-                                        const start: number = (bar as any).startAngle;
-                                        const end: number = (bar as any).endAngle;
-                                        const radius: number = (bar as any).outerRadius;
-                                        const label: string = (chart.data.labels ?? [])[index] as unknown as string;
-
-                                        const center = start + ((end - start) / 2);
-
-                                        const x = Math.cos(center) * (radius / 2);
-                                        const y = Math.sin(center) * (radius / 2);
-
-                                        //console.log(`d=${data} sa=${start} ea=${end} x=${x}/${centerX + x} y=${y}/${centerY + y} r=${radius} name=${label} ca=${center}`);
-
-                                        // debug dot that shows where the calculated (x,y) is
-                                        //ctx.fillRect(centerX + x - 5, centerY + y - 5, 10, 10);
-                                        ctx.fillText(label.replace(" ", "\n"), centerX + x, centerY + y);
-                                    });
-                                });
-
+                        scales: {
+                            y: {
+                                ticks: {
+                                    display: false,
+                                }
                             }
                         }
-                    }
+                    },
+                    plugins: [ ChartDataLabels ]
                 });
             },
 
@@ -409,20 +392,24 @@
                 }
 
                 this.chart.damage = new Chart(canvas.getContext("2d")!, {
-                    type: "pie",
+                    type: "bar",
                     data: {
-                        labels: [ "Damage dealt", "Damage taken" ],
+                        labels: [ "Dealt", "Taken" ],
                         datasets: [
                             {
                                 label: "Damage ratio",
                                 data: [
-                                    this.playerStats.reduce((acc, iter) => acc += iter.damageDealt, 0),
-                                    this.playerStats.reduce((acc, iter) => acc += iter.damageTaken, 0),
+                                    this.totalDamageDealt,
+                                    this.totalDamageTaken,
                                 ],
                                 backgroundColor: [
                                     "#419d49",
                                     "#ba3e33"
-                                ]
+                                ],
+                                datalabels: {
+                                    align: "top",
+                                    anchor: "center"
+                                }
                             }
                         ]
                     },
@@ -433,50 +420,28 @@
                             },
                             tooltip: {
                                 enabled: false
+                            },
+                            datalabels: {
+                                display: true,
+                                color: "white",
+                                font: {
+                                    family: "Atkinson Hyperlegible",
+                                    size: 18,
+                                },
+                                formatter: CompactUtils.compact
                             }
                         },
                         responsive: true,
                         maintainAspectRatio: false,
-
-                        animation: {
-                            onComplete: (ev) => {
-                                const chart: Chart = ev.chart;
-                                const ctx: CanvasRenderingContext2D = chart.ctx;
-
-                                const centerX = chart.width / 2;
-                                const centerY = chart.height / 2;
-
-                                ctx.font = `18px "Atkinson Hyperlegible"`;
-                                ctx.fillStyle = "#ffffff";
-                                ctx.textAlign = "center";
-
-                                chart.data.datasets.forEach((dataset: ChartDataset, i: number) => {
-                                    const meta = chart.getDatasetMeta(i);
-
-                                    meta.data.forEach((bar: Element, index: number) => {
-                                        const data = dataset.data[index];
-                                        const start: number = (bar as any).startAngle;
-                                        const end: number = (bar as any).endAngle;
-                                        const radius: number = (bar as any).outerRadius;
-                                        const label: string = (chart.data.labels ?? [])[index] as unknown as string;
-
-                                        const center = start + ((end - start) / 2);
-
-                                        const x = Math.cos(center) * (radius / 2);
-                                        const y = Math.sin(center) * (radius / 2);
-
-                                        //console.log(`d=${data} sa=${start} ea=${end} x=${x}/${centerX + x} y=${y}/${centerY + y} r=${radius} name=${label} ca=${center}`);
-
-                                        // debug dot that shows where the calculated (x,y) is
-                                        //ctx.fillRect(centerX + x - 5, centerY + y - 5, 10, 10);
-                                        ctx.fillText(label.replace(" ", "\n"), centerX + x, centerY + y);
-                                    });
-                                });
-
+                        scales: {
+                            y: {
+                                ticks: {
+                                    display: false,
+                                }
                             }
                         }
-                    }
-
+                    },
+                    plugins: [ ChartDataLabels ]
                 });
             }
 
@@ -515,7 +480,23 @@
 
             selectedPlayer: function(): StatEntity | null {
                 return this.entities.find(iter => iter.id == this.SelectedEntity) || null;
-            }
+            },
+
+            totalMetalKilled: function(): number {
+                return this.playerStats.reduce((acc, iter) => acc += iter.metalKilled, 0);
+            },
+
+            totalMetalLost: function(): number {
+                return this.playerStats.reduce((acc, iter) => acc += (iter.lost * (iter.definition?.metalCost ?? 1)), 0);
+            },
+
+            totalDamageDealt: function(): number {
+                return this.playerStats.reduce((acc, iter) => acc += iter.damageDealt, 0);
+            },
+
+            totalDamageTaken: function(): number {
+                return this.playerStats.reduce((acc, iter) => acc += iter.damageTaken, 0);
+            },
         },
 
         watch: {
