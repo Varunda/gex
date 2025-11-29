@@ -18,5 +18,10 @@
         /// </summary>
         public bool SplitDatabases { get; set; } = true;
 
+        /// <summary>
+        ///     when getting new games from the BAR api, how many pages maximum will be pulled?
+        /// </summary>
+        public int MaxReplayPagePulls { get; set; } = 20;
+
     }
 }
