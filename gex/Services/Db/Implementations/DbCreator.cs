@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using gex.Models.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -12,14 +14,16 @@ namespace gex.Services.Db.Implementations {
 
         private readonly ILogger<DefaultDbCreator> _Logger;
         private readonly IDbHelper _DbHelper;
+        private readonly IOptions<InstanceOptions> _InstanceOptions;
 
         private readonly bool _RunDb = true;
 
         public DefaultDbCreator(ILogger<DefaultDbCreator> logger,
-                IDbHelper dbHelper) {
+            IDbHelper dbHelper, IOptions<InstanceOptions> instanceOptions) {
 
             _Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _DbHelper = dbHelper ?? throw new ArgumentNullException(nameof(dbHelper));
+            _InstanceOptions = instanceOptions;
         }
 
         public async Task Execute() {
@@ -28,21 +32,25 @@ namespace gex.Services.Db.Implementations {
             }
 
             // Ensure the extension is loaded, as some of the patches may use the things the extension provides
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
-                CREATE EXTENSION IF NOT EXISTS pg_trgm;
-            ");
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+
+            if (_InstanceOptions.Value.SplitDatabases == true) {
+                _Logger.LogInformation($"split databases are enabled, loading postgres_fdw in events db");
+                using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+                using NpgsqlCommand evCmd = await _DbHelper.Command(evConn, @"CREATE EXTENSION IF NOT EXISTS postgres_fdw;");
+            }
 
             _Logger.LogTrace($"Getting current DB version");
             int version = await GetVersion();
-            _Logger.LogInformation($"Current DB version: {version}");
+            _Logger.LogInformation($"got current DB version [version={version}]");
 
             List<IDbPatch> patches = GetPatches();
             foreach (IDbPatch patch in patches) {
-                _Logger.LogTrace($"Checking patch '{patch.Name}'/{patch.MinVersion}");
+                _Logger.LogTrace($"checking patch [name='{patch.Name}'] [min version={patch.MinVersion}]");
 
                 if (version < patch.MinVersion) {
-                    _Logger.LogDebug($"Patch '{patch.Name}' min version {patch.MinVersion} lower than current version {version}");
+                    _Logger.LogDebug($"apply patch [name='{patch.Name}'] [min version={patch.MinVersion}] [current version={version}]");
                     await patch.Execute(_DbHelper);
 
                     await UpdateVersion(patch.MinVersion);
@@ -77,7 +85,7 @@ namespace gex.Services.Db.Implementations {
         ///     Update the DB version
         /// </summary>
         private async Task UpdateVersion(int version) {
-            _Logger.LogTrace($"Updating version to {version}");
+            _Logger.LogTrace($"Updating version [version={version}]");
             using NpgsqlConnection conn = _DbHelper.Connection();
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO metadata (name, value)
@@ -89,7 +97,7 @@ namespace gex.Services.Db.Implementations {
 
             await cmd.ExecuteNonQueryAsync();
 
-            _Logger.LogTrace($"Updated version to {version}");
+            _Logger.LogTrace($"updated version [version={version}]");
         }
 
         /// <summary>
@@ -97,7 +105,7 @@ namespace gex.Services.Db.Implementations {
         /// </summary>
         private async Task<int> GetVersion() {
             if (await DoesMetadataTableExist() == false) {
-                _Logger.LogInformation($"No metadata table");
+                _Logger.LogInformation($"no metadata table");
                 return -1;
             }
 

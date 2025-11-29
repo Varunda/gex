@@ -40,10 +40,10 @@ namespace gex.Services.Db.Event {
         /// </exception>
         public async Task Insert(T ev, CancellationToken cancel = default) {
             if (string.IsNullOrEmpty(ev.GameID)) {
-                throw new System.Exception($"missing GameID for {nameof(GameEventWindUpdate)}");
+                throw new System.Exception($"missing GameID for {nameof(T)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"", cancel);
 
             SetupInsert(ev, cmd);
@@ -80,12 +80,12 @@ namespace gex.Services.Db.Event {
         ///     a list of <typeparamref name="T"/> with <see cref="GameEvent.GameID"/> of <paramref name="gameID"/>
         /// </returns>
         public async Task<List<T>> GetByGameID(string gameID, CancellationToken cancel = default) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return (await conn.QueryAsync<T>(new CommandDefinition(
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            return await conn.QueryListAsync<T>(
                 $"SELECT '{_ActionName}' \"Action\", * from {_TableName} WHERE game_id = @GameID ORDER BY frame ASC",
                 new { GameID = gameID },
                 cancellationToken: cancel
-            ))).ToList();
+            );
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace gex.Services.Db.Event {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation is complete</returns>
         public async Task DeleteByGameID(string gameID, CancellationToken cancel = default) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
                 DELETE FROM {_TableName}
                     WHERE game_id = @GameID;

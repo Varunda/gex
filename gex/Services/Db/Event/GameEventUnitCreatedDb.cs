@@ -13,10 +13,10 @@ namespace gex.Services.Db.Event {
         protected override void SetupInsert(GameEventUnitCreated ev, NpgsqlCommand cmd) {
             cmd.CommandText = @"
                 INSERT INTO game_event_unit_created (
-                    game_id, frame, unit_id, team_id, definition_id,
+                    game_id, frame, unit_id, team_id, definition_id, definition_name,
                     unit_x, unit_y, unit_z, rotation
                 ) VALUES (
-                    @GameID, @Frame, @UnitID, @TeamID, @DefinitionID,
+                    @GameID, @Frame, @UnitID, @TeamID, @DefinitionID, @DefinitionName,
                     @UnitX, @UnitY, @UnitZ, @Rotation
                 );
             ";
@@ -26,6 +26,7 @@ namespace gex.Services.Db.Event {
             cmd.AddParameter("UnitID", ev.UnitID);
             cmd.AddParameter("TeamID", ev.TeamID);
             cmd.AddParameter("DefinitionID", ev.DefinitionID);
+            cmd.AddParameter("DefinitionName", ev.DefinitionName);
             cmd.AddParameter("UnitX", ev.UnitX);
             cmd.AddParameter("UnitY", ev.UnitY);
             cmd.AddParameter("UnitZ", ev.UnitZ);

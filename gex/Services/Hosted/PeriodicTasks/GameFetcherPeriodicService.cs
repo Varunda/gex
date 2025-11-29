@@ -47,7 +47,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
             int page = 1;
             int limit = 50;
 
-            while (true) {
+            while (cancel.IsCancellationRequested == false) {
                 _Logger.LogDebug($"getting recent matches");
                 Result<List<BarRecentReplay>, string> recentMatches = await _ReplayApi.GetRecent(page, limit, cancel);
                 if (recentMatches.IsOk == false) {
@@ -61,6 +61,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                 }
 
                 int iterCount = 0;
+                int alreadyIter = 0;
 
                 foreach (BarRecentReplay replay in recentMatches.Value) {
                     try {
@@ -74,6 +75,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                             ++okCount;
                         } else if (result == ParseResult.ALREADY_EXISTS) {
                             ++alreadyCount;
+                            ++alreadyIter;
                         } else if (result == ParseResult.ERROR) {
                             ++errorCount;
                         }
@@ -83,10 +85,16 @@ namespace gex.Services.Hosted.PeriodicTasks {
                     }
                 }
 
-                if (alreadyCount == 0 && page < 20) {
-                    _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}]");
+                if (alreadyIter != limit) {
+                    _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}] [ok={okCount}] [already={alreadyCount}] [error={errorCount}]");
                     page += 1;
                 } else {
+                    _Logger.LogInformation($"reached a page full of games already seen, breaking [page={page}]");
+                    break;
+                }
+
+                if (page >= 20) {
+                    _Logger.LogWarning($"hit max page size, breaking [size={20}] [page={page}]");
                     break;
                 }
             }

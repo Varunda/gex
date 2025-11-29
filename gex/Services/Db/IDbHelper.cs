@@ -36,6 +36,11 @@ namespace gex.Services.Db {
         /// </summary>
         public const string MAIN = "gex";
 
+        /// <summary>
+        ///     event DB
+        /// </summary>
+        public const string EVENT = "event";
+
     }
 
     public static class IDbHelperExtensions {

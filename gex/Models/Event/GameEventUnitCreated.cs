@@ -24,6 +24,10 @@ namespace gex.Models.Event {
         [ColumnMapping("definition_id")]
         public int DefinitionID { get; set; }
 
+        [JsonActionLogPropertyName("defName")]
+        [ColumnMapping("definition_name")]
+        public string DefinitionName { get; set; } = "";
+
         [JsonActionLogPropertyName("unit_x")]
         [ColumnMapping("unit_x")]
         public decimal UnitX { get; set; }

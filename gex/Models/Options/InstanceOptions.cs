@@ -13,5 +13,10 @@
         /// </summary>
         public bool LocalhostDeveloperAccount { get; set; } = false;
 
+        /// <summary>
+        ///     are the 2 databases different databases and need to use a foreign data wrapper from main -> event?
+        /// </summary>
+        public bool SplitDatabases { get; set; } = true;
+
     }
 }
