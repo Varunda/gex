@@ -53,6 +53,10 @@ namespace gex.Services.Hosted.PeriodicTasks {
             int limit = 50;
             int maxPage = Math.Min(_InstanceOptions.Value.MaxReplayPagePulls, 1000);
 
+            if (_InstanceOptions.Value.MaxReplayPagePulls > 1000) {
+                _Logger.LogWarning($"capping Instance:MaxReplayPagePulls to 1000 [value={_InstanceOptions.Value.MaxReplayPagePulls}]");
+            }
+
             while (cancel.IsCancellationRequested == false) {
                 _Logger.LogDebug($"getting recent matches [limit={limit}] [maxPage={maxPage}]");
                 Result<List<BarRecentReplay>, string> recentMatches = await _ReplayApi.GetRecent(page, limit, cancel);

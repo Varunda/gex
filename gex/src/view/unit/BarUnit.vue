@@ -38,14 +38,14 @@
                 <template v-else>
                     <unit :api-unit="firstUnit" @weaponindexchange="selectedWeaponIndexChanged" @close="removeUnit($event)" @updatedamagetypes="updateDamageTypes"
                         :damage-types="damageTypeSet" :dump-json="dumpUnit"
-                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :show-cluster-data="showClusterData">
+                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :show-cluster-data="showClusterData" :show-reactive-armor="showReactiveArmor">
                     </unit>
 
                     <unit v-for="otherUnit in otherUnits" class="border-start ps-2" :key="otherUnit.definitionName" :api-unit="otherUnit"
                         @close="removeUnit($event)"
                         @updatedamagetypes="updateDamageTypes"
-                        @changeshowshield="changeShowShieldData" @changeshowcarrier="changeShowCarrierData" @changeshowcluster="changeShowClusterData"
-                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :damage-types="damageTypeSet" :show-cluster-data="showClusterData"
+                        @changeshowshield="changeShowShieldData" @changeshowcarrier="changeShowCarrierData" @changeshowcluster="changeShowClusterData" @changeshowreactivearmor="changeShowReactiveArmor"
+                        :show-shield-data="showShieldData" :show-carrier-data="showCarrierData" :damage-types="damageTypeSet" :show-cluster-data="showClusterData" :show-reactive-armor="showReactiveArmor"
                         :compare="firstUnit" :compare-weapon="firstUnitSelectedWeapon"
                         :dump-json="dumpUnit">
                     </unit>
@@ -96,7 +96,8 @@
                 damageTypeSet: [] as string[],
                 showShieldData: false as boolean,
                 showCarrierData: false as boolean,
-                showClusterData: false as boolean
+                showClusterData: false as boolean,
+                showReactiveArmor: false as boolean
             }
         },
 
@@ -239,6 +240,11 @@
                         console.log(`BarUnit> skipping damage type to show [type=${t}]`);
                     }
                 }
+            },
+
+            changeShowReactiveArmor: function(b: boolean): void {
+                console.log(`BarUnit> show reactive armor to ${b}`);
+                this.showReactiveArmor ||= b;
             }
         },
 

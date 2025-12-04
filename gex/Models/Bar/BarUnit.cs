@@ -111,6 +111,16 @@ namespace gex.Models.Bar {
         public double IdleAutoHeal { get; set; }
 
         /// <summary>
+        ///     health of reactive armor
+        /// </summary>
+        public double ReactiveArmorHealth { get; set; }
+
+        /// <summary>
+        ///     seconds to recover armor while out of combat
+        /// </summary>
+        public double ReactiveArmorRestore { get; set; }
+
+        /// <summary>
         ///     what weapon definition to use when exploding
         /// </summary>
         public string ExplodeAs { get; set; } = "";

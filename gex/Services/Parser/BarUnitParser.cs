@@ -141,6 +141,8 @@ namespace gex.Services.Parser {
                 unit.ParalyzeMultiplier = _Double(parms, "paralyzemultiplier", 1d);
                 unit.EnergyConversionCapacity = _Double(parms, "energyconv_capacity", 0);
                 unit.EnergyConversionEfficiency = _Double(parms, "energyconv_efficiency", 0);
+                unit.ReactiveArmorHealth = _Double(parms, "reactive_armor_health", 0d);
+                unit.ReactiveArmorRestore = _Double(parms, "reactive_armor_restore", 0d);
             }
 
             // <definition name, definition>, key normalized to UPPER CASE

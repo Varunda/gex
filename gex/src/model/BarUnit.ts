@@ -95,6 +95,9 @@ export class BarUnit {
     public idleTime: number = 0;
     public damageModifier: number = 0;
     public onOffAble: boolean = false;
+    public reactiveArmorHealth: number = 0;
+    public reactiveArmorDelay: number = 0;
+    public reactiveArmorThreshold: number = 0;
 
     public weapons: BarUnitWeapon[] = [];
 
@@ -113,6 +116,8 @@ export class BarUnit {
         unit.acceleration *= 900;
         unit.deceleration *= 900;
         unit.turnRate = unit.turnRate * 30 * (180 / 32728);
+
+        unit.reactiveArmorThreshold = unit.reactiveArmorHealth / Math.max(0.01, unit.damageModifier);
 
         return unit;
     }
@@ -206,6 +211,7 @@ export class BarWeaponDefinition {
     public defaultBurstDamage: number = 0;
 
     public defaultDps: number = 0;
+
 
     public static parse(elem: any): BarWeaponDefinition {
         const def: BarWeaponDefinition = {

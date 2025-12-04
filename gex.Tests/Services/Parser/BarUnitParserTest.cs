@@ -766,5 +766,66 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(25d, cluster.Damages["vtol"]);
         }
 
+        [TestMethod]
+        public async Task Parse_Legkark_Karkios() {
+            BarUnit unit = await _ParseUnit("legkark");
+
+            // basic
+            Assert.AreEqual("legkark", unit.DefinitionName);
+            Assert.AreEqual(1725d, unit.Health);
+            Assert.AreEqual(330d, unit.MetalCost);
+            Assert.AreEqual(2600d, unit.EnergyCost);
+            Assert.AreEqual(4400d, unit.BuildTime);
+            Assert.AreEqual(42.0d, unit.Speed);
+            Assert.AreEqual(900d, unit.TurnRate);
+            Assert.AreEqual(0.095, unit.Acceleration);
+            Assert.AreEqual(0.8211, unit.Deceleration);
+            Assert.AreEqual(2d, unit.SizeX);
+            Assert.AreEqual(2d, unit.SizeZ);
+
+            // eco
+            Assert.AreEqual(0d, unit.EnergyProduced);
+            Assert.AreEqual(0d, unit.EnergyStorage);
+            Assert.AreEqual(0d, unit.EnergyUpkeep);
+            Assert.AreEqual(0d, unit.ExtractsMetal);
+            Assert.AreEqual(false, unit.MetalExtractor);
+            Assert.AreEqual(0d, unit.MetalProduced);
+            Assert.AreEqual(0d, unit.MetalStorage);
+
+            // builder
+            Assert.AreEqual(0d, unit.BuildDistance);
+            Assert.AreEqual(0d, unit.BuildPower);
+
+            // los
+            Assert.AreEqual(400d, unit.SightDistance);
+            Assert.AreEqual(400d * 1.5d, unit.AirSightDistance);
+            Assert.AreEqual(0d, unit.RadarDistance);
+            Assert.AreEqual(0d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
+
+            // transport
+            Assert.AreEqual(0d, unit.TransportCapacity);
+            Assert.AreEqual(0d, unit.TransportMass);
+            Assert.AreEqual(0d, unit.TransportSize);
+
+            // misc
+            Assert.AreEqual("Tharsis", unit.ModelAuthor);
+            Assert.AreEqual(0d, unit.CloakCostStill);
+            Assert.AreEqual(0d, unit.CloakCostMoving);
+            Assert.AreEqual("smallExplosionGeneric", unit.ExplodeAs);
+            Assert.AreEqual(5d, unit.SelfDestructCountdown);
+            Assert.AreEqual("smallExplosionGenericSelfd", unit.SelfDestructWeapon);
+            Assert.AreEqual(0d, unit.AutoHeal);
+            Assert.AreEqual(5d, unit.IdleAutoHeal);
+            Assert.AreEqual(1800d, unit.IdleTime);
+            Assert.AreEqual(0.5d, unit.DamageModifier);
+            Assert.AreEqual(false, unit.OnOffAble);
+            Assert.AreEqual(300d, unit.ReactiveArmorHealth);
+            Assert.AreEqual(15d, unit.ReactiveArmorRestore);
+
+            // weapons
+            Assert.AreEqual(2, unit.Weapons.Count);
+        }
+
     }
 }

@@ -49,13 +49,18 @@
                     <td :colspan="compareUnit == null ? 2 : 3">{{ unit.definitionName }}</td>
                 </tr>
                 <tr is="Cell" name="Health" field="health" :unit="unit" :compare="compareUnit"></tr>
+                <template v-if="ShowReactiveArmor || unit.reactiveArmorHealth > 0 || (compareUnit && compareUnit.reactiveArmorHealth > 0)">
+                    <tr is="Cell" name="Reactive armor" field="reactiveArmorThreshold" :unit="unit" :compare="compareUnit"> hp</tr>
+                    <tr is="Cell" name="Reactive armor restore" field="reactiveArmorRestore" :unit="unit" :compare="compareUnit" :low="true">s</tr>
+                    <tr is="Cell" name="Reactive armor value" field="reactiveArmorHealth" :unit="unit" :compare="compareUnit"></tr>
+                </template>
                 <tr is="Cell" name="Metal cost" field="metalCost" :unit="unit" :compare="compareUnit" :low="true"> m</tr>
                 <tr is="Cell" name="Energy cost" field="energyCost" :unit="unit" :compare="compareUnit" :low="true"> E</tr>
                 <tr is="Cell" name="Build time" field="buildTime" :unit="unit" :compare="compareUnit" :low="true"> B</tr>
                 <tr is="Cell" name="Speed" field="speed" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Acceleration" field="acceleration" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Deceleration" field="deceleration" :unit="unit" :compare="compareUnit"></tr>
-                <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"> deg/sec</tr>
+                <tr is="Cell" name="Turn rate" field="turnRate" :unit="unit" :compare="compareUnit"> °/sec</tr>
                 <tr is="Cell" name="Size X" field="sizeX" :unit="unit" :compare="compareUnit" :d="0"></tr>
                 <tr is="Cell" name="Size Z" field="sizeZ" :unit="unit" :compare="compareUnit" :d="0"></tr>
             </tbody>
@@ -491,6 +496,7 @@
             ShowCarrierData: { type: Boolean, required: false, default: false },
             ShowClusterData: { type: Boolean, required: false, default: false },
             DamageTypes: { type: Array as PropType<string[]>, required: true },
+            ShowReactiveArmor: { type: Boolean, required: false, default: false },
             DumpJson: { type: Boolean, required: false, default: false }
         },
 
@@ -505,6 +511,7 @@
             this.$emit("changeshowcarrier", this.selectedWeapon.carriedUnit != null);
             this.$emit("changeshowcluster", this.selectedWeapon.clusterWeapon != null);
             this.$emit("updatedamagetypes", Array.from(this.selectedWeapon.damages.keys()));
+            this.$emit("changeshowreactivearmor", this.unit.reactiveArmorHealth > 0);
         },
 
         methods: {

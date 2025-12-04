@@ -368,9 +368,12 @@ namespace gex.Code.Discord {
                 embed.Color = DiscordColor.Brown;
             }
 
-            embed.Description += $"**Health**: {_N(unit.Health)}";
+            embed.Description += $"**Health**: {_N(unit.Health)} hp";
             if (showExtra == true) {
                 embed.Description += $" ({_N((1d - unit.DamageModifier) * 100)}% DR when closed)";
+                if (unit.ReactiveArmorHealth > 0) {
+                    embed.Description += $"\n**Armor**: {_N(unit.ReactiveArmorHealth / Math.Max(0.01, unit.DamageModifier))} hp / {_N(unit.ReactiveArmorRestore)}s recharge";
+                }
             }
             embed.Description += "\n";
 
@@ -505,6 +508,9 @@ namespace gex.Code.Discord {
                         if (weapon.Projectiles != 1) {
                             embed.Description += $"{weapon.Projectiles}x pellets, ";
                         }
+                        if (weapon.ClusterNumber != 0) {
+                            embed.Description += $"{weapon.ClusterNumber}x cluster, ";
+                        }
 
                         embed.Description += $"{_N(damage)} dmg";
 
@@ -520,6 +526,11 @@ namespace gex.Code.Discord {
                         }
 
                         embed.Description += $", {_D(reloadTime)}s reload)\n";
+
+                        if (weapon.ClusterWeapon != null) {
+                            embed.Description += $"Cluster: {_N(weapon.ClusterWeapon.Damages.GetValueOrDefault("default", 0))} dmg, "
+                                + $"{_N(weapon.ClusterWeapon.AreaOfEffect)} splash\n";
+                        }
 
                         if (weapon.TimedAreaDamage != 0d) {
                             embed.Description += $"Area dmg: {_N(weapon.TimedAreaDamage * 0.7333)} dps in area, area lasts {_N(weapon.TimedAreaTime)}s\n";
