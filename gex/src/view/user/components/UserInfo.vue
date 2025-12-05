@@ -527,15 +527,12 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                         }
 
                         const enemyPlayers: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID != player.allyTeamID);
-
-                        const totalSkill: number = enemyPlayers
-                            .reduce((acc, iter) => acc += iter.skill, 0);
-
+                        const totalSkill: number = enemyPlayers.reduce((acc, iter) => acc += iter.skill, 0);
                         const avgSkill: number = totalSkill / enemyPlayers.length;
 
                         const playerSkill: number = player?.skill ?? 0;
-
                         const skillDiff: number = playerSkill - avgSkill;
+                        console.log(`UserInfo> match ${match.id} player skill ${playerSkill} diff ${skillDiff}`);
 
                         s += playerSkill;
                         c += 1;
@@ -589,7 +586,7 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                         random: iter[1].find(iter => iter.faction == FactionUtil.RANDOM) ?? null,
                         sum: sum,
                         averageSkill: (skill.get(iter[0]) ?? 0) / Math.max(1, c),
-                        averageSkillDiff: (diff.get(iter[0]) ?? 0) / Math.max(1, c)
+                        averageSkillDiff: (diff.get(iter[0]) ?? 0)
                     }
                 }).sort((a, b) => {
                     return b.sum.playCount - a.sum.playCount;

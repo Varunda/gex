@@ -437,7 +437,10 @@ namespace gex.Controllers.Api {
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
 
-                ret.Add(new ApiMatch(m));
+                ApiMatch match = new(m);
+                match.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+
+                ret.Add(match);
             }
 
             return ApiOk(ret);

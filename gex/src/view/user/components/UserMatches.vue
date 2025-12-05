@@ -16,6 +16,7 @@
 
                 <a-body v-slot="entry">
                     <a :href="'/match/' + entry.id">
+
                         {{ entry.startTime | moment }}
                     </a>
                 </a-body>
@@ -107,7 +108,13 @@
 
                 <a-body v-slot="entry">
                     <a :href="'/match/' + entry.id">
-                        View
+                        View<span style="text-decoration: none; padding-left: 0.25rem;">
+                            <span v-if="entry.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
+                                title="This match is for a bad version and cannot be processed"></span>
+
+                            <span v-else-if="entry.processing == null || entry.processing.actionsParsed == null" class="bi bi-cone text-warning"
+                                title="This match has not been fully processed!"></span>
+                        </span>
                     </a>
                 </a-body>
             </a-col>
