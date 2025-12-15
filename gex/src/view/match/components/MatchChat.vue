@@ -2,7 +2,6 @@
 <template>
     <div>
         <collapsible header-text="Chat" bg-color="bg-light" size-class="h1">
-
             <div v-if="messages.length == 0">
                 No chat messages
             </div>
@@ -13,6 +12,18 @@
                 </div>
 
                 <div v-else style="max-height: 400px; overflow-y: scroll;">
+                    <div>
+                        <button class="btn btn-sm mb-2" :class="[ useStartTime == true ? 'btn-primary' : 'btn-secondary' ]" @click.stop="useStartTime = !useStartTime">
+                            use start time
+                        </button>
+
+                        <span v-if="useStartTime == true">
+                            showing timestamps based on when they took place after the game started
+                        </span>
+                        <span v-else>
+                            showing timestamps based on when they took place after the game was loaded
+                        </span>
+                    </div>
 
                     <div v-if="ShowMobile == true">
                         <div v-for="msg in messages" :key="msg.id" class="mb-3">
@@ -57,6 +68,7 @@
     import TimeUtils from "util/Time";
 
     import Collapsible from "components/Collapsible.vue";
+    import ToggleButton from "components/ToggleButton";
 
     type FullMessage = {
         id: number;
@@ -77,7 +89,8 @@
 
         data: function() {
             return {
-                show: false as boolean
+                show: false as boolean,
+                useStartTime: true as boolean
             }
         },
 
@@ -132,14 +145,22 @@
                 const messages: FullMessage[] = this.match.chatMessages.map((iter, index) => {
                     const allyTeamID = this.getPlayerAllyTeamId(iter.fromId);
 
+                    let timestamp: number = (this.useStartTime == true)
+                        ? iter.gameTimestamp - this.match.startOffset
+                        : iter.gameTimestamp;
+
+                    if (timestamp < 0) {
+                        timestamp = 0;
+                    }
+
                     return {
                         id: index,
                         from: this.getIdName(iter.fromId),
                         to: this.getIdName(iter.toId, allyTeamID),
                         color: this.getIdColor(iter.toId, allyTeamID),
                         playerColor: this.getPlayerColor(iter.fromId),
-                        timestamp: TimeUtils.duration(iter.gameTimestamp),
-                        gametime: iter.gameTimestamp,
+                        timestamp: TimeUtils.duration(timestamp),
+                        gametime: timestamp,
                         message: iter.message
                     }
                 });
@@ -165,7 +186,7 @@
         },
 
         components: {
-            Collapsible
+            Collapsible, ToggleButton
         }
     });
     export default MatchChat;
