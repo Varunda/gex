@@ -52,11 +52,11 @@ namespace gex.Services.Db.Match {
 
         public async Task<List<BarMatchChatMessage>> GetByGameID(string gameID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return (await conn.QueryAsync<BarMatchChatMessage>(new CommandDefinition(
-                "SELECT * FROM bar_match_chat_message WHERE game_id = @GameID ORDER BY game_timestamp ASC",
+            return await conn.QueryListAsync<BarMatchChatMessage>(
+                "SELECT * FROM bar_match_chat_message WHERE game_id = @GameID ORDER BY game_timestamp ASC, id ASC",
                 new { GameID = gameID },
                 cancellationToken: cancel
-            ))).ToList();
+            );
         }
 
         public async Task DeleteByGameID(string gameID) {

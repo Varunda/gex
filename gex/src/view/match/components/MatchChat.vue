@@ -158,7 +158,7 @@
                 }
 
                 return messages.sort((a, b) => {
-                    return a.gametime - b.gametime;
+                    return a.gametime - b.gametime || a.id - b.id;
                 });
             }
 
