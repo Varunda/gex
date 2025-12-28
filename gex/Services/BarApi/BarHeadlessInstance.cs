@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -99,6 +100,11 @@ namespace gex.Services.BarApi {
         }
 
         public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
+
+            if (RuntimeInformation.ProcessArchitecture != Architecture.X64) {
+                _Logger.LogWarning($"cannot replay demofile, system architecure is not amd64 [arch={RuntimeInformation.ProcessArchitecture}]");
+                return "cpu is not amd64 (x86-64), cannot run recoil";
+            }
 
             _Logger.LogDebug($"starting BAR headless instance [gameID={gameID}] [cwd={Environment.CurrentDirectory}]");
 

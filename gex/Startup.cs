@@ -3,7 +3,6 @@ using gex.Code;
 using gex.Code.Converters;
 using gex.Code.Hubs;
 using gex.Code.Hubs.Implementations;
-using gex.Common.Models;
 using gex.Common.Models.Options;
 using gex.Common.Services;
 using gex.Models;
@@ -44,6 +43,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -406,6 +406,10 @@ namespace gex {
             app.UseMiddleware<ExceptionHandlerMiddleware>();
 
             logger.LogInformation($"environment: {env.EnvironmentName}");
+
+            if (RuntimeInformation.ProcessArchitecture != Architecture.X64) {
+                logger.LogWarning($"recoil only runs on amd64, cannot replay demofiles [arch={RuntimeInformation.ProcessArchitecture}]");
+            }
 
             app.UseStaticFiles();
             app.UseRouting();

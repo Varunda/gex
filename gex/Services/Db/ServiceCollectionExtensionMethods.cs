@@ -48,6 +48,7 @@ namespace gex.Services.Db {
             services.AddSingleton<GameEventUnitResourcesDb>();
             services.AddSingleton<GameEventUnitDamageDb>();
             services.AddSingleton<GameEventUnitPositionDb>();
+            services.AddSingleton<GameUnitsCreatedDb>();
 
             // user stats
             services.AddSingleton<BarUserDb>();

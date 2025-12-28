@@ -1,4 +1,5 @@
 ﻿using gex.Models.Db;
+using gex.Models.Event;
 using gex.Models.UserStats;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace gex.Models.Api {
 
         public List<UserPreviousName> PreviousNames { get; set; } = [];
 
-        public List<BarUserUnitsMade> UnitsMade { get; set; } = [];
+        public List<GameUnitsCreated> UnitsMade { get; set; } = [];
 
     }
 }

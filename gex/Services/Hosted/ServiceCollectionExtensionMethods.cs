@@ -39,6 +39,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<GitHubUnitDataUpdatePeriodicService>();
             services.AddHostedService<LobbyBattleStatusApiUpdatePeriodicService>();
             services.AddHostedService<MapEngineUsageCleanupPeriodicService>();
+            //services.AddHostedService<UserUnitsMadeNeedsUpdatePeriodicService>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {

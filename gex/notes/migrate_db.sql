@@ -54,7 +54,7 @@ CREATE USER MAPPING FOR user
 	OPTIONS (user 'user', password 'password');
 	
 IMPORT FOREIGN SCHEMA public
-	LIMIT TO (bar_match, bar_match_player, bar_match_ally_team, bar_match_spectator)
+	LIMIT TO (bar_match, bar_match_player, bar_match_ally_team, bar_match_spectator, bar_match_processing)
 	FROM SERVER gex_main
 	INTO public;
 

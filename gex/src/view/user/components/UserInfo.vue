@@ -79,12 +79,12 @@
                 </table>
 
                 <span class="text-muted">
-                    Average opponent skill {{ faction.averageSkill | locale(2) }}
+                    Average opponent skill is <b>{{ faction.averageSkill | locale(2) }}</b>, which is
                     <span v-if="faction.averageSkillDiff > 0">
-                        (diff +{{ faction.averageSkillDiff | locale(2) }})
+                        {{ faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> below this user
                     </span>
                     <span v-else>
-                        (diff {{ faction.averageSkillDiff | locale(2) }})
+                        {{ -1 * faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> above this user
                     </span>
                 </span>
             </div>
@@ -504,7 +504,6 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
             },
 
             groupedFactionData: function(): GroupedFactionGamemode[] {
-
                 const skill: Map<number, number> = new Map();
                 const count: Map<number, number> = new Map();
                 const diff: Map<number, number> = new Map();
@@ -527,12 +526,22 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                         }
 
                         const enemyPlayers: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID != player.allyTeamID);
+                        if (enemyPlayers.length == 0) {
+                            console.warn(`UserInfo> game is missing any opponents [gameID=${match.id}]`);
+                            continue;
+                        }
+
                         const totalSkill: number = enemyPlayers.reduce((acc, iter) => acc += iter.skill, 0);
                         const avgSkill: number = totalSkill / enemyPlayers.length;
 
                         const playerSkill: number = player?.skill ?? 0;
                         const skillDiff: number = playerSkill - avgSkill;
-                        console.log(`UserInfo> match ${match.id} player skill ${playerSkill} diff ${skillDiff}`);
+                        //console.log(`UserInfo> match ${match.id} player skill ${playerSkill} diff ${skillDiff}`);
+
+                        if (Number.isNaN(skillDiff)) {
+                            console.warn(`UserInfo> got NaN skill diff [gameID=${match.id}]`);
+                            continue;
+                        }
 
                         s += playerSkill;
                         c += 1;

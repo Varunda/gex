@@ -7,6 +7,7 @@ using gex.Models.MapStats;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Db;
+using gex.Services.Db.Event;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Queues;
@@ -31,19 +32,19 @@ namespace gex.Controllers.Api {
         private readonly BarUserFactionStatsDb _FactionStatsDb;
         private readonly BarMapDb _MapDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
-        private readonly BarUserUnitsMadeRepository _UnitsMadeRepository;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchPlayerRepository _MatchPlayerRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BaseQueue<FixCountryCodeQueueEntry> _FixCountryCodeQueue;
+        private readonly GameUnitsCreatedRepository _GameUnitsCreatedRepository;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserRepository userRepository, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
             BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
-            BarUserUnitsMadeRepository unitsMadeRepository, BarMatchPlayerRepository matchPlayerRepository,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
-            BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue) {
+            BarMatchPlayerRepository matchPlayerRepository, BarMatchRepository matchRepository,
+            BarMatchAllyTeamDb allyTeamDb, BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue,
+            GameUnitsCreatedRepository gameUnitsCreatedRepository) {
 
             _Logger = logger;
             _UserRepository = userRepository;
@@ -52,11 +53,11 @@ namespace gex.Controllers.Api {
             _SkillDb = skillDb;
             _MapDb = mapDb;
             _StartSpotRepository = startSpotRepository;
-            _UnitsMadeRepository = unitsMadeRepository;
             _MatchPlayerRepository = matchPlayerRepository;
             _MatchRepository = matchRepository;
             _AllyTeamDb = allyTeamDb;
             _FixCountryCodeQueue = fixCountryCodeQueue;
+            _GameUnitsCreatedRepository = gameUnitsCreatedRepository;
         }
 
         /// <summary>
@@ -119,7 +120,7 @@ namespace gex.Controllers.Api {
             }
 
             if (includeUnitsMade == true) {
-                response.UnitsMade = await _UnitsMadeRepository.GetByUserID(userID, cancel);
+                response.UnitsMade = await _GameUnitsCreatedRepository.GetByUserID(userID, cancel);
             }
 
             return ApiOk(response);
@@ -149,6 +150,12 @@ namespace gex.Controllers.Api {
 
             List<ApiBarUser> ret = [];
             foreach (BarUser user in users) {
+                if (user.CountryCode == null) {
+                    _FixCountryCodeQueue.Queue(new FixCountryCodeQueueEntry() {
+                        UserID = user.UserID
+                    });
+                }
+
                 ApiBarUser api = new();
                 api.UserID = user.UserID;
                 api.Username = user.Username;

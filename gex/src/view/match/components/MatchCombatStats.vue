@@ -52,7 +52,7 @@
             </div>
 
             <div class="mb-5">
-                <a-table :entries="dynamicUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true">
+                <a-table :entries="dynamicUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
                     <a-col sort-field="name">
                         <a-header>
                             <h5 class="mb-0 text-center" style="min-width: 12rem"><b>Units</b></h5>
@@ -156,7 +156,7 @@
                 </a-table>
             </div>
 
-            <a-table :entries="staticUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true">
+            <a-table :entries="staticUnits" display-type="table" default-sort-field="rank" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
                 <a-col sort-field="name">
                     <a-header>
                         <h5 class="mb-0 text-center" style="min-width: 12rem">

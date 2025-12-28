@@ -63,8 +63,8 @@
             <busy class="busy busy-sm"></busy>
         </div>
 
-        <div v-if="unitData.state == 'loaded'">
-            <user-units-made :user="unitData.data"></user-units-made>
+        <div v-if="unitData.state == 'loaded' && matches.state == 'loaded'">
+            <user-units-made :user="unitData.data" :matches="matches.data"></user-units-made>
         </div>
     </div>
 </template>

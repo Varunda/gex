@@ -14,6 +14,7 @@ using gex.Models.Demofile;
 using gex.Services.Parser;
 using gex.Services.Storage;
 using gex.Common.Models;
+using gex.Services.Db.Event;
 
 namespace gex.Code.Commands {
 
@@ -24,14 +25,19 @@ namespace gex.Code.Commands {
         private readonly BarMatchDb _MatchDb;
         private readonly DemofileStorage _DemofileStorage;
         private readonly BarDemofileParser _DemofileParser;
+        private readonly GameUnitsCreatedDb _GameUnitsCreatedDb;
 
         public MatchCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<MatchCommand>>();
             _MatchDb = services.GetRequiredService<BarMatchDb>();
             _DemofileStorage = services.GetRequiredService<DemofileStorage>();
             _DemofileParser = services.GetRequiredService<BarDemofileParser>();
+            _GameUnitsCreatedDb = services.GetRequiredService<GameUnitsCreatedDb>();
         }
 
+        /// <summary>
+        ///     command to go thru all <see cref="BarMatch"/>s and update <see cref="BarMatch.WrongSkillValues"/>
+        /// </summary>
         public void FixWrongSkillValues() {
             _Logger.LogInformation($"updating wrong_skill_values for all bar matches");
 
@@ -67,6 +73,9 @@ namespace gex.Code.Commands {
             }).Start();
         }
 
+        /// <summary>
+        ///     command to parse each demofile again and update the <see cref="BarMatch.StartOffset"/>
+        /// </summary>
         public void AddStartOffset() {
             _Logger.LogInformation($"updating start_offset for all bar matches");
 
@@ -104,6 +113,17 @@ namespace gex.Code.Commands {
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to fix wrong skill values");
                 }
+            }).Start();
+        }
+
+        /// <summary>
+        ///     command to generate all missing games from game_units_created
+        /// </summary>
+        public void AddGameUnitsCreated() {
+            _Logger.LogInformation($"adding game_units_created for all matches without i");
+
+            new Task(async () => {
+                await _GameUnitsCreatedDb.GenerateAllMissing(CancellationToken.None);
             }).Start();
         }
 

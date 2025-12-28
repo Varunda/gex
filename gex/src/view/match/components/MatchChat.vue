@@ -166,8 +166,10 @@
                 });
 
                 if (this.match.startOffset > 0) {
+                    const id: number = messages.length == 0 ? 0 : messages[messages.length - 1].id + 1;
+
                     messages.push({
-                        id: messages[messages.length - 1].id + 1,
+                        id: id,
                         from: "HOST",
                         to: "Everyone",
                         color: this.getIdColor(254),

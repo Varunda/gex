@@ -56,7 +56,7 @@
             </div>
 
             <div class="mb-5">
-                <a-table :entries="builders" :hide-paginate="true" default-sort-field="rank" default-sort-order="desc">
+                <a-table :entries="builders" :hide-paginate="true" default-sort-field="rank" default-sort-order="desc" :overflow-wrap="true">
                     <a-col>
                         <a-header>
                             <h4 class="mb-0">
@@ -143,8 +143,8 @@
             </div>
 
             <div class="d-flex flex-wrap mb-5" style="gap: 1rem;">
-                <div class="flex-grow-1" style="flex-basis: 48%">
-                    <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
+                <div class="flex-grow-1 w-100" style="flex-basis: 48%">
+                    <a-table :entries="metalProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
                         <a-col sort-field="name">
                             <a-header>
                                 <h4 class="mb-0" style="min-width: 12rem;">
@@ -210,8 +210,8 @@
                     </a-table>
                 </div>
 
-                <div class="flex-grow-1" style="flex-basis: 48%">
-                    <a-table :entries="energyProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
+                <div class="flex-grow-1 w-100" style="flex-basis: 48%">
+                    <a-table :entries="energyProduction" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
                         <a-col sort-field="name">
                             <a-header>
                                 <h4 class="mb-0" style="min-width: 12rem;">
@@ -269,8 +269,8 @@
             </div>
 
             <div class="d-flex flex-wrap" style="gap: 1rem;">
-                <div class="flex-grow-1" style="flex-basis: 48%">
-                    <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true">
+                <div class="flex-grow-1 w-100" style="flex-basis: 48%">
+                    <a-table :entries="otherBuildings" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
                         <a-col sort-field="name">
                             <a-header>
                                 <h4 class="mb-0" style="min-width: 12rem;">
@@ -336,7 +336,7 @@
                     </a-table>
                 </div>
 
-                <div class="flex-grow-1" style="flex-basis: 48%">
+                <div class="flex-grow-1 w-100" style="flex-basis: 48%">
                     <match-wind-graph :updates="output.windUpdates" :map="match.mapData"></match-wind-graph>
                 </div>
             </div>

@@ -44,7 +44,9 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameEventTeamDiedDb _TeamDiedDb;
         private readonly GameEventUnitResourcesDb _UnitResourcesDb;
         private readonly GameEventUnitDamageDb _UnitDamageDb;
+
         private readonly UnitPositionFileStorage _UnitPositionStorage;
+        private readonly GameUnitsCreatedDb _UnitsCreatedDb;
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -59,7 +61,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
             GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue,
-            UnitPositionFileStorage unitPositionStorage)
+            UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -85,6 +87,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _UnitResourcesDb = unitResourcesDb;
             _UnitDamageDb = unitDamageDb;
             _UnitPositionStorage = unitPositionStorage;
+            _UnitsCreatedDb = unitsCreatedDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -161,7 +164,6 @@ namespace gex.Services.Hosted.QueueProcessor {
                     GameID = entry.GameID,
                     Hash = unitDefHash
                 });
-
             } else {
                 _Logger.LogWarning($"missing unit definitions for game! [gameID={entry.GameID}]");
             }
@@ -180,6 +182,12 @@ namespace gex.Services.Hosted.QueueProcessor {
                 GameID = entry.GameID,
                 Force = entry.Force
             });
+
+            try {
+                await _UnitsCreatedDb.Generate(entry.GameID, cancel);
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to generate game units made [gameID={entry.GameID}]");
+            }
 
             return true;
         }

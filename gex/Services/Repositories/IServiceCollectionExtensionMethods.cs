@@ -28,10 +28,10 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarI18nRepository>();
             services.AddSingleton<MatchPoolRepository>();
             services.AddSingleton<BadGameVersionRepository>();
+            services.AddSingleton<GameUnitsCreatedRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();
-            services.AddSingleton<BarUserUnitsMadeRepository>();
         }
 
     }

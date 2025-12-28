@@ -59,6 +59,10 @@ namespace gex.Services.Repositories {
             return keys.GetValueOrDefault(key);
         }
 
+        public Task<string?> GetUnitName(string defName, CancellationToken cancel) {
+            return GetString("units", $"units.names.{defName}", cancel);
+        }
+
         /// <summary>
         ///     get all i18n entries that start with <paramref name="prefix"/>, sorted by i18n key a->z
         /// </summary>
