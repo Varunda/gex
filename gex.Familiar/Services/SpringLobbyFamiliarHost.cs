@@ -207,6 +207,7 @@ namespace gex.Familiar.Services {
                 _Logger.LogInformation($"{message.Command} {message.Arguments}");
             } else if (message.Command == "ADDSTARTRECT") {
             } else if (message.Command == "REQUESTBATTLESTATUS") {
+            } else if (message.Command == "s.battle.teams") { 
             } else if (message.Command == "SAIDBATTLEEX") {
                 _Logger.LogInformation($"message in lobby [args={message.Arguments}]");
 
