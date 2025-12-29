@@ -23,6 +23,10 @@ namespace gex.Services.Db.Patches {
 
                     PRIMARY KEY (game_id, user_id, definition_name)
                 );
+
+
+                CREATE INDEX IF NOT EXISTS idx_game_units_created_game_id ON game_units_created (game_id);
+                CREATE INDEX IF NOT EXISTS idx_game_units_created_user_id ON game_units_created (user_id);
             ");
 
             await cmd.ExecuteNonQueryAsync();

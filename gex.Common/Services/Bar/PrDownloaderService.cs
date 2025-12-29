@@ -28,6 +28,10 @@ namespace gex.Common.Services.Bar {
             _Logger = logger;
             _EnginePathUtil = enginePathUtil;
             _Options = options;
+
+            if (string.IsNullOrEmpty(_Options.Value.MapLocation)) {
+                throw new Exception($"missing FileStorage:MapLocation, set this in env.json");
+            }
         }
 
         /// <summary>

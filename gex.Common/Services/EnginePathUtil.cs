@@ -14,6 +14,10 @@ namespace gex.Common.Services {
 
         public EnginePathUtil(IOptions<FileStorageOptions> options) {
             _Options = options;
+
+            if (string.IsNullOrEmpty(_Options.Value.EngineLocation)) {
+                throw new Exception($"missing FileStorage:EngineLocation, set this in env.json");
+            }
         }
 
         public string Get(string version) {
