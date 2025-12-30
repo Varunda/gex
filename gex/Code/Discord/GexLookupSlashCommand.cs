@@ -1493,7 +1493,14 @@ namespace gex.Code.Discord {
                     List<DiscordAutoCompleteChoice> choices = await _GetChoices(memoryCache, githubUnitRepository, i18n, logger);
 
                     List<DiscordAutoCompleteChoice> matches = choices.Where(iter => {
-                        return iter.Name.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+                        // use starts with, but for each word within the unit name
+                        // for example, if inputting "Pawn", include:
+                        //      "Pawn", "Pawn Launcher", "Epic Pawn"
+                        // but not:
+                        //      "New Nuke Spawner"
+                        // suggested by [BONELESS] in BAR discord
+                        string[] names = iter.Name.Split(" ");
+                        return names.Where(i => i.StartsWith(value, StringComparison.OrdinalIgnoreCase)).Any();
                     }).ToList();
 
                     if (matches.Count > 25) {

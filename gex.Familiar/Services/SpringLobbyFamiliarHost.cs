@@ -215,7 +215,7 @@ namespace gex.Familiar.Services {
                 string? msg = message.GetSentence();
 
                 if ((msg?.Contains("Unable to start game,") ?? false) && (msg?.Contains("is unsynced") ?? false) && (msg?.Contains(_Options.Value.Username) ?? false)) {
-                    _Logger.LogInformation($"familiar is unsynced!");
+                    _Logger.LogInformation($"familiar is unsynced, resyncing!");
                     _LobbyClient.Write("MYBATTLESTATUS", $"{(1 << 22) | (1 << 1)} 0", CancellationToken.None);
                 }
             } else {
