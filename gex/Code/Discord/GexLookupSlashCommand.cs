@@ -1486,6 +1486,9 @@ namespace gex.Code.Discord {
                 IGithubDownloadRepository githubUnitRepository = ctx.Services.GetRequiredService<IGithubDownloadRepository>();
                 BarI18nRepository i18n = ctx.Services.GetRequiredService<BarI18nRepository>();
                 ILogger<UnitNameProvider> logger = ctx.Services.GetRequiredService<ILogger<UnitNameProvider>>();
+                BarUnitRepository unitRepo = ctx.Services.GetRequiredService<BarUnitRepository>();
+
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
 
                 string value = ctx.OptionValue.ToString() ?? "";
 
@@ -1499,9 +1502,29 @@ namespace gex.Code.Discord {
                         // but not:
                         //      "New Nuke Spawner"
                         // suggested by [BONELESS] in BAR discord
+                        string[] inputs = value.Split(" ");
                         string[] names = iter.Name.Split(" ");
-                        return names.Where(i => i.StartsWith(value, StringComparison.OrdinalIgnoreCase)).Any();
+
+                        foreach (string input in inputs) {
+                            if (names.Where(i => i.StartsWith(input, StringComparison.OrdinalIgnoreCase)).Any() == false) {
+                                return false;
+                            }
+                        }
+
+                        return true;
                     }).ToList();
+
+                    // only filter out fake units if there are more than 1
+                    if (matches.Count > 1) {
+                        foreach (DiscordAutoCompleteChoice iter in matches) {
+                            // value is the def name
+                            Result<BarUnit, string> unit = await unitRepo.GetByDefinitionName(iter.Value.ToString()!, cts.Token);
+
+                            if (unit.IsOk && unit.Value.IsFakeUnit == true) {
+                                matches.Remove(iter);
+                            }
+                        }
+                    }
 
                     if (matches.Count > 25) {
                         return matches[..25];
@@ -1543,6 +1566,9 @@ namespace gex.Code.Discord {
                             // if the definition names change in just faction prefix (e.g. armalab, coralab)
                             // then gex can safely just suffix the label name with the faction,
                             // else just include the full definition name
+                            // e.x.
+                            //      "armalab", "coralab" => "alab"
+                            // there is only one, so instead of showing "Advanced Bot Lab (armalab)", it would be "Advanced Bot Lab (Armada)"
                             bool justFactionPrefixChanges = set.Value.Select(iter => {
                                 if (iter.StartsWith("cor") || iter.StartsWith("arm") || iter.StartsWith("leg")) {
                                     return iter[3..];

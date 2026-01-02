@@ -174,7 +174,7 @@
                         to: "Everyone",
                         color: this.getIdColor(254),
                         playerColor: this.getPlayerColor(255),
-                        timestamp: TimeUtils.duration(this.match.startOffset),
+                        timestamp: TimeUtils.duration(this.useStartTime == true ? 0 : this.match.startOffset),
                         gametime: this.match.startOffset,
                         message: "Game started"
                     });

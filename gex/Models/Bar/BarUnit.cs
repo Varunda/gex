@@ -110,6 +110,8 @@ namespace gex.Models.Bar {
 
         public double IdleAutoHeal { get; set; }
 
+        public bool IsFakeUnit { get; set; }
+
         /// <summary>
         ///     health of reactive armor
         /// </summary>
