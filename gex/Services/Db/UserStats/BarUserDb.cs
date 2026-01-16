@@ -89,6 +89,10 @@ namespace gex.Services.Db.UserStats {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a list of <see cref="UserSearchResult"/>s</returns>
         public async Task<List<UserSearchResult>> SearchByName(string name, bool includePreviousNames, CancellationToken cancel) {
+            // transparently handle using * as a wildcard
+            // if a * is given, assume the user does not want results that contain the string, and instead is using * as a wildcard
+            name = name.Replace("_", "\\_");
+
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<UserSearchResult>(
                 includePreviousNames == true
@@ -96,7 +100,7 @@ namespace gex.Services.Db.UserStats {
                             FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
                             WHERE lower(u.username) LIKE lower(@Search) OR lower(p.user_name) LIKE lower(@Search)"
                     : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" FROM bar_user WHERE lower(username) LIKE lower(@Search)",
-                new { Search = $"%{name}%" },
+                new { Search = name.Contains("*") ? name.Replace("*", "%") : $"%{name}%" },
                 cancellationToken: cancel
             );
         }

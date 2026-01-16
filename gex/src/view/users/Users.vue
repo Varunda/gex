@@ -4,7 +4,11 @@
         <div class="container">
             <h1>User search</h1>
 
-            <input class="form-control mb-2" type="text" v-model="searchTerm" @keyup.enter="searchWrapper" placeholder="Press enter to search (minimum 3 characters)">
+            <input class="form-control mb-2" type="text" v-model="searchTerm" @keyup.enter="searchWrapper" placeholder="Press enter to search">
+
+            <span class="mb-2">
+                Minimum 3 characters, use <code>*</code> for wildcard
+            </span>
 
             <div class="mb-2 form-check">
                 <input type="checkbox" class="form-check-input" id="search-previous-names-toggle" v-model="searchPreviousNames">
@@ -31,7 +35,6 @@
             </div>
 
             <div v-else-if="users.state == 'loaded'">
-
                 <a-table :entries="users"
                     default-sort-field="searchDiff" default-sort-order="asc">
 
@@ -100,7 +103,14 @@
                     </a-col>
 
                 </a-table>
+            </div>
 
+            <div v-else-if="users.state == 'error'">
+                <api-error :error="users.problem"></api-error>
+            </div>
+
+            <div v-else>
+                unchecked state of <code>users</code>: {{ users.state }}
             </div>
         </div>
     </div>

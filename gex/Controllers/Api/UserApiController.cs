@@ -329,7 +329,7 @@ namespace gex.Controllers.Api {
         ///		search users based on current username (case-insensitive).
         ///		<see cref="ApiBarUser.FactionStats"/> and <see cref="ApiBarUser.MapStats"/> is never populated
         /// </summary>
-        /// <param name="search">text to search for. must be at least 3 characters long</param>
+        /// <param name="search">text to search for. must be at least 3 non-wildcard characters long</param>
         /// <param name="searchPreviousNames">will previous names be searched against as well? defaults to false</param>
         /// <param name="includeSkill">if <see cref="ApiBarUser.Skill"/> will be populated. defaults to false</param>
         /// <param name="cancel">cancellation token</param>
@@ -349,8 +349,9 @@ namespace gex.Controllers.Api {
             CancellationToken cancel = default
         ) {
 
-            if (search.Length < 3) {
-                return ApiBadRequest<List<UserSearchResult>>($"search must be at least 3 characters");
+            // ignore wildcard when imposing character minimum
+            if (search.Where(iter => iter != '*').Count() < 3) {
+                return ApiBadRequest<List<UserSearchResult>>($"search must be at least 3 non-wildcard characters");
             }
 
             List<UserSearchResult> users = await _UserRepository.SearchByName(search, searchPreviousNames, cancel);
