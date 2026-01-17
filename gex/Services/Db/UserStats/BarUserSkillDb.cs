@@ -70,5 +70,31 @@ namespace gex.Services.Db.UserStats {
             ))).ToList();
         }
 
+        /// <summary>
+        ///     get the <see cref="BarUserSkill"/> entries for multiple users
+        /// </summary>
+        /// <param name="userIDs">List of user IDs to get skills for</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a dictionary mapping user IDs to lists of <see cref="BarUserSkill"/>s
+        /// </returns>
+        public async Task<Dictionary<long, List<BarUserSkill>>> GetByUserIDs(List<long> userIDs, CancellationToken cancel) {
+            if (userIDs == null || userIDs.Count == 0) {
+                return new Dictionary<long, List<BarUserSkill>>();
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            IEnumerable<BarUserSkill> skills = (await conn.QueryAsync<BarUserSkill>(new CommandDefinition(
+                "SELECT * FROM bar_user_skill WHERE user_id = ANY(@UserIDs)",
+                new { UserIDs = userIDs.ToArray() },
+                cancellationToken: cancel
+            ))).ToList();
+
+            // Group by user ID
+            return skills
+                .GroupBy(s => s.UserID)
+                .ToDictionary(g => g.Key, g => g.ToList());
+        }
+
     }
 }
