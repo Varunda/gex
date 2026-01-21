@@ -76,6 +76,8 @@ namespace gex.Services.Parser {
             unit.SizeZ = _Double(info, "footprintz", 0);
             unit.Speed = _Double(info, "speed", 0);
             unit.TurnRate = _Double(info, "turnrate", 0);
+            unit.MovementClass = _Str(info, "movementclass") ?? "";
+            unit.CanFly = _Bool(info, "canfly", false);
             // https://github.com/beyond-all-reason/RecoilEngine/blob/88207e2ee01dc9eccdfc08b8b12eb5c6b6b9ab10/rts/Sim/Units/UnitDef.cpp#L445
             // maxAcc = udTable.GetFloat("maxAcc", udTable.GetFloat("acceleration", 0.5f));
             // for displaying, the game uses 900 * acceleration
@@ -86,6 +88,7 @@ namespace gex.Services.Parser {
             // https://github.com/beyond-all-reason/RecoilEngine/blob/88207e2ee01dc9eccdfc08b8b12eb5c6b6b9ab10/rts/Sim/Units/UnitDef.cpp#L449
             // maxDec = udTable.GetFloat("maxDec", udTable.GetFloat("brakeRate", maxAcc));
             unit.Deceleration = _Double(info, "maxdec", unit.Acceleration);
+
 
             // eco stuff
             unit.EnergyProduced = _Double(info, "energymake", 0);
@@ -108,6 +111,13 @@ namespace gex.Services.Parser {
             unit.CanRepair = _Bool(info, "canrepair", false);
             unit.CanRestore = _Bool(info, "canrestore", false);
             unit.CanResurrect = _Bool(info, "canresurrect", false);
+
+            Dictionary<object, object>? buildOptions = _Dict(info, "buildoptions");
+            if (buildOptions != null) {
+                foreach (KeyValuePair<object, object> iter in buildOptions) {
+                    unit.BuildOptions.Add(iter.Value.ToString()!);
+                }
+            }
 
             // los
             unit.SightDistance = _Double(info, "sightdistance", 0);

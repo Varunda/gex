@@ -26,6 +26,10 @@ namespace gex.Models.Bar {
 
         public double Deceleration { get; set; }
 
+        public string MovementClass { get; set; } = "";
+
+        public bool CanFly { get; set; } = false;
+
         public double SizeX { get; set; }
 
         public double SizeZ { get; set; }
@@ -61,6 +65,8 @@ namespace gex.Models.Bar {
         public double BuildDistance { get; set; }
 
         public double BuildPower { get; set; }
+
+        public List<string> BuildOptions { get; set; } = [];
 
         public bool CanResurrect { get; set; }
 

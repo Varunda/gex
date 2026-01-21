@@ -12,6 +12,10 @@ export class BarUnitApi extends ApiWrapper<BarUnit> {
         return BarUnitApi.get().readList(`/api/unit/all`, BarUnitName.parse);
     }
 
+    public static getAllDefinitions(): Promise<Loading<ApiBarUnit[]>> {
+        return BarUnitApi.get().readList(`/api/unit/all-defs`, ApiBarUnit.parse);
+    }
+
     public static getByDefinitionName(defName: string): Promise<Loading<ApiBarUnit>> {
         return BarUnitApi.get().readSingle(`/api/unit/def-name/${defName}`, ApiBarUnit.parse);
     }

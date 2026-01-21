@@ -357,5 +357,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult Units() {
+            return View();
+        }
+
     }
 }

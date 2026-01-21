@@ -3,11 +3,13 @@ export class BarUnitName {
 
     public definitionName: string = "";
     public displayName: string = "";
+    public disambiguatedName: string = "";
 
     public static parse(elem: any): BarUnitName {
         return {
             definitionName: elem.definitionName,
-            displayName: elem.displayName
+            displayName: elem.displayName,
+            disambiguatedName: elem.disambiguatedName
         };
     }
 

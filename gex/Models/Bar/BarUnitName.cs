@@ -6,5 +6,7 @@
 
         public string DisplayName { get; set; } = "";
 
+        public string DisambiguatedName { get; set; } = "";
+
     }
 }

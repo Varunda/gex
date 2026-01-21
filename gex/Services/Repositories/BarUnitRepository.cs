@@ -101,7 +101,11 @@ namespace gex.Services.Repositories {
                                 labelName += $"({defName})";
                             }
 
-                            names.Add(new BarUnitName() { DefinitionName = defName, DisplayName = labelName });
+                            names.Add(new BarUnitName() {
+                                DefinitionName = defName,
+                                DisplayName = set.Key,
+                                DisambiguatedName = labelName
+                            });
                         }
                     } else {
                         foreach (string defName in set.Value) {
@@ -110,7 +114,11 @@ namespace gex.Services.Repositories {
                                 continue;
                             }
 
-                            names.Add(new BarUnitName() { DefinitionName = defName, DisplayName = $"{set.Key} ({defName})" });
+                            names.Add(new BarUnitName() {
+                                DefinitionName = defName,
+                                DisplayName = set.Key,
+                                DisambiguatedName = $"{set.Key} ({defName})"
+                            });
                         }
                     }
                 } else {
@@ -118,7 +126,11 @@ namespace gex.Services.Repositories {
                         _Logger.LogDebug($"missing unit from units folder [defName={set.Value[0]}]");
                         continue;
                     }
-                    names.Add(new BarUnitName() { DefinitionName = set.Value[0], DisplayName = set.Key });
+                    names.Add(new BarUnitName() {
+                        DefinitionName = set.Value[0],
+                        DisambiguatedName = set.Key,
+                        DisplayName = set.Key
+                    });
                 }
             }
 

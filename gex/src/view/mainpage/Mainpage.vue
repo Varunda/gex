@@ -102,6 +102,10 @@
                     <span v-else-if="interval == '30day'">
                         (30d)
                     </span>
+
+                    <a href="/recentmaps" class="fs-4" target="_blank" ref="nofollow">
+                        View more
+                    </a>
                 </div>
 
                 <div class="btn-group flex-grow-0">

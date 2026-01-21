@@ -45,6 +45,8 @@ export class BarUnit {
     public turnRate: number = 0;
     public acceleration: number = 0;
     public deceleration: number = 0;
+    public movementClass: string = "";
+    public canFly: boolean = false;
     public sizeX: number = 0;
     public sizeZ: number = 0;
 
@@ -64,6 +66,7 @@ export class BarUnit {
     // builder stuff
     public buildDistance: number = 0;
     public buildPower: number = 0;
+    public buildOptions: string[] = [];
     public isBuilder: boolean = false;
     public canAssist: boolean = false;
     public canReclaim: boolean = false;

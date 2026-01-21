@@ -8,6 +8,7 @@ export class OpenerEntry {
     public name: string = "";
     public amount: number = 0;
     public isFactory: boolean = false;
+    public firstFrame: number = 0;
 }
 
 export class PlayerOpener {
@@ -16,6 +17,7 @@ export class PlayerOpener {
     public playerName: string = "";
     public color: string = "";
     public buildings: OpenerEntry[] = [];
+    public units: OpenerEntry[] = [];
     public playerFaction: string = "";
 
     public static compute(match: BarMatch, output: GameOutput): PlayerOpener[] {
@@ -25,6 +27,7 @@ export class PlayerOpener {
         let eventsLookedAt: number = 0;
         const maxEventsToLookAt: number = match.players.length * 40;
         const maxFrameToLookAt: number = 30 * 90; // 30 fps, 90 seconds
+        const maxFrameUnitsToLookAt: number = 30 * 60 * 3; // 3 minutes for units (not buildings)
 
         let playersLeft: number = match.players.length;
 
@@ -38,6 +41,7 @@ export class PlayerOpener {
             const entry: PlayerOpener = map.get(teamID) ?? {
                 teamID: teamID,
                 buildings: [],
+                units: [],
                 playerName: "",
                 color: "",
                 playerFaction: ""
@@ -49,8 +53,7 @@ export class PlayerOpener {
                 continue;
             }
 
-            if (def.speed == 0) {
-
+            if (def.speed == 0 && ev.frame < maxFrameToLookAt) {
                 if (entry.buildings.length > 0 && entry.buildings[entry.buildings.length - 1].defName == def.definitionName) {
                     entry.buildings[entry.buildings.length - 1].amount += 1;
                 } else {
@@ -58,7 +61,20 @@ export class PlayerOpener {
                         defName: def.definitionName,
                         name: def.name,
                         amount: 1,
-                        isFactory: def.isFactory
+                        isFactory: def.isFactory,
+                        firstFrame: ev.frame
+                    });
+                }
+            } else if (def.speed > 0 && def.isCommander == false) {
+                if (entry.units.length > 0 && entry.units[entry.units.length - 1].defName == def.definitionName) {
+                    entry.units[entry.units.length - 1].amount += 1;
+                } else {
+                    entry.units.push({
+                        defName: def.definitionName,
+                        name: def.name,
+                        amount: 1,
+                        isFactory: false,
+                        firstFrame: ev.frame
                     });
                 }
             }
@@ -77,8 +93,8 @@ export class PlayerOpener {
                 continue;
             }
 
-            if (ev.frame >= (maxFrameToLookAt)) {
-                console.log(`PlayerOpenerData> existing after ${maxFrameToLookAt} frames, this is probably not the opener anymore`);
+            if (ev.frame >= maxFrameUnitsToLookAt) {
+                console.log(`PlayerOpenerData> exiting after ${maxFrameToLookAt} frames, this is probably not the opener anymore`);
                 break;
             }
 

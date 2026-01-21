@@ -29,6 +29,7 @@
     "graphology-layout-noverlap": "^0.4.2",
     "graphology-metrics": "^2.1.0",
     "highcharts": "^10.2.1",
+    "jsframe.js": "^1.6.8",
     "leaflet": "^1.7.1",
     "leaflet-contextmenu": "^1.4.0",
     "luxon": "^3.6.1",

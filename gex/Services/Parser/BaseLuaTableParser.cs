@@ -31,5 +31,9 @@ namespace gex.Services.Parser {
             return dict.GetValueOrDefault(field) as string;
         }
 
+        internal Dictionary<object, object>? _Dict(Dictionary<object, object> dict, string field) {
+            return dict.GetValueOrDefault(field) as Dictionary<object, object>;
+        }
+
     }
 }

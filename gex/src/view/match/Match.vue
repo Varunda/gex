@@ -240,7 +240,7 @@
 
                         <hr class="border">
 
-                        <match-opener :openers="computedData.opener" class="my-4"></match-opener>
+                        <match-opener :match="match.data" :openers="computedData.opener" class="my-4"></match-opener>
 
                         <hr class="border">
 
