@@ -2,7 +2,7 @@
     <div class="container">
         <h1 class="wt-header bg-light text-dark">Units</h1>
 
-        <div class="alert alert-info text-center">
+        <div v-if="showAll == true" class="alert alert-info text-center">
             This includes units that might not be enabled by default, such as extra unit or scavenger unit packs
         </div>
 
@@ -14,27 +14,39 @@
 
         <hr class="border"/>
 
-        <div v-for="group in groupedUnits" :key="group.faction" :style="factionBackground(group.factionID)">
+        <div v-if="units.state == 'idle'"></div>
 
-            <h2 :style="factionHeaderStyle(group.factionID)">{{ group.faction }}</h2>
-
-            <div v-for="cat in group.categories" :key="cat.name" class="mb-3">
-                <h3 class="text-center mb-0">{{ cat.name }}</h3>
-
-                <div class="d-flex flex-wrap" style="gap: 0.75rem; justify-content: center;">
-                    <div v-for="unit in cat.units" :key="unit.definitionName" class="text-center border border-dark position-sticky" style="border-radius: 0.5rem;" @click="dumpUnit(unit.definitionName)">
-                        <div class="text-outline image-parent">
-                            {{ unit.displayName }}
-                        </div>
-
-                        <unit-pic :name="unit.definitionName" :size="128" style="border-radius: 0.5rem;"></unit-pic>
-                    </div>
-                </div>
-
-                <hr class="border mt-3 m-1"/>
-            </div>
-
+        <div v-else-if="units.state == 'loading'" class="text-center">
+            Loading...
+            <busy class="busy busy-sm"></busy>
         </div>
+
+        <div v-else-if="units.state == 'loaded'">
+            <div v-for="group in groupedUnits" :key="group.faction" :style="factionBackground(group.factionID)">
+                <h2 :style="factionHeaderStyle(group.factionID)">{{ group.faction }}</h2>
+
+                <div v-for="cat in group.categories" :key="cat.name" class="mb-3">
+                    <h3 class="text-center mb-0">{{ cat.name }}</h3>
+
+                    <div class="d-flex flex-wrap" style="gap: 0.75rem; justify-content: center;">
+                        <div v-for="unit in cat.units" :key="unit.definitionName" class="zoom-hover text-center border border-dark position-sticky" style="border-radius: 0.5rem;" @click="dumpUnit(unit.definitionName)">
+                            <div class="text-outline image-parent">
+                                {{ unit.displayName }}
+                            </div>
+
+                            <unit-pic :name="unit.definitionName" :size="128" style="border-radius: 0.5rem;"></unit-pic>
+                        </div>
+                    </div>
+
+                    <hr class="border mt-3 m-1"/>
+                </div>
+            </div>
+        </div>
+
+        <div v-else-if="units.state == 'error'">
+            <api-error :error="units.problem"></api-error>
+        </div>
+
     </div>
 </template>
 
@@ -50,7 +62,20 @@
         border-radius: 0 0 0.5rem 0.5rem;
     }
 
+    .zoom-hover:hover {
+        outline: 3px solid #ffffff;
+        background-size: 110%;
+        transition: background-size 0.2s ease-in;
+    }
+
     .jsframe-titlebar-focused {
+        font-size: var(--bs-body-font-size) !important;
+        font-family: 'Atkitson Hyperlegible' !important;
+        font-weight: normal !important;
+        background: var(--bs-light-bg-subtle) !important;
+    }
+
+    .jsframe-titlebar-default {
         font-size: var(--bs-body-font-size) !important;
         font-family: 'Atkitson Hyperlegible' !important;
         font-weight: normal !important;
@@ -62,10 +87,16 @@
     import Vue from "vue";
     import { Loadable, Loading } from "Loading";
 
+    // @ts-ignore - no types are available for this library :(
     import * as jsf from "jsframe.js";
+
+    import EventBus from "EventBus";
+    (window as any).EventBus = EventBus;
 
     import UnitPic from "components/app/UnitPic.vue";
     import ToggleButton from "components/ToggleButton";
+    import Busy from "components/Busy.vue";
+    import ApiError from "components/ApiError";
 
     import { BarUnitApi } from "api/BarUnitApi";
 
@@ -73,6 +104,7 @@
 
     import ColorUtils from "util/Color";
     import { FactionUtil } from "util/Faction";
+    import LocaleUtil from "util/Locale";
     
     class GroupedUnits {
         public faction: string = "";
@@ -218,13 +250,21 @@
             return {
                 units: Loadable.idle() as Loading<ApiBarUnit[]>,
                 showAll: false as boolean,
-                search: "" as string
+                search: "" as string,
+                frames: new jsf.JSFrame() as any,
+
+                windows: new Map() as Map<string, any>,
             }
         },
 
         created: function(): void {
             document.title = "Gex / Units";
             this.loadUnits();
+
+            EventBus.$on("open-frame", (defName: string) => {
+                console.log(`Units> opening frame for ${defName}`);
+                this.dumpUnit(defName);
+            });
         },
 
         methods: {
@@ -234,6 +274,14 @@
             },
 
             dumpUnit: function(defName: string): void {
+                const windowName: string = defName;
+
+                if (this.windows.has(windowName) == true) {
+                    console.log(`Units> re-using window [defName=${defName}]`);
+                    this.windows.get(windowName)!.requestFocus();
+                    return;
+                }
+
                 if (this.units.state != "loaded") {
                     return;
                 }
@@ -244,20 +292,27 @@
                     return;
                 }
 
-                const frame = new jsf.JSFrame();
-                const win = frame.create({
-                    title: `${unit.displayName}`,
-                    left: 20, top: 20, width: 320, height: 220,
+                const win = this.frames.create({
+                    name: windowName,
+                    title: `${unit.displayName} (${unit.definitionName})`,
+                    left: 20, top: 20, width: 640, height: 400,
                     movable: true,
                     resizable: true,
                     style: {
                         backgroundColor: "var(--bs-tertiary-bg)",
                         titleBarColorDefault: "var(--bs-dark)"
                     },
-                    html: makeUnitFrame(unit)
+                    html: makeUnitFrame(unit, this.units.data)
+                });
+
+                win.on("closeButton", "click", (_win: any, ev: any) => {
+                    console.log(`Units> closing window ${_win.property.name}`);
+                    this.windows.get(_win.property.name)?.closeFrame();
+                    this.windows.delete(_win.property.name);
                 });
 
                 win.show();
+                this.windows.set(windowName, win);
             },
 
             factionHeaderStyle: function(factionID: number) {
@@ -368,65 +423,146 @@
         },
 
         components: {
-            UnitPic, ToggleButton
+            UnitPic, ToggleButton, Busy, ApiError
         }
     });
     export default Units;
 
+    /**
+     * helper function to make a row in a table (used for making the unit windows)
+     * @param label first column in the row of the table
+     * @param value second column in the row of the table
+     */
     const row: (label: string, value: string) => string = (label, value) => {
         return `
             <tr>
-                <td>${label}</td>
+                <td><b>${label}</b></td>
                 <td>${value}</td>
             </tr>
         `;
     };
 
-    const makeUnitFrame: (unit: ApiBarUnit) => string = (unit) => {
+    const _D: (val: number, prec?: number) => string = (val: number, prec: number = 2) => {
+        return LocaleUtil.locale(val, prec ?? 2);
+    }
+
+    /**
+     * function to make the html for the unit window for a specific unit
+     * @param unit unit the html is being made for
+     * @param units list of all units (used for build options)
+     */
+    const makeUnitFrame: (unit: ApiBarUnit, units: ApiBarUnit[]) => string = (unit, units) => {
+
+        const defMap: Map<string, ApiBarUnit> = new Map();
+        for (const iter of units) {
+            defMap.set(iter.definitionName, iter);
+        }
 
         const category: CategoryType = getUnitCategories(unit);
 
         let extra: string = "";
 
-        if (category == "commander") {
+        if (unit.unit.speed > 0) {
+            extra += row("Speed", `${_D(unit.unit.speed)} | ${_D(unit.unit.acceleration)} accel | ${_D(unit.unit.turnRate)}°/s turns | ${unit.unit.movementClass} type`);
+        }
 
-        } else if (category == "factory") {
+        if (unit.unit.buildDistance > 0) {
+            extra += row("Build range", _D(unit.unit.buildDistance, 0));
+        }
+        if (unit.unit.buildPower > 0) {
+            extra += row("Build power", _D(unit.unit.buildPower, 0));
+        }
 
-        } else if (category == "con") {
+        if (unit.unit.canResurrect == true) {
+            extra += row("Can rez", "true");
+        }
 
-        } else if (category == "eco") {
+        if (unit.unit.buildOptions.length > 0) {
+            const names: string[] = unit.unit.buildOptions.map(iter => {
+                const name = defMap.get(iter)?.displayName ?? `&gt;missing ${iter}&lt;`;
+                return `<a href="javascript:void(0)" onclick="EventBus.$emit('open-frame', '${iter}')">${name}</a>`;
+            });
 
-        } else if (category == "bot") {
-            extra = makeBotUnitData(unit);
-        } else if (category == "vehicle") {
+            extra += row("Builds", names.join(", "));
+        }
 
-        } else if (category == "air") {
+        if (unit.unit.energyProduced > 0) {
+            extra += row("E/s", `+${_D(unit.unit.energyProduced, 0)}`);
+        }
+        if (unit.unit.extractsMetal == true) {
+            extra += row("Mex?", "true");
+        }
+        if (unit.unit.windGenerator > 0) {
+            extra += row("Wind?", "true");
+        }
+        if (unit.unit.energyUpkeep < 0) {
+            extra += row("E/s", `+${_D(Math.abs(unit.unit.energyUpkeep), 0)}`);
+        }
+        if (unit.unit.energyUpkeep > 0) {
+            extra += row("E/s", `-${_D(unit.unit.energyUpkeep, 0)}`);
+        }
+        if (unit.unit.energyStorage > 0) {
+            extra += row("E store", _D(unit.unit.energyStorage, 0));
+        }
+        if (unit.unit.metalStorage > 0) {
+            extra += row("M store", _D(unit.unit.metalStorage, 0));
+        }
+        if (unit.unit.energyConversionCapacity > 0) {
+            const metalPerEng = unit.unit.energyConversionCapacity * unit.unit.energyConversionEfficiency;
+            extra += row("E conv", `${_D(metalPerEng, 2)}m per ${_D(unit.unit.energyConversionCapacity, 0)}E`);
+        }
 
-        } else if (category == "sea") {
+        if (unit.unit.radarDistance > 0) {
+            extra += row("Radar", _D(unit.unit.radarDistance, 0));
+        }
+        if (unit.unit.sonarDistance > 0) {
+            extra += row("Sonar", _D(unit.unit.sonarDistance, 0));
+        }
 
-        } else if (category == "hover") {
+        if (unit.unit.weapons.length > 0) {
+            let i = 1;
+            for (const weapon of unit.unit.weapons) {
+                const wep = weapon.weaponDefinition;
+                extra += row(`Weapon ${i}`,
+                    `<b>${(weapon.count > 1 ? `[${weapon.count}x] ` : ``)}${wep.name}</b><br/>
+                    DPS: ${_D(wep.defaultDps, 0)} (${_D(wep.defaultDamage, 0)} dmg, ${_D(wep.reloadTime, 2)}s reload)<br/>
+                    Range: ${_D(wep.range, 0)} (${_D(wep.areaOfEffect)} splash)
+                `);
+                ++i;
+            }
+        }
 
-        } else if (category == "defense") {
-
-        } else if (category == "unknown") {
-
+        let faction: string = "Other";
+        if (unit.definitionName.startsWith("arm")) {
+            faction = "Armada";
+        } else if (unit.definitionName.startsWith("cor")) {
+            faction = "Cortex";
+        } else if (unit.definitionName.startsWith("leg")) {
+            faction = "Legion";
+        } else if (unit.definitionName.startsWith("raptor")) {
+            faction = "Raptor";
+        } else if (unit.definitionName.startsWith("scav")) {
+            faction = "Scav";
         }
 
         return `
-            <div id="root-frame" class="text-light" style="font-family: 'Atkitson Hyperlegible'; font-size: var(--bs-body-font-size); overflow-y: scroll; height: 100%;">
-                <a href="/unit/${unit.definitionName}" target="_blank" ref="nofollow">View full info</a>
+            <div id="root-frame" class="text-light p-2" style="font-family: 'Atkitson Hyperlegible'; font-size: var(--bs-body-font-size); overflow-y: scroll; height: 100%;">
+                <div class="d-flex" style="gap: 0.5rem;">
+                    <img src="/image-proxy/UnitPic?defName=${encodeURIComponent(unit.definitionName)}" width="96" height="96">
+
+                    <div class="d-flex flex-column">
+                        <h2 class="d-inline mb-0">${unit.displayName}</h2>
+                        <span>${unit.description}</span>
+                        <a href="/unit/${unit.definitionName}" target="_blank" ref="nofollow">View full info</a>
+                    </div>
+                </div>
 
                 <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-
                     <tbody>
-                        ${row("Cost", `${unit.unit.metalCost} m / ${unit.unit.energyCost} E / ${unit.unit.buildTime} B`)}
-                        ${row("Health", `${unit.unit.health}`)}
+                        ${row("Faction", faction)}
+                        ${row("Cost", `${_D(unit.unit.metalCost, 0)} m | ${_D(unit.unit.energyCost, 0)} E | ${_D(unit.unit.buildTime, 0)} B`)}
+                        ${row("Health", `${_D(unit.unit.health, 0)}`)}
+                        ${row("Vision", `${_D(unit.unit.sightDistance, 0)} | ${_D(unit.unit.airSightDistance, 0)} (air)`)}
                         ${extra}
                     </tbody>
                 </table>

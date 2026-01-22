@@ -11,6 +11,7 @@ using gex.Services.Repositories;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -124,6 +125,18 @@ namespace gex.Services.Hosted.QueueProcessor {
                 //
                 // ack the command, but don't do anything about it /shrug
                 //
+            } else if (entry.Command == "s.party.joined_party") {
+                // s.party.joined_party = partyID user
+                string? partyID = entry.GetWord();
+                string? username = entry.GetWord();
+
+                if (username == null) {
+                    _Logger.LogWarning($"missing username from party invite [cmd={entry.Arguments}]");
+                } else {
+                    _Logger.LogInformation($"someone requested a familiar thru a party invite [username={username}]");
+                    await HandleFamiliarRequest(username, null, cancel);
+                }
+
             } else if (entry.Command == "ACCEPTED") {
                 // login was completed, clear the previous state
                 _Logger.LogInformation($"login accepted, clearly previous state");
@@ -133,6 +146,47 @@ namespace gex.Services.Hosted.QueueProcessor {
             }
 
             return true;
+        }
+
+        /// <summary>
+        ///     handle a request for a familiar to watch a game. can be done either thru a DM (/invite), or by inviting the 
+        ///     gex host to a party
+        /// </summary>
+        /// <param name="username">username of the user that is inviting the familiar</param>
+        /// <param name="password">password, optional. if required by the battle will send a message back if not given</param>
+        /// <param name="cancel">cancellation token</param>
+        private async Task HandleFamiliarRequest(string username, string? password, CancellationToken cancel) {
+            LobbyUser? user = _LobbyManager.GetUser(username);
+            if (user == null) {
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not see this user, and does not know what battle to use", cancel);
+                return;
+            }
+
+            LobbyBattle? usersBattle = _LobbyManager.GetBattleOfUser(user.UserID);
+            if (usersBattle == null) {
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} must be in a battle to use this", cancel);
+                return;
+            }
+
+            FamiliarStatus? freeFamiliar = _Familiars.GetAvailableFamiliar();
+            if (freeFamiliar == null) {
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not have any accounts free to join, please try later", cancel);
+                return;
+            }
+
+            if (usersBattle.Passworded == true && password == null && _Options.Value.FamiliarsHaveCasterPerms == false) {
+                await _LobbyClient.Write("SAYPRIVATE", $"{username} that battle is passworded, please give the password, e.g. \"/invite abcd\"", cancel);
+                return;
+            }
+
+            await _LobbyClient.Write("SAYPRIVATE", $"{username} sending a user to record this game in realtime", cancel);
+
+            await _Familiars.SendFamiliarToBattle(freeFamiliar.Name, new() {
+                BattleID = usersBattle.BattleID,
+                Password = password,
+                InvitedBy = username,
+                Secret = Random.Shared.Next()
+            });
         }
 
         private async Task HandleSaidPrivate(LobbyMessage entry, CancellationToken cancel) {
@@ -165,38 +219,9 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _LobbyClient.Write("SAYPRIVATE", $"{username} howdy! this is the Gex coordinator. "
                     + $"use \"/invite <password>\" (with password provided if needed) to invite a bot to watch this match live", cancel);
             } else if (msg.StartsWith("/invite") || msg.StartsWith("/summon")) {
-                LobbyUser? user = _LobbyManager.GetUser(username);
-                if (user == null) {
-                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not see this user, and does not know what battle to use", cancel);
-                    return;
-                }
-
-                LobbyBattle? usersBattle = _LobbyManager.GetBattleOfUser(user.UserID);
-                if (usersBattle == null) {
-                    await _LobbyClient.Write("SAYPRIVATE", $"{username} must be in a battle to use this", cancel);
-                    return;
-                }
-
-                FamiliarStatus? freeFamiliar = _Familiars.GetAvailableFamiliar();
-                if (freeFamiliar == null) {
-                    await _LobbyClient.Write("SAYPRIVATE", $"{username} Gex does not have any accounts free to join, please try later", cancel);
-                    return;
-                }
-
                 string[] parts = msg.Split(" ");
-                if (usersBattle.Passworded == true && parts.Length < 2 && _Options.Value.FamiliarsHaveCasterPerms == false) {
-                    await _LobbyClient.Write("SAYPRIVATE", $"{username} that battle is passworded, please give the password, e.g. \"/invite abcd\"", cancel);
-                    return;
-                }
 
-                await _LobbyClient.Write("SAYPRIVATE", $"{username} sending a user to record this game in realtime", cancel);
-
-                await _Familiars.SendFamiliarToBattle(freeFamiliar.Name, new() {
-                    BattleID = usersBattle.BattleID,
-                    Password = parts.Length >= 2 ? parts[1] : null,
-                    InvitedBy = username,
-                    Secret = Random.Shared.Next()
-                });
+                await HandleFamiliarRequest(username, parts.Length >= 2 ? parts[1] : null, cancel);
             } else if (msg == "/dismiss") {
                 LobbyUser? user = _LobbyManager.GetUser(username);
                 if (user == null) {
