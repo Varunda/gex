@@ -175,9 +175,10 @@ namespace gex.Services.Discord {
 
                     _MessageQueue.AddProcessTime(timer.ElapsedMilliseconds);
                 } catch (Exception ex) when (stoppingToken.IsCancellationRequested == false) {
-
                     if (ex is BadRequestException bex) {
                         _Logger.LogError(ex, $"error sending message: {bex.Errors}");
+                    } else if (ex is DiscordException dex) {
+                        _Logger.LogError(ex, $"error sending message: {dex.JsonMessage}");
                     } else {
                         _Logger.LogError(ex, "error sending message");
                     }

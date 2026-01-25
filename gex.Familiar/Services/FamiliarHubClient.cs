@@ -165,6 +165,8 @@ namespace gex.Familiar.Services {
                 status.InBattle = false;
                 status.Secret = 0;
             });
+
+            _Logger.LogInformation($"left lobby");
         }
 
         private async Task _UpdateStatus(Action<FamiliarStatus> changes) {

@@ -89,7 +89,6 @@ namespace gex.Services.Parser {
             // maxDec = udTable.GetFloat("maxDec", udTable.GetFloat("brakeRate", maxAcc));
             unit.Deceleration = _Double(info, "maxdec", unit.Acceleration);
 
-
             // eco stuff
             unit.EnergyProduced = _Double(info, "energymake", 0);
             unit.EnergyStorage = _Double(info, "energystorage", 0);
