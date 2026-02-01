@@ -13,20 +13,33 @@
         <div>
             <h2 class="wt-header bg-light text-dark">Pools</h2>
 
-            <div v-if="pools.state == 'idle'"></div>
+            <a-table :entries="pools" display-type="table" :show-filters="true" default-sort-field="timestamp" default-sort-order="desc">
 
-            <div v-else-if="pools.state == 'loading'">
-                loading...
-            </div>
+                <a-col sort-field="name">
+                    <a-header>
+                        <b>Name</b>
+                    </a-header>
 
-            <div v-else-if="pools.state == 'loaded'">
+                    <a-filter field="name" type="string" method="input"
+                        :conditions="[ 'contains', 'equals' ]">
+                    </a-filter>
 
-                <div v-for="pool in pools.data" :key="pool.id">
-                    <a :href="'/pool/' + pool.id">
-                        {{ pool.name }}
-                    </a>
-                </div>
-            </div>
+                    <a-body v-slot="entry">
+                        {{ entry.name }}
+                    </a-body>
+                </a-col>
+
+                <a-col sort-field="timestamp">
+                    <a-header>
+                        <b>Timestamp</b>
+                    </a-header>
+
+                    <a-body v-slot="entry">
+                        {{ entry.timestamp | moment }}
+                    </a-body>
+                </a-col>
+
+            </a-table>
         </div>
     </div>
 </template>
@@ -40,6 +53,10 @@
     import { MatchPoolApi } from "api/MatchPoolApi";
 
     import AccountUtil from "util/Account";
+
+    import "filters/MomentFilter";
+
+    import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
 
     export const MatchPools = Vue.extend({
         props: {
@@ -82,7 +99,7 @@
         },
 
         components: {
-
+            ATable, AHeader, ABody, AFooter, AFilter, ACol,
         }
     });
     export default MatchPools;

@@ -16,29 +16,37 @@ export default class MergedStats {
     public metalSent: number = 0;
     public metalReceived: number = 0;
     public metalCurrent: number = 0;
+    public metalExcessPercent: number = 0;
+
     public energyProduced: number = 0;
     public energyUsed: number = 0;
     public energyExcess: number = 0;
     public energySent: number = 0;
     public energyReceived: number = 0;
     public energyCurrent: number = 0;
+    public energyExcessPercent: number = 0;
+
     public damageDealt: number = 0;
     public damageReceived: number = 0;
+
     public unitsReceived: number = 0;
     public unitsKilled: number = 0;
     public unitsProduced: number = 0;
     public unitsSent: number = 0;
     public unitsCaptured: number = 0;
     public unitsOutCaptured: number = 0;
+
     public totalValue: number = 0;
     public armyValue: number = 0;
     public defenseValue: number = 0;
     public utilValue: number = 0;
     public ecoValue: number = 0;
     public otherValue: number = 0;
+
     public buildPowerAvailable: number = 0;
     public buildPowerUsed: number = 0;
     public buildPowerPercent: number = 0;
+
     public actions: number = 0;
 
     public static compute(match: BarMatch, output: GameOutput): MergedStats[] {
@@ -90,7 +98,9 @@ export default class MergedStats {
                 buildPowerAvailable: extra?.buildPowerAvailable ?? 0,
                 buildPowerUsed: extra?.buildPowerUsed ?? 0,
                 actions: extra?.actions ?? 0,
-                buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100
+                buildPowerPercent: (extra?.buildPowerUsed ?? 0) / Math.max(1, (extra?.buildPowerAvailable ?? 0)) * 100,
+                energyExcessPercent: iter.frame > (30 * 30) ? iter.energyExcess / Math.max(1, iter.energyProduced) * 100 : 0,
+                metalExcessPercent: iter.frame > (30 * 30) ? iter.metalExcess / Math.max(1, iter.metalProduced) * 100 : 0,
             };
         });
 

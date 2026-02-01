@@ -232,6 +232,7 @@
         ["metalExcess", "Metal excess"],
         ["metalReceived", "Metal receieved"],
         ["metalSent", "Metal sent"],
+        ["metalExcessPercent", "Metal excess %"],
         //["metalUsed", "Metal used"],
 
         ["energyProduced", "Energy produced"],
@@ -239,6 +240,7 @@
         ["energyExcess", "Energy excess"],
         ["energyReceived", "Energy receieved"],
         ["energySent", "Energy sent"],
+        ["energyExcessPercent", "Energy excess %"],
         //["energyUsed", "Energy used"], // not useful? is always y=x
 
         ["unitsCaptured", "Units captured"],
@@ -295,11 +297,13 @@
                 ["metalReceived", "Metal receieved"],
                 ["metalSent", "Metal sent"],
                 ["metalCurrent", "Metal Current"],
+                ["metalExcessPercent", "Metal excess %"],
                 ["energyProduced", "Energy produced"],
                 ["energyExcess", "Energy excess"],
                 ["energyReceived", "Energy receieved"],
                 ["energySent", "Energy sent"],
                 ["energyCurrent", "Energy Current"],
+                ["energyExcessPercent", "Energy excess %"],
             ]
         },
         {
