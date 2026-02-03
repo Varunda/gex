@@ -525,6 +525,10 @@ namespace gex.Code.Discord {
                             )}]";
                         }
 
+                        if (showExtra == true) {
+                            embed.Description += $", {weapon.ImpulseFactor} impulse";
+                        }
+
                         embed.Description += $", {_D(reloadTime)}s reload)\n";
 
                         if (weapon.ClusterWeapon != null) {
