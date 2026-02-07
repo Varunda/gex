@@ -25,7 +25,9 @@
                     </a-filter>
 
                     <a-body v-slot="entry">
-                        {{ entry.name }}
+                        <a :href="'/pool/' + entry.id">
+                            {{ entry.name }}
+                        </a>
                     </a-body>
                 </a-col>
 
