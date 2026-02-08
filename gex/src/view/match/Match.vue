@@ -98,6 +98,12 @@
                                 {{ match.data.allyTeams.map(iter => iter.playerCount).join(" v ") }}
                             </span>
                         </h2>
+
+                        <div>
+                            <h4>
+                                View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
+                            </h4>
+                        </div>
                     </div>
 
                     <div v-if="match.data.processing" class="flex-grow-0">
@@ -125,6 +131,20 @@
                                                 <span v-if="match.data.usersPrioritizing.length > 0 && match.data.processing.replaySimulated == null">
                                                     -> {{ Math.max(1, match.data.processing.priority - (40 * match.data.usersPrioritizing.length)) }}
                                                     (prioritized by {{ match.data.usersPrioritizing.length }} user{{ match.data.usersPrioritizing.length == 1 ? "" : "s" }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="match.data.uploadedBy != null">
+                                            <td class="text-muted">
+                                                Uploaded by
+                                                <info-hover text="This match was not found from BAR's public API, and was instead uploaded by a user"></info-hover>
+                                            </td>
+                                            <td class="text-muted">
+                                                <span v-if="match.data.uploadedBy == null">
+                                                    unknown user {{ match.data.uploadedByID }}
+                                                </span>
+                                                <span v-else>
+                                                    {{ match.data.uploadedBy.name }}
                                                 </span>
                                             </td>
                                         </tr>
@@ -164,25 +184,18 @@
                     <pre>{{ stdout.data }}</pre>
                 </div>
 
-                <h4>
-                    <a :href="'/downloadmatch/' + gameID" download="download">
-                        Download replay
-                    </a>
-                </h4>
+                <div>
+                    <h3 class="wt-header bg-light text-dark">
+                        <b>Downloads</b>
+                    </h3>
 
-                <h4>
-                    View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
-                </h4>
+                    <a :href="'/downloadmatch/' + gameID" download="download" class="me-2">Download replay</a>
+
+                    <a href="javascript:void(0)" download="download" @click="downloadJson" class="me-2">Download match JSON</a>
+                    <a id="downloadJsonAnchor" style="display: none"></a>
+                </div>
 
                 <h4 v-if="match.data.uploadedByID != null">
-                    Uploaded by
-                    <info-hover text="This match was not found from BAR's public API, and was instead uploaded by a user"></info-hover>:
-                    <span v-if="match.data.uploadedBy == null">
-                        unknown user {{ match.data.uploadedByID }}
-                    </span>
-                    <span v-else>
-                        {{ match.data.uploadedBy.name }}
-                    </span>
                 </h4>
 
                 <h4 v-if="isBadGameVersion" class="alert alert-danger text-center">
@@ -782,6 +795,26 @@
                 if (r.state == "loaded") {
                     Toaster.add("Match force queued", "Match has been inserted into replay queue", "success");
                 }
+            },
+
+            downloadJson: function(): void {
+                if (this.match.state != "loaded") {
+                    return;
+                }
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                    "match": this.match.data,
+                    "events": (this.output.state == "loaded" ? this.output.data : {}),
+                    "unitDefinitions": (this.output.state == "loaded" ? Array.from(this.output.data.unitDefinitions.values()) : [])
+                }, null, 4));
+                const dl = document.getElementById("downloadJsonAnchor");
+                if (dl == null) {
+                    console.error(`Match> missing #downloadJsonAnchor to attach JSON download payload to`);
+                    return;
+                }
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", `match-${this.match.data.id}-${this.match.data.fileName.replace(".sdfz", "")}.json`);
+                dl.click();
             }
         },
 
