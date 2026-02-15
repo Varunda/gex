@@ -69,6 +69,11 @@ namespace gex.Services {
                     return Task.FromResult((ulong?)null);
                 }
 
+                Claim? isThirdParty = claims.FindFirst("thirdparty_website");
+                if (isThirdParty != null && string.IsNullOrEmpty(isThirdParty.Value) == false) {
+                    return Task.FromResult((ulong?)null);
+                }
+
                 Claim? idClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
                 if (idClaim == null || string.IsNullOrEmpty(idClaim.Value)) {
                     return Task.FromResult((ulong?)null);
@@ -136,6 +141,11 @@ namespace gex.Services {
                 // familiars don't use discord IDs for identity
                 Claim? isFamiliar = claims.FindFirst("familiar");
                 if (isFamiliar != null && string.IsNullOrEmpty(isFamiliar.Value) == false) {
+                    return null;
+                }
+
+                Claim? isThirdParty = claims.FindFirst("thirdparty_website");
+                if (isThirdParty != null && string.IsNullOrEmpty(isThirdParty.Value) == false) {
                     return null;
                 }
 

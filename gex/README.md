@@ -31,3 +31,18 @@ Gex is a c# webserver that fetches public Beyond All Reason games, downloads the
 
 NOTE: use ^C or type `.close` into the console window to properly close the game. This will properly shutdown Gex, and cancel all running tasks
 
+## other notes
+
+### jwts
+
+how to generate jwts for users (such as familiars or 3rd party website using Gex to upload like APM website)
+
+familiar:
+```
+dotnet user-jwts create --name familiar_test --claim familiar=name
+```
+
+3rd party website:
+```
+dotnet user-jwts create --name thirdparty_website_ --claim thirdparty_website=site
+```

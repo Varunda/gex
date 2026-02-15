@@ -75,6 +75,8 @@ namespace gex.Services.Parser {
                         return $"demofile uncompression reached unsafe size";
                     }
                 }
+            } catch (InvalidDataException ide) {
+                return $"failed to decompress data: {ide.Message}";
             } finally {
                 ArrayPool<byte>.Shared.Return(buffer);
             }

@@ -216,7 +216,12 @@ namespace gex {
 
                         // only use JWT tokens for auth to the familiar hub
                         if (string.IsNullOrEmpty(accessToken) == false 
-                            && (path.StartsWithSegments("/ws/familiar") || path.StartsWithSegments("/api/match-upload/upload-familiar"))) {
+                            && (
+                                path.StartsWithSegments("/ws/familiar")
+                                || path.StartsWithSegments("/api/match-upload/upload-familiar")
+                                || path.StartsWithSegments("/api/match-upload/upload-third-party")
+                                || path.StartsWithSegments("/api/match-upload/inspect")
+                            )) {
 
                             return JwtBearerDefaults.AuthenticationScheme;
                         }
@@ -225,16 +230,6 @@ namespace gex {
                     };
                 });
             }
-
-            // require all endpoints to be authorized unless another policy is defined
-            /*
-            services.AddAuthorizationBuilder()
-                .SetFallbackPolicy(new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(DiscordAuthenticationDefaults.AuthenticationScheme)
-                .AddAuthenticationSchemes(CookieAuthenticationDefaults.AuthenticationScheme)
-                .RequireAuthenticatedUser()
-                .Build());
-            */
 
             services.AddRazorPages();
             services.AddSingleton<IMemoryCache, AppCache>();
