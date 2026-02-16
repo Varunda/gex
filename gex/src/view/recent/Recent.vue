@@ -479,8 +479,16 @@
                         console.log(`Recent> performing user search [text=${text}]`);
                         BarUserApi.search(text, false, false).then((value: Loading<UserSearchResult[]>) => {
                             if (value.state == "loaded") {
-                                console.log(`loaded searched tags: [${value.data.map(iter => iter.username).join(" ")}]`);
-                                callback(value.data.slice(0, 10));
+                                console.log(`loaded searched users: [${value.data.map(iter => iter.username).join(" ")}]`);
+                                callback(value.data.sort((a, b) => {
+                                    if (text.toLowerCase() == a.username.toLowerCase()) {
+                                        return -1;
+                                    } else if (text.toLowerCase() == b.username.toLowerCase()) {
+                                        return 1;
+                                    }
+
+                                    return a.username.localeCompare(b.username);
+                                }).slice(0, 10));
                             }
                         });
                     },
@@ -640,7 +648,17 @@
                             return;
                         }
 
-                        this.users = Loadable.loaded(ret.data.slice(0, 20));
+                        this.users = Loadable.loaded(ret.data.sort((a, b) => {
+                            if (searchTerm.toLowerCase() == a.username.toLowerCase()) {
+                                console.log(`Recent> exact match found 1`);
+                                return 1;
+                            } else if (searchTerm.toLowerCase() == b.username.toLowerCase()) {
+                                console.log(`Recent> exact match found -1`);
+                                return -1;
+                            }
+
+                            return a.username.localeCompare(b.username);
+                        }).slice(0, 20));
                     }, 300) as unknown as number;
                 }
             },
