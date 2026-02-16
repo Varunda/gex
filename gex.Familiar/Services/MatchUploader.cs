@@ -31,7 +31,6 @@ namespace gex.Familiar.Services {
         }
 
         public async Task Upload(byte[] demofile, byte[] actions, byte[] stdout, byte[] stderr) {
-
             using MultipartFormDataContent form = new() {
                 { new ByteArrayContent(demofile), "demofile.sdfz", "demofile.sdfz" },
                 { new ByteArrayContent(actions), "actions.json", "actions.json" },

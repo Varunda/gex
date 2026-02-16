@@ -14,6 +14,7 @@ export class ResourceProductionEntry {
     public reclaimed: number = 0;
 
     public definition: GameEventUnitDef | undefined = undefined;
+    public relativeCost: number = 0;
 
     public metalMade: number = 0;
     public metalUsed: number = 0;
@@ -54,6 +55,7 @@ export class ResourceProductionData {
                     name: def.name,
                     defName: def.definitionName,
                     definition: def,
+                    relativeCost: (def.metalCost) + (def.energyCost / 70),
                     count: 0,
                     rank: 0,
                     lost: 0,

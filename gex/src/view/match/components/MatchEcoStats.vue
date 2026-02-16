@@ -11,7 +11,7 @@
                     </template>
                 </div>
 
-                <div>
+                <div @click="debug = !debug">
                     <h2> {{ totalBuildPower | compact }}</h2>
                     <h5>Peak build power</h5>
 
@@ -207,6 +207,7 @@
                                 {{ entry.energyUsed | compact }}
                             </a-body>
                         </a-col>
+
                     </a-table>
                 </div>
 
@@ -337,6 +338,71 @@
                 </div>
 
                 <div class="flex-grow-1 w-100" style="flex-basis: 48%">
+                    <a-table :entries="unitEffs" default-sort-field="count" default-sort-order="desc" :hide-paginate="true" :overflow-wrap="true">
+                        <a-col sort-field="name">
+                            <a-header>
+                                <h4 class="mb-0" style="min-width: 12rem;">
+                                    <b>Misc efficiencies</b>
+                                </h4>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                {{ entry.name }}
+                            </a-body>
+                        </a-col>
+
+                        <a-col sort-field="count">
+                            <a-header>
+                                <b>Created</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.count }}
+                            </a-body>
+                        </a-col>
+
+                        <a-col>
+                            <a-header>
+                                <b>Relative cost</b>
+                                <info-hover text="Relative cost of a unit in terms of metal (metal cost + energy cost / 70)"></info-hover>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.relativeCost * entry.count | compact }}
+                                <span v-if="debug" class="text-muted">
+                                    {{ entry.definition.metalCost }} + ({{ entry.definition.energyCost }} / 70)
+                                </span>
+                            </a-body>
+                        </a-col>
+
+                        <a-col sort-field="metalMade">
+                            <a-header>
+                                <b>M made</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.metalMade | compact }}
+                            </a-body>
+                        </a-col>
+
+                        <a-col sort-field="metalUsed">
+                            <a-header>
+                                <b>M eff%</b>
+                            </a-header>
+
+                            <a-body v-slot="entry">
+                                {{ entry.metalMade / (entry.relativeCost * entry.count) * 100 | locale(0) }}%
+                            </a-body>
+                        </a-col>
+                    </a-table>
+
+                </div>
+
+            </div>
+
+            <div class="d-flex flex-wrap">
+                <div class="flex-grow-1 w-100">
                     <match-wind-graph :updates="output.windUpdates" :map="match.mapData"></match-wind-graph>
                 </div>
             </div>
@@ -397,7 +463,9 @@
             return {
                 interestingActions: [] as InterestingEvent[],
 
-                factories: [] as PlayerFactories[]
+                factories: [] as PlayerFactories[],
+
+                debug: false as boolean
             }
         },
 
@@ -526,6 +594,17 @@
 
             isEnergyProduction: function(entry: ResourceProductionEntry): boolean {
                 return !!entry.definition && entry.energyMade > 0 && entry.definition.speed == 0;
+            },
+
+            isUnitEff: function(entry: ResourceProductionEntry): boolean {
+                return !!entry.definition
+                    && entry.definition.isCommander == false
+                    && entry.definition.energyProduction == 0 // ignores cons
+                    && entry.definition.category != "nano"
+                    && (
+                        entry.definition.isReclaimer
+                        || entry.definition.energyConversionCapacity > 0
+                    )
             }
         },
 
@@ -558,6 +637,10 @@
                         && this.isBuilder(iter) == false
                         && iter.definition.speed == 0
                 }));
+            },
+
+            unitEffs: function(): Loading<ResourceProductionEntry[]> {
+                return Loadable.loaded(this.playerResourceStats.filter(this.isUnitEff));
             },
 
             highestEnergySource: function(): ResourcesByUnitDef {

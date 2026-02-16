@@ -7,22 +7,21 @@
             </h2>
 
             <div>
-                <div>
-                    Min wind: {{ map.minimumWind }}
-                    <span class="text-muted">
-                        (for {{ timeAtMin / 30 | mduration }})
-                    </span>
-                </div>
-                <div>
-                    Max wind: {{ map.maximumWind }}
-                    <span class="text-muted">
-                        (for {{ timeAtMax / 30 | mduration }})
-                    </span>
-                </div>
+                Average wind: {{ avg | locale(2) }}
             </div>
 
             <div>
-                Average wind: {{ avg | locale(2) }}
+                Min wind: {{ map.minimumWind }}
+                <span class="text-muted">
+                    (for {{ timeAtMin / 30 | mduration }})
+                </span>
+            </div>
+
+            <div>
+                Max wind: {{ map.maximumWind }}
+                <span class="text-muted">
+                    (for {{ timeAtMax / 30 | mduration }})
+                </span>
             </div>
         </div>
 
