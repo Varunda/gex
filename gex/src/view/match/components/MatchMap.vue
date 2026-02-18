@@ -234,6 +234,12 @@
                     radars: true as boolean,
                     staticDefense: true as boolean,
                     factories: true as boolean,
+                },
+
+                roots: {
+                    commanderHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                    unitDeatHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                    buildingHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                 }
 
             }
@@ -544,8 +550,6 @@
                                 this.hideTooltip();
                             });
 
-                        const radius: number = Math.max(unitDef.sizeX, unitDef.sizeZ);
-
                         unitGroup.append("image")
                             .classed("strat-icon", true)
                             .attr("width", sizePx).attr("height", sizePx)
@@ -793,6 +797,10 @@
                     return [iter.teamID, iter.frame];
                 }));
 
+                this.roots.unitDeatHeatmap = this.root.append("g");
+
+                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/UnitDeathHeatmap/view.js`));
+
                 for (const player of this.match.players) {
                     const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => iter.teamID == player.teamID).filter(iter => {
                         return iter.frame < (teamDiedAt.get(iter.teamID) ?? Number.MAX_VALUE);
@@ -800,17 +808,22 @@
                         return [iter.killedX, iter.killedZ];
                     });
 
-                    const heatmap = d3.contourDensity()
-                        .x((d) => this.toImgX(d[0]))
-                        .y((d) => this.toImgZ(d[1]))
-                        .size([this.imgW, this.imgH])
-                        .bandwidth(20)(deathLocations);
+                    worker.postMessage([deathLocations, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                }
+
+                worker.onmessage = (ev) => {
+                    if (this.roots.unitDeatHeatmap == null) {
+                        return;
+                    }
+
+                    const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
+                    const player: BarMatchPlayer = ev.data[1];
 
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolate(0, 30);
 
-                    this.root.append("g")
+                    this.roots.unitDeatHeatmap.append("g")
                         .attr("id", `map-unit-death-heatmap-${player.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
@@ -823,7 +836,7 @@
                             .attr("fill", (d) => {
                                 return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
-                }
+                };
             },
 
             /**
@@ -832,6 +845,10 @@
             addCommanderHeatmap: function(): void {
                 if (this.svg == null) { return console.warn(`cannot add com heatmap: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add com heatmap: root is null`); }
+
+                this.roots.commanderHeatmap = this.root.append("g");
+
+                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/CommanderHeatmap/view.js`));
 
                 for (const player of this.match.players) {
                     const playerCom = this.computedData.commander.find(iter => iter.teamID == player.teamID);
@@ -843,17 +860,22 @@
                         return [iter.x, iter.z];
                     });
 
-                    const heatmap = d3.contourDensity()
-                        .x((d) => this.toImgX(d[0]))
-                        .y((d) => this.toImgZ(d[1]))
-                        .size([this.imgW, this.imgH])
-                        .bandwidth(20)(locs);
+                    worker.postMessage([locs, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                }
+
+                worker.onmessage = (ev) => {
+                    if (this.roots.commanderHeatmap == null) {
+                        return;
+                    }
+
+                    const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
+                    const player: BarMatchPlayer = ev.data[1];
 
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolate(0, 30);
 
-                    this.root.append("g")
+                    this.roots.commanderHeatmap.append("g")
                         .attr("id", `map-commander-position-heatmap-${player.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
@@ -866,7 +888,7 @@
                             .attr("fill", (d) => {
                                 return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
-                }
+                };
             },
 
             /**
@@ -883,29 +905,32 @@
                     }
                 }
 
-                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/view.js`));
+                this.roots.buildingHeatmap = this.root.append("g");
+
+                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/BuildingHeatmap/view.js`));
 
                 for (const player of this.match.players) {
-
                     const locs: [number, number][] = this.output.unitsCreated.filter(iter => {
                         return iter.teamID == player.teamID && buildingUnitDefIds.has(iter.definitionID);
                     }).map(iter => {
                         return [iter.unitX, iter.unitZ];
                     });
 
-                    console.time(`match-map: building headmap density`);
-                    const heatmap = d3.contourDensity()
-                        .x((d) => this.toImgX(d[0]))
-                        .y((d) => this.toImgZ(d[1]))
-                        .size([this.imgW, this.imgH])
-                        .bandwidth(30)(locs);
-                    console.timeEnd(`match-map: building headmap density`);
+                    worker.postMessage([locs, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                }
+                
+                worker.onmessage = (ev: any) => {
+                    if (this.roots.buildingHeatmap == null) {
+                        return;
+                    }
 
+                    const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
+                    const player: BarMatchPlayer = ev.data[1];
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolateBasisClosed([5, 10, 30, 40]);
 
-                    this.root.append("g")
+                    this.roots.buildingHeatmap.append("g")
                         .attr("id", `map-building-heatmap-${player.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
@@ -918,7 +943,7 @@
                             .attr("fill", (d) => {
                                 return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
-                }
+                };
             },
 
             /**
