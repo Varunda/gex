@@ -82,10 +82,16 @@ export class GameOutput {
             }
         }
 
+        // the first value is 0, which is not useful, so just copy the first useful value
+        const windUpdates: GameEventWindUpdate[] = elem.windUpdates.map((iter: any) => GameEventWindUpdate.parse(iter));
+        if (windUpdates.length > 1) {
+            windUpdates[0].value = windUpdates[1].value;
+        }
+
         return {
             gameID: elem.gameID,
             unitDefinitions: map,
-            windUpdates: elem.windUpdates.map((iter: any) => GameEventWindUpdate.parse(iter)),
+            windUpdates: windUpdates,
             unitsCreated: elem.unitsCreated.map((iter: any) => GameEventUnitCreated.parse(iter)),
             unitsKilled: elem.unitsKilled.map((iter: any) => GameEventUnitKilled.parse(iter)),
             factoryUnitCreated: elem.factoryUnitCreated.map((iter: any) => GameEventFactoryUnitCreated.parse(iter)),

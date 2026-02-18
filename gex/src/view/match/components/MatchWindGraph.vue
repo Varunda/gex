@@ -71,6 +71,10 @@
             calcNumbers: function(): void {
 
                 for (const ev of this.updates) {
+                    if (ev.frame == 0) {
+                        continue;
+                    }
+
                     this.avg += ev.value;
 
                     // these are floats, use a larger epsilon than normal

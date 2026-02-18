@@ -23,9 +23,16 @@ export class UnitStats {
     public damageDealt: number = 0;
     public damageTaken: number = 0;
 
+    public unitsKilled: Map<string, number> = new Map();
+
     public metalKilled: number = 0;
     public energyKilled: number = 0;
     public buildPowerKilled: number = 0;
+
+    public metalEcoKilledMetal: number = 0;
+    public metalEcoKilledEnergy: number = 0;
+    public energyEcoKilledMetal: number = 0;
+    public energyEcoKilledEnergy: number = 0;
 
     public damageRatio: number = 0;
     public metalRatio: number = 0;
@@ -71,9 +78,16 @@ export class UnitStats {
                 damageDealt: 0,
                 damageTaken: 0,
 
+                unitsKilled: new Map(),
+
                 metalKilled: 0,
                 energyKilled: 0,
                 buildPowerKilled: 0,
+
+                metalEcoKilledMetal: 0,
+                metalEcoKilledEnergy: 0,
+                energyEcoKilledMetal: 0,
+                energyEcoKilledEnergy: 0,
 
                 damageRatio: 0,
                 metalRatio: 0,
@@ -96,9 +110,24 @@ export class UnitStats {
 
                     const unitDef: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
                     if (unitDef != undefined) {
+
+                        attacker.unitsKilled.set(unitDef.definitionName, (attacker.unitsKilled.get(unitDef.definitionName) ?? 0) + 1);
+
                         attacker.metalKilled += unitDef.metalCost;
                         attacker.energyKilled += unitDef.energyCost;
                         attacker.buildPowerKilled += unitDef.buildPower;
+
+                        // is metal eco
+                        if (unitDef.metalMake > 0 || unitDef.isMetalExtractor > 0 || unitDef.extractsMetal > 0 || unitDef.energyConversionCapacity > 0) {
+                            attacker.metalEcoKilledMetal += unitDef.metalCost;
+                            attacker.metalEcoKilledEnergy += unitDef.energyCost;
+                        }
+
+                        // is energy eco
+                        if (unitDef.energyProduction > 0 || unitDef.windGenerator > 0 || unitDef.tidalGenerator > 0 || (unitDef.energyUpkeep < 0)) {
+                            attacker.energyEcoKilledMetal += unitDef.metalCost;
+                            attacker.energyEcoKilledEnergy += unitDef.energyCost;
+                        }
 
                         if (unitDef.speed == 0) {
                             attacker.staticKills += 1;

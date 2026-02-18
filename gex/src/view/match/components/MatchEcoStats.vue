@@ -65,8 +65,12 @@
                         </a-header>
 
                         <a-body v-slot="entry">
-                            <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                            {{ entry.name }}
+                            <div class="d-flex">
+                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                <span class="ps-2">
+                                    {{ entry.name }}
+                                </span>
+                            </div>
                         </a-body>
                     </a-col>
 
@@ -153,8 +157,12 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                                {{ entry.name }}
+                                <div class="d-flex">
+                                    <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                    <span class="ps-2">
+                                        {{ entry.name }}
+                                    </span>
+                                </div>
                             </a-body>
                         </a-col>
 
@@ -221,8 +229,12 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                                {{ entry.name }}
+                                <div class="d-flex">
+                                    <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                    <span class="ps-2">
+                                        {{ entry.name }}
+                                    </span>
+                                </div>
                             </a-body>
                         </a-col>
 
@@ -280,8 +292,12 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                                {{ entry.name }}
+                                <div class="d-flex">
+                                    <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                    <span class="ps-2">
+                                        {{ entry.name }}
+                                    </span>
+                                </div>
                             </a-body>
                         </a-col>
 
@@ -347,8 +363,12 @@
                             </a-header>
 
                             <a-body v-slot="entry">
-                                <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
-                                {{ entry.name }}
+                                <div class="d-flex">
+                                    <unit-icon :name="entry.defName" :color="entry.definition.color" :size="24"></unit-icon>
+                                    <span class="ps-2">
+                                        {{ entry.name }}
+                                    </span>
+                                </div>
                             </a-body>
                         </a-col>
 

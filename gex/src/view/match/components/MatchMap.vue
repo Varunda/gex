@@ -883,6 +883,8 @@
                     }
                 }
 
+                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/view.js`));
+
                 for (const player of this.match.players) {
 
                     const locs: [number, number][] = this.output.unitsCreated.filter(iter => {
@@ -891,11 +893,13 @@
                         return [iter.unitX, iter.unitZ];
                     });
 
+                    console.time(`match-map: building headmap density`);
                     const heatmap = d3.contourDensity()
                         .x((d) => this.toImgX(d[0]))
                         .y((d) => this.toImgZ(d[1]))
                         .size([this.imgW, this.imgH])
                         .bandwidth(30)(locs);
+                    console.timeEnd(`match-map: building headmap density`);
 
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 

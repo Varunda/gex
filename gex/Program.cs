@@ -37,7 +37,7 @@ namespace gex {
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
         public static async Task Main(string[] args) {
-            Console.WriteLine($"starting at {DateTime.UtcNow:u}");
+            Console.WriteLine($"gex is starting [timestamp={DateTime.UtcNow:u}] [cwd={Environment.CurrentDirectory}]");
 
             bool hostBuilt = false;
 

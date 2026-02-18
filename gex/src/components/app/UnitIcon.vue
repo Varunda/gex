@@ -1,6 +1,6 @@
 
 <template>
-    <img :src="url" :height="size" :width="size" :title="'Unit icon for ' + name">
+    <img :src="url" :height="size" :width="size" :title="HideTitle == false ? ('Unit icon for ' + name) : undefined">
 </template>
 
 <script lang="ts">
@@ -10,7 +10,8 @@
         props: {
             name: { type: String, required: true },
             color: { type: String, required: false },
-            size: { type: Number, required: false, default: 24 }
+            size: { type: Number, required: false, default: 24 },
+            HideTitle: { type: Boolean, required: false, default: false }
         },
 
         computed: {

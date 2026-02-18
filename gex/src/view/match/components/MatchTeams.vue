@@ -79,7 +79,7 @@
             </toggle-button>
 
             <div v-if="match.spectators.length > 0" class="mt-2">
-                <collapsible header-text="Spectators" size-class="h5" :show="false">
+                <collapsible :header-text="'Spectators (' + match.spectators.length + ')'" size-class="h5" :show="false">
                     <div class="d-flex flex-wrap">
                         <span v-for="spec in match.spectators" :key="spec.playerID" class="m-2">
                             <a :href="'/user/' + spec.userID">
@@ -157,7 +157,8 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
-import { GamemodeUtil } from "util/Gamemode";
+
+    import { GamemodeUtil } from "util/Gamemode";
 
     type GroupedPlayers = {
         allyTeamID: number,

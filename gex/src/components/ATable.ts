@@ -29,6 +29,7 @@ interface Header {
     colClass: string;
     children: VNode[] | undefined;
     field: string | undefined;
+    colspan: number | undefined;
 };
 
 interface Filter {
@@ -49,6 +50,7 @@ interface Filter {
 
     width: string | undefined;
     vnode: VNode | undefined;
+    colspan: number | undefined
 };
 
 interface Footer {
@@ -93,9 +95,6 @@ export const ATable = Vue.extend({
 
         // How much padding will each row get
         RowPadding: { type: String, required: false, default: "normal" }, // "compact" | "normal" | "expanded"
-
-        // Will the <a-table> be displayed as a <div>.list-group or a <table>
-        //DisplayType: { type: String, required: false, default: "list" }, // "list" | "table",
 
         // Field to sort on by default, if undefined goes to first <a-col> with a sort-field
         DefaultSortField: { type: String, required: false, default: undefined },
@@ -144,6 +143,8 @@ export const ATable = Vue.extend({
                 size: this.DefaultPageSize || 50 as number,
                 page: 0 as number
             },
+
+            hasColSpan: false as boolean
         }
     },
 
@@ -191,7 +192,8 @@ export const ATable = Vue.extend({
                     colClass: colClass,
                     field: sortField,
                     empty: true,
-                    children: []
+                    children: [],
+                    colspan: 1
                 };
 
                 // A child <a-header> exists, use those options given
@@ -200,6 +202,12 @@ export const ATable = Vue.extend({
                     header.children = headerNodes[0].componentOptions?.children ?? [];
                     header.empty = false;
                     header.colClass = (headerNode.componentOptions?.propsData as any).ColClass;
+                    header.colspan = (headerNode.componentOptions?.propsData as any).ColSpan ?? (column.componentOptions?.propsData as any).ColSpan ?? 1;
+
+                    if (header.colspan != 1) {
+                        console.log(`a-table> turning on hasColSpan due to col span of ${header.colspan}`);
+                        this.hasColSpan = true;
+                    }
 
                     // Sort by the first field set
                     if (sortField != undefined && this.sorting.field == "") {
@@ -239,7 +247,8 @@ export const ATable = Vue.extend({
                 sourceValue: undefined,
                 placeholder: undefined,
                 vnode: undefined,
-                width: undefined
+                width: undefined,
+                colspan: (column.componentOptions.propsData as any).ColSpan
             };
 
             if (filterNodes.length == 0) {
@@ -392,14 +401,6 @@ export const ATable = Vue.extend({
                             return this.renderDataRow(createElement, iter, index);
                         })
                     )
-
-                    /*
-                    rows.push(createElement("tbody", {},
-                        this.displayedEntries.map((iter, index) => {
-                            return this.renderDataRow(createElement, iter, index);
-                        }))
-                    );
-                    */
                 }
 
                 this.$emit("rerender", Loadable.loaded(this.displayedEntries));
@@ -447,7 +448,10 @@ export const ATable = Vue.extend({
 
             rows.push(createElement("tbody", tbody));
 
-            if (this.paginate == true && (this.HidePaginate == false || (this.HidePaginate == true && this.pageCount > 1))) {
+            // if HidePaginate is on, only render the page buttons under 2 conditions:
+            //      1. there is more than 1 page
+            //      2. the entries per page was changed away from the default, meaning even if everything fits on 1 page, might want to change it back
+            if (this.paginate == true && (this.HidePaginate == false || (this.HidePaginate == true && this.pageCount > 1) || this.paging.size != this.defaultPageSize)) {
                 rows.push(this.renderPages(createElement));
             }
         } catch (err) {
@@ -592,7 +596,8 @@ export const ATable = Vue.extend({
                 const options: VNodeData = {};
                 options.staticClass = header.colClass;
                 options.attrs = {
-                    "scope": "col"
+                    "scope": "col",
+                    "colspan": header.colspan
                 };
 
                 if (header.field != undefined) {
@@ -610,7 +615,7 @@ export const ATable = Vue.extend({
                         header.children,
                         (header.field != undefined) ? this.createSortable(createElement, header.field) : []
                     ]));
-                } else {
+                } else if (this.hasColSpan == false) {
                     // No <a-header> exists, input an empty col so the table stays lined up
 					headers.push(createElement("td", options));
                 }
@@ -632,7 +637,7 @@ export const ATable = Vue.extend({
 				createElement("td",
 					{
 						attrs: {
-							"colspan": `${this.nodes.columns.length}`
+							"colspan": `${this.columnCount}`
 						}
 					},
 					[this.createPageButtons(createElement)]
@@ -646,27 +651,34 @@ export const ATable = Vue.extend({
             for (const column of this.nodes.columns) {
                 if (column.componentOptions?.children) {
                     // Finding the <a-header> elements
-                    const headerNodes: VNode[] = column.componentOptions.children
+                    const bodyNodes: VNode[] = column.componentOptions.children
                         .filter((iter: VNode) => iter.componentOptions?.tag == "a-body");
 
-                    if (headerNodes.length > 1) {
-                        throw `Cannot have multiple <a-body>s per <a-col>`;
+                    const colspanStr = (column.componentOptions.propsData as any).ColSpan;
+                    const colspan: number = Number.parseInt(colspanStr ?? "1");
+
+                    if (Number.isNaN(colspan) == true) {
+                        throw `a-table> invalid ColSpan given, got ${colspanStr}, which is not a number`;
                     }
 
+                    if (bodyNodes.length > colspan) {
+                        throw `Cannot have more bodyNodes (${bodyNodes.length}) than colspans (${colspan})`;
+                    }
+
+                    const borderEnd: boolean = !!(column.componentOptions.propsData as any).BorderEnd;
+                    const borderStart: boolean = !!(column.componentOptions.propsData as any).BorderStart;
+                    const borderSize: number = Number.parseInt(((column.componentOptions.propsData as any).BorderSize) ?? "0");
                     const colClass: string = (column.componentOptions!.propsData as any).ColClass;
 
-                    if (headerNodes.length == 0) {
-                        cols.push(createElement("div", { staticClass: colClass }));
+                    if (bodyNodes.length == 0) {
+                        cols.push(createElement("td", { staticClass: colClass }));
                         continue;
                     }
 
-                    const bodyNode: VNode = headerNodes[0];
+                    const bodyNode: VNode = bodyNodes[0];
 
                     const options: VNodeData = {
                         staticClass: colClass,
-                        staticStyle: {
-                            //"line-height": lineHeight
-                        }
                     }
 
                     // If the <a-body> has a <a-rank> child, render a <td> with a child
@@ -674,33 +686,52 @@ export const ATable = Vue.extend({
                     if ((bodyNode.componentOptions?.children?.length ?? 0 > 0) && bodyNode.componentOptions?.children![0].componentOptions?.tag == "a-rank") {
                         cols.push(createElement("td", options, `${this.pageOffset + index + 1}`));
                     } else {
-                        if (bodyNode.data?.scopedSlots == undefined) {
-                            throw `No slots defined for an <a-body>`;
+
+                        for (let i = 0; i < colspan; ++i) {
+                            // take the Nth body node for colspans, or the first if none is given
+                            const iterBodyNode = bodyNodes[i] ?? bodyNodes[0];
+                            if (iterBodyNode.data?.scopedSlots == undefined) {
+                                throw `No slots defined for an <a-body>`;
+                            }
+                            let slot = iterBodyNode.data?.scopedSlots[`col${i}`];
+                            if (!slot && i == 0) {
+                                slot = iterBodyNode.data?.scopedSlots["default"];
+                            }
+
+                            if (!slot) {
+                                throw `Missing slot for an <a-body> (either col${i} or default are missing)`;
+                            }
+
+                            if (iterBodyNode.componentOptions?.listeners) {
+                                options.on = { ...iterBodyNode.componentOptions.listeners };
+                            }
+
+                            const iterBorderStart: boolean = !!((iterBodyNode.componentOptions?.propsData as any).BorderStart);
+                            const iterBorderEnd: boolean = !!((iterBodyNode.componentOptions?.propsData as any).BorderEnd);
+                            const iterBorderSize: number = Number.parseInt(
+                                (iterBodyNode.componentOptions?.propsData as any).BorderSize
+                                ?? ((borderStart || iterBorderStart || borderEnd || iterBorderEnd) ? "1" : "0")
+                            );
+
+                            options.staticClass = "";
+                            options.class = {
+                                "border-start": (borderStart && i == colspan - 1) || iterBorderStart,
+                                //"border-end": borderEnd || iterBorderEnd,
+                            };
+
+                            const size: string = (borderSize == 0 && iterBorderSize == 0) ? `0px`
+                                : (borderSize == 1 || iterBorderSize == 1) ? `1px`
+                                : (borderSize == 2 || iterBorderSize == 2) ? `2px`
+                                : (borderSize == 3 || iterBorderSize == 3) ? `3px`
+                                : (borderSize == 4 || iterBorderSize == 4) ? `4px`
+                                : `0px`;
+
+                            options.style = {
+                                "border-right": ((borderEnd && i == colspan - 1) || iterBorderEnd) ? `${size} var(--bs-border-style) var(--bs-border-color) !important` : ""
+                            };
+
+                            cols.push(createElement("td", {...options}, [slot(data)]));
                         }
-
-                        const slot = bodyNode.data?.scopedSlots["default"];
-                        if (slot == undefined) {
-                            throw `Missing default slot for a <a-body>`;
-                        }
-
-                        let lineHeight: string = "1.5";
-                        /*
-                        switch (this.RowPadding) {
-                            case "compact": lineHeight = "1"; break;
-                            case "expanded": lineHeight = "2"; break;
-                            case "tiny": lineHeight = "0.8"; break;
-                            default: lineHeight = "1.5"; break;
-                        }
-                        */
-
-
-                        // Copy listeners to the generated node
-                        if (bodyNode.componentOptions?.listeners) {
-                            options.on = { ...bodyNode.componentOptions.listeners };
-                        }
-
-                        options.staticClass = "";
-                        cols.push(createElement("td", options, [slot(data)]));
                     }
                 }
             }
@@ -712,7 +743,7 @@ export const ATable = Vue.extend({
             return createElement("tr", {}, [
                 createElement("td", {
                     domProps: {
-                        "col-span": this.nodes.columns.length
+                        "colspan": this.columnCount
                     }
                 }, ["No data in table"])
             ]);
@@ -758,7 +789,10 @@ export const ATable = Vue.extend({
 
                 // Filter column wrapped in the .input-group
 				filters.push(createElement("td",
-					{ staticStyle: { "max-width": filter.width ?? "", "flex-grow": 0 } },
+					{ 
+                        staticStyle: { "max-width": filter.width ?? "", "flex-grow": 0 },
+                        attrs: { "colspan": filter.colspan }
+                    },
                     [inputNode]
                 ));
             }
@@ -1517,6 +1551,23 @@ export const ATable = Vue.extend({
 
         defaultPageSize: function(): number {
             return this.DefaultPageSize || 50;
+        },
+
+        columnCount: function(): number {
+            let count: number = 0;
+            for (let i = 0; i < this.nodes.columns.length; ++i) {
+                const col = this.nodes.columns[i];
+                const header = this.nodes.headers[i];
+
+                let colSpan = Number.parseInt((col.componentOptions?.propsData as any)?.ColSpan);
+                if (Number.isNaN(colSpan)) {
+                    colSpan = 1;
+                }
+
+                count += Math.max(header?.colspan ?? 1, colSpan, 1);
+            }
+
+            return count;
         }
     },
 
@@ -1529,7 +1580,10 @@ export default ATable;
 const ACol = Vue.extend({
     props: {
         ColClass: { type: String, required: false, default: "col-auto" },
-        SortField: { type: String, required: false, default: undefined }
+        SortField: { type: String, required: false, default: undefined },
+        ColSpan: { type: Number, required: false, default: 1 },
+        BorderStart: { type: Boolean, required: false, default: false },
+        BorderEnd: { type: Boolean, required: false, default: false },
     },
     template: `<div></div>`
 });
@@ -1537,7 +1591,8 @@ const ACol = Vue.extend({
 const AHeader = Vue.extend({
     props: {
         ColClass: { type: String, required: false, default: "table-secondary" },
-        BackgroundColor: { type: String, required: false, default: "table-secondary" }
+        BackgroundColor: { type: String, required: false, default: "table-secondary" },
+        ColSpan: { type: Number, required: false, default: 1 }
     },
     template: `<div></div>`
 });
@@ -1547,6 +1602,11 @@ const AFooter = Vue.extend({
 });
 
 const ABody = Vue.extend({
+    props: {
+        BorderStart: { type: Boolean, required: false, default: false },
+        BorderEnd: { type: Boolean, required: false, default: false },
+        BorderSize: { type: Number, required: false, default: undefined }
+    },
     template: `<div></div>`
 });
 

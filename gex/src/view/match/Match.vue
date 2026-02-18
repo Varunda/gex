@@ -286,7 +286,7 @@
 
                         <hr class="border">
 
-                        <match-combat-stats :match="match.data" :unit-stats="computedData.unitStats" :entities="statEntities" :selected-entity="selectedEntityId" class="my-4"></match-combat-stats>
+                        <match-combat-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats" :entities="statEntities" :selected-entity="selectedEntityId" class="my-4"></match-combat-stats>
 
                         <match-unit-value-graph v-if="showArmyValueGraph" :match="match.data" :output="output.data" :entities="statEntities" :selected-entity="selectedEntityId" :show-mobile="showMobile"></match-unit-value-graph>
 

@@ -7,6 +7,10 @@
         <span v-if="icon != null" :class="'bi-' + icon">
 
         </span>
+        
+        <!--
+        <img v-else src="/img/question.png" width="16px" height="16px"/>
+        -->
 
         <span v-else class="bi-question-lg"></span>
     </span>

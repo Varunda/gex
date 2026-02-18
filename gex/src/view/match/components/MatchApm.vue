@@ -7,11 +7,11 @@
             <toggle-button v-model="usePlayerColors">use player colors</toggle-button>
         </div>
 
-        <div class="d-grid align-items-center" style="grid-template-columns: auto auto auto 1fr;">
+        <div class="d-grid align-items-center grid-parent">
             <div class="p-2">Player</div>
-            <div class="p-2">Average</div>
-            <div class="p-2">Peak</div>
-            <div></div>
+            <div class="p-2 text-center">Average</div>
+            <div class="p-2 text-center">Peak</div>
+            <div class="grid-bottom-4"></div>
 
             <template v-for="player in match.players">
 
@@ -27,18 +27,43 @@
                     {{ peakApm(player.teamID) }}
                 </div>
 
-                <div style="height: 50px">
+                <div style="height: 50px" class="grid-column-start apm-graph">
                     <canvas :id="'player-apm-' + player.playerID" height="50"></canvas>
                 </div>
 
                 <div class="border mb-2"></div>
                 <div class="border mb-2"></div>
                 <div class="border mb-2"></div>
-                <div class="border mb-2"></div>
+                <div class="border mb-2 grid-bottom-4"></div>
             </template>
         </div>
     </collapsible>
 </template>
+
+<style scoped>
+
+    @media (max-width: 900px) {
+        .grid-parent {
+            grid-template-columns: auto auto auto;
+        }
+
+        .apm-graph {
+            grid-column-start: span 3;
+            max-width: 90vw;
+        }
+
+        .grid-bottom-4 {
+            display: none;
+        }
+    }
+
+    @media (min-width: 901px) {
+        .grid-parent {
+            grid-template-columns: auto auto auto 1fr;
+        }
+    }
+
+</style>
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
