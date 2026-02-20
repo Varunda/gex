@@ -46,9 +46,9 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO match_pool (
-                    name, created_by_id, timestamp
+                    name, created_by_id, timestamp, hidden
                 ) VALUES (
-                    @Name, @CreatedByID, NOW() at time zone 'utc'
+                    @Name, @CreatedByID, NOW() at time zone 'utc', false
                 ) RETURNING id;
             ", cancel);
 
@@ -61,7 +61,7 @@ namespace gex.Services.Db {
             return ID;
         }
 
-        public async Task UpdateName(long poolID, MatchPool pool, CancellationToken cancel) {
+        public async Task Update(long poolID, MatchPool pool, CancellationToken cancel) {
             if (string.IsNullOrEmpty(pool.Name)) {
                 throw new Exception($"missing {nameof(MatchPool.Name)}");
             }
@@ -69,11 +69,13 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 UPDATE match_pool
-                    SET name = @Name
+                    SET name = @Name,
+                        hidden = @Hidden
                     WHERE id = @ID;
             ", cancel);
 
             cmd.AddParameter("Name", pool.Name);
+            cmd.AddParameter("Hidden", pool.Hidden);
             cmd.AddParameter("ID", poolID);
             await cmd.PrepareAsync(cancel);
 

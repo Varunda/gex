@@ -16,6 +16,8 @@ namespace gex.Controllers {
 
         protected ApiResponse<T> ApiForbidden<T>(params string[] permissionNeeded) => new ApiResponse<T>(403, $"Missing required permission(s): {string.Join(", ", permissionNeeded)}");
 
+        protected ApiResponse<T> ApiForbidden<T>(string err) => new ApiResponse<T>(403, err);
+
         protected ApiResponse<T> ApiNotFound<T>(string err) => new ApiResponse<T>(404, err);
 
         protected ApiResponse<T> ApiInternalError<T>(Exception ex) => new ApiResponse<T>(500, ex.Message);
@@ -29,6 +31,8 @@ namespace gex.Controllers {
         protected ApiResponse ApiAuthorize() => new ApiResponse(401, "You must login");
 
         protected ApiResponse ApiForbidden(params string[] permissionNeeded) => new ApiResponse(403, $"Missing required permission(s): {string.Join(", ", permissionNeeded)}");
+
+        protected ApiResponse ApiForbidden(string err) => new ApiResponse(403, err);
 
         protected ApiResponse ApiNotFound(string err) => new ApiResponse(404, err);
 

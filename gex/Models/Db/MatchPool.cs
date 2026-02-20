@@ -31,5 +31,11 @@ namespace gex.Models.Db {
         [ColumnMapping("created_by_id")]
         public long CreatedByID { get; set; }
 
+        /// <summary>
+        ///     will the match pool be shown in the public list?
+        /// </summary>
+        [ColumnMapping("hidden")]
+        public bool Hidden { get; set; }
+
     }
 }

@@ -158,5 +158,26 @@ namespace gex.Services.Repositories {
             return null;
         }
 
+        /// <summary>
+        ///     check if an account has any of the permissions given in <paramref name="perms"/>
+        /// </summary>
+        /// <param name="repo"></param>
+        /// <param name="accountID"></param>
+        /// <param name="perms"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public static async Task<bool> HasPermission(this AppPermissionRepository repo,
+            long accountID, List<string> perms, CancellationToken cancel) {
+
+            List<AppGroupPermission> permissions = await repo.GetByAccountID(accountID, cancel);
+            foreach (AppGroupPermission perm in permissions) {
+                if (perms.Contains(perm.Permission) == true) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
     }
 }

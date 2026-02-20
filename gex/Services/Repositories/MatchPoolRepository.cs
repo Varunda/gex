@@ -46,9 +46,9 @@ namespace gex.Services.Repositories {
             return await _MatchPoolDb.Create(pool, cancel);
         }
 
-        public async Task UpdateName(long poolID, MatchPool pool, CancellationToken cancel) {
+        public async Task Update(long poolID, MatchPool pool, CancellationToken cancel) {
             _Cache.Remove(CACHE_KEY_ALL);
-            await _MatchPoolDb.UpdateName(poolID, pool, cancel);
+            await _MatchPoolDb.Update(poolID, pool, cancel);
         }
 
     }

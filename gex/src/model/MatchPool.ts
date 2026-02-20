@@ -4,6 +4,7 @@ export class MatchPool {
     public name: string = "";
     public createdByID: number = 0;
     public timestamp: Date = new Date();
+    public hidden: boolean = false;
 
     public static parse(elem: any): MatchPool {
         return {

@@ -25,9 +25,16 @@
                     </a-filter>
 
                     <a-body v-slot="entry">
-                        <a :href="'/pool/' + entry.id">
-                            {{ entry.name }}
-                        </a>
+                        <div class="d-flex align-items-center">
+                            <span v-if="entry.hidden == true" class="fas fa-eye-slash pe-2 text-muted" title="This match pool is hidden"></span>
+                            <a :href="'/pool/' + entry.id" class="flex-grow-1">
+                                {{ entry.name }}
+                            </a>
+
+                            <span v-if="entry.hidden == true" class="text-muted">
+                                This pool is hidden!
+                            </span>
+                        </div>
                     </a-body>
                 </a-col>
 

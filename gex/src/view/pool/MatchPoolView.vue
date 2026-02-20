@@ -5,7 +5,9 @@
 
             <toggle-button v-model="showPlayerStats">show player stats</toggle-button>
 
-            <toggle-button v-if="hasAddRemovePermission" v-model="showPoolEdit">show edit</toggle-button>
+            <toggle-button v-if="hasAddRemovePermission" v-model="showEntryEdit">show entry edit</toggle-button>
+
+            <toggle-button v-if="canEditPool" v-model="showPoolEdit">show pool edit</toggle-button>
 
             <button v-if="hasUpdatePriorityPermission" class="btn btn-secondary" @click="setPriorityToOne">
                 set prio to 1
@@ -88,7 +90,40 @@
             </div>
         </div>
 
+        <div v-if="showPoolEdit == true" class="mb-3">
+            <h2>pool edit</h2>
+
+            <div class="mb-2">
+                <label>edit name</label>
+                <input class="form-control" v-model="poolEdit.name"/>
+            </div>
+
+            <div class="mb-2">
+                <toggle-button v-model="poolEdit.hidden">toggle hidden</toggle-button>
+            </div>
+
+            <div>
+                <button @click="submitUpdate" class="btn btn-primary">
+                    save
+                </button>
+
+                <button @click="closeUpdate" class="btn btn-secondary">
+                    cancel
+                </button>
+            </div>
+        </div>
+
         <div class="mb-3">
+            <div v-if="pool.state == 'loaded' && pool.data.hidden == true" class="alert alert-info text-center">
+                <strong>
+                    This match pool is hidden!
+                </strong>
+
+                <div>
+                    Please be polite when sharing it to others
+                </div>
+            </div>
+
             <h2 class="wt-header bg-light text-dark">
                 Pool: 
                 <span v-if="pool.state == 'loaded'">
@@ -116,7 +151,7 @@
             </div>
         </div>
 
-        <div v-if="showPoolEdit">
+        <div v-if="showEntryEdit">
             <h2 class="wt-header bg-light text-dark">edit pool</h2>
 
             <label class="d-block">match IDs to add, newline seperate</label>
@@ -247,7 +282,7 @@
     import { BarMatchProcessingApi } from "api/BarMatchProcessingApi";
     import { BarUserApi } from "api/BarUserApi";
 
-    import AccountUtil from "util/Account";
+    import AccountUtil, { AppCurrentAccount } from "util/Account";
     import { MapUtil } from "util/MapUtil";
     import ColorUtils from "util/Color";
 
@@ -298,7 +333,9 @@
 
                 pool: Loadable.idle() as Loading<MatchPool>,
                 matches: Loadable.idle() as Loading<BarMatch[]>,
+                poolEdit: new MatchPool() as MatchPool,
 
+                showEntryEdit: false as boolean,
                 showPoolEdit: false as boolean,
                 addMatch: "" as string,
 
@@ -324,6 +361,8 @@
                 if (this.pool.state != "loaded") {
                     return;
                 }
+
+                this.poolEdit = { ...this.pool.data };
 
                 document.title = `Gex / Pool / ${this.pool.data.name}`;
 
@@ -354,6 +393,31 @@
                 if (this.matches.state == "loaded") {
                     this.loadMapStats();
                     this.loadPlayerStats();
+                }
+            },
+
+            submitUpdate: async function(): Promise<void> {
+                const res: Loading<MatchPool> = await MatchPoolApi.update(this.poolID, this.poolEdit);
+                if (res.state == "error") {
+                    Toaster.add("failed to update match pool", `error: ${res.problem.detail}`, "warning");
+                    return;
+                } else if (res.state != "loaded") {
+                    Toaster.add("failed to update match pool", `state: ${res.state}`, "warning");
+                    return;
+                } 
+
+                Toaster.add("update match pool", "successfully updated match pool", "success");
+                this.showPoolEdit = false;
+                await this.loadPool();
+            },
+
+            closeUpdate: function(): void {
+                this.showPoolEdit = false;
+
+                if (this.pool.state == "loaded") {
+                    this.poolEdit = { ...this.pool.data };
+                } else {
+                    console.warn(`MatchPoolView> pool is not loaded, cannot reset poolEdit`);
                 }
             },
 
@@ -427,10 +491,10 @@
 
                 this.playerStats = [];
 
-                const playerIDs: number[] = this.matches.data.map(iter => iter.players.map(i2 => i2.userID)).reduce((acc, iter) => {
+                const playerIDs: number[] = Array.from(new Set(this.matches.data.map(iter => iter.players.map(i2 => i2.userID)).reduce((acc, iter) => {
                     acc.push(...iter);
                     return acc;
-                }, []);
+                }, [])).values());
 
                 let apiUsers: Loading<BarUser[]> = await BarUserApi.getByUserIDs(playerIDs);
                 if (apiUsers.state != "loaded") {
@@ -443,7 +507,7 @@
                 for (const user of apiUsers.data) {
                     userDict.set(user.userID, user);
                 }
-                console.log(`MatchPoolView> loaded user data for ${userDict.size} users`);
+                console.log(`MatchPoolView> loaded user data for ${userDict.size} users of ${playerIDs.length} requested`);
 
                 const map: Map<number, PlayerStats> = new Map();
                 for (const match of this.matches.data) {
@@ -580,11 +644,21 @@
 
         computed: {
             hasAddRemovePermission: function(): boolean {
-                return AccountUtil.hasPermission("Gex.MatchPoolEntry.AddRemove");
+                const acc: AppCurrentAccount = AccountUtil.get();
+
+                return (AccountUtil.hasPermission("Gex.MatchPoolEntry.AddRemove")
+                    || (this.pool.state == "loaded" && this.pool.data.createdByID == acc.ID));
             },
 
             hasUpdatePriorityPermission: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Match.ForceReplay");
+            },
+
+            canEditPool: function(): boolean {
+                const acc: AppCurrentAccount = AccountUtil.get();
+
+                return AccountUtil.hasPermission("Gex.Dev")
+                    || (this.pool.state == "loaded" && this.pool.data.createdByID == acc.ID);
             },
 
             colors: function() {
