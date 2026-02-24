@@ -36,9 +36,11 @@ namespace gex.Services.Util {
 
             MapPriorityMod? mapPrioMod = await _MapPriorityModDb.GetByName(match.MapName, cancel);
 
+            bool isLongGame = match.DurationFrameCount >= (30 * 60 * 60);
+
             // <6 player games that are not on maps with prio changes (metal maps) and shorter than an hour
             // are given prio and put into a different queue
-            if (match.Players.Count <= 6 && mapPrioMod == null && match.DurationMs <= (1000 * 60 * 60)) {
+            if (match.Players.Count <= 6 && mapPrioMod == null && isLongGame == false) {
                 return priority;
             }
 
@@ -57,8 +59,8 @@ namespace gex.Services.Util {
             }
 
             // de-prio longer games (+4 prior per minute over 30)
-            if (match.DurationMs > (1000 * 60 * 30)) {
-                short minutesOver = (short)((match.DurationMs - (1000 * 60 * 30)) / (1000 * 60));
+            if (isLongGame == true) {
+                short minutesOver = (short)((match.DurationFrameCount - (30 * 60 * 30)) / (30 * 60));
                 priority += (short)(minutesOver * 4);
                 why += $"long game ({minutesOver} mins over 30); ";
             }

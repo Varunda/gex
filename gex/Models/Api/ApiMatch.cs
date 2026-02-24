@@ -23,6 +23,7 @@ namespace gex.Models.Api {
             MapName = match.MapName;
             FileName = match.FileName;
             DurationMs = match.DurationMs;
+            DurationFrameCount = match.DurationFrameCount;
             Gamemode = match.Gamemode;
             HostSettings = match.HostSettings;
             GameSettings = match.GameSettings;
@@ -59,6 +60,11 @@ namespace gex.Models.Api {
         public string FileName { get; set; } = "";
 
         public long DurationMs { get; set; }
+
+        /// <summary>
+        ///		how many frames long this game is. IS NOT 100% ACCURATE, as it only updates on key frames
+        /// </summary>
+        public long DurationFrameCount { get; set; }
 
         public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
 

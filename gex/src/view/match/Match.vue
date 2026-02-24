@@ -88,7 +88,7 @@
 
                         <h2>played on {{ match.data.startTime | moment }}</h2>
 
-                        <h2>took {{  match.data.durationMs / 1000 | mduration }}</h2>
+                        <h2>took {{  match.data.durationFrameCount / 30 | mduration }}</h2>
 
                         <h2>
                             <span v-if="isFFA">

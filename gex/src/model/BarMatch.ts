@@ -20,6 +20,7 @@ export class BarMatch {
     public mapName: string = "";
     public fileName: string = "";
     public durationMs: number = 0;
+    public durationFrameCount: number = 0;
     public uploadedByID: number | null = null;
     public wrongSkillValues: boolean = false;
     public gamemode: number = 0;
