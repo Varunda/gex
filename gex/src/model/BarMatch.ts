@@ -48,7 +48,7 @@ export class BarMatch {
             ...elem,
             startTime: new Date(elem.startTime),
             startOffset: elem.startOffset,
-            endTime: new Date((new Date(elem.startTime)).getTime() + (elem.durationFrameCount * 30 * 1000)),
+            endTime: new Date((new Date(elem.startTime)).getTime() + ((elem.durationFrameCount / 30) * 1000)),
 
             hostSettings: elem.hostSettings,
             gameSettings: elem.gameSettings,
