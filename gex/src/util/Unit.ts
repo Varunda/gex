@@ -1,6 +1,6 @@
 import { GameEventUnitDef } from "model/GameEventUnitDef";
 
-export type UnitEcoType = "connt1" | "connt2" | "nano" | "rezbot"
+export type UnitEcoType = "connt1" | "connt2" | "nano" | "rezbot" | "combatengi" |
     | "mext1" | "mext2" | "econvt1" | "econvt2"
     | "solar" | "advsolar" | "wind" | "tidal" | "geot1" | "geot2" | "fusion" | "advfusion";
 
@@ -8,6 +8,7 @@ export default class UnitUtil {
 
     public static BUILDER_CONN_T1_DEFS: string[] = [];
     public static BUILDER_CONN_T2_DEFS: string[] = [];
+    public static BUILDER_COMBAT_ENG_DEFS: string[] = [ "corfast", "cormls", "armconsul", "armmls", "legaceb", "leganavyengineer" ];
     public static BUILDER_NANO_DEFS: string[] = [];
     public static BUILDER_REZBOT_DEFS: string[] = [ "armrectr", "cornecro", "legrezbot" ];
 
@@ -43,7 +44,7 @@ export default class UnitUtil {
             return "rezbot";
         } else if (def.unitGroup == "builder" && def.speed > 0) {
             return "connt1";
-        } else if (def.unitGroup == "buildert2" && def.speed > 0) {
+        } else if (def.unitGroup == "buildert2" && def.speed > 0 && defName != "armfark" && UnitUtil.BUILDER_COMBAT_ENG_DEFS.indexOf(defName) == -1) {
             return "connt2";
         } else if (def.unitGroup == "builder" && def.speed == 0) {
             return "nano";

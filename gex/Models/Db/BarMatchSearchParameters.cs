@@ -150,7 +150,7 @@ namespace gex.Models.Db {
 
         public readonly static OrderBy PLAYER_COUNT = new("player_count");
 
-        public readonly static OrderBy DURATION = new("duration_ms");
+        public readonly static OrderBy DURATION = new("duration_frame_count");
 
     }
 
