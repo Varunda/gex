@@ -1,6 +1,6 @@
 import { GameEventUnitDef } from "model/GameEventUnitDef";
 
-export type UnitEcoType = "connt1" | "connt2" | "nano" | "rezbot" | "combatengi" |
+export type UnitEcoType = "connt1" | "connt2" | "nano" | "rezbot" | "combatengi" 
     | "mext1" | "mext2" | "econvt1" | "econvt2"
     | "solar" | "advsolar" | "wind" | "tidal" | "geot1" | "geot2" | "fusion" | "advfusion";
 
