@@ -105,6 +105,34 @@ namespace gex.Services.Db.UserStats {
             );
         }
 
+
+        /// <summary>
+        ///     Get users by username matches, and optionally previous names. Case-sensitive.
+        /// </summary>
+        /// <param name="usernames">List of usernames to find</param>
+        /// <param name="includePreviousNames">If true, previous names will be searched as well</param>
+        /// <param name="cancel">Cancellation token</param>
+        /// <returns>A list of <see cref="BarUser"/>s</returns>
+        public async Task<List<BarUser>> GetByUsernames(List<string> usernames, bool includePreviousNames, CancellationToken cancel) {
+            if (usernames == null || usernames.Count == 0) {
+                return new List<BarUser>();
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+            return await conn.QueryListAsync<BarUser>(
+                includePreviousNames == true
+                    ? @"SELECT DISTINCT u.id, u.username, u.last_updated, u.country_code
+                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
+                            WHERE lower(u.username) = ANY(@Usernames) OR lower(p.user_name) = ANY(@Usernames)"
+                    : @"SELECT id, username, last_updated, country_code 
+                        FROM bar_user 
+                        WHERE username = ANY(@Usernames)",
+                new { Usernames = usernames },
+                cancellationToken: cancel
+            );
+        }
+
         /// <summary>
         ///     get all names that a user has used
         /// </summary>
