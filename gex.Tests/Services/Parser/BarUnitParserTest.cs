@@ -116,6 +116,8 @@ namespace gex.Tests.Services.Parser {
             BarUnitWeapon weapon = unit.Weapons[0];
             Assert.AreEqual(1, weapon.Count);
             Assert.AreEqual("NOTSUB", weapon.TargetCategory);
+            Assert.AreEqual("", weapon.MainDirection);
+            Assert.AreEqual(360d, weapon.MaxAngleDif);
 
             BarWeaponDefinition def = weapon.WeaponDefinition;
             Assert.AreEqual("emg", def.DefinitionName);
@@ -828,6 +830,67 @@ namespace gex.Tests.Services.Parser {
 
             // weapons
             Assert.AreEqual(2, unit.Weapons.Count);
+        }
+
+        [TestMethod]
+        public async Task Parse_Legrail_Lancer() {
+            BarUnit unit = await _ParseUnit("legrail");
+
+            // basic
+            Assert.AreEqual("legrail", unit.DefinitionName);
+            Assert.AreEqual(1100d, unit.Health);
+            Assert.AreEqual(240d, unit.MetalCost);
+            Assert.AreEqual(3800d, unit.EnergyCost);
+            Assert.AreEqual(3800d, unit.BuildTime);
+            Assert.AreEqual(46.5d, unit.Speed);
+            Assert.AreEqual(250, unit.TurnRate);
+
+            // eco
+            Assert.AreEqual(0d, unit.EnergyProduced);
+            Assert.AreEqual(0d, unit.EnergyStorage);
+            Assert.AreEqual(0d, unit.EnergyUpkeep);
+            Assert.AreEqual(0d, unit.ExtractsMetal);
+            Assert.AreEqual(false, unit.MetalExtractor);
+            Assert.AreEqual(0d, unit.MetalProduced);
+            Assert.AreEqual(0d, unit.MetalStorage);
+
+            // builder
+            Assert.AreEqual(0d, unit.BuildDistance);
+            Assert.AreEqual(0d, unit.BuildPower);
+
+            // los
+            Assert.AreEqual(525d, unit.SightDistance);
+            Assert.AreEqual(900d, unit.AirSightDistance);
+            Assert.AreEqual(0d, unit.RadarDistance);
+            Assert.AreEqual(0d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
+
+            // transport
+            Assert.AreEqual(0d, unit.TransportCapacity);
+            Assert.AreEqual(0d, unit.TransportMass);
+            Assert.AreEqual(0d, unit.TransportSize);
+
+            // misc
+            Assert.AreEqual("Tharsis", unit.ModelAuthor);
+            Assert.AreEqual(0d, unit.CloakCostStill);
+            Assert.AreEqual(0d, unit.CloakCostMoving);
+            Assert.AreEqual("mediumexplosiongeneric", unit.ExplodeAs);
+            Assert.AreEqual(5d, unit.SelfDestructCountdown);
+            Assert.AreEqual("mediumExplosionGenericSelfd", unit.SelfDestructWeapon);
+            Assert.AreEqual(0d, unit.AutoHeal);
+            Assert.AreEqual(0d, unit.IdleAutoHeal);
+            Assert.AreEqual(0d, unit.IdleTime);
+            Assert.AreEqual(1d, unit.DamageModifier);
+            Assert.AreEqual(false, unit.OnOffAble);
+
+            // weapons
+            Assert.AreEqual(2, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[1];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("0 0 1", weapon.MainDirection);
+            Assert.AreEqual(210d, weapon.MaxAngleDif);
+
         }
 
     }

@@ -162,6 +162,10 @@ namespace gex.Models.Bar {
 
         public string TargetCategory { get; set; } = "";
 
+        public string MainDirection { get; set; } = "";
+
+        public double MaxAngleDif { get; set; } = 0d;
+
         public double GetDefaultDamage() {
             double damage = 0d;
             if (TargetCategory == "VTOL" && WeaponDefinition.Damages.TryGetValue("vtol", out damage)) {

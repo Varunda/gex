@@ -219,6 +219,8 @@ namespace gex.Services.Parser {
                         weaponInst.WeaponDefinition = weaponDef;
                         weaponInst.TargetCategory = _Str(weapon, "onlytargetcategory") ?? "";
                         weaponInst.Count = 1;
+                        weaponInst.MainDirection = _Str(weapon, "maindir") ?? "";
+                        weaponInst.MaxAngleDif = _Double(weapon, "maxangledif", 360d);
 
                         existingWeapons.Add(key, weaponInst);
                     }

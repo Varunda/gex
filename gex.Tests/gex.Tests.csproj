@@ -26,6 +26,7 @@
     <None Remove="resources\unit_data\legelrpcmech.lua" />
     <None Remove="resources\unit_data\legkark.lua" />
     <None Remove="resources\unit_data\legmos.lua" />
+    <None Remove="resources\unit_data\legrail.lua" />
     <None Remove="resources\unit_data\Unit_Explosions.lua" />
   </ItemGroup>
 
@@ -91,6 +92,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\legmos.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\unit_data\legrail.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\Unit_Explosions.lua">

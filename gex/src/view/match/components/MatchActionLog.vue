@@ -17,6 +17,11 @@
                 <h5>Options</h5>
                 <toggle-button v-model="options.showDebug">Show debug</toggle-button>
                 <toggle-button v-model="options.showFrame">Show frame</toggle-button>
+
+                <div v-if="entries.length > 0">
+                    <a href="javascript:void(0)" download="download" @click="downloadJson" class="me-2">Download action log</a>
+                    <a id="downloadJsonAnchor" style="display: none"></a>
+                </div>
             </div>
 
             <a-table :entries="tableData"
@@ -254,6 +259,20 @@
                 }
 
                 return entries;
+            },
+
+            downloadJson: function(): void {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                    "match": this.entries,
+                }, null, 4));
+                const dl = document.getElementById("downloadJsonAnchor");
+                if (dl == null) {
+                    console.error(`Match> missing #downloadJsonAnchor to attach JSON download payload to`);
+                    return;
+                }
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", `action-log-${this.match.id}-${this.match.fileName.replace(".sdfz", "")}.json`);
+                dl.click();
             },
 
             makeWindUpdate: function(): ActionLogEntry[] {

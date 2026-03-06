@@ -260,11 +260,16 @@ export class BarUnitWeapon {
 
     public targetCategory: string = "";
 
+    public mainDirection: string = "";
+    public maxAngleDif: number = 0;
+
     public static parse(elem: any): BarUnitWeapon {
         return {
             weaponDefinition: BarWeaponDefinition.parse(elem.weaponDefinition),
             count: elem.count,
-            targetCategory: elem.targetCategory
+            targetCategory: elem.targetCategory,
+            mainDirection: elem.mainDirection,
+            maxAngleDif: elem.maxAngleDif
         };
     }
 

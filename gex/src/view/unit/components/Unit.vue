@@ -104,6 +104,7 @@
                 <tr is="Cell" name="Impulse factor" field="impulseFactor" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Energy/shot" field="energyPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> E / shot</tr>
                 <tr is="Cell" name="Metal/shot" field="metalPerShot" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> m / shot</tr>
+                <tr is="Cell" name="Firing arc" field="maxAngleDif" :unit="selectedWeaponEntry" :compare="CompareWeapon">°</tr>
                 <tr is="Cell" name="Is EMP?" field="isParalyzer" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="EMP time" field="paralyzerTime" :unit="selectedWeapon" :compare="compareWeaponDef"> sec</tr>
                 <tr is="Cell" name="Stockpile" field="isStockpile" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
