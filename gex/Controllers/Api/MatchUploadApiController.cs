@@ -94,6 +94,7 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpPost("upload")]
         [RequestTimeout(1000 * 60)] // allow 60 secs to upload
+        [RequestSizeLimit(1024 * 1024 * 50)] // 50 MB max
         [DisableFormValueModelBinding]
         [Authorize]
         [PermissionNeeded(AppPermission.GEX_MATCH_UPLOAD)]

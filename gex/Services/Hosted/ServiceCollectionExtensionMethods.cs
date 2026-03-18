@@ -40,6 +40,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<LobbyBattleStatusApiUpdatePeriodicService>();
             services.AddHostedService<MapEngineUsageCleanupPeriodicService>();
             //services.AddHostedService<UserUnitsMadeNeedsUpdatePeriodicService>();
+            services.AddHostedService<MapStatsNeedsUpdatePeriodicService>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {

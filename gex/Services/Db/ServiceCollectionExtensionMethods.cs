@@ -63,6 +63,9 @@ namespace gex.Services.Db {
             services.AddSingleton<MapStatsByFactionDb>();
             services.AddSingleton<MapStatsOpeningLabDb>();
             services.AddSingleton<MapDailyPlaysDb>();
+            services.AddSingleton<MapStatsNeedsUpdateDb>();
+            services.AddSingleton<MapStatsDailyOpeningLabDb>();
+            services.AddSingleton<MapStatsDailyUnitsMadeDb>();
 
             // other
             services.AddSingleton<BarMapDb>();

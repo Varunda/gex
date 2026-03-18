@@ -67,6 +67,26 @@ namespace gex.Services.Db.Event {
         }
 
         /// <summary>
+        ///     delete all <see cref="GameUnitsCreated"/> for a specific game
+        /// </summary>
+        /// <param name="gameID">ID of the game</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task DeleteByGameID(string gameID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                DELETE FROM game_units_created
+                    WHERE game_id = @GameID;
+            ");
+
+            cmd.AddParameter("GameID", gameID);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
         ///     generate the <see cref="GameUnitsCreated"/> for all games 
         /// </summary>
         /// <param name="cancel"></param>

@@ -2,10 +2,12 @@
 using gex.Common.Models.Options;
 using gex.Models.Db;
 using gex.Models.Event;
+using gex.Models.MapStats;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Event;
+using gex.Services.Db.MapStats;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Storage;
@@ -26,6 +28,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionMessageQueue;
+        private readonly MapStatsNeedsUpdateDb _MapStatsNeedsUpdateDb;
+        private readonly BarMatchRepository _MatchRepository;
 
         private readonly ActionLogParser _ActionLogParser;
         private readonly GameEventUnitCreatedDb _UnitCreatedDb;
@@ -61,7 +65,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventFactoryUnitCreatedDb factoryCreateDb, GameEventTeamDiedDb teamDiedDb,
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
             GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue,
-            UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb)
+            UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb,
+            MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -88,6 +93,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             _UnitDamageDb = unitDamageDb;
             _UnitPositionStorage = unitPositionStorage;
             _UnitsCreatedDb = unitsCreatedDb;
+            _MapStatsNeedsUpdateDb = mapStatsNeedsUpdateDb;
+            _MatchRepository = matchRepository;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -125,6 +132,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _UnitResourcesDb.DeleteByGameID(entry.GameID, cancel);
                 _UnitPositionStorage.RemoveByGameID(entry.GameID);
                 await _WindUpdateDb.DeleteByGameID(entry.GameID, cancel);
+                await _UnitsCreatedDb.DeleteByGameID(entry.GameID, cancel);
                 _Logger.LogInformation($"deleted old game events due to force [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
             }
 
@@ -187,6 +195,21 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _UnitsCreatedDb.Generate(entry.GameID, cancel);
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to generate game units made [gameID={entry.GameID}]");
+            }
+
+            try {
+                BarMatch? match = await _MatchRepository.GetByID(entry.GameID, cancel);
+                if (match == null) {
+                    _Logger.LogError($"match is null from repository? [gameID={entry.GameID}]");
+                } else {
+                    await _MapStatsNeedsUpdateDb.Upsert(new MapStatsNeedsUpdate() {
+                        MapFilename = match.MapName,
+                        Day = match.StartTime.Date,
+                        Gamemode = match.Gamemode,
+                    }, CancellationToken.None);
+                }
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to add map stats needs update [gameID={entry.GameID}]");
             }
 
             return true;

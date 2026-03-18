@@ -79,7 +79,7 @@
                 </table>
 
                 <span class="text-muted">
-                    Average opponent skill is <b>{{ faction.averageSkill | locale(2) }}</b>, which is
+                    Average opponent skill is 
                     <span v-if="faction.averageSkillDiff > 0">
                         {{ faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> below this user
                     </span>

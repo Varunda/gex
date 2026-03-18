@@ -16,8 +16,14 @@ namespace gex.Models.Db {
 
         public DateTime StartTime { get; set; }
 
+        /// <summary>
+        ///     display name of the map
+        /// </summary>
         public string Map { get; set; } = "";
 
+        /// <summary>
+        ///     map filename
+        /// </summary>
         public string MapName { get; set; } = "";
 
         public string FileName { get; set; } = "";
