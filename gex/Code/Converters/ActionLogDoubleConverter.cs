@@ -25,7 +25,7 @@ namespace gex.Code.Converters {
         }
 
         public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options) {
-            throw new NotImplementedException();
+            writer.WriteNumberValue(value);
         }
 
     }
