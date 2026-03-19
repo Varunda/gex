@@ -93,7 +93,11 @@ namespace gex.Services.Db.MapStats {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
 				BEGIN TRANSACTION;
 
-				DELETE FROM map_stats_daily_opening_lab WHERE map_filename = @MapFileName;
+				DELETE FROM map_stats_daily_opening_lab 
+                WHERE 
+                    map_filename = @MapFileName 
+                    AND gamemode = @Gamemode
+                    AND day = @Day;
 
 				INSERT INTO map_stats_daily_opening_lab (
 					map_filename, gamemode, day,

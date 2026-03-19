@@ -25,6 +25,7 @@ namespace gex.Tests.Services.Repository {
         [DataRow("2025.04.08_map_draw.sdfz")]
         [DataRow("2025.06.06_map_draw_test.sdfz")]
         [DataRow("BAR105_1821.sdfz")]
+        [DataRow("2025.06.19_IndexOutOfRange.sdfz")]
         public async Task testAsync(string file) {
             TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
 

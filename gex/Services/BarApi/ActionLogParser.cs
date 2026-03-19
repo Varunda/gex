@@ -34,7 +34,7 @@ namespace gex.Services.BarApi {
         }
 
         public async Task<Result<GameOutput, string>> Parse(string gameID, string file, CancellationToken cancel) {
-            _Logger.LogDebug($"parsing action log [file={file}]");
+            _Logger.LogDebug($"parsing action log [gameID={gameID}] [file={file}]");
 
             Stopwatch timer = Stopwatch.StartNew();
             string[] lines = await File.ReadAllLinesAsync(file, cancel);
@@ -180,7 +180,7 @@ namespace gex.Services.BarApi {
                     ev.Frame = frame;
 
                 } catch (Exception ex) {
-                    _Logger.LogError(ex, $"failed to process line [gameID={gameID}] [lin num={lineNumber}]: {json}");
+                    _Logger.LogError(ex, $"failed to process line [gameID={gameID}] [line num={lineNumber}]: {json}");
                     errored = true;
                 }
             }

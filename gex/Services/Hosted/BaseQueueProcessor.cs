@@ -38,7 +38,7 @@ namespace gex.Services.Hosted {
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-            _Logger.LogInformation($"started, [Service name={_ServiceName}] [thread count={_ThreadCount}]");
+            _Logger.LogInformation($"started queue processor service [Service name={_ServiceName}] [thread count={_ThreadCount}]");
 
             Task[] threads = new Task[_ThreadCount];
             for (int i = 0; i < _ThreadCount; ++i) {
@@ -120,14 +120,14 @@ namespace gex.Services.Hosted {
                     _ServiceHealthMonitor.Set(_ServiceName, healthEntry);
 
                     if (cancel.IsCancellationRequested == true) {
-                        _Logger.LogInformation($"stop requested! (break in loop)");
+                        _Logger.LogInformation($"stop requested! (break in loop) [service={_ServiceName}]");
                         break;
                     }
 
                 } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
-                    _Logger.LogError(ex, $"error in queue processor {_ServiceName}");
+                    _Logger.LogError(ex, $"error in queue processor [service={_ServiceName}]");
                 } catch (Exception) when (cancel.IsCancellationRequested == true) {
-                    _Logger.LogInformation($"stop requested!");
+                    _Logger.LogInformation($"stop requested! [service={_ServiceName}]");
                 }
             }
         }

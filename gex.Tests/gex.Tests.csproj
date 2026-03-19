@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <None Remove="resources\2025.06.06_map_draw_test.sdfz" />
+    <None Remove="resources\2025.06.19_IndexOutOfRange.sdfz" />
+    <None Remove="resources\actions_with_nan_and_inf.json" />
     <None Remove="resources\bomb.gzip" />
     <None Remove="resources\github_data\language\en\units.json" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
@@ -36,6 +38,12 @@
     </Content>
     <Content Include="resources\2025.06.06_map_draw_test.sdfz">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\2025.06.19_IndexOutOfRange.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\actions_with_nan_and_inf.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\BAR105_2590_map_draw.sdfz">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

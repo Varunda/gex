@@ -76,6 +76,14 @@ function writeJsonRaw(action, data, includeFrame)
             else
                 io.write("false")
             end
+        elseif (type(iter[2]) == "number") then
+            if (iter[2] ~= iter[2]) then
+                io.write("\"NaN\"")
+            elseif (iter[2] == inf or iter[2] == math.huge) then
+                io.write("\"Infinity\"")
+            else
+                io.write(iter[2] or "null")
+            end
         else
             io.write(iter[2] or "null")
         end
@@ -205,30 +213,34 @@ local function SendUnitPositions()
         if (Spring.GetUnitTeam(unitID) ~= Spring.GetGaiaTeamID()) then
 			local x, y, z = Spring.GetUnitPosition(unitID)
 
-            if (UNIT_POSITION[unitID] ~= nil) then
-                local px = UNIT_POSITION[unitID].x
-                local py = UNIT_POSITION[unitID].y
-                local pz = UNIT_POSITION[unitID].z
-                if (px ~= x or py ~= y or pz ~= z) then
-                    writeJson("unit_position", {
-                        { "unitID", unitID },
-                        { "teamID", Spring.GetUnitTeam(unitID) },
-                        { "x", x },
-                        { "y", y }, 
-                        { "z", z }
-                    })
-                end
-            else
-				writeJson("unit_position", {
-					{ "unitID", unitID },
-					{ "teamID", Spring.GetUnitTeam(unitID) },
-					{ "x", x },
-					{ "y", y }, 
-					{ "z", z }
-				})
-            end
+            -- NaN and inf checks
+            if (x == x and x ~= inf and y == y and y ~= inf and z == z and z ~= z) then
+                -- only send unit positions if it changed
+				if (UNIT_POSITION[unitID] ~= nil) then
+					local px = UNIT_POSITION[unitID].x
+					local py = UNIT_POSITION[unitID].y
+					local pz = UNIT_POSITION[unitID].z
+					if (px ~= x or py ~= y or pz ~= z) then
+						writeJson("unit_position", {
+							{ "unitID", unitID },
+							{ "teamID", Spring.GetUnitTeam(unitID) },
+							{ "x", x },
+							{ "y", y }, 
+							{ "z", z }
+						})
+					end
+				else
+					writeJson("unit_position", {
+						{ "unitID", unitID },
+						{ "teamID", Spring.GetUnitTeam(unitID) },
+						{ "x", x },
+						{ "y", y }, 
+						{ "z", z }
+					})
+				end
 
-            UNIT_POSITION[unitID] = { x = x, y = y, z = z }
+				UNIT_POSITION[unitID] = { x = x, y = y, z = z }
+            end
         end
     end
 end
@@ -451,10 +463,31 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
         end
     end
 
+    -- idk how this could be nan/inf but it can
     local kx, ky, kz = Spring.GetUnitPosition(unitID)
+    if (kx ~= kx or kz == inf) then
+        kx = -1
+    end
+    if (ky ~= ky or ky == inf) then
+        ky = -1
+    end
+    if (kz ~= kz or kz == inf) then
+        kz = -1
+    end
+
     local ax, ay, az = nil, nil, nil
     if (attackerID ~= nil) then
         ax, ay, az = Spring.GetUnitPosition(attackerID)
+    end
+
+    if (ax ~= ax or ax == inf) then
+		ax = nil
+    end
+    if (ay ~= ay or ay == inf) then
+        ay = nil
+    end
+    if (az ~= az or az == inf) then
+		az = nil
     end
 
     writeJson("unit_killed", {
@@ -682,6 +715,16 @@ end
 function widget:UnitGiven(unitID, unitDefID, newTeamID, teamID)
     local x, y, z = Spring.GetUnitPosition(unitID)
 
+    if (x ~= x or x == inf) then
+        x = -1
+    end
+    if (y ~= y or y == inf) then
+        y = -1
+    end
+    if (z ~= z or z == inf) then
+        z = -1
+    end
+
     writeJson("unit_given", {
         { "unitID", unitID },
         { "teamID", teamID },
@@ -696,6 +739,16 @@ end
 
 function widget:UnitTaken(unitID, unitDefID, oldTeamID, teamID)
     local x, y, z = Spring.GetUnitPosition(unitID)
+
+    if (x ~= x or x == inf) then
+        x = -1
+    end
+    if (y ~= y or y == inf) then
+        y = -1
+    end
+    if (z ~= z or z == inf) then
+        z = -1
+    end
 
     writeJson("unit_taken", {
         { "unitID", unitID },

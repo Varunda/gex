@@ -36,6 +36,11 @@ namespace gex.Services.Hosted.PeriodicTasks {
             int ok = 0;
             int err = 0;
             foreach (MapStatsNeedsUpdate update in needsUpdate) {
+                if (cancel.IsCancellationRequested) {
+                    _Logger.LogInformation($"stop requested [ok={ok}] [err={err}]");
+                    break;
+                }
+
                 stepTimer.Restart();
                 _Logger.LogTrace($"updating opening lab stats for map [map={update.MapFilename}] [gamemode={update.Gamemode}] [day={update.Day:u}]");
                 try {

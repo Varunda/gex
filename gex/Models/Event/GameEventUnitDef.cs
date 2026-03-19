@@ -1,6 +1,8 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Code.Converters;
 using System;
+using System.Text.Json.Serialization;
 
 namespace gex.Models.Event {
 
@@ -28,14 +30,17 @@ namespace gex.Models.Event {
 
         [JsonActionLogPropertyName("metalCost")]
         [ColumnMapping("metal_cost")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double MetalCost { get; set; } = 0;
 
         [JsonActionLogPropertyName("energyCost")]
         [ColumnMapping("energy_cost")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double EnergyCost { get; set; }
 
         [JsonActionLogPropertyName("health")]
         [ColumnMapping("health")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double Health { get; set; }
 
         [JsonActionLogPropertyName("speed")]
@@ -52,6 +57,7 @@ namespace gex.Models.Event {
 
         [JsonActionLogPropertyName("buildTime")]
         [ColumnMapping("build_time")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double BuildTime { get; set; }
 
         [JsonActionLogPropertyName("unitGroup")]
@@ -60,10 +66,12 @@ namespace gex.Models.Event {
 
         [JsonActionLogPropertyName("buildPower")]
         [ColumnMapping("build_power")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double BuildPower { get; set; }
 
         [JsonActionLogPropertyName("metalMake")]
         [ColumnMapping("metal_make")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double MetalMake { get; set; }
 
         [JsonActionLogPropertyName("isMetalExtractor")]
@@ -72,10 +80,12 @@ namespace gex.Models.Event {
 
         [JsonActionLogPropertyName("extractsMetal")]
         [ColumnMapping("extracts_metal")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double ExtractsMetal { get; set; }
 
         [JsonActionLogPropertyName("metalStorage")]
         [ColumnMapping("metal_storage")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double MetalStorage { get; set; }
 
         [JsonActionLogPropertyName("windGenerator")]
@@ -88,14 +98,17 @@ namespace gex.Models.Event {
 
         [JsonActionLogPropertyName("energyProduction")]
         [ColumnMapping("energy_production")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double EnergyProduction { get; set; }
 
         [JsonActionLogPropertyName("energyUpkeep")]
         [ColumnMapping("energy_upkeep")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double EnergyUpkeep { get; set; }
 
         [JsonActionLogPropertyName("energyStorage")]
         [ColumnMapping("energy_storage")]
+        [JsonConverter(typeof(ActionLogDoubleConverter))]
         public double EnergyStorage { get; set; }
 
         [JsonActionLogPropertyName("energyConversionCapacity")]

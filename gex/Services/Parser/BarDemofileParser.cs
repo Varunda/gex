@@ -126,6 +126,8 @@ namespace gex.Services.Parser {
             header.WinningAllyTeamsSize = reader.ReadInt32LE();
             demofile.Header = header;
 
+            Debug.Assert(header.TeamStatElemSize == 80, $"expected TeamStatElemSize to be 80, got {header.TeamStatElemSize} instead");
+
             match.ID = header.GameID;
             long readHeaderMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
@@ -690,8 +692,13 @@ namespace gex.Services.Parser {
 
             // player stat parsing
             DemofileStatistics playerStats = new();
-            for (int i = 0; i < header.WinningAllyTeamsSize; ++i) {
-                playerStats.WinningAllyTeamIDs.Add(reader.ReadByte());
+
+            // only given when there is at least 1 team
+            // https://github.com/beyond-all-reason/RecoilEngine/blob/b77e4a45421a367ad0044089d862ea17ff327bb4/rts/System/LoadSave/DemoRecorder.cpp#L276
+            if (header.TeamCount > 0) {
+                for (int i = 0; i < header.WinningAllyTeamsSize; ++i) {
+                    playerStats.WinningAllyTeamIDs.Add(reader.ReadByte());
+                }
             }
 
             for (int i = 0; i < header.PlayerCount; ++i) {
@@ -746,6 +753,11 @@ namespace gex.Services.Parser {
 
                     iter.Entries.Add(frame);
                 }
+            }
+
+            if (reader.Index != data.Length) {
+                _Logger.LogWarning($"finished parsing, but did not reach the end of the file [gameID={header.GameID}] [reader.Index={reader.Index}] [data.Length={data.Length}]");
+                Debug.Fail("expected to be eof, was not");
             }
 
             demofile.TeamStatistics = teamStats;
