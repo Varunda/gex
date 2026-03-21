@@ -374,7 +374,8 @@ function widget:GameOver(winningAllyTeams)
 				{ "defID", Spring.GetUnitDefID(unitID) },
 				{ "teamID", Spring.GetUnitTeam(unitID) },
 				{ "dealt", v.dealt },
-				{ "taken", v.taken }
+				{ "taken", v.taken },
+                { "experience", Spring.GetUnitExperience(unitID) }
 			})
             -- units can sometimes die after (or on the same frame?) the game ends,
             --      which would end this again (on the same frame), which is duplicate info
@@ -528,7 +529,8 @@ function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDef
             { "defID", unitDefID },
             { "teamID", teamID },
             { "dealt", v.dealt },
-            { "taken", v.taken }
+            { "taken", v.taken },
+            { "experience", Spring.GetUnitExperience(unitID) }
         })
         UNIT_DAMAGE[unitID] = nil
     end

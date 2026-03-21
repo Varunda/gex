@@ -25,7 +25,7 @@ namespace gex.Services.Db.MapStats {
         public async Task<List<MapStatsDailyUnitsMade>> GetByMap(string mapFilename, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsDailyUnitsMade>(
-                "SELECT * FROM map_stats_daily_units_made WHERE map_file_name = @MapFilename",
+                "SELECT * FROM map_stats_daily_units_made WHERE map_filename = @MapFilename",
                 new { MapFilename = mapFilename },
                 cancel
             );

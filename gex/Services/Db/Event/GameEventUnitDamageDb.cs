@@ -14,10 +14,10 @@ namespace gex.Services.Db.Event {
             cmd.CommandText = @"
                 INSERT INTO game_event_unit_damage (
                     game_id, frame, 
-                    unit_id, definition_id, team_id, damage_dealt, damage_taken
+                    unit_id, definition_id, team_id, damage_dealt, damage_taken, experience
                 ) VALUES (
                     @GameID, @Frame,
-                    @UnitID, @DefinitionID, @TeamID, @DamageDealt, @DamageTaken
+                    @UnitID, @DefinitionID, @TeamID, @DamageDealt, @DamageTaken, @Experience
                 );
             ";
 
@@ -28,6 +28,7 @@ namespace gex.Services.Db.Event {
             cmd.AddParameter("TeamID", ev.TeamID);
             cmd.AddParameter("DamageDealt", ev.DamageDealt);
             cmd.AddParameter("DamageTaken", ev.DamageTaken);
+            cmd.AddParameter("Experience", ev.Experience);
         }
 
     }

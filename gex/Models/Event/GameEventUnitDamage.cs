@@ -26,5 +26,9 @@ namespace gex.Models.Event {
         [ColumnMapping("damage_taken")]
         public double DamageTaken { get; set; }
 
+        [JsonActionLogPropertyName("experience")]
+        [ColumnMapping("experience")]
+        public double Experience { get; set; } = -1; // default to -1 for older games
+
     }
 }

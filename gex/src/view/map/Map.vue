@@ -17,17 +17,21 @@
         </div>
 
         <div v-else-if="barMap.state == 'loaded'">
-            <div class="text-center">
+            <div class="text-center border-bottom mb-5 pb-5">
                 <h1>
                     {{ barMap.data.name }}
                 </h1>
 
-                <h5>
+                <h5 class="mb-0">
                     by {{ barMap.data.author }}
                 </h5>
             </div>
 
             <img id="map-dims" :src="mapUrl" style="display: none;">
+
+            <h2 class="wt-header text-center">
+                Start spots for {{ selectedGamemode | gamemode }}
+            </h2>
 
             <div class="d-flex justify-content-center">
                 <div class="flex-grow-0 bg-danger">
@@ -89,7 +93,7 @@
             <div class="mb-3">
                 <div v-if="stats.state == 'loaded'">
 
-                    <h2 class="wt-header">Play stats</h2>
+                    <h2 class="wt-header bg-light text-dark">Play stats</h2>
 
                     <span v-if="stats.data.stats.length == 0">
                         Gex does not have any matches played on this map!
@@ -106,7 +110,7 @@
 
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Duration</h5>
+                                    <h5 class="card-title">Duration (median)</h5>
                                     <p class="card-text">{{ sumMapStats.durationMedianMs / 1000 | mduration }}</p>
                                 </div>
                             </div>
@@ -119,7 +123,7 @@
                             </div>
                         </div>
 
-                        <table class="table">
+                        <table class="table mb-5">
                             <thead>
                                 <tr class="table-secondary">
                                     <th>Gamemode</th>
@@ -137,17 +141,27 @@
                                     <td>{{ stat.gamemode | gamemode }}</td>
                                     <td>{{ stat.durationAverageMs / 1000 | mduration }}</td>
                                     <td>{{ stat.durationMedianMs / 1000 | mduration }}</td>
-                                    <td>{{ stat.playCountAllTime | locale(0) }}</td>
+                                    <td>{{ stat.playCountAllTime | locale(0) }} ({{ stat.playCountAllTime / sumMapStats.playCountAllTime * 100 | locale(2) }}%)</td>
                                     <td>{{ stat.playCountMonth | locale(0) }}</td>
                                     <td>{{ stat.playCountWeek | locale(0) }}</td>
                                     <td>{{ stat.playCountDay | locale(0) }}</td>
                                 </tr>
+
+                                <tr class="table-light">
+                                    <td>Total</td>
+                                    <td>{{ sumMapStats.durationAverageMs / 1000 | mduration }}</td>
+                                    <td>{{ sumMapStats.durationMedianMs / 1000 | mduration }}</td>
+                                    <td>{{ sumMapStats.playCountAllTime | locale(0) }}</td>
+                                    <td>{{ sumMapStats.playCountMonth | locale(0) }}</td>
+                                    <td>{{ sumMapStats.playCountWeek | locale(0) }}</td>
+                                    <td>{{ sumMapStats.playCountDay | locale(0) }}</td>
+                                </tr>
                             </tbody>
                         </table>
 
-                        <h2 class="wt-header">Faction stats</h2>
+                        <h2 class="wt-header mb-0">Faction stats for {{ selectedGamemode | gamemode }}</h2>
 
-                        <table class="table">
+                        <table class="table mb-5">
                             <thead>
                                 <tr class="table-secondary">
                                     <th>Faction</th>
@@ -188,9 +202,9 @@
                             </tbody>
                         </table>
                         
-                        <h2 class="wt-header">Opening lab stats</h2>
+                        <h2 class="wt-header mb-0">Opening lab stats for {{ selectedGamemode | gamemode }}</h2>
 
-                        <table class="table">
+                        <table class="table mb-5">
                             <thead>
                                 <tr class="table-secondary">
                                     <th>Lab</th>
@@ -206,7 +220,7 @@
                             </thead>
 
                             <tbody>
-                                <tr v-for="lab in openingLabs" :key="lab.defName">
+                                <tr v-for="lab in selectedGamemodeOpeningLabStats" :key="lab.defName">
                                     <td>
                                         <img :src="'/image-proxy/UnitIcon?defName=' + lab.defName + '&color=' + factionColor(lab.defName)" height="24" width="24">
                                         {{ lab.defName | defName }}
@@ -247,7 +261,7 @@
 
                 <div v-else-if="stats.state == 'error'">
                     Failed to load stats
-                    <api-error :problem="stats.problem"></api-error>
+                    <api-error :error="stats.problem"></api-error>
                 </div>
             </div>
 
@@ -274,6 +288,8 @@
     import "d3-contour";
     import "d3-color";
 
+    import * as luxon from "luxon";
+
     import ApiError from "components/ApiError";
     import MatchList from "components/app/MatchList.vue";
 
@@ -290,6 +306,7 @@
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { MapStatsByFaction } from "model/map_stats/MapStatsByFaction";
     import { MapStatsOpeningLab } from "model/map_stats/MapStatsOpeningLab";
+    import { MapStatsDailyOpeningLab } from "model/map_stats/MapStatsDailyOpeningLab";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
@@ -658,6 +675,56 @@
                 return stats;
             },
 
+            gamemodeMapStats: function(): MapStatsOpeningLab[] {
+                const stats: Map<string, MapStatsOpeningLab> = new Map();
+                if (this.stats.state != "loaded") {
+                    return [];
+                }
+
+                const now: Date = new Date(Date.now());
+
+                const lx: luxon.DateTime = luxon.DateTime.fromJSDate(now);
+                const day1: number = lx.minus(luxon.Duration.fromDurationLike({ days: 1 })).toJSDate().getTime();
+                const day7: number = lx.minus(luxon.Duration.fromDurationLike({ days: 7 })).toJSDate().getTime();
+                const day30: number = lx.minus(luxon.Duration.fromDurationLike({ days: 30 })).toJSDate().getTime();
+
+                for (const elem of this.stats.data.openingLabs) {
+
+                    const key: string = `${elem.gamemode}-${elem.definitionName}`;
+
+                    const gm: MapStatsOpeningLab = stats.get(key) ?? new MapStatsOpeningLab();
+                    gm.gamemode = elem.gamemode;
+                    gm.defName = elem.definitionName;
+                    gm.mapFilename = elem.mapFilename;
+
+                    gm.countTotal += elem.count;
+                    gm.winTotal += elem.wins;
+
+                    if (elem.day.getTime() > day1) {
+                        gm.countDay += elem.count;
+                        gm.winDay += elem.wins;
+                    }
+
+                    if (elem.day.getTime() > day7) {
+                        gm.countWeek += elem.count;
+                        gm.winWeek += elem.wins;
+                    }
+
+                    if (elem.day.getTime() > day30) {
+                        gm.countMonth += elem.count;
+                        gm.winMonth += elem.wins;
+                    }
+
+                    stats.set(key, gm);
+                }
+
+                return Array.from(stats.values()).sort((a, b) => a.gamemode - b.gamemode || a.defName.localeCompare(b.defName));
+            },
+
+            selectedGamemodeOpeningLabStats: function(): MapStatsOpeningLab[] {
+                return this.gamemodeMapStats.filter(iter => iter.gamemode == this.selectedGamemode);
+            },
+
             root: function(): d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null {
                 return ROOT;
             },
@@ -699,16 +766,18 @@
                 return this.stats.data.factionStats.filter((iter) => iter.gamemode == this.selectedGamemode);
             },
 
-            openingLabs: function(): MapStatsOpeningLab[] {
+            openingLabs: function(): MapStatsDailyOpeningLab[] {
                 if (this.stats.state != "loaded") {
                     return [];
                 }
 
-                return [...this.stats.data.openingLabs.filter((iter) => iter.gamemode == this.selectedGamemode)].sort((a, b) => a.defName.localeCompare(b.defName));
+                return [
+                    ...this.stats.data.openingLabs.filter((iter) => iter.gamemode == this.selectedGamemode)
+                ].sort((a, b) => a.definitionName.localeCompare(b.definitionName));
             },
 
             openingLabSum: function(): number {
-                return this.openingLabs.reduce((acc, iter) => acc += iter.countTotal, 0);
+                return this.openingLabs.reduce((acc, iter) => acc += iter.count, 0);
             }
         },
 

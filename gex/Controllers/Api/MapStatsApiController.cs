@@ -21,11 +21,14 @@ namespace gex.Controllers.Api {
         private readonly MapStatsByFactionDb _FactionStatsDb;
         private readonly MapStatsOpeningLabDb _OpeningLabDb;
         private readonly MapDailyPlaysDb _DailyPlaysDb;
+        private readonly MapStatsDailyOpeningLabDb _DailyOpeningLabDb;
+        private readonly MapStatsDailyUnitsMadeDb _DailyUnitsMadeDb;
 
         public MapStatsApiController(ILogger<MapStatsApiController> logger,
             MapStatsDb mapStatsDb, BarMapRepository mapRepository,
             MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb,
-            MapStatsStartSpotRepository startSpotRepository, MapDailyPlaysDb dailyPlaysDb) {
+            MapStatsStartSpotRepository startSpotRepository, MapDailyPlaysDb dailyPlaysDb,
+            MapStatsDailyOpeningLabDb dailyOpeningLabDb, MapStatsDailyUnitsMadeDb dailyUnitsMadeDb) {
 
             _Logger = logger;
             _MapStatsDb = mapStatsDb;
@@ -34,6 +37,8 @@ namespace gex.Controllers.Api {
             _OpeningLabDb = openingLabDb;
             _StartSpotRepository = startSpotRepository;
             _DailyPlaysDb = dailyPlaysDb;
+            _DailyOpeningLabDb = dailyOpeningLabDb;
+            _DailyUnitsMadeDb = dailyUnitsMadeDb;
         }
 
         /// <summary>
@@ -45,6 +50,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeFactionStats">will faction stats be included? defaults to false</param>
         /// <param name="includeOpeningLabs">will lab opener stats be included? defaults to false</param>
         /// <param name="includeDailyPlays">will daily plays be included? defaults to false</param>
+        /// <param name="includeUnitsMade">will <see cref="MapStats.UnitsMade"/> be populated? defaults to false</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///		the response will contain a <see cref="MapStats"/>, where each stat is populated
@@ -61,6 +67,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeFactionStats = false,
             [FromQuery] bool includeOpeningLabs = false,
             [FromQuery] bool includeDailyPlays = false,
+            [FromQuery] bool includeUnitsMade = false,
             CancellationToken cancel = default
         ) {
 
@@ -85,11 +92,15 @@ namespace gex.Controllers.Api {
             }
 
             if (includeOpeningLabs == true) {
-                stats.OpeningLabs = await _OpeningLabDb.GetByMap(mapFilename, cancel);
+                stats.OpeningLabs = await _DailyOpeningLabDb.GetByMap(mapFilename, cancel);
             }
 
             if (includeDailyPlays == true) {
                 stats.DailyPlays = await _DailyPlaysDb.GetByMap(mapFilename, cancel);
+            }
+
+            if (includeUnitsMade == true) {
+                stats.UnitsMade = await _DailyUnitsMadeDb.GetByMap(mapFilename, cancel);
             }
 
             return ApiOk(stats);

@@ -32,7 +32,9 @@ namespace gex.Services.Db.Patches {
                     count int NOT NULL,
                     wins int NOT NULL,
 
-                    timestamp timestamptz NOT NULL
+                    timestamp timestamptz NOT NULL,
+
+                    PRIMARY KEY (map_filename, gamemode, day, definition_name)
                 );
 
                 CREATE TABLE IF NOT EXISTS map_stats_daily_units_made (
@@ -43,7 +45,9 @@ namespace gex.Services.Db.Patches {
                     definition_name varchar NOT NULL,
                     count int NOT NULL,
 
-                    timestamp timestamptz NOT NULL
+                    timestamp timestamptz NOT NULL,
+
+                    PRIMARY KEY (map_filename, gamemode, day, definition_name)
                 );
             ");
 

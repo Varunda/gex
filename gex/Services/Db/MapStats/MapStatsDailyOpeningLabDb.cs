@@ -26,10 +26,33 @@ namespace gex.Services.Db.MapStats {
         public async Task<List<MapStatsDailyOpeningLab>> GetByMap(string mapFilename, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsDailyOpeningLab>(
-                "SELECT * FROM map_stats_daily_opening_lab WHERE map_file_name = @MapFilename",
+                "SELECT * FROM map_stats_daily_opening_lab WHERE map_filename = @MapFilename",
                 new { MapFilename = mapFilename },
                 cancel
             );
+        }
+
+        public async Task<List<MapStatsDailyOpeningLab>> GetAllTimeByMap(string mapFilename, CancellationToken cancel) {
+            List<MapStatsDailyOpeningLab> openings = await GetByMap(mapFilename, cancel);
+
+            Dictionary<byte, MapStatsDailyOpeningLab> byGamemode = [];
+
+            foreach (MapStatsDailyOpeningLab open in openings) {
+                byGamemode.TryGetValue(open.Gamemode, out MapStatsDailyOpeningLab? entry);
+
+                if (entry == null) {
+                    entry = new MapStatsDailyOpeningLab();
+                    entry.Gamemode = open.Gamemode;
+                    entry.MapFilename = open.MapFilename;
+                }
+
+                entry.Count += open.Count;
+                entry.Wins += open.Wins;
+
+                byGamemode[entry.Gamemode] = entry;
+            }
+
+            return byGamemode.Values.ToList();
         }
 
         public async Task Generate(MapStatsNeedsUpdate entry, CancellationToken cancel) {

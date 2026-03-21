@@ -90,6 +90,10 @@
     border-top: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
     margin-bottom: 1rem;
+    --bs-bg-opacity: 1;
+    --bs-text-opacity: 1;
+    background-color: rgba(var(--bs-light-rgb),var(--bs-bg-opacity));
+    color: rgba(var(--bs-dark-rgb),var(--bs-text-opacity));
 }
 
 .flex-basis-0 {

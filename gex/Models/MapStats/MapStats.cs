@@ -12,9 +12,11 @@ namespace gex.Models.MapStats {
 
         public List<MapStatsByFaction> FactionStats { get; set; } = [];
 
-        public List<MapStatsOpeningLab> OpeningLabs { get; set; } = [];
+        public List<MapStatsDailyOpeningLab> OpeningLabs { get; set; } = [];
 
         public List<MapDailyPlays> DailyPlays { get; set; } = [];
+
+        public List<MapStatsDailyUnitsMade> UnitsMade { get; set; } = [];
 
     }
 }
