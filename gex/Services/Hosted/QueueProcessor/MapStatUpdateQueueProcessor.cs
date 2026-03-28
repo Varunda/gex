@@ -60,7 +60,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _FactionStatsDb.Generate(entry.MapFilename, cancel);
             long factionMs = timer.ElapsedMilliseconds; timer.Restart();
 
-            await _OpeningLabDb.Generate(entry.MapFilename, cancel);
+            //await _OpeningLabDb.Generate(entry.MapFilename, cancel);
             long openingLabMs = timer.ElapsedMilliseconds; timer.Restart();
 
             _Logger.LogInformation($"updated map stats [mapFilename={entry.MapFilename}] [timer={overAllTimer.ElapsedMilliseconds}ms] "
