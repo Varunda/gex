@@ -6,6 +6,7 @@ export class GameEventUnitCreated {
     public frame: number = 0;
     public unitID: number = 0;
     public definitionID: number = 0;
+    public definitionName: string = "";
     public teamID: number = 0;
     public unitX: number = 0;
     public unitY: number = 0;

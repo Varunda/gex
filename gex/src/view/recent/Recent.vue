@@ -61,12 +61,12 @@
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Minimum player count</label>
+                <label>Minimum player count (exclusive)</label>
                 <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
             </div>
 
             <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Maximum player count</label>
+                <label>Maximum player count (inclusive)</label>
                 <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
             </div>
 

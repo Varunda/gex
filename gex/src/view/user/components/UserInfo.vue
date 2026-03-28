@@ -40,12 +40,12 @@
         </div>
 
         <div>
-            <h4 class="wt-header bg-light text-dark">
+            <h4 class="wt-header">
                 <b>Faction stats</b>
             </h4>
 
             <div v-for="faction in groupedFactionData" :key="faction.gamemode" class="mb-3">
-                <div class="wt-header mb-0 text-white" style="white-space: nowrap; text-wrap: wrap;">
+                <div class="wt-header mb-0" style="white-space: nowrap; text-wrap: wrap;">
                     <h5 class="ms-2 d-inline-block mb-0">
                         <strong>
                             {{ faction.gamemode | gamemode }}
@@ -121,7 +121,7 @@
             <h4 class="wt-header bg-light text-dark mb-1">
                 Maps
             </h4>
-            <h6 class="text-muted mb-3">
+            <h6 class="text-muted mb-3 text-center">
                 Map stats are seperated into gamemode, so it is possible to have 1 map listed multiple times, each for a different gamemode
             </h6>
 

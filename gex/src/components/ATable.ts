@@ -757,19 +757,21 @@ export const ATable = Vue.extend({
 
                 // Ensure the source is only populated once
                 if (filter.method == "dropdown" && filter.source == undefined && this.entries.state == "loaded") {
-                    console.log(`<a-filter:dropdown> no src, can load from data`);
+                    console.log(`<a-filter:dropdown> no src, can load from data [field=${filter.field}]`);
 
-                    // Find all unique value of the filter's field
-                    // https://stackoverflow.com/questions/11246758
-                    const uniqueFields: FilterKeyValue[] = this.entries.data
-                        .map((iter: any) => iter[filter.field]) // Collect the field
-                        .filter((iter: any, i: any, ar: any) => ar.indexOf(iter) == i) // Find unique
-                        .map((iter: any) => ({ key: iter, value: iter })); // Map to the pair
+                    if (this.entries.data.length > 0) {
+                        // Find all unique value of the filter's field
+                        // https://stackoverflow.com/questions/11246758
+                        const uniqueFields: FilterKeyValue[] = this.entries.data
+                            .map((iter: any) => iter[filter.field]) // Collect the field
+                            .filter((iter: any, i: any, ar: any) => ar.indexOf(iter) == i) // Find unique
+                            .map((iter: any) => ({ key: iter, value: iter })); // Map to the pair
 
-                    // Include an all field
-                    uniqueFields.unshift({ key: "All", value: null });
+                        // Include an all field
+                        uniqueFields.unshift({ key: "All", value: null });
 
-                    filter.source = uniqueFields;
+                        filter.source = uniqueFields;
+                    }
                 }
 
                 // Create the appropriate <input> element 
@@ -976,9 +978,11 @@ export const ATable = Vue.extend({
                     }
                 },
                 filter.source?.map((iter: any) => {
+                    /*
                     if (typeof (iter.key) != "string") {
                         throw `Expected to find string for ${iter.key}, got type ${typeof(iter.key)} instead!`;
                     }
+                    */
 
                     return createElement("option", { domProps: { value: iter.value } }, iter.key);
                 })

@@ -313,6 +313,8 @@
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
                         <hr class="border">
 
+                        <match-unit-debug :match="match.data" :output="output.data" class="my-4"></match-unit-debug>
+
                         <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
                     </div>
                 </div>
@@ -395,6 +397,7 @@
     import MatchTweaks from "./components/MatchTweaks.vue";
     import MatchUnitValueGraph from "./components/MatchUnitValueGraph.vue";
     import MatchApm from "./components/MatchApm.vue";
+    import MatchUnitDebug from "./components/MatchUnitDebug.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -982,7 +985,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction, MatchApm,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph, MatchUnitDebug,
             ProcessingStep, Collapsible, Busy
         }
     });

@@ -54,6 +54,9 @@
                 root: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                 svg: null as d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null,
 
+                groupBg: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                groupIcon: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+
                 tooltip: null as any | null,
                 zoom: {} as any,
 
@@ -122,7 +125,7 @@
                 this.svg.attr("width", 256);
 
                 this.root = this.svg.append("g")
-                    .attr("id", "doc-root");
+                    .attr("id", `doc-root-${this.player.teamID}`);
 
                 this.zoom = d3z.zoom()
                     .scaleExtent([1, 15])
@@ -145,6 +148,15 @@
                     .attr("x", 0).attr("y", 0)
                     .attr("width", this.imgW).attr("height", this.imgH)
                     .style("fill", "#0a224244");
+
+                // the background and icons are put in different groups so if icons overlap there isn't
+                // a background cell around them
+                this.groupBg = this.root.append("g")
+                    .attr("id", `group-bg-${this.player.teamID}`)
+                    .classed("map-no-remove", true);
+                this.groupIcon = this.root.append("g")
+                    .attr("id", `group-icon-${this.player.teamID}`)
+                    .classed("map-no-remove", true);
 
                 this.tooltip = d3.select(`#match-opener-${this.player.teamID}`)
                     .append("div")
@@ -223,16 +235,18 @@
             drawIcon: function(defName: string, x: number, z: number, size: number, color?: string): void {
                 if (this.svg == null) { return console.warn(`cannot draw map: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot draw map: root is null`); }
+                if (this.groupBg == null) { return console.warn(`cannot draw icon: groupBg is null`); }
+                if (this.groupIcon == null) { return console.warn(`cannot draw icon: groupIcon is null`); }
 
-                this.root.append("rect")
+                this.groupBg.append("rect")
                     .attr("x", this.toImgX(x - size))
                     .attr("y", this.toImgZ(z - size))
                     .attr("width", `${size}px`).attr("height", `${size}px`)
                     .style("fill", this.player.color)
                     .style("stroke", color ?? this.player.color)
-                    .style("stroke-width", "3px")
+                    .style("stroke-width", "1px")
 
-                this.root.append("image")
+                this.groupIcon.append("image")
                     .attr("x", this.toImgX(x - size))
                     .attr("y", this.toImgZ(z - size))
                     .attr("width", size).attr("height", size)
@@ -279,24 +293,34 @@
                 const left: number = -x / scale;
                 const top: number = -y / scale;
 
-                const w: number = this.imgW / scale;
-                const h: number = this.imgH / scale;
+                //const w: number = this.imgW / scale;
+                //const h: number = this.imgH / scale;
+                const w: number = 256 / scale;
+                const h: number = 256 / scale;
 
                 // the tooltip isn't part of the svg, so we need to calculate it's position based on the pan/zoom of the svg
-                const posx: number = (pos[0] - left) / w * this.imgW;
-                const posy: number = (pos[1] - top) / h * this.imgH;
+                //const posx: number = (pos[0] - left) / w * this.imgW;
+                //const posy: number = (pos[1] - top) / h * this.imgH;
+                const posx: number = (pos[0] - left) / w * 256;
+                const posy: number = (pos[1] - top) / h * 256;
 
-                //console.log(`MatchMap> pos=${pos[0].toFixed(2)},${pos[1].toFixed(2)} => ${posx.toFixed(2)},${posy.toFixed(2)} (${left.toFixed(2)},${top.toFixed(2)}) [${w.toFixed(2)},${h.toFixed(2)}]@${scale.toFixed(2)}`);
-                if (pos[0] <= this.imgW / 2) {
+                //console.log(`MatchOpenerGraphic> ${this.player.teamID} pos=${pos[0].toFixed(2)},${pos[1].toFixed(2)} => ${posx.toFixed(2)},${posy.toFixed(2)} (${left.toFixed(2)},${top.toFixed(2)}) [${w.toFixed(2)},${h.toFixed(2)}]@${scale.toFixed(2)}`);
+                //if (pos[0] <= this.imgW / 2) {
+                if (pos[0] <= 128) {
                     this.tooltip.style("left", `${posx}px`);
+                    //this.tooltip.style("left", `${-left}px`);
                 } else {
-                    this.tooltip.style("right", `${this.imgW - posx}px`);
+                    this.tooltip.style("right", `${256 - posx}px`);
+                    //this.tooltip.style("right", `${this.imgW - left}px`);
                 }
 
-                if (pos[1] <= this.imgH / 2) {
+                //if (pos[1] <= this.imgH / 2) {
+                if (pos[1] <= 128) {
                     this.tooltip.style("top", `${posy}px`);
+                    //this.tooltip.style("top", `${-top}px`);
                 } else {
-                    this.tooltip.style("bottom", `${this.imgH - posy}px`);
+                    this.tooltip.style("bottom", `${256 - posy}px`);
+                    //this.tooltip.style("bottom", `${this.imgH - top}px`);
                 }
             },
 

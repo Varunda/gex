@@ -112,6 +112,10 @@
             <span v-if="!hasEvents" class="text-info text-center">
                 Gex has not replayed this game, so unit positions are not available
             </span>
+
+            <div v-if="hasEvents == true && output.unitPosition.length == 0" class="py-3 w-100 alert alert-warning text-center">
+                No unit position data available
+            </div>
         </div>
 
     </div>

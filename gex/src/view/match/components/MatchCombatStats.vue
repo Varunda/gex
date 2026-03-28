@@ -461,6 +461,25 @@
                 </a-col>
             </a-table>
 
+            <div v-if="showUnitExp" class="mb-5">
+                <div style="max-height: 300px">
+                    <canvas id="exp-chart" height="300"></canvas>
+                </div>
+
+                <div>
+                    <div class="btn-group w-100">
+                        <button v-for="i in 16" :key="i" class="btn btn-primary" @click="viewRank(i)">{{ i }}</button>
+                    </div>
+                </div>
+
+                <div v-if="selectedRank.length > 0">
+                    <h3>View units at rank {{ pickedRank }}</h3>
+                    <span v-for="iter in selectedRank" :key="iter.definitionName" class="me-3">
+                        <unit-pic :name="iter.definitionName" :size="48"></unit-pic> {{ iter.count }}
+                    </span>
+                </div>
+            </div>
+
         </collapsible>
     </div>
     
@@ -473,6 +492,7 @@
     import Collapsible from "components/Collapsible.vue";
     import InfoHover from "components/InfoHover.vue";
     import UnitIcon from "components/app/UnitIcon.vue";
+    import UnitPic from "components/app/UnitPic.vue";
 
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
     import ChartDataLabels from "chartjs-plugin-datalabels";
@@ -521,6 +541,11 @@
         public advFusion: number = 0;
     };
 
+    class UnitExpEntry {
+        public definitionName: string = "";
+        public count: number = 0;
+    }
+
     const Cell = Vue.extend({
         props: {
             DefName: { type: String, required: true },
@@ -564,8 +589,12 @@
                 ecoData: [] as EcoKillEntry[],
                 chart: {
                     metalEff: null as Chart | null,
-                    damage: null as Chart | null
-                }
+                    damage: null as Chart | null,
+                    exp: null as Chart | null
+                },
+
+                selectedRank: [] as UnitExpEntry[],
+                pickedRank: 0 as number
             }
         },
 
@@ -728,6 +757,7 @@
             makeCharts: function(): void {
                 this.makeMetalEffChart();
                 this.makeDamageChart();
+                this.makeExpChart();
             },
 
             makeMetalEffChart: function(): void {
@@ -857,6 +887,120 @@
                 });
             },
 
+            makeExpChart: function(): void {
+                if (this.chart.exp != null) {
+                    this.chart.exp.destroy();
+                    this.chart.exp = null;
+                }
+
+                if (this.showUnitExp == false) {
+                    console.log(`MatchCombatStats> not showing unit exp graph, data not collected for this game`);
+                    return;
+                }
+
+                const canvas = document.getElementById("exp-chart") as HTMLCanvasElement | null; 
+                if (canvas == null) {
+                    throw `missing #exp-chart`;
+                }
+
+                let ranks: number[] = [];
+                for (let i = 0; i < 16; ++i) {
+                    ranks.push(0);
+                }
+                for (const ud of this.output.unitDamage) {
+                    if (ud.rank < 1) {
+                        continue;
+                    }
+                    ++ranks[Math.floor(ud.rank)];
+                }
+
+                ranks = ranks.slice(1);
+
+                console.log("ranks", ranks);
+
+                this.chart.exp = new Chart(canvas.getContext("2d")!, {
+                    type: "bar",
+                    data: {
+                        labels: ranks.map((iter, index) => index + 1),
+                        datasets: [{
+                            data: ranks,
+                            backgroundColor: [
+                                "#ffffff",
+                            ],
+                            datalabels: {
+                                align: "top",
+                                anchor: "center",
+                                color: "#000000"
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            tooltip: {
+                                enabled: true
+                            },
+                            datalabels: {
+                                display: true,
+                                color: "white",
+                                font: {
+                                    family: "Atkinson Hyperlegible",
+                                    size: 18,
+                                },
+                                formatter: CompactUtils.compact
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: "nearest"
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    display: true,
+                                }
+                            }
+                        }
+                    },
+                    //plugins: [ ChartDataLabels ]
+                });
+            },
+
+            viewRank: function(rank: number): void {
+                this.selectedRank = [];
+                this.pickedRank = rank;
+
+                const unitIDs: Set<number> = new Set();
+
+                console.log(`MatchCombatStats> view units at rank ${rank}`);
+
+                for (const ud of this.output.unitDamage) {
+                    if (Math.floor(ud.rank) == rank) {
+                        unitIDs.add(ud.unitID);
+                    }
+                }
+
+                const count: Map<string, number> = new Map();
+                for (const uc of this.output.unitsCreated) {
+                    if (unitIDs.has(uc.unitID) == false) {
+                        continue;
+                    }
+
+                    count.set(uc.definitionName, (count.get(uc.definitionName) ?? 0) + 1);
+                }
+
+                this.selectedRank = Array.from(count.entries()).map(iter => {
+                    return {
+                        definitionName: iter[0],
+                        count: iter[1]
+                    }
+                });
+            },
+
             getColName: function(index: number): string {
                 return `col${index}`;
             }
@@ -865,6 +1009,11 @@
         computed: {
             data: function(): Loading<UnitStats[]> {
                 return Loadable.loaded(this.playerStats);
+            },
+
+            showUnitExp: function(): boolean {
+                return false;
+                //return this.output.unitDamage.find(iter => iter.experience != -1) != undefined;
             },
 
             playerStats: function(): UnitStats[] {
@@ -1002,7 +1151,7 @@
         components: {
             Cell,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            Collapsible, InfoHover, UnitIcon
+            Collapsible, InfoHover, UnitIcon, UnitPic
         }
     });
     export default MatchCombatStats;

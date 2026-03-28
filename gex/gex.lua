@@ -214,7 +214,7 @@ local function SendUnitPositions()
 			local x, y, z = Spring.GetUnitPosition(unitID)
 
             -- NaN and inf checks
-            if (x == x and x ~= inf and y == y and y ~= inf and z == z and z ~= z) then
+            if (x == x and x ~= inf and y == y and y ~= inf and z == z and z ~= inf) then
                 -- only send unit positions if it changed
 				if (UNIT_POSITION[unitID] ~= nil) then
 					local px = UNIT_POSITION[unitID].x
