@@ -287,7 +287,7 @@ function widget:GameFrame(n)
         end
     end
 
-    -- every 15 seconds
+    -- every 5 seconds
     if (frame % 150 == 0) then
         local _, _, _, actual_thing_i_care_about, _, _, _ = Spring.GetWind()
 

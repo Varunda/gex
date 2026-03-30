@@ -46,6 +46,8 @@ namespace gex.Services.BarApi {
 
             Dictionary<string, int> unknownCount = [];
 
+            Dictionary<string, int> errorCount = [];
+
             int lineNumber = 0;
             foreach (string line in lines) {
                 cancel.ThrowIfCancellationRequested();
@@ -60,7 +62,15 @@ namespace gex.Services.BarApi {
                     }
                     json = JsonSerializer.Deserialize<JsonElement>(line);
                 } catch (Exception ex) {
-                    _Logger.LogError(ex, $"failed to deserialize line [gameID={gameID}] [num={lineNumber}] [line={line}]");
+
+                    if (errorCount.GetValueOrDefault(ex.Message) < 5) {
+                        _Logger.LogError(ex, $"failed to deserialize line [gameID={gameID}] [num={lineNumber}] [line={line}]");
+                    } else if (errorCount.GetValueOrDefault(ex.Message) == 5) {
+                        _Logger.LogError($"hit same error in game 5 times, suppressing further errors [gameID={gameID}] [message={ex.Message}]");
+                    }
+
+                    errorCount[ex.Message] = errorCount.GetValueOrDefault(ex.Message) + 1;
+
                     errored = true;
                     continue;
                 }

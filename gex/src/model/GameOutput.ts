@@ -31,6 +31,9 @@ export class GameOutput {
     public unitsTaken: GameEventUnitsTaken[] = [];
     public unitsGiven: GameEventUnitsGiven[] = [];
 
+    public unitIdToDefinition: Map<number, GameEventUnitDef | undefined> = new Map();
+    public defNameToDef: Map<string, GameEventUnitDef> = new Map();
+
     public static parse(elem: any): GameOutput {
 
         const unitDefs: GameEventUnitDef[] = elem.unitDefinitions.map((iter: any) => GameEventUnitDef.parse(iter));
@@ -88,11 +91,22 @@ export class GameOutput {
             windUpdates[0].value = windUpdates[1].value;
         }
 
+        const unitsCreated: GameEventUnitCreated[] = elem.unitsCreated.map((iter: any) => GameEventUnitCreated.parse(iter));
+        const unitIdToDef: Map<number, GameEventUnitDef | undefined> = new Map();
+        for (const uc of unitsCreated) {
+            unitIdToDef.set(uc.unitID, map.get(uc.definitionID));
+        }
+
+        const defNameToDef: Map<string, GameEventUnitDef> = new Map();
+        for (const ud of unitDefs) {
+            defNameToDef.set(ud.definitionName, ud);
+        }
+
         return {
             gameID: elem.gameID,
             unitDefinitions: map,
             windUpdates: windUpdates,
-            unitsCreated: elem.unitsCreated.map((iter: any) => GameEventUnitCreated.parse(iter)),
+            unitsCreated: unitsCreated,
             unitsKilled: elem.unitsKilled.map((iter: any) => GameEventUnitKilled.parse(iter)),
             factoryUnitCreated: elem.factoryUnitCreated.map((iter: any) => GameEventFactoryUnitCreated.parse(iter)),
             commanderPositionUpdates: elem.commanderPositionUpdates.map((iter: any) => GameEventCommanderPositionUpdate.parse(iter)),
@@ -104,6 +118,9 @@ export class GameOutput {
             unitPosition: elem.unitPosition.map((iter: any) => GameEventUnitPosition.parse(iter)),
             unitsTaken: elem.unitsTaken.map((iter: any) => GameEventUnitsTaken.parse(iter)),
             unitsGiven: elem.unitsGiven.map((iter: any) => GameEventUnitsGiven.parse(iter)),
+
+            unitIdToDefinition: unitIdToDef,
+            defNameToDef: defNameToDef
         };
     }
 

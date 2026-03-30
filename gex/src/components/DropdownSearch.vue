@@ -16,7 +16,7 @@
 
         <datalist :id="'datalist-' + ID">
             <option v-for="v in values" :key="v.value" :value="v.value">
-                {{ v.value }}
+                {{ v.name }}
             </option>
         </datalist>
     </div>

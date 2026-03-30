@@ -1,11 +1,11 @@
 
 <template>
     <div>
-        <h2 class="wt-header bg-primary">
+        <h2 class="wt-header bg-primary text-light">
             Map
         </h2>
 
-        <div class="d-flex justify-content-lg-center mb-2 flex-wrap" style="gap: 0.5rem;">
+        <div class="d-flex justify-content-lg-center mb-4 flex-wrap" style="gap: 0.5rem;">
             <toggle-button v-model="map.startingBox">
                 Starting box
             </toggle-button>
@@ -14,7 +14,7 @@
                 Starting positions
             </toggle-button>
 
-            <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" class="d-flex justify-content-lg-center flex-wrap" style="gap: 0.5rem;">
+            <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" class="d-flex justify-content-lg-center flex-wrap" style="gap: 0.25rem;">
                 <toggle-button v-model="map.deathHeatmap" :disabled="!hasEvents">
                     Unit death heatmap
                 </toggle-button>
@@ -64,6 +64,39 @@
                     Building heatmap
                 </toggle-button>
 
+                <toggle-button v-model="map.showUnitPosition" :disabled="!hasEvents">
+                    Unit type pos
+                </toggle-button>
+            </div>
+        </div>
+
+        <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" v-if="map.showUnitPosition">
+            <h6 class="wt-header">
+                Unit type position viewer
+            </h6>
+
+            <div class="mb-3">
+                <label class="d-inline">Unit type path view</label>
+
+                <select :disabled="!hasEvents" class="form-select d-inline" @change="addUnitTypePositionUpdates($event.target.value)">
+                    <option :value="null" :disabled="true">Select unit type to view paths for</option>
+
+                    <option v-for="ud in unitPositionUnitDefs" :key="ud.definitionName" :value="ud.definitionName">
+                        {{ ud.disambiguatedName }}
+                    </option>
+                </select>
+            </div>
+
+            <div v-if="map.unitPositions.length > 0" class="mb-3">
+                <label>Selected unit types</label>
+
+                <div>
+                    <button v-for="ud in map.unitPositions" :key="ud.definitionName" @click="removeUnitTypePositions(ud.definitionName)" class="btn btn-sm btn-secondary me-2">
+                        &times;
+                        {{ ud.disambiguatedName }}
+                    </button>
+                </div>
+
             </div>
         </div>
 
@@ -95,19 +128,55 @@
                     Viewing units at {{ playback.frame / 30 | mduration }}
                 </span>
 
-                <button v-if="hasEvents" class="btn btn-sm" @click="playback.useStrategicIcons = !playback.useStrategicIcons" :class="[ playback.useStrategicIcons ? 'btn-primary' : 'btn-secondary' ]">
+                <button v-if="hasEvents" class="btn btn-sm " @click="playback.useStrategicIcons = !playback.useStrategicIcons" :class="[ playback.useStrategicIcons ? 'btn-primary' : 'btn-secondary' ]">
                     Use strategic icons
                 </button>
 
                 <toggle-button v-if="hasEvents" v-model="playback.scaleStrategicIcons" class="btn-sm">
                     Scale icons
                 </toggle-button>
-
             </div>
 
             <div class="mt-1">
                 <input type="range" min="0" :max="unitPositionFrames[unitPositionFrames.length - 1]" step="900" class="form-range" v-model.number="playback.frame" :disabled="!hasEvents">
             </div>
+
+            <collapsible header-text="Options" :show="false" size-class="h6">
+
+                <div class="mb-3">
+                    <label>Shown players</label>
+
+                    <div v-if="true || match.players.length == 2">
+                        <button v-for="player in match.players" :key="player.teamID" class="btn btn-sm me-3" @click="toggleSelectedTeam(player.teamID)"
+                            :class="[ playback.selectedTeams.indexOf(player.teamID) == -1 ? 'btn-secondary' : 'btn-primary' ]">
+
+                            {{ player.username }}
+                        </button>
+                    </div>
+
+                    <div v-else>
+                        <div v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
+                            Team {{ allyTeam.allyTeamID + 1 }}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label>Shown unit types</label>
+
+                    <input v-model="playback.filter" type="text" class="form-control" placeholder="filter unit types">
+
+                    <div style="max-height: 200px; overflow-y: auto" class="list-group">
+                        <div v-for="def in shownUnitDefToggles" class="form-check" :key="def.definitionName">
+                            <input type="checkbox" class="form-check-input" v-model="def.ticked">
+
+                            <label class="form-check-label">
+                                {{ def.name }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </collapsible>
 
             <span v-if="!hasEvents" class="text-info text-center">
                 Gex has not replayed this game, so unit positions are not available
@@ -121,7 +190,7 @@
     </div>
 </template>
 
-<style>
+<style id="css-root">
 
     .rotate-90 {
         transform-box: fill-box;
@@ -152,10 +221,28 @@
         display: none;
     }
 
+    .path-pulse {
+        --glow-length: 50;
+        --gap-length: 150;
+        stroke-dasharray: var(--glow-length), var(--gap-length);
+        animation: flow 2s linear infinite;
+        filter: drop-shadow(0 0 5px #ffffff33);
+    }
+
+    @keyframes flow {
+        from { 
+            stroke-dashoffset: 200;
+        }
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
 </style>
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
+    import { Loadable, Loading } from "Loading";
 
     import * as d3 from "d3";
     import * as d3s from "d3-scale";
@@ -170,13 +257,17 @@
 
     import ToggleButton from "components/ToggleButton";
     import InfoHover from "components/InfoHover.vue";
+    import Collapsible from "components/Collapsible.vue";
+    import DropdownSearch from "components/DropdownSearch.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { GameOutput } from "model/GameOutput";
     import { BarMap } from "model/BarMap";
+    import { SearchResult } from "model/SearchResult";
 
     import { GameEventUnitDef } from "model/GameEventUnitDef";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { GameEventUnitPosition } from "model/GameEventUnitPosition";
 
     import { CommanderData } from "../compute/ComputeCommanderData";
     import { FactoryData, PlayerFactories } from "../compute/FactoryData";
@@ -186,6 +277,12 @@
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
+
+    class UnitDefToggle  {
+        public definitionName: string = "";
+        public name: string = "";
+        public ticked: boolean = false;
+    }
 
     export const MatchMap = Vue.extend({
         props: {
@@ -210,6 +307,8 @@
                 imgH: 0 as number,
                 isMapImageLoading: false as boolean,
 
+                cssRoot: null as CSSStyleSheet | null,
+
                 computedData: {
                     commander: [] as CommanderData[],
                     factories: [] as PlayerFactories[],
@@ -226,6 +325,10 @@
                     shownUnits: new Set() as Set<number>,
                     useStrategicIcons: false as boolean,
                     scaleStrategicIcons: true as boolean,
+
+                    selectedTeams: [] as number[],
+                    selectedUnitDefs: [] as UnitDefToggle[],
+                    filter: "" as string
                 },
 
                 map: {
@@ -238,6 +341,9 @@
                     radars: true as boolean,
                     staticDefense: true as boolean,
                     factories: true as boolean,
+                    showUnitPosition: false as boolean,
+
+                    unitPositions: [] as GameEventUnitDef[]
                 },
 
                 roots: {
@@ -250,6 +356,9 @@
         },
 
         mounted: function(): void {
+            this.playback.selectedTeams = this.match.players.map(iter => iter.teamID);
+            this.makeInitialUnitDef();
+
             const mapData: BarMap | null = this.match.mapData;
             if (mapData == null) {
                 console.warn(`MatchMap> cannot add player start pos: map data is missing!`);
@@ -350,11 +459,18 @@
                     this.computedData.position = UnitPositionFrame.compute(this.match, this.output);
 
                     if (this.mapH == 0 || this.mapW == 0) {
-                        throw `MatchMap> bad map dimensions!`;
+                        throw `MatchMap> bad map dimensions (H or W was 0)! [mapH=${this.mapH}] [mapW=${this.mapW}]`;
                     }
 
                     this.drawMap();
                 });
+            });
+
+            this.$nextTick(() => {
+                const css = new CSSStyleSheet();
+                document.adoptedStyleSheets = [ css ];
+
+                this.cssRoot = css;
             });
         },
 
@@ -434,6 +550,28 @@
                     .attr("width", this.imgW).attr("height", this.imgH)
                     .style("fill", "#0a224244");
                     */
+            },
+
+            makeInitialUnitDef: function(): void {
+                const set: Set<number> = new Set(this.output.unitsCreated.map(iter => iter.definitionID));
+                for (const defID of set) {
+                    const def: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defID);
+                    if (def == undefined) {
+                        console.warn(`MatchMap:relevantUnitDefs> missing unit definition [defID=${defID}]`);
+                        continue;
+                    }
+
+                    const toggle: UnitDefToggle = new UnitDefToggle();
+                    toggle.definitionName = def.definitionName;
+                    toggle.name = def.disambiguatedName;
+                    toggle.ticked = false;
+
+                    this.playback.selectedUnitDefs.push(toggle);
+                }
+
+                this.playback.selectedUnitDefs.sort((a, b) => {
+                    return a.name.localeCompare(b.name);
+                });
             },
 
             /**
@@ -544,6 +682,8 @@
                             .classed("map-unit-pos", true)
                             .classed("animate-move", true)
                             .classed("unit-pos-hide", true)
+                            .classed(`unit-pos-team-${pos.teamID}`, true)
+                            .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .on("mouseenter", (ev: any) => {
                                 this.showTooltip(`${player?.username}'s ${unitDef?.name ?? `<missing def ${defId}>`}`);
                             })
@@ -566,6 +706,8 @@
                             .classed("map-unit-pos", true)
                             .classed("animate-move", true)
                             .classed("unit-pos-hide", true)
+                            .classed(`unit-pos-team-${pos.teamID}`, true)
+                            .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .attr("x", this.toImgX(pos.x)).attr("y", this.toImgZ(pos.z))
                             .attr("width", `${sizePx}px`).attr("height", `${sizePx}px`)
                             .style("fill", player?.hexColor ?? `#333333`)
@@ -586,6 +728,8 @@
                             .classed("map-unit-pos", true)
                             .classed("animate-move", true)
                             .classed("unit-pos-hide", true)
+                            .classed(`unit-pos-team-${pos.teamID}`, true)
+                            .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2))
                             .attr("r", `${sizePx / 2}px`)
                             .style("fill", player?.hexColor ?? `#333333`)
@@ -612,15 +756,35 @@
                 if (this.svg == null) { return console.warn(`cannot render frame: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot render frame: root is null`); }
 
-                console.log(`MatchMap> rendering unit pos frame [frame=${frame}]`);
+                this.map.startingBox = false;
+                this.map.startingPosition = false;
+                this.map.commanderHeatmap = false;
+                this.map.buildingHeatmap = false;
+                this.map.commanderPositions = false;
+                this.map.deathHeatmap = false;
+                this.map.radars = false;
+                this.map.staticDefense = false;
+                this.map.factories = false;
 
-                //this.root.selectAll(".map-unit-pos").remove();
+                // if no unit defs are ticked to display, show them all by default
+                const toggledUnitDefs: UnitDefToggle[] = this.playback.selectedUnitDefs.filter(iter => iter.ticked == true);
+                const shownUnitDefs: Set<string> = new Set(
+                    toggledUnitDefs.length == 0
+                        ? this.playback.selectedUnitDefs.map(iter => iter.definitionName)
+                        : toggledUnitDefs.map(iter => iter.definitionName)
+                );
 
+                const unitDefsStr: string = toggledUnitDefs.length == 0 ? "all" : Array.from(shownUnitDefs).join(",");
+
+                console.log(`MatchMap> rendering unit pos frame [frame=${frame}] [selectedTeam=${this.playback.selectedTeams.join(",")}] [unit defs=${unitDefsStr}]`);
+
+                // all unit positions from this frame
                 const unitPos: UnitPositionFrame[] = this.computedData.position.filter(iter => iter.frame == frame);
                 if (unitPos.length == 0) {
                     return console.warn(`MatchMap> cannot render unit position on frame ${frame}, no positions available!`);
                 }
 
+                // map of unit ids and their position on this frame
                 const map: Map<number, UnitPositionFrame> = new Map();
                 for (const iter of unitPos) {
                     map.set(iter.unitID, iter);
@@ -637,7 +801,7 @@
 
                     const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defId);
                     if (unitDef == undefined) {
-                        console.warn(`MatchMap> missing unit def ${defId}`);
+                        console.warn(`MatchMap> missing unit def [defID=${defId}] [unitID=${unitID}] [frame=${frame}]`);
                         continue;
                     }
 
@@ -648,24 +812,42 @@
 
                     if (entry == undefined) {
                         elem.classed("unit-pos-hide", true);
-                    } else {
-                        elem.classed("unit-pos-hide", false);
-                        //console.log(`MatchMap> showing unit ${unitID} ${elem}`);
+                        continue;
+                    }
 
-                        const type = (elem.node()! as Element).tagName;
+                    let show: boolean = true;
+                    if (this.playback.selectedTeams.indexOf(entry.teamID) == -1) {
+                        show = false;
+                    }
 
-                        const ux = this.toImgX(entry.x);
-                        const uz = this.toImgZ(entry.z);
+                    if (shownUnitDefs.has(unitDef.definitionName) == false) {
+                        show = false;
+                    }
 
-                        if (type == "g") {
-                            elem.attr("transform", `translate(${ux}, ${uz})`);
-                        } else if (type == "rect") {
-                            elem.attr("x", ux).attr("y", uz);
-                        } else if (type == "circle") {
-                            elem.attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2));
-                        }
+                    elem.classed("unit-pos-hide", !show);
+
+                    const type = (elem.node()! as Element).tagName;
+                    const ux = this.toImgX(entry.x);
+                    const uz = this.toImgZ(entry.z);
+
+                    if (type == "g") {
+                        elem.attr("transform", `translate(${ux}, ${uz})`);
+                    } else if (type == "rect") {
+                        elem.attr("x", ux).attr("y", uz);
+                    } else if (type == "circle") {
+                        elem.attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2));
                     }
                 }
+            },
+
+            toggleSelectedTeam: function(teamID: number): void {
+                if (this.playback.selectedTeams.indexOf(teamID) == -1) {
+                    this.playback.selectedTeams.push(teamID);
+                } else {
+                    this.playback.selectedTeams = this.playback.selectedTeams.filter(iter => iter != teamID);
+                }
+
+                this.renderUnitPositionFrame(this.playback.frame);
             },
 
             /**
@@ -784,8 +966,123 @@
                         .style("pointer-events", "none")
                         .style("fill", "transparent")
                         .style("stroke", color)
-                        .style("stroke-width", "1px");
+                        .style("stroke-width", "2px");
+
+                    g.append("path")
+                        .attr("d", path)
+                        .classed("path-pulse", true)
+                        .style("fill", "transparent")
+                        .style("stroke", "#ffffff44")
+                        .style("stroke-width", "2px")
+                        .style("stroke-linecap", "round")
                 }
+            },
+
+            addUnitTypePositionUpdates: function(defName: string): void {
+                if (this.svg == null) { return console.warn(`cannot add unit type pos: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add unit type pos: root is null`); }
+
+                console.log(`MatchMap> adding unit def paths [defName=${defName}]`);
+                if (this.map.unitPositions.find(iter => iter.definitionName == defName) != undefined) {
+                    console.log(`MatchMap> unit def paths for defName already shown [defName=${defName}]`);
+                    return;
+                }
+
+                const ud: GameEventUnitDef | undefined = this.output.defNameToDef.get(defName);
+                if (ud == undefined) {
+                    console.error(`MatchMap> cannot make unit def paths, missing def from output [defName=${defName}]`);
+                    return;
+                }
+
+                this.map.unitPositions.push(ud);
+
+                const unitMap: Map<number, GameEventUnitPosition[]> = new Map();
+
+                for (const update of this.output.unitPosition) {
+                    const unitDef: GameEventUnitDef | undefined = this.output.unitIdToDefinition.get(update.unitID);
+                    if (unitDef == undefined) {
+                        console.error(`missing unit def for unit id [unitID=${update.unitID}]`);
+                        continue;
+                    }
+
+                    if (unitDef.definitionName != defName) {
+                        continue;
+                    }
+
+                    const pos: GameEventUnitPosition[] = unitMap.get(update.unitID) ?? [];
+                    pos.push(update);
+
+                    unitMap.set(update.unitID, pos);
+                }
+
+                const g = this.root.append("g")
+                    .attr("id", `unit-def-movement-${defName}`);
+
+                for (const update of unitMap) {
+                    const unitID: number = update[0];
+                    const positions: GameEventUnitPosition[] = update[1];
+
+                    const u = g.append("g")
+                        .attr("id", `unit-def-movement-${unitID}`);
+
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == positions[0].teamID);
+
+                    const color: string = "#" + (player?.color.toString(16).padStart(6, "0") ?? `ffffff`);
+                    let path: string = ``;
+
+                    positions.sort((a, b) => { return a.frame - b.frame; });
+                    for (const iter of positions) {
+                        if (path == "") {
+                            path += `M ${this.toImgX(iter.x)}, ${this.toImgZ(iter.z)}`;
+                        } else {
+                            path += `L ${this.toImgX(iter.x)}, ${this.toImgZ(iter.z)}`;
+                        }
+
+                        u.append("circle")
+                            .attr("cx", this.toImgX(iter.x))
+                            .attr("cy", this.toImgX(iter.z))
+                            .attr("r", `3px`)
+                            .style("fill", color)
+                            .style("stroke", "#000000")
+                            .style("stroke-width", "1px")
+                            .style("paint-order", "fill stroke")
+                            .on("mouseenter", (ev: any) => {
+                                this.showTooltip(`${player?.username ?? "&lt;missing player&gt;"}'s ${ud.disambiguatedName} was here at ${TimeUtils.duration(iter.frame / 30)}`);
+                            })
+                            .on("mousemove", (ev: any) => {
+                                this.moveTooltip(ev);
+                            })
+                            .on("mouseleave", (ev: any) => {
+                                this.hideTooltip();
+                            });
+                    }
+
+                    u.append("path")
+                        .attr("d", path)
+                        .style("pointer-events", "none")
+                        .style("fill", "transparent")
+                        .style("stroke", color)
+                        .style("stroke-width", "1px");
+
+                    u.append("path")
+                        .attr("d", path)
+                        .classed("path-pulse", true)
+                        .style("fill", "transparent")
+                        .style("stroke", "#ffffff44")
+                        .style("stroke-width", "2px")
+                        .style("stroke-linecap", "round")
+                }
+            },
+
+            removeUnitTypePositions: function(defName: string): void {
+                if (this.svg == null) { return console.warn(`cannot removed unit type pos: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot removed unit type pos: root is null`); }
+
+                console.log(`MatchMap> removing unit type pos [defName=${defName}]`);
+                this.root.select(`#unit-def-movement-${defName}`)
+                    .remove();
+
+                this.map.unitPositions = this.map.unitPositions.filter(iter => iter.definitionName != defName);
             },
 
             /**
@@ -1253,8 +1550,24 @@
                     "width": `1000px`,
                     "height": `${1000 / mapRatio}px`
                 };
-            }
+            },
 
+            shownUnitDefToggles: function(): UnitDefToggle[] {
+                if (this.playback.filter == "") {
+                    return this.playback.selectedUnitDefs;
+                }
+
+                return this.playback.selectedUnitDefs.filter(iter => {
+                    return iter.name.toLowerCase().indexOf(this.playback.filter.toLowerCase().trim()) > -1;
+                });
+            },
+
+            unitPositionUnitDefs: function(): GameEventUnitDef[] {
+                return Array.from(this.output.unitDefinitions.values())
+                    .filter(iter => this.playback.selectedUnitDefs.find(i2 => i2.definitionName == iter.definitionName) != undefined)
+                    .filter(iter => iter.speed > 0)
+                    .sort((a, b) => a.disambiguatedName.localeCompare(b.disambiguatedName));
+            }
         },
 
         watch: {
@@ -1384,7 +1697,7 @@
         },
 
         components: {
-            ToggleButton, InfoHover
+            ToggleButton, InfoHover, Collapsible, DropdownSearch
         }
     });
 
