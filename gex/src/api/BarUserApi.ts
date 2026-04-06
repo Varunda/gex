@@ -3,6 +3,7 @@ import ApiWrapper from "api/ApiWrapper";
 import { BarUser } from "model/BarUser";
 import { BarUserInteractions } from "model/BarUserInteractions";
 import { BarUserSkillChanges } from "model/BarUserSkillChanges";
+import { GameUnitsCreated } from "model/GameUnitsCreated";
 import { UserSearchResult } from "model/UserSearchResult";
 
 export class BarUserApi extends ApiWrapper<BarUser> {
@@ -38,6 +39,10 @@ export class BarUserApi extends ApiWrapper<BarUser> {
 
     public static getUnitsMadeByUserID(userID: number): Promise<Loading<BarUser>> {
         return BarUserApi.get().readSingle(`/api/user/${userID}?includeSkill=false&includeMapStats=false&includeFactionStats=false&includePreviousNames=false&includeUnitsMade=true`, BarUser.parse);
+    }
+
+    public static getAggregateUnitsMadeByUserID(userID: number): Promise<Loading<GameUnitsCreated[]>> {
+        return BarUserApi.get().readList(`/api/user/${userID}/units-made`, GameUnitsCreated.parse);
     }
 
     public static getSkillChanges(userID: number): Promise<Loading<BarUserSkillChanges>> {

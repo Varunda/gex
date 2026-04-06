@@ -32,4 +32,5 @@ namespace gex.Models.MapStats {
         public DateTime LastDirtied { get; set; } = DateTime.UtcNow;
 
     }
+
 }

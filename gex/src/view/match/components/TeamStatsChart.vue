@@ -382,7 +382,12 @@
 
                 showedStat: "armyValue" as StatKey, 
 
-                unitDefNameFilter: null as string | null
+                unitDefNameFilter: null as string | null,
+
+                unitGraph: {
+                    showing: false as boolean,
+                    unitDefs: [] as string[]
+                }
             }
         },
 

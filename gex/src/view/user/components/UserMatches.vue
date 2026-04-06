@@ -107,15 +107,22 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <a :href="'/match/' + entry.id">
-                        View<span style="text-decoration: none; padding-left: 0.25rem;">
-                            <span v-if="entry.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
-                                title="This match is for a bad version and cannot be processed"></span>
 
-                            <span v-else-if="entry.processing == null || entry.processing.actionsParsed == null" class="bi bi-cone text-warning"
-                                title="This match has not been fully processed!"></span>
-                        </span>
-                    </a>
+                    <v-popover trigger="hover" placement="left">
+                        <a :href="'/match/' + entry.id">
+                            View<span style="text-decoration: none; padding-left: 0.25rem;">
+                                <span v-if="entry.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
+                                    title="This match is for a bad version and cannot be processed"></span>
+
+                                <span v-else-if="entry.processing == null || entry.processing.actionsParsed == null" class="bi bi-cone text-warning"
+                                    title="This match has not been fully processed!"></span>
+                            </span>
+                        </a>
+
+                        <template slot="popover">
+                            <match-info :match="entry" :show-time="false"></match-info>
+                        </template>
+                    </v-popover>
                 </a-body>
             </a-col>
         </a-table>
@@ -141,9 +148,13 @@
     import Vue, { PropType } from "vue";
     import { Loadable, Loading } from "Loading";
 
+    import VTooltip from 'v-tooltip';
+    Vue.use(VTooltip);
+
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
+    import MatchInfo from "components/app/MatchInfo.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
@@ -263,7 +274,7 @@
         components: {
             UserMatchRatingCell,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            InfoHover, ToggleButton 
+            InfoHover, ToggleButton, MatchInfo
         }
     });
     export default UserMatches;

@@ -3,6 +3,7 @@ using gex.Models;
 using gex.Models.Api;
 using gex.Models.Bar;
 using gex.Models.Db;
+using gex.Models.Event;
 using gex.Models.MapStats;
 using gex.Models.Queues;
 using gex.Models.UserStats;
@@ -14,6 +15,7 @@ using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -120,8 +122,35 @@ namespace gex.Controllers.Api {
             }
 
             if (includeUnitsMade == true) {
-                response.UnitsMade = await _GameUnitsCreatedRepository.GetByUserID(userID, cancel);
+                response.UnitsMade = await _GameUnitsCreatedRepository.GetAggregateByUserID(userID, cancel);
             }
+
+            return ApiOk(response);
+        }
+
+        /// <summary>
+        ///     get the complete list of <see cref="GameUnitsCreated"/> by user
+        /// </summary>
+        /// <param name="userID">ID of the user</param>
+        /// <param name="cancel"></param>
+        /// <response code="200">
+        ///     the response will contain a list of all <see cref="GameUnitsCreated"/> where
+        ///     <see cref="GameUnitsCreated.UserID"/> is <paramref name="userID"/>
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
+        /// </response>
+        [HttpGet("{userID}/units-made")]
+        public async Task<ApiResponse<List<GameUnitsCreated>>> GetUnitsMadeByUserID(long userID,
+            CancellationToken cancel = default
+        ) {
+
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
+            if (user == null) {
+                return ApiNoContent<List<GameUnitsCreated>>();
+            }
+
+            List<GameUnitsCreated> response = await _GameUnitsCreatedRepository.GetByUserID(userID, cancel);
 
             return ApiOk(response);
         }

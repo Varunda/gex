@@ -251,6 +251,12 @@
                             <team-stats-chart :stats="computedData.merged" :match="match.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
                         </div>
 
+                        <!--
+                        <div class="my-4">
+                            <match-unit-graph :match="match.data" :output="output.data" class="my-4"></match-unit-graph>
+                        </div>
+                        -->
+
                         <hr class="border">
 
                         <match-opener :match="match.data" :output="output.data" :openers="computedData.opener" class="my-4"></match-opener>
@@ -398,6 +404,7 @@
     import MatchUnitValueGraph from "./components/MatchUnitValueGraph.vue";
     import MatchApm from "./components/MatchApm.vue";
     import MatchUnitDebug from "./components/MatchUnitDebug.vue";
+    import MatchUnitGraph from "./components/MatchUnitGraph.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { GameOutputApi } from "api/GameOutputApi";
@@ -985,7 +992,7 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton,
             MatchOpener, MatchFactories, UnitDefView, MatchWindGraph, MatchUnitStats, TeamStatsChart, MatchResourceProduction, MatchApm,
-            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph, MatchUnitDebug,
+            MatchTeams, MatchMap, MatchChat, MatchOption, MatchCombatStats, MatchEcoStats, MatchActionLog, MatchTweaks, MatchUnitValueGraph, MatchUnitDebug, MatchUnitGraph,
             ProcessingStep, Collapsible, Busy
         }
     });

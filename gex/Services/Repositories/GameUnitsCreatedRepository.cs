@@ -18,6 +18,7 @@ namespace gex.Services.Repositories {
 
         private const string CACHE_KEY_GAME = "Gex.GameUnitsCreated.Match.{0}"; // {0} => game ID
         private const string CACHE_KEY_USER = "Gex.GameUnitsCreated.User.{0}"; // {0} => user ID
+        private const string CACHE_KEY_AGG_USER = "Gex.GameUnitsCreated.UserAggregate.{0}"; // {0} => user id
 
         public GameUnitsCreatedRepository(ILogger<GameUnitsCreatedRepository> logger,
             GameUnitsCreatedDb db, BarI18nRepository i18nRepository,
@@ -48,6 +49,24 @@ namespace gex.Services.Repositories {
 
             if (_Cache.TryGetValue(cacheKey, out List<GameUnitsCreated>? created) == false || created == null) {
                 created = await _Db.GetByUserID(userID, cancel);
+
+                foreach (GameUnitsCreated m in created) {
+                    m.UnitName = await _I18nRepository.GetUnitName(m.DefinitionName, cancel);
+                }
+
+                _Cache.Set(cacheKey, created, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                });
+            }
+
+            return created;
+        }
+
+        public async Task<List<GameUnitsCreated>> GetAggregateByUserID(long userID, CancellationToken cancel) {
+            string cacheKey = string.Format(CACHE_KEY_AGG_USER, userID);
+
+            if (_Cache.TryGetValue(cacheKey, out List<GameUnitsCreated>? created) == false || created == null) {
+                created = await _Db.GetAggregateByUserID(userID, cancel);
 
                 foreach (GameUnitsCreated m in created) {
                     m.UnitName = await _I18nRepository.GetUnitName(m.DefinitionName, cancel);

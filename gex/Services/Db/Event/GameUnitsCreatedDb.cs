@@ -38,6 +38,26 @@ namespace gex.Services.Db.Event {
             );
         }
 
+        public async Task<List<GameUnitsCreated>> GetAggregateByUserID(long userID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            return await conn.QueryListAsync<GameUnitsCreated>(
+                @"
+                    SELECT 
+                        '' ""game_id"", 
+                        0 ""team_id"",
+                        user_id,
+                        definition_name,
+                        sum(count) ""count"",
+                        MAX(timestamp) ""timestamp""
+                    FROM game_units_created 
+                    WHERE user_id = @UserID
+                    GROUP BY user_id, definition_name
+                ",
+                new { UserID = userID },
+                cancel
+            );
+        }
+
         /// <summary>
         ///     generate the <see cref="GameUnitsCreated"/> for a specific game
         /// </summary>

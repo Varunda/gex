@@ -16,10 +16,10 @@
             </div>
         </div>
 
-        <div class="mb-2 d-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 1rem;">
+        <div class="mb-3 d-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 1rem;">
             <div>
                 <label>Map filter</label>
-                <select v-model="mapFilter" class="form-control" style="max-width: 240px;">
+                <select v-model="filter.map" class="form-control" style="max-width: 240px;">
                     <option :value="null">all</option>
                     <option v-for="map in uniqueMaps" :value="map" :key="map">
                         {{ map }}
@@ -29,7 +29,7 @@
 
             <div>
                 <label>Gamemode filter</label>
-                <select v-model="gamemodeFilter" class="form-control" style="max-width: 240px;">
+                <select v-model="filter.gamemode" class="form-control" style="max-width: 240px;">
                     <option :value="null">all</option>
                     <option :value="1">Duel</option>
                     <option :value="2">Small team</option>
@@ -60,9 +60,19 @@
             </div>
 
             <div>
+                <label class="d-block">&nbsp;</label>
+
+                <button class="btn w-100" :class="[ filterChanged ? 'btn-primary' : 'btn-secondary' ]" @click="loadFiltered()">
+                    Update filter
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-2 d-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 1rem;">
+            <div>
                 <label class="d-block">Split by map</label>
 
-                <button class="btn w-100" :class="[ mapSplit == true ? 'btn-primary' : 'btn-outline-light' ]" @click="toggleMapSplit()">
+                <button class="btn" :class="[ mapSplit == true ? 'btn-primary' : 'btn-outline-light' ]" @click="toggleMapSplit()">
                     Toggle map split
                 </button>
             </div>
@@ -121,7 +131,7 @@
         </a-table>
 
         <div class="mb-2">
-            Last updated: {{ lastUpdated | moment }}. Show stats from {{ filteredMatches.size }} matches
+            Last updated: {{ lastUpdated | moment }}. Show stats from {{ full.state != "idle" ? filtered.size : "all" }} matches
         </div>
     </div>
 </template>
@@ -133,6 +143,9 @@
     import { BarUser } from "model/BarUser";
     import { BarMatch } from "model/BarMatch";
     import { BarUserUnitsMade } from "model/BarUserUnitsMade";
+    import { GameUnitsCreated } from "model/GameUnitsCreated";
+
+    import { BarUserApi } from "api/BarUserApi";
 
     import UnitIcon from "components/app/UnitIcon.vue";
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
@@ -159,8 +172,18 @@
         data: function() {
             return {
                 range: "all_time" as "daily" | "weekly" | "monthly" | "all_time",
-                mapFilter: null as string | null,
-                gamemodeFilter: null as number | null,
+
+                filter: {
+                    map: null as string | null,
+                    gamemode: null as number | null,
+
+                    oldMap: null as string | null,
+                    oldGamemode: null as number | null
+                },
+
+                full: Loadable.idle() as Loading<GameUnitsCreated[]>,
+
+                filtered: new Map() as Map<string, BarMatch>,
 
                 mapSplit: false as boolean,
 
@@ -186,17 +209,71 @@
                 this.mapSplit = !this.mapSplit;
 
                 this.showTable = false;
-                this.$nextTick(() => {
+                this.$nextTick(async () => {
+                    await this.loadFiltered();
                     this.showTable = true;
                 });
             },
+
+            loadFiltered: async function(): Promise<void> {
+
+                this.filter.oldMap = this.filter.map;
+                this.filter.oldGamemode = this.filter.gamemode;
+
+                if (this.full.state == "idle") {
+                    this.full = Loadable.loading();
+                    this.full = await BarUserApi.getAggregateUnitsMadeByUserID(this.user.userID);
+                }
+
+                const map: Map<string, BarMatch> = new Map();
+
+                for (const iter of this.matchDict) {
+                    const match = iter[1];
+
+                    if (this.filter.map != null && match.map != this.filter.map) {
+                        continue;
+                    }
+
+                    if (this.filter.gamemode != null && match.gamemode != this.filter.gamemode) {
+                        continue;
+                    }
+
+                    if (this.cutoffTime != 0 && match.startTime.getTime() < this.cutoffTime) {
+                        continue;
+                    }
+
+                    map.set(iter[0], iter[1]);
+                }
+
+                this.filtered = map;
+            }
         },
 
         computed: {
+
+            filterChanged: function(): boolean {
+                return this.filter.map != this.filter.oldMap || this.filter.gamemode != this.filter.oldGamemode;
+            },
+
             unitsMade: function(): Loading<UnitsMade[]> {
+                if (this.full.state == "idle") {
+                    return Loadable.loaded(this.user.unitsMade.map(iter => {
+                        return {
+                            definitionName: iter.definitionName,
+                            unitName: iter.unitName ?? `<missing ${iter.definitionName}>`,
+                            map: "",
+                            count: iter.count
+                        };
+                    }));
+                }
+
+                if (this.full.state != "loaded") {
+                    return Loadable.rewrap(this.full);
+                }
+
                 const map: Map<string, UnitsMade> = new Map();
-                for (const iter of this.user.unitsMade) {
-                    let match: BarMatch | undefined = this.filteredMatches.get(iter.gameID);
+                for (const iter of this.full.data) {
+                    let match: BarMatch | undefined = this.filtered.get(iter.gameID);
 
                     if (match == undefined) {
                         continue;
@@ -224,47 +301,24 @@
                 return Loadable.loaded(Array.from(map.values()));
             },
 
-            filteredMatches: function(): Map<string, BarMatch> {
-                const map: Map<string, BarMatch> = new Map();
-
-                for (const iter of this.matchDict) {
-                    const match = iter[1];
-
-                    if (this.mapFilter != null && match.map != this.mapFilter) {
-                        continue;
-                    }
-
-                    if (this.gamemodeFilter != null && match.gamemode != this.gamemodeFilter) {
-                        continue;
-                    }
-
-                    if (this.cutoffTime != 0 && match.startTime.getTime() < this.cutoffTime) {
-                        continue;
-                    }
-
-                    map.set(iter[0], iter[1]);
-                }
-                return map;
-            },
-
             uniqueMaps: function(): string[] {
                 const set: Set<string> = new Set();
                 const ignore: Set<string> = new Set();
                 const maps: Set<string> = new Set();
 
-                for (const iter of this.user.unitsMade) {
-                    if (set.has(iter.gameID) || ignore.has(iter.gameID)) {
+                for (const iter of this.matches) {
+                    if (set.has(iter.id) || ignore.has(iter.id) || iter.processing?.actionsParsed == null) {
                         continue;
                     }
 
-                    const match: BarMatch | undefined = this.matchDict.get(iter.gameID);
+                    const match: BarMatch | undefined = this.matchDict.get(iter.id);
                     if (match == undefined) {
-                        console.warn(`UserUnitsMade> missing match for getting unique maps [gameID=${iter.gameID}]`);
-                        ignore.add(iter.gameID);
+                        console.warn(`UserUnitsMade> missing match for getting unique maps [gameID=${iter.id}]`);
+                        ignore.add(iter.id);
                         continue;
                     }
 
-                    set.add(iter.gameID);
+                    set.add(iter.id);
                     maps.add(match.map);
                 }
 
