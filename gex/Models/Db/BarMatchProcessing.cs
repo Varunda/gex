@@ -77,5 +77,23 @@ namespace gex.Models.Db {
         [ColumnMapping("unit_position_compressed")]
         public bool UnitPositionCompressed { get; set; }
 
+        /// <summary>
+        ///     when actions.json was compressed
+        /// </summary>
+        [ColumnMapping("actions_compressed")]
+        public DateTime? ActionsCompressed { get; set; }
+
+        /// <summary>
+        ///     how long it took to compress actions.json
+        /// </summary>
+        [ColumnMapping("actions_compressed_ms")]
+        public int? ActionsCompressedMs { get; set; }
+
+        /// <summary>
+        ///     when the actions.json was deleted after processing
+        /// </summary>
+        [ColumnMapping("actions_deleted")]
+        public DateTime? ActionsDeleted { get; set; }
+
     }
 }

@@ -24,6 +24,16 @@
 
             <a-col>
                 <a-header>
+                    <b title="Faction this user played as during this match">Faction</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <faction-icon :faction="playerFaction(entry)" :width="24"></faction-icon>
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
                     <b>Map</b>
                 </a-header>
 
@@ -155,6 +165,7 @@
     import InfoHover from "components/InfoHover.vue";
     import ToggleButton from "components/ToggleButton";
     import MatchInfo from "components/app/MatchInfo.vue";
+    import FactionIcon from "components/app/FactionIcon";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
@@ -164,6 +175,7 @@
 
     import LocaleUtil from "util/Locale";
     import { GamemodeUtil } from "util/Gamemode";
+    import { FactionUtil } from "util/Faction";
 
     const UserMatchRatingCell = Vue.extend({
         props: {
@@ -232,6 +244,16 @@
                 return match.allyTeams.length > 2 && Math.max(...match.allyTeams.map(iter => iter.playerCount)) == 1;
             },
 
+            playerFaction: function(match: BarMatch): number {
+                const player: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.UserId);
+                if (player == undefined) {
+                    console.warn(`UserMatches> how is player not in this match? [gameID=${match.id}] [userID=${this.UserId}]`);
+                    return 1;
+                }
+
+                return FactionUtil.getValue(player.faction);
+            },
+
             outcome: function(match: BarMatch): string {
                 const winner: BarMatchAllyTeam[] = match.allyTeams.filter(iter => iter.won == true);
                 if (winner.length == 0) {
@@ -274,7 +296,7 @@
         components: {
             UserMatchRatingCell,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            InfoHover, ToggleButton, MatchInfo
+            InfoHover, ToggleButton, MatchInfo, FactionIcon
         }
     });
     export default UserMatches;

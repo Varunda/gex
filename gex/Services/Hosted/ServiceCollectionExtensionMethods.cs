@@ -41,6 +41,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<MapEngineUsageCleanupPeriodicService>();
             //services.AddHostedService<UserUnitsMadeNeedsUpdatePeriodicService>();
             services.AddHostedService<MapStatsNeedsUpdatePeriodicService>();
+            services.AddHostedService<ActionLogDeleterPeriodicService>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {

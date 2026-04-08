@@ -3,6 +3,7 @@ using gex.Code.ExtensionMethods;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -32,12 +33,12 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_processing (
-                    game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed,
-                    fetch_ms, parse_ms, replay_ms, action_ms,
+                    game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed, actions_compressed, actions_deleted,
+                    fetch_ms, parse_ms, replay_ms, action_ms, actions_compressed_ms,
 					priority, unit_position_compressed
                 ) VALUES (
-                    @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed,
-                    @FetchMs, @ParseMs, @ReplayMs, @ActionMs,
+                    @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed, @ActionsCompressed, @ActionsDeleted,
+                    @FetchMs, @ParseMs, @ReplayMs, @ActionMs, @ActionsCompressedMs,
 					@Priority, @UnitPositionCompressed
                 ) ON CONFLICT (game_id) DO UPDATE 
                     SET demofile_fetched = @DemofileFetched,
@@ -49,7 +50,10 @@ namespace gex.Services.Db.Match {
                         replay_ms = @ReplayMs,
                         action_ms = @ActionMs,
 						priority = @Priority,
-                        unit_position_compressed = @UnitPositionCompressed
+                        unit_position_compressed = @UnitPositionCompressed,
+                        actions_compressed = @ActionsCompressed,
+                        actions_compressed_ms = @ActionsCompressedMs,
+                        actions_deleted = @ActionsDeleted
                 ;
             ");
 
@@ -64,6 +68,9 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("ActionMs", proc.ActionsParsedMs);
             cmd.AddParameter("Priority", proc.Priority);
             cmd.AddParameter("UnitPositionCompressed", proc.UnitPositionCompressed);
+            cmd.AddParameter("ActionsCompressed", proc.ActionsCompressed);
+            cmd.AddParameter("ActionsCompressedMs", proc.ActionsCompressedMs);
+            cmd.AddParameter("ActionsDeleted", proc.ActionsDeleted);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
@@ -213,6 +220,34 @@ namespace gex.Services.Db.Match {
                 WHERE p.unit_position_compressed IS false
                     AND p.actions_parsed IS NOT NULL;
             ", cancel);
+        }
+
+        public async Task<List<BarMatchProcessing>> NeedsActionLogCompression(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMatchProcessing>(@"
+                SELECT p.*
+                FROM bar_match_processing p
+                WHERE p.action_ms IS NOT NULL
+                    AND p.compressed_action_ms IS NULL
+                    AND p.actions_parsed < (NOW() at time zone 'utc' - '1 week'::interval))
+            ", cancel);
+        }
+
+        public async Task<List<BarMatchProcessing>> NeedsActionLogDeleted(TimeSpan range, CancellationToken cancel) {
+            DateTime cutoff = DateTime.UtcNow - range;
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMatchProcessing>(@"
+                    SELECT p.*
+                    FROM bar_match_processing p
+                    WHERE p.action_ms IS NOT NULL
+                        AND p.actions_deleted IS NULL
+                        AND p.actions_parsed > @CutOff
+                    LIMIT 1000;
+                ",
+                new { CutOff = cutoff },
+                cancel
+            );
         }
 
     }

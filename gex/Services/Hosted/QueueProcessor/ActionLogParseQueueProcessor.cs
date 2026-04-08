@@ -32,6 +32,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchRepository _MatchRepository;
 
         private readonly ActionLogParser _ActionLogParser;
+        private readonly GameOutputStorage _OutputStorage;
         private readonly GameEventUnitCreatedDb _UnitCreatedDb;
         private readonly GameEventUnitKilledDb _UnitKilledDb;
         private readonly GameEventUnitDefDb _UnitDefDb;
@@ -66,7 +67,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
             GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue,
             UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb,
-            MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository)
+            MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository, 
+            GameOutputStorage outputStorage)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -95,6 +97,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _UnitsCreatedDb = unitsCreatedDb;
             _MapStatsNeedsUpdateDb = mapStatsNeedsUpdateDb;
             _MatchRepository = matchRepository;
+            _OutputStorage = outputStorage;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -102,13 +105,12 @@ namespace gex.Services.Hosted.QueueProcessor {
             Stopwatch timer = Stopwatch.StartNew();
             _Logger.LogInformation($"processing action log [gameID={entry.GameID}] [force={entry.Force}]");
 
-            string actionLogPath = Path.Join(_Options.Value.GameLogLocation, entry.GameID.Substring(0, 2), entry.GameID, "actions.json");
-            if (File.Exists(actionLogPath) == false) {
-                _Logger.LogError($"failed to find action log [gameID={entry.GameID}] [path={actionLogPath}]");
+            if (_OutputStorage.HasActionLog(entry.GameID) == false) {
+                _Logger.LogError($"failed to find action log [gameID={entry.GameID}]");
                 return false;
             }
 
-            Result<GameOutput, string> game = await _ActionLogParser.Parse(entry.GameID, actionLogPath, cancel);
+            Result<GameOutput, string> game = await _ActionLogParser.Parse(entry.GameID, cancel);
             if (game.IsOk == false) {
                 _Logger.LogError($"failed to process action log [gameID={entry.GameID}] [error={game.Error}]");
                 return false;

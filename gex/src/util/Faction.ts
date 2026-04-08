@@ -11,6 +11,22 @@ export class FactionUtil {
 
     public static RANDOM: number = 4;
 
+    public static getValue(faction: string): number {
+        faction = faction.toLowerCase();
+
+        if (faction.startsWith("arm")) {
+            return FactionUtil.ARMADA;
+        } else if (faction.startsWith("cor")) {
+            return FactionUtil.CORTEX;
+        } else if (faction.startsWith("leg")) {
+            return FactionUtil.LEGION;
+        } else if (faction == "random") {
+            return FactionUtil.RANDOM;
+        }
+
+        return FactionUtil.UNKNOWN;
+    }
+
     public static getName(gamemode: number): string {
         if (gamemode == FactionUtil.ARMADA) {
             return "Armada";

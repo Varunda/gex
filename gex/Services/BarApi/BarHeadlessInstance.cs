@@ -10,6 +10,7 @@ using gex.Services.Db;
 using gex.Services.Metrics;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Storage;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,6 +41,7 @@ namespace gex.Services.BarApi {
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly HeadlessRunnerMetric _Metric;
         private readonly BadGameVersionRepository _BadGameVersionRepository;
+        private readonly GameOutputStorage _OutputStorage;
 
         private static int _PortOffset = 0;
 
@@ -81,7 +83,8 @@ namespace gex.Services.BarApi {
             HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
             IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,
             BarMatchProcessingRepository processingRepository, HeadlessRunnerMetric metric,
-            BadGameVersionRepository badGameVersionRepository, MapEngineUsageDb mapEngineUsageDb) {
+            BadGameVersionRepository badGameVersionRepository, MapEngineUsageDb mapEngineUsageDb,
+            GameOutputStorage outputStorage) {
 
             _Logger = logger;
             _Options = options;
@@ -97,6 +100,7 @@ namespace gex.Services.BarApi {
             _Metric = metric;
             _BadGameVersionRepository = badGameVersionRepository;
             _MapEngineUsageDb = mapEngineUsageDb;
+            _OutputStorage = outputStorage;
         }
 
         public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
@@ -122,14 +126,13 @@ namespace gex.Services.BarApi {
             Directory.CreateDirectory(gamePrefixLocation);
 
             string gameLogLocation = Path.Join(gamePrefixLocation, gameID);
-            string gameActionLogPath = gameLogLocation + Path.DirectorySeparatorChar + "actions.json";
-            if (File.Exists(gameActionLogPath) && force == false) {
-                _Logger.LogInformation($"game has already been ran locally (actions.json exists) [gameID={gameID}] [action log={gameActionLogPath}]");
+            if (_OutputStorage.HasActionLog(gameID) == true && force == false) {
+                _Logger.LogInformation($"game has already been ran locally (actions log exists) [gameID={gameID}]");
                 return new GameOutput() { GameID = gameID };
             }
-            if (File.Exists(gameActionLogPath) == true) {
-                _Logger.LogInformation($"action log was already created for game, but execution was forced [gameID={gameID}] [action log={gameActionLogPath}]");
-                File.Delete(gameActionLogPath);
+            if (_OutputStorage.HasActionLog(gameID) == true) {
+                _Logger.LogInformation($"action log was already created for game, but execution was forced [gameID={gameID}]");
+                _OutputStorage.DeleteActionLog(gameID);
             }
 
             // make sure the demofile exists
@@ -148,7 +151,9 @@ namespace gex.Services.BarApi {
 
             if (_EngineDownloader.HasEngine(match.Engine) == false) {
                 _Logger.LogDebug($"missing engine, downloading [gameID={gameID}] [engine={match.Engine}]");
+                Stopwatch dlTimer = Stopwatch.StartNew();
                 await _EngineDownloader.DownloadEngine(match.Engine, cancel);
+                _Logger.LogDebug($"downloaded engine [engine={match.Engine}] [timer={dlTimer.ElapsedMilliseconds}ms]");
             }
 
             string enginePath = _EnginePathUtil.Get(match.Engine);
@@ -463,7 +468,13 @@ namespace gex.Services.BarApi {
                 return $"failed to find action log after game ran! {actionLogLocation} was missing";
             }
 
-            File.Copy(actionLogLocation, gameLogLocation + Path.DirectorySeparatorChar + "actions.json");
+            // save action log
+            using FileStream actionLog = File.OpenRead(actionLogLocation);
+            await _OutputStorage.SaveActionLog(gameID, actionLog, cancel);
+            actionLog.Close();
+
+            //File.Copy(actionLogLocation, gameLogLocation + Path.DirectorySeparatorChar + "actions.json");
+
             _Logger.LogDebug($"game ran and output copied, deleting data dir [gameID={gameID}] [dataDir={dataDir}]");
             try {
                 Directory.Delete(dataDir, true);

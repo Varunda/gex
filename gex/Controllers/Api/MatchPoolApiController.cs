@@ -121,6 +121,7 @@ namespace gex.Controllers.Api {
         /// <param name="poolID">ID of the <see cref="MatchPool"/> to be updated</param>
         /// <param name="name">new name of the <see cref="MatchPool"/></param>
         /// <param name="hidden">new value of <see cref="MatchPool.Hidden"/></param>
+        /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain the updated <see cref="MatchPool"/>
         /// </response>

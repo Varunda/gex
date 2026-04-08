@@ -2,6 +2,7 @@
 using gex.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Models.Event;
+using gex.Services.Storage;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -20,9 +21,14 @@ namespace gex.Services.BarApi {
 
         private readonly ILogger<ActionLogParser> _Logger;
         private readonly JsonSerializerOptions _JsonOptions;
+        private readonly GameOutputStorage _OutputStorage;
 
-        public ActionLogParser(ILogger<ActionLogParser> logger) {
+        public ActionLogParser(ILogger<ActionLogParser> logger,
+            GameOutputStorage outputStorage) {
+
             _Logger = logger;
+
+            _OutputStorage = outputStorage;
 
             _JsonOptions = new JsonSerializerOptions() {
                 TypeInfoResolver = new DefaultJsonTypeInfoResolver() {
@@ -33,11 +39,17 @@ namespace gex.Services.BarApi {
             };
         }
 
-        public async Task<Result<GameOutput, string>> Parse(string gameID, string file, CancellationToken cancel) {
-            _Logger.LogDebug($"parsing action log [gameID={gameID}] [file={file}]");
+        public async Task<Result<GameOutput, string>> Parse(string gameID, CancellationToken cancel) {
+            _Logger.LogDebug($"parsing action log [gameID={gameID}]");
 
             Stopwatch timer = Stopwatch.StartNew();
-            string[] lines = await File.ReadAllLinesAsync(file, cancel);
+
+            Result<string, string> actionLog = await _OutputStorage.GetActionLog(gameID, cancel);
+            if (actionLog.IsOk == false) {
+                return actionLog.Error;
+            }
+
+            string[] lines = actionLog.Value.Split("\n");
 
             GameOutput output = new();
             output.GameID = gameID;
@@ -50,6 +62,10 @@ namespace gex.Services.BarApi {
 
             int lineNumber = 0;
             foreach (string line in lines) {
+                if (string.IsNullOrWhiteSpace(line)) {
+                    continue;
+                }
+
                 cancel.ThrowIfCancellationRequested();
                 ++lineNumber;
 
@@ -178,7 +194,7 @@ namespace gex.Services.BarApi {
                         ev = new GameEventShutdown();
                     } else {
                         if (unknownCount.ContainsKey(action) == false) {
-                            _Logger.LogWarning($"unknown action [action={action}] [json={json}] [file={file}]");
+                            _Logger.LogWarning($"unknown action [action={action}] [json={json}]");
                             unknownCount.Add(action, 0);
                         }
                         unknownCount[action] = unknownCount[action] + 1;
@@ -196,7 +212,7 @@ namespace gex.Services.BarApi {
             }
 
             foreach (KeyValuePair<string, int> entry in unknownCount) {
-                _Logger.LogWarning($"unknown action [action={entry.Key}] [count={entry.Value}] [file={file}]");
+                _Logger.LogWarning($"unknown action [gameID={gameID}] [action={entry.Key}] [count={entry.Value}]");
             }
 
             if (errored == true) {
@@ -219,7 +235,7 @@ namespace gex.Services.BarApi {
                 def.Hash = hash;
             }
 
-            _Logger.LogInformation($"parsed actions [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms] [file={file}]");
+            _Logger.LogInformation($"parsed actions [gameID={gameID}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return output;
         }

@@ -214,7 +214,7 @@
         ["unitsKilled", "Units killed"],
 
         ["damageDealt", "Damage dealt"],
-        ["damageReceived", "Damage receieved"],
+        ["damageReceived", "Damage taken"],
         ["actions", "Actions"],
 
         ["totalValue", "Total value"],
@@ -230,7 +230,7 @@
         ["metalProduced", "Metal produced"],
         ["metalCurrent", "Metal Current"],
         ["metalExcess", "Metal excess"],
-        ["metalReceived", "Metal receieved"],
+        ["metalReceived", "Metal received"],
         ["metalSent", "Metal sent"],
         ["metalExcessPercent", "Metal excess %"],
         //["metalUsed", "Metal used"],
@@ -238,7 +238,7 @@
         ["energyProduced", "Energy produced"],
         ["energyCurrent", "Energy Current"],
         ["energyExcess", "Energy excess"],
-        ["energyReceived", "Energy receieved"],
+        ["energyReceived", "Energy received"],
         ["energySent", "Energy sent"],
         ["energyExcessPercent", "Energy excess %"],
         //["energyUsed", "Energy used"], // not useful? is always y=x
