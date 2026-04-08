@@ -242,7 +242,7 @@ namespace gex.Services.Db.Match {
                     FROM bar_match_processing p
                     WHERE p.action_ms IS NOT NULL
                         AND p.actions_deleted IS NULL
-                        AND p.actions_parsed > @CutOff
+                        AND p.actions_parsed <= @CutOff
                     LIMIT 1000;
                 ",
                 new { CutOff = cutoff },
