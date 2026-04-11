@@ -80,6 +80,12 @@ namespace gex.Models.Db {
 
         public bool OfflineGame { get; set; }
 
+        public float AverageOS { get; set; }
+
+        public float MinOS { get; set; }
+
+        public float MaxOS { get; set; }
+
         public BarMap? MapData { get; set; }
 
     }

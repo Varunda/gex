@@ -24,6 +24,9 @@ namespace gex.Services.Db.Readers {
             match.PlayerCount = reader.GetInt32("player_count");
             match.UploadedByID = reader.GetNullableInt32("uploaded_by");
             match.WrongSkillValues = reader.GetBoolean("wrong_skill_values");
+            match.AverageOS = reader.GetFloat("average_os");
+            match.MinOS = reader.GetFloat("min_os");
+            match.MaxOS = reader.GetFloat("max_os");
 
             match.HostSettings = reader.GetJsonb("host_settings");
             match.GameSettings = reader.GetJsonb("game_settings");

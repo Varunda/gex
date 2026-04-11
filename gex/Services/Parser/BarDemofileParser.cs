@@ -789,6 +789,10 @@ namespace gex.Services.Parser {
                 _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
             }
 
+            match.MinOS = (float)match.Players.Min(iter => iter.Skill);
+            match.MaxOS = (float)match.Players.Max(iter => iter.Skill);
+            match.AverageOS = (float)match.Players.Average(iter => iter.Skill);
+
             _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [timer={timer.ElapsedMilliseconds}ms] [gamemode={match.Gamemode}] [packets={packetCount}]"
                 + $" [header={readHeaderMs}ms] [mod options={modSettingsMs}ms] [packet parsing={packetReadMs}ms] [stat parsing={statParsingMs}ms]");
 

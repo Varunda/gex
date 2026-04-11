@@ -41,6 +41,9 @@ namespace gex.Models.Api {
             WrongSkillValues = match.WrongSkillValues;
             Commands = match.Commands;
             MapDraws = match.MapDraws;
+            MinOS = match.MinOS;
+            MaxOS = match.MaxOS;
+            AverageOS = match.AverageOS;
         }
 
         public string ID { get; set; } = "";
@@ -109,6 +112,12 @@ namespace gex.Models.Api {
         public bool WrongSkillValues { get; set; }
 
         public bool IsBadGameVersion { get; set; }
+
+        public float MinOS { get; set; }
+
+        public float MaxOS { get; set; }
+
+        public float AverageOS { get; set; }
 
     }
 }

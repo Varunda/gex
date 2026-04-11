@@ -42,10 +42,12 @@ namespace gex.Services.Db.Match {
                 INSERT INTO bar_match (
                     id, start_time, start_offset, map, duration_ms, duration_frame_count,
 					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
+                    average_os, max_os, min_os,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @StartOffset, @Map, @DurationMs, @DurationFrameCount,
 					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy, @WrongSkillValues,
+                    @AverageOS, @MinOS, @MaxOS,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -64,6 +66,9 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("PlayerCount", match.PlayerCount);
             cmd.AddParameter("UploadedBy", match.UploadedByID);
             cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
+            cmd.AddParameter("AverageOS", match.AverageOS);
+            cmd.AddParameter("MinOS", match.MinOS);
+            cmd.AddParameter("MaxOS", match.MaxOS);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
@@ -353,31 +358,31 @@ namespace gex.Services.Db.Match {
             }
 
             if (parms.MinimumOS != null) {
-                conditions.Add($"min_os.skill > @MinOS");
-                withs.Add(@"min_os AS (select game_id, min(skill) ""skill"" from bar_match_player group by game_id)");
+                conditions.Add($"m.min_os > @MinOS");
+                //withs.Add(@"min_os AS (select game_id, min(skill) ""skill"" from bar_match_player group by game_id)");
                 cmd.AddParameter("MinOS", parms.MinimumOS.Value);
-                minOs = true;
+                //minOs = true;
             }
 
             if (parms.MaximumOS != null) {
-                conditions.Add($"max_os.skill <= @MaxOS");
-                withs.Add(@"max_os AS (select game_id, max(skill) ""skill"" from bar_match_player group by game_id)");
+                conditions.Add($"m.max_os <= @MaxOS");
+                //withs.Add(@"max_os AS (select game_id, max(skill) ""skill"" from bar_match_player group by game_id)");
                 cmd.AddParameter("MaxOS", parms.MaximumOS.Value);
-                maxOs = true;
+                //maxOs = true;
             }
 
             if (parms.MinimumAverageOS != null || parms.MaximumAverageOS != null) {
                 // can use the same CTE for avg os!
-                withs.Add(@"avg_os AS (select game_id, avg(skill) ""skill"" from bar_match_player group by game_id)");
-                avgOs = true;
+                //withs.Add(@"avg_os AS (select game_id, avg(skill) ""skill"" from bar_match_player group by game_id)");
+                //avgOs = true;
 
                 if (parms.MinimumAverageOS != null) {
-                    conditions.Add($"avg_os.skill > @MinAvgOS");
+                    conditions.Add($"m.average_os > @MinAvgOS");
                     cmd.AddParameter("MinAvgOS", parms.MinimumAverageOS.Value);
                 }
 
                 if (parms.MaximumAverageOS != null) {
-                    conditions.Add($"avg_os.skill <= @MaxAvgOS");
+                    conditions.Add($"m.average_os <= @MaxAvgOS");
                     cmd.AddParameter("MaxAvgOS", parms.MaximumAverageOS.Value);
                 }
             }
