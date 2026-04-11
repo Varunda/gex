@@ -221,6 +221,8 @@ namespace gex {
                                 || path.StartsWithSegments("/api/match-upload/upload-familiar")
                                 || path.StartsWithSegments("/api/match-upload/upload-third-party")
                                 || path.StartsWithSegments("/api/match-upload/inspect")
+                                || path.StartsWithSegments("/api/account/whoami")
+                                || path.StartsWithSegments("/api/match-pool")
                             )) {
 
                             return JwtBearerDefaults.AuthenticationScheme;

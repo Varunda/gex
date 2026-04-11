@@ -39,10 +39,16 @@ how to generate jwts for users (such as familiars or 3rd party website using Gex
 
 familiar:
 ```
-dotnet user-jwts create --name familiar_test --claim familiar=name
+dotnet user-jwts create --name familiar_test --claim familiar=name --valid-for=720d
 ```
 
 3rd party website:
 ```
-dotnet user-jwts create --name thirdparty_website_ --claim thirdparty_website=site
+dotnet user-jwts create --name thirdparty_website_ --claim thirdparty_website=site --valid-for=720d
 ```
+
+discord:
+```
+dotnet user-jwts create --name discord --claim name=$DISCORD_ID --valid-for=720d
+```
+

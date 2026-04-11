@@ -82,7 +82,17 @@ namespace gex.Services {
                 string id = idClaim.Value;
 
                 if (ulong.TryParse(id, out ulong discordID) == false) {
-                    throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+                    // fallback to use the "name" claim, instead of the weird SOAP one
+                    // useful for JWTs
+                    if (claims.FindFirstValue("name") != null) {
+                        id = claims.FindFirstValue("name")!;
+
+                        if (ulong.TryParse(id, out discordID) == false) {
+                            throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+                        }
+                    } else {
+                        throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+                    }
                 }
 
                 return Task.FromResult((ulong?)discordID);
@@ -157,7 +167,18 @@ namespace gex.Services {
                 string id = idClaim.Value;
 
                 if (ulong.TryParse(id, out ulong discordID) == false) {
-                    throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+
+                    // fallback to use the "name" claim, instead of the weird SOAP one
+                    // useful for JWTs
+                    if (claims.FindFirstValue("name") != null) {
+                        id = claims.FindFirstValue("name")!;
+
+                        if (ulong.TryParse(id, out discordID) == false) {
+                            throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+                        }
+                    } else {
+                        throw new InvalidCastException($"failed to convert {id} to a valid ulong");
+                    }
                 }
 
                 return await _AccountDb.GetByDiscordID(discordID, cancel);
