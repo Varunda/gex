@@ -42,7 +42,7 @@ namespace gex.Services.Db.Match {
                 INSERT INTO bar_match (
                     id, start_time, start_offset, map, duration_ms, duration_frame_count,
 					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
-                    average_os, max_os, min_os,
+                    average_os, min_os, max_os,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @StartOffset, @Map, @DurationMs, @DurationFrameCount,
