@@ -13,6 +13,7 @@
     <None Remove="resources\actions_with_nan_and_inf.json" />
     <None Remove="resources\bomb.gzip" />
     <None Remove="resources\github_data\language\en\units.json" />
+    <None Remove="resources\github_data\movedefs.lua" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
     <None Remove="resources\unit_data\armpw.lua" />
     <None Remove="resources\unit_data\armsolar.lua" />
@@ -42,7 +43,7 @@
     <Content Include="resources\2025.06.19_IndexOutOfRange.sdfz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="resources\actions_with_nan_and_inf.json">
+    <Content Include="resources\action_logs\aa\aa_actions_with_nan_and_inf\actions.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\BAR105_2590_map_draw.sdfz">
@@ -56,6 +57,9 @@
     </Content>
     <Content Include="resources\BAR105_1821.sdfz">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\github_data\movedefs.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\temp\file_to_create_dir_in_output.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

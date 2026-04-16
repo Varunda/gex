@@ -74,6 +74,13 @@ namespace gex.Controllers.Api {
             return ApiOk(list);
         }
 
+        [HttpGet("pending-run")]
+        public async Task<ApiResponse<List<BarMatchProcessing>>> GetPending(CancellationToken cancel) {
+            List<BarMatchProcessing> processing = await _ProcessingRepository.GetPending(cancel);
+
+            return ApiOk(processing);
+        }
+
         /// <summary>
         ///     request Gex priorizes a <see cref="BarMatch"/>. This requires a Discord account, 
         ///     and reduces the priority by 20 for each user. a user can only prioritize one game

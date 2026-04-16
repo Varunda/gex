@@ -12,6 +12,8 @@ namespace gex.Models.Api {
 
         public BarUnit Unit { get; set; } = new();
 
+        public BarMoveDefinition? MoveDefinition { get; set; } = null;
+
         public List<BarWeaponDefinition> IncludedWeapons { get; set; } = [];
 
         public List<BarUnit> IncludedUnits { get; set; } = [];

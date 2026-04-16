@@ -6,7 +6,7 @@ import { Loading, Loadable, ProblemDetails } from "Loading";
 import Busy from "components/Busy.vue";
 import { PropType } from "vue";
 
-const ValidFilterTypes: string[] = [ "string", "number", "date", "boolean" ];
+const ValidFilterTypes: string[] = [ "string", "number", "date", "boolean", "has" ];
 
 interface ConditionSettings {
     title: string;
@@ -261,9 +261,18 @@ export const ATable = Vue.extend({
 
             filter.width = (filterNode.componentOptions!.propsData as any).MaxWidth;
 
+            // Validate type prop
+            filter.type = (filterNode.componentOptions!.propsData as any).type;
+            if (typeof filter.type != "string") {
+                throw `Needed string for type of <a-filter>, got ${typeof filter.type}`;
+            }
+            if (ValidFilterTypes.indexOf(filter.type) == -1) {
+                throw `Invalid filter type '${filter.type}'`;
+            }
+
             // Validate method prop
             filter.method = (filterNode.componentOptions!.propsData as any).method;
-            if (typeof filter.method != "string") {
+            if ((typeof filter.method != "string") && filter.type != "has") {
                 throw `Needed string for method of <a-filter>, got ${typeof filter.method}`;
             }
             if (filter.method == "reset" || filter.method == "template") {
@@ -296,21 +305,16 @@ export const ATable = Vue.extend({
                 }
             }
 
-            // Validate type prop
-            filter.type = (filterNode.componentOptions!.propsData as any).type;
-            if (typeof filter.type != "string") {
-                throw `Needed string for type of <a-filter>, got ${typeof filter.type}`;
-            }
-            if (ValidFilterTypes.indexOf(filter.type) == -1) {
-                throw `Invalid filter type '${filter.type}'`;
-            }
 
             // Validate conditions prop
             filter.conditions = (filterNode.componentOptions!.propsData as any).conditions;
-            if (!Array.isArray(filter.conditions) && filter.method != "empty") {
+            if (!Array.isArray(filter.conditions) && filter.method != "empty" && filter.type != "has") {
                 throw `Needed array for conditions of <a-filter>, got ${typeof filter.conditions} on field ${filter.field}`;
+            } else if (filter.method == "empty" || filter.type == "has") {
+                filter.conditions = [];
             }
-            if (filter.conditions.length == 0) {
+
+            if (filter.conditions.length == 0 && filter.method != "empty" && filter.type != "has") {
                 throw `No conditions of <a-filter> given, need at least one`;
             }
 
@@ -785,6 +789,8 @@ export const ATable = Vue.extend({
                     inputNode = createElement("div");
                 } else if (filter.method == "template") {
                     inputNode = this.createTemplateFilter(createElement, filter);
+                } else if (filter.type == "has") {
+                    inputNode = this.createHasFilter(createElement, filter);
                 } else {
                     throw `Unknown filter method '${filter.method}'`;
                 }
@@ -845,6 +851,46 @@ export const ATable = Vue.extend({
 
             options.staticClass = "";
             return createElement("div", options, [slot(null)]);
+        },
+
+        createHasFilter(createElement: CreateElement, filter: Filter): VNode {
+            if (filter.type != "has") {
+                throw `a-table> expected type of "has" filter passed, got ${filter.type} instead`;
+            }
+
+            return createElement("div",
+                {
+                    staticClass: "form-check form-check-inline",
+                    staticStyle: {
+                        "padding-left": "1.5rem !important"
+                    },
+                },
+                [
+                    createElement("input", {
+                        staticClass: "form-check-input a-table-filter-input",
+                        domProps: {
+                            value: filter.value
+                        },
+                        attrs: {
+                            "type": "checkbox"
+                        },
+                        on: {
+                            input: function(ev: InputEvent): void {
+                                const value: boolean = (ev.target as HTMLInputElement).checked;
+                                filter.value = value;
+                            }
+                        }
+                    }),
+                    createElement("label",
+                        {
+                            staticClass: "form-check-label",
+                        },
+                        [
+                            "Has"
+                        ]
+                    ),
+                ]
+            );
         },
 
         createInputFilter(createElement: CreateElement, filter: Filter): VNode {
@@ -1278,6 +1324,8 @@ export const ATable = Vue.extend({
                     filter.value = null;
                 } else if (filter.type == "boolean") {
                     filter.value = null;
+                } else if (filter.type == "has") {
+                    filter.value = false;
                 } else {
                     throw `Cannot reset the value for an <a-filter>, unchecked type: '${filter.type}'`;
                 }
@@ -1303,6 +1351,8 @@ export const ATable = Vue.extend({
                 } else if (iter.type == "date") {
                     return (iter.value != null && iter.value != "");
                 } else if (iter.type == "boolean") {
+                    return (iter.value != null && iter.value != "");
+                } else if (iter.type == "has") {
                     return (iter.value != null && iter.value != "");
                 } else if (iter.type == "empty") {
                     return false;
@@ -1372,6 +1422,8 @@ export const ATable = Vue.extend({
                     } else {
                         throw `Invalid condition ${iter.selectedCondition} for type 'boolean' on field ${iter.field}`;
                     }
+                } else if (iter.type == "has") {
+                    return ((elem: any) => !!elem[iter.field]);
                 }
                 throw `Uncheck type to create a filter function for: '${iter.type}' on field ${iter.field}`;
             });

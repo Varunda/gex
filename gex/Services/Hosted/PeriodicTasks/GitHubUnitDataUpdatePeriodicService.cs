@@ -27,6 +27,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
             await _GithubRepository.DownloadFolder("units", cancel);
             await _GithubRepository.DownloadFolder("weapons", cancel);
             await _GithubRepository.DownloadFolder("language/en", cancel);
+            await _GithubRepository.DownloadFolder("gamedata", cancel);
 
             return null;
         }

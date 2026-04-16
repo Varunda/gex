@@ -19,15 +19,17 @@ namespace gex.Controllers.Api {
         private readonly BarUnitRepository _BarUnitRepository;
         private readonly BarWeaponDefinitionRepository _WeaponDefinitionRepository;
         private readonly BarI18nRepository _I18n;
+        private readonly BarMoveDefinitionRepository _MoveDefinitionRepository;
 
         public BarUnitApiController(ILogger<BarUnitApiController> logger,
             BarUnitRepository barUnitRepository, BarI18nRepository i18n,
-            BarWeaponDefinitionRepository weaponDefinitionRepository) {
+            BarWeaponDefinitionRepository weaponDefinitionRepository, BarMoveDefinitionRepository moveDefinitionRepository) {
 
             _Logger = logger;
             _BarUnitRepository = barUnitRepository;
             _I18n = i18n;
             _WeaponDefinitionRepository = weaponDefinitionRepository;
+            _MoveDefinitionRepository = moveDefinitionRepository;
         }
 
         /// <summary>
@@ -134,6 +136,15 @@ namespace gex.Controllers.Api {
                         _Logger.LogWarning($"failed to get BarUnit for carried weapon [defName={unit.DefinitionName}] "
                             + $"[carriedUnit={weapon.WeaponDefinition.CarriedUnit.DefinitionName}] [error={carriedUnit.Error}]");
                     }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(def.MovementClass) == false) {
+                Result<BarMoveDefinition?, string> moveDef = await _MoveDefinitionRepository.Get(def.MovementClass, cancel);
+                if (moveDef.IsOk == true) {
+                    unit.MoveDefinition = moveDef.Value;
+                } else {
+                    _Logger.LogWarning($"failed to get move definition for unit [unit={unit.DefinitionName}] [moveClass={def.MovementClass}]");
                 }
             }
 

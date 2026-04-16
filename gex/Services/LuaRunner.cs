@@ -91,6 +91,18 @@ namespace gex.Services {
                             return false
                         end
 
+                        local Game = {
+                            -- https://github.com/beyond-all-reason/RecoilEngine/blob/76c6f129e84e4dac3502b63942f515adf5da5d13/rts/Lua/LuaConstGame.cpp#L315
+                            -- https://github.com/beyond-all-reason/RecoilEngine/blob/76c6f129e84e4dac3502b63942f515adf5da5d13/rts/Sim/MoveTypes/MoveDefHandler.h#L117
+                            speedModClasses = {
+                                Tank = 0,
+                                KBot = 1,
+                                Hover = 2,
+                                Boat = 3,
+                                Ship = 3
+                            }
+                        }
+
                         function table.copy(tbl)
                             local copy = {}
                             for key, value in pairs(tbl) do
@@ -101,6 +113,16 @@ namespace gex.Services {
                                 end
                             end
                             return copy
+                        end
+
+                        -- https://github.com/beyond-all-reason/Beyond-All-Reason/blob/04b8f544e1650e5b0e2ce3978348662a3d725ccc/common/tablefunctions.lua#L525
+                        function table.any(tbl, callback)
+                            for k, v in pairs(tbl) do
+                                if callback(v, k, tbl) then
+                                    return true
+                                end
+                            end
+                            return false
                         end
 
                         local lowerkeys

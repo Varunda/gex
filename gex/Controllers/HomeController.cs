@@ -361,5 +361,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult FixMatches() {
+            return View();
+        }
+
     }
 }

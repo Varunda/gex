@@ -11,6 +11,10 @@ export class BarMatchProcessingApi extends ApiWrapper<BarMatchProcessing> {
         return BarMatchProcessingApi.get().readList(`/api/match-processing/priority`, BarMatchProcessing.parse);
     }
 
+    public static getPending(): Promise<Loading<BarMatchProcessing[]>> {
+        return BarMatchProcessingApi.get().readList(`/api/match-processing/pending-run`, BarMatchProcessing.parse);
+    }
+
     public static prioritizeGame(gameID: string): Promise<Loading<void>> {
         return BarMatchProcessingApi.get().post(`/api/match-processing/prioritize/${gameID}`);
     }
