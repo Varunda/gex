@@ -491,13 +491,14 @@ namespace gex.Code.Discord {
                             }
                         }
 
-                        if (weapon.SweepFire != 0) {
-                            damage *= weapon.SweepFire;
-                        }
-
                         // show stockpile time instead of reload time for stockpile weapons
                         double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
-                        double dps = damage / Math.Max(0.01, reloadTime);
+
+                        // for sweep fire guns, the reload time is not included in the DPS calc
+                        // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luaui/Widgets/gui_info.lua#L479
+                        // unitDefInfo[unitDefID].maxdps = (weaponDef.damages[0] * weaponDef.customParams.sweepfire) / math.max(weaponDef.minIntensity, 0.5)
+                        double dps = (weapon.SweepFire == 0) ? (damage / Math.Max(0.01, reloadTime)) : (damage * weapon.SweepFire);
+
                         if (weapon.Burst != 0) { dps *= weapon.Burst; }
                         if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
 
@@ -537,7 +538,7 @@ namespace gex.Code.Discord {
                         }
 
                         if (weapon.TimedAreaDamage != 0d) {
-                            embed.Description += $"Area dmg: {_N(weapon.TimedAreaDamage * 0.7333)} dps in area, area lasts {_N(weapon.TimedAreaTime)}s\n";
+                            embed.Description += $"Area dmg: {_N(weapon.TimedAreaDamage)} dps in area, area lasts {_N(weapon.TimedAreaTime)}s\n";
                         }
 
                         string range = $"{_N(weapon.Range)}";
