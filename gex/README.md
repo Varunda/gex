@@ -1,3 +1,5 @@
+if viewing on GitHub, this is a mirror of the report at git dot honu dot pw
+
 # Gex
 
 Beyond all Reason game extractor
