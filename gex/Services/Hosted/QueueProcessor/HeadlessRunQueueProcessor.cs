@@ -42,7 +42,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _Logger.LogInformation($"running game headless [gameID={entry.GameID}] [force={entry.Force}]");
 
             Stopwatch timer = Stopwatch.StartNew();
-            Result<GameOutput, string> output = await _HeadlessRunner.RunGame(entry.GameID, entry.Force, cancel);
+            Result<GameOutput, string> output = await _HeadlessRunner.RunGame(entry.GameID, entry.Force, TimeSpan.FromMinutes(10), cancel);
 
             if (output.IsOk == false) {
                 _Logger.LogError($"failed to process game in headless mode [gameID={entry.GameID}] [error={output.Error}]");

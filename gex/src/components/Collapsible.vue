@@ -1,8 +1,13 @@
 ﻿<template>
     <div>
-        <div class="wt-header d-flex" :class="classes" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
-            <span :id="'icon-' + elementID" class="fas fa-caret-down"></span>
-            {{HeaderText}}
+        <div class="d-flex flex-wrap" :class="classes" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
+            <!--
+            <span :id="'icon-' + elementID" class="fas fa-caret-down" style="height: 24px;"></span>
+            -->
+            <span :id="'icon-' + elementID" class="fas fa-caret-down flex-grow-0"></span>
+            <span>
+                {{HeaderText}}
+            </span>
 
             <slot name="header"></slot>
         </div>
@@ -21,7 +26,8 @@
             HeaderText: { type: String, required: true },
             show: { type: Boolean, required: false, default: true },
             SizeClass: { type: String, required: false, default: "h2" },
-            BgColor: { type: String, required: false, default: "bg-secondary" }
+            BgColor: { type: String, required: false, default: "bg-secondary" },
+            ShowBorder: { type: Boolean, required: false, default: true }
         },
 
         data: function() {
@@ -100,7 +106,9 @@
 
             classes: function(): string[] {
                 return [
-                    this.SizeClass, this.BgColor, this.BgColor == "bg-light" ? "text-dark" : "text-light"
+                    this.SizeClass, this.BgColor,
+                    this.BgColor == "bg-light" ? "text-dark" : "text-light",
+                    this.ShowBorder == true ? "wt-header" : "wt-header-no-border"
                 ];
             }
         }

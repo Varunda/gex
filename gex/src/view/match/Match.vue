@@ -266,6 +266,33 @@
                         <h1 class="wt-header bg-light text-dark">Unit stats</h1>
 
                         <div class="player-stats-container">
+
+                            <collapsible header-text="" bg-color="bg-dark" :show-border="false">
+                                <template v-slot:header>
+                                    <div class="text-center flex-grow-1">
+                                        Viewing unit stats for 
+                                        <span v-if="selectedEntity" :style="{ 'color': selectedEntity.color }">
+                                            {{ selectedEntity.name }}
+                                        </span>
+                                    </div>
+                                </template>
+
+                                <template v-for="entity in statEntities">
+                                    <hr v-if="entity.id == 'newline'" style="width: 100%; margin: 0; padding: 0; border: 0;"/>
+
+                                    <button v-else :key="entity.id" class="btn m-1 flex-grow-0" :style=" {
+                                        'background-color': (selectedEntityId == entity.id) ? entity.color : 'var(--bs-secondary)',
+                                        'color': (selectedEntityId == entity.id) ? 'white' : entity.color
+                                    }" @click="selectedEntityId = entity.id">
+
+                                        <span style="text-shadow: 1px 1px 1px black">
+                                            {{ entity.name }}
+                                        </span>
+                                    </button>
+                                </template>
+                            </collapsible>
+
+                            <!--
                             <h4 v-if="selectedEntity" class="text-center">
                                 Viewing unit stats for
                                 <span :style="{ 'color': selectedEntity.color }">
@@ -288,6 +315,7 @@
                                     </button>
                                 </template>
                             </div>
+                            -->
                         </div>
 
                         <hr class="border">
@@ -348,13 +376,15 @@
         position: sticky;
         top: 10px;
         z-index: 9999;
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+        /*
         padding-top: 1rem;
         padding-bottom: 0.25rem;
         padding-left: 0.5rem;
         padding-right: 0.5rem;
+        */
         border-radius: var(--bs-border-radius) !important;
-        --bs-bg-opacity: 1;
-        background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
         border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
     }
 

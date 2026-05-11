@@ -38,7 +38,8 @@ namespace gex.Familiar.Services {
                 { new ByteArrayContent(stderr), "stderr.txt", "stderr.txt" }
             };
 
-            _Logger.LogDebug($"sending match files [host={_Options.Value.Host}]");
+            _Logger.LogDebug($"sending match files [host={_Options.Value.Host}]"
+                + $" [demofile={demofile.Length}] [actions={actions.Length}] [stdout={stdout.Length}] [stderr={stderr.Length}]");
 
             HttpRequestMessage req = new();
             req.RequestUri = new Uri(_Options.Value.Host + "/api/match-upload/upload-familiar");

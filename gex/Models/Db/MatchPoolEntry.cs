@@ -16,6 +16,9 @@ namespace gex.Models.Db {
         [ColumnMapping("added_by_id")]
         public long AddedByID { get; set; }
 
+        [ColumnMapping("description")]
+        public string? Description { get; set; } = null;
+
         [ColumnMapping("timestamp")]
         public DateTime Timestamp { get; set; }
 

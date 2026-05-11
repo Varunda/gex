@@ -28,7 +28,7 @@ namespace gex.TestUpload {
             _Secret = secret;
         }
 
-        public async Task UploadThirdParty(byte[] data, CancellationToken cancel) {
+        public async Task UploadThirdParty(byte[] data, string? description, CancellationToken cancel) {
             using MultipartFormDataContent form = new() {
                 { new ByteArrayContent(data), "demofile.sdfz", "demofile.sdfz" },
             };
@@ -36,13 +36,13 @@ namespace gex.TestUpload {
             _Logger.LogDebug($"sending match files [host={_Env.Value.Host}]");
 
             HttpRequestMessage req = new();
-            req.RequestUri = new Uri(_Env.Value.Host + "/api/match-upload/upload-thirdparty");
+            req.RequestUri = new Uri(_Env.Value.Host + "/api/match-upload/upload-third-party?matchPoolID=1" + (description != null ? $"&description={description}" : ""));
             req.Content = form;
             req.Method = HttpMethod.Post;
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _Secret.Value.JWT);
 
             HttpResponseMessage response = await _Http.SendAsync(req);
-            string body = await response.Content.ReadAsStringAsync();
+            string body = await response.Content.ReadAsStringAsync(cancel);
             if (response.IsSuccessStatusCode == false) {
                 _Logger.LogWarning($"failed to upload game [status={response.StatusCode}] [body={body}]");
             } else {
@@ -50,9 +50,6 @@ namespace gex.TestUpload {
             }
 
         }
-
-
-
 
     }
 

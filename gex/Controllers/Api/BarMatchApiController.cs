@@ -90,6 +90,10 @@ namespace gex.Controllers.Api {
         /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
         /// <param name="includeTeamDeaths">will <see cref="BarMatch.TeamDeaths"/> be populated? defaults to false</param>
         /// <param name="includeMapDraws">will <see cref="BarMatch.MapDraws"/> be populated? defaults to false</param>
+        /// <param name="includeLabeledPings">
+        ///     will <see cref="BarMatch.MapDraws"/> be populated with pings that include a label? defaults to false.
+        ///     if <paramref name="includeMapDraws"/> is <c>true</c>, then this parameter is ignored (as it is a subset of data)
+        /// </param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
@@ -99,7 +103,8 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeChat = false,
             [FromQuery] bool includeSpectators = false,
             [FromQuery] bool includeTeamDeaths = false,
-            [FromQuery] bool includeMapDraws = false
+            [FromQuery] bool includeMapDraws = false,
+            [FromQuery] bool includeLabeledPings = false
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
@@ -126,7 +131,7 @@ namespace gex.Controllers.Api {
                 match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
             }
 
-            if (includeMapDraws == true) {
+            if (includeMapDraws == true || includeLabeledPings == true) {
                 Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
                 if (demofile.IsOk == false) {
                     _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
@@ -135,14 +140,23 @@ namespace gex.Controllers.Api {
 
                 Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions() {
                     IncludeCommands = false,
-                    IncludeMapDraws = includeMapDraws,
+                    IncludeMapDraws = includeMapDraws || includeLabeledPings,
                 }, cancel);
                 if (fromDemofile.IsOk == false) {
                     _Logger.LogError($"failed to parse demofile [error={demofile.Error}] [matchID={match.ID}]");
                     return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
                 }
 
-                match.MapDraws = fromDemofile.Value.MapDraws;
+                if (includeLabeledPings == true && includeMapDraws == false) {
+                    match.MapDraws = fromDemofile.Value.MapDraws.Where(iter => {
+                        return iter.Action == "point"
+                            && iter is BarMatchMapDrawPoint point
+                            && point.Label != "";
+                    }).ToList();
+                } else {
+                    match.MapDraws = fromDemofile.Value.MapDraws;
+                }
+
             }
 
             ApiMatch ret = new(match);

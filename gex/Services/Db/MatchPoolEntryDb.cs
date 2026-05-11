@@ -38,15 +38,16 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO match_pool_entry (
-                    pool_id, match_id, added_by_id, timestamp
+                    pool_id, match_id, added_by_id, description, timestamp
                 ) VALUES (
-                    @PoolID, @MatchID, @AddedByID, NOW() at time zone 'utc'
+                    @PoolID, @MatchID, @AddedByID, @Description, NOW() at time zone 'utc'
                 );
             ", cancel);
 
             cmd.AddParameter("PoolID", entry.PoolID);
             cmd.AddParameter("MatchID", entry.MatchID);
             cmd.AddParameter("AddedByID", entry.AddedByID);
+            cmd.AddParameter("Description", entry.Description);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);

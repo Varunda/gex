@@ -11,6 +11,7 @@ using gex.Services.Db;
 using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Storage;
 using gex.Services.Util;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -48,6 +49,8 @@ namespace gex.Controllers.Api {
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
+        private readonly GameOutputStorage _OutputStorage;
+        private readonly AppPermissionRepository _PermissionRepository;
         private readonly ICurrentAccount _CurrentAccount;
 
         public MatchUploadApiController(ILogger<MatchUploadApiController> logger,
@@ -57,7 +60,8 @@ namespace gex.Controllers.Api {
             BarDemofileResultProcessor demofileProcessor, BarMapRepository mapRepository,
             BarMatchPriorityCalculator priorityCalculator, BaseQueue<HeadlessRunQueueEntry> runQueue,
             ICurrentAccount currentAccount, BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue,
-            MatchPoolRepository matchPoolRepository, MatchPoolEntryDb matchPoolEntryDb) {
+            MatchPoolRepository matchPoolRepository, MatchPoolEntryDb matchPoolEntryDb,
+            GameOutputStorage outputStorage, AppPermissionRepository permissionRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -74,6 +78,8 @@ namespace gex.Controllers.Api {
             _ActionLogParseQueue = actionLogParseQueue;
             _MatchPoolRepository = matchPoolRepository;
             _MatchPoolEntryDb = matchPoolEntryDb;
+            _OutputStorage = outputStorage;
+            _PermissionRepository = permissionRepository;
         }
 
         /// <summary>
@@ -386,9 +392,29 @@ namespace gex.Controllers.Api {
         /// </summary>
         /// <param name="matchPoolID">optional, the ID of the <see cref="MatchPool"/> to insert the match into</param>
         /// <param name="prioritize">if the match will be prioritized at prio 9 or if normal rules will be used</param>
+        /// <param name="description">
+        ///     description of what round this match took place in. used to organize match pools. max 100 characters
+        /// </param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
-        ///     
+        ///     the response will contain the <see cref="BarMatch"/> of the match that was just uploaded.
+        ///     if <paramref name="matchPoolID"/> is given, then it will also be added to the
+        ///     <see cref="MatchPool"/> with the <see cref="MatchPool.ID"/> of <paramref name="matchPoolID"/>.
+        ///     if <paramref name="description"/> is given, then the <see cref="MatchPoolEntry"/> will have
+        ///     <see cref="MatchPoolEntry.Description"/> set to this
+        /// </response>
+        /// <response code="400">
+        ///     one of the following validations failed:
+        ///     <ul>
+        ///         <li><paramref name="description"/> is given and over 100 charactes (100 char max)</li>
+        ///         <li><paramref name="description"/> was given when <paramref name="matchPoolID"/> was not</li>
+        ///         <li>the replay file failed to parse. the response will contain more info</li>
+        ///         <li>the match contains AI players (which is not allowed)</li>
+        ///     </ul>
+        /// </response>
+        /// <response code="404">
+        ///     <paramref name="matchPoolID"/> was given, and no <see cref="MatchPool"/> with <see cref="MatchPool.ID"/>
+        ///     of <paramref name="matchPoolID"/> exists
         /// </response>
         [HttpPost("upload-third-party")]
         [RequestTimeout(1000 * 60)] // allow 60 secs to upload
@@ -396,11 +422,23 @@ namespace gex.Controllers.Api {
         [Authorize]
         public async Task<ApiResponse<BarMatch>> UploadThirdParty(int? matchPoolID = null,
             bool? prioritize = false,
+            string? description = null,
             CancellationToken cancel = default) {
 
+            // ensure the user either has the third party claim, or the upload match permission
+            AppAccount? currentUser = await _CurrentAccount.Get(cancel);
+            bool hasPerm = currentUser != null && (await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_MATCH_UPLOAD], cancel));
+
             Claim? claim = Request.HttpContext.User.Claims.FirstOrDefault(iter => iter.Type == "thirdparty_website");
-            if (claim == null) {
-                return ApiForbidden<BarMatch>($"this endpoint is only usable with the correct user claim");
+            if (claim == null && hasPerm == false) {
+                return ApiForbidden<BarMatch>($"this endpoint is only usable with the correct user claim or permission");
+            }
+
+            if (description != null && description.Length > 100) {
+                return ApiBadRequest<BarMatch>($"{nameof(description)} cannot be longer than 100 characters");
+            }
+            if (description != null && matchPoolID == null) {
+                return ApiBadRequest<BarMatch>($"{nameof(description)} can only be supplied when {nameof(matchPoolID)} is provided");
             }
 
             if (matchPoolID != null) {
@@ -560,11 +598,11 @@ namespace gex.Controllers.Api {
 
             bool hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(part.ContentDisposition, out ContentDispositionHeaderValue? contentDisposition);
             if (hasContentDispositionHeader == false) {
-                return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition}");
+                return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition} (hasCD is false)");
             }
 
             if (contentDisposition == null) {
-                return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition}");
+                return ApiInternalError<BarMatch>($"failed to get {nameof(contentDisposition)} from {part.ContentDisposition} (CD is null)");
             }
 
             if (!HasFileContentDisposition(contentDisposition)) {
@@ -573,7 +611,7 @@ namespace gex.Controllers.Api {
             }
 
             string originalName = contentDisposition.FileName.Value ?? "";
-            _Logger.LogDebug($"demofile uploaded [originalName={originalName}]");
+            _Logger.LogDebug($"demofile read from body [originalName={originalName}]");
 
             string? extension = HeaderUtilities.RemoveQuotes(Path.GetExtension(originalName)).Value;
             if (string.IsNullOrWhiteSpace(extension)) {

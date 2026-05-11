@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace gex.TestUpload {
@@ -17,11 +18,14 @@ namespace gex.TestUpload {
             };
 
             settings.Configuration.AddJsonFile("env.json");
-            settings.Configuration.AddJsonFile("secrets.json");
+            settings.Configuration.AddJsonFile("secret.json");
 
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(settings);
             builder.Services.Configure<Env>(builder.Configuration.GetSection("Env"));
             builder.Services.Configure<Secret>(builder.Configuration.GetSection("Secret"));
+
+            builder.Services.AddSingleton<Uploader>();
+            builder.Services.AddHostedService<AppHost>();
 
             using IHost host = builder.Build();
             host.Run();
@@ -52,8 +56,7 @@ namespace gex.TestUpload {
         }
 
         private async Task Run(CancellationToken cancel) {
-
-
+            await _Uploader.UploadThirdParty(File.ReadAllBytes("./demofile.sdfz"), "round 1", cancel);
         }
 
     }

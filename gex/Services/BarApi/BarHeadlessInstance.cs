@@ -103,7 +103,7 @@ namespace gex.Services.BarApi {
             _OutputStorage = outputStorage;
         }
 
-        public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, CancellationToken cancel) {
+        public async Task<Result<GameOutput, string>> RunGame(string gameID, bool force, TimeSpan timeout, CancellationToken cancel) {
 
             if (RuntimeInformation.ProcessArchitecture != Architecture.X64) {
                 _Logger.LogWarning($"cannot replay demofile, system architecure is not amd64 [arch={RuntimeInformation.ProcessArchitecture}]");
@@ -267,15 +267,15 @@ namespace gex.Services.BarApi {
             StringBuilder error = new StringBuilder();
 
             // cap replay time to 10 minutes, unless execution was forced, in which case cap at the runtime of the match
-            TimeSpan processingTimeout = force == true ? TimeSpan.FromMilliseconds(match.DurationMs) : TimeSpan.FromMinutes(10);
+            //TimeSpan processingTimeout = force == true ? TimeSpan.FromMilliseconds(match.DurationMs) : TimeSpan.FromMinutes(10);
 
             // if gex thinks the game will take longer to replay than is left in the timeout, it will kill the game early
             int etaFailedCheck = 0;
             DateTime playbackStarted = DateTime.UtcNow;
-            DateTime timeEnd = playbackStarted + processingTimeout;
+            DateTime timeEnd = playbackStarted + timeout;
 
             _Logger.LogDebug($"starting bar executable [gameID={gameID}] [port={port}] "
-                + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={processingTimeout}] [end={timeEnd:u}]");
+                + $"[cwd={bar.StartInfo.WorkingDirectory}] [args={bar.StartInfo.Arguments}] [timeout={timeout}] [end={timeEnd:u}]");
 
             HeadlessRunStatus status = new();
             status.GameID = gameID;
@@ -421,10 +421,10 @@ namespace gex.Services.BarApi {
 
             // doing it this way prevents hangs due to not reading stdout or stderr
             // https://stackoverflow.com/questions/139593/processstartinfo-hanging-on-waitforexit-why
-            if (!(bar.WaitForExit(processingTimeout) && outputWaitHandle.WaitOne(processingTimeout) && errorWaitHandle.WaitOne(processingTimeout))) {
+            if (!(bar.WaitForExit(timeout) && outputWaitHandle.WaitOne(timeout) && errorWaitHandle.WaitOne(timeout))) {
                 increasePriority = true;
                 _HeadlessRunStatusRepository.Remove(gameID);
-                _Logger.LogWarning($"hit game processing timeout, increasing priority by 100 [gameID={gameID}] [timeout={processingTimeout}]");
+                _Logger.LogWarning($"hit game processing timeout, increasing priority by 100 [gameID={gameID}] [timeout={timeout}]");
                 bar.Kill();
             }
 
@@ -439,7 +439,7 @@ namespace gex.Services.BarApi {
                     await _ProcessingRepository.Upsert(proc);
                 }
 
-                return $"hit processing timeout for game [gameID={gameID}] [timeout={processingTimeout}]";
+                return $"hit processing timeout for game [gameID={gameID}] [timeout={timeout}]";
             }
 
             // game successfully ran, good job gex!

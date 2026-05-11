@@ -99,9 +99,9 @@ namespace gex.Services.Discord {
                 await _Discord.Get().ConnectAsync();
 
                 IReadOnlyList<DiscordApplicationCommand> cmds = await _Discord.Get().GetGuildApplicationCommandsAsync(_DiscordOptions.Value.GuildId);
-                _Logger.LogDebug($"Have {cmds.Count} commands");
+                _Logger.LogDebug($"connected to discord [cmds.Count={cmds.Count}] [{_Discord.Get().GatewayUri}]");
                 foreach (DiscordApplicationCommand cmd in cmds) {
-                    _Logger.LogDebug($"{cmd.Id} {cmd.Name}: {cmd.Description}");
+                    _Logger.LogDebug($"found command [id={cmd.Id}] [name={cmd.Name}] [desc={cmd.Description}]");
                 }
 
                 await base.StartAsync(cancellationToken);

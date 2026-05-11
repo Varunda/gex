@@ -1,7 +1,7 @@
 
 <template>
     <div>
-        <collapsible header-text="Unit defs" :show="false">
+        <collapsible header-text="Unit defs (debug)" :show="false">
 
             <button class="btn btn-primary" @click="loadUnitDefChanges()">
                 Load unit definition changes

@@ -96,6 +96,15 @@
     color: rgba(var(--bs-dark-rgb),var(--bs-text-opacity));
 }
 
+.wt-header-no-border {
+    background-color: var(--bs-secondary);
+    padding: 0.25rem 0.5rem;
+    --bs-bg-opacity: 1;
+    --bs-text-opacity: 1;
+    background-color: rgba(var(--bs-light-rgb),var(--bs-bg-opacity));
+    color: rgba(var(--bs-dark-rgb),var(--bs-text-opacity));
+}
+
 .flex-basis-0 {
     flex-basis: 0;
 }

@@ -11,48 +11,66 @@
                     Chat is not censored or filtered in any way, and may contain inappropriate language. Click here to view
                 </div>
 
-                <div v-else style="max-height: 400px; overflow-y: scroll;">
+                <div v-else>
                     <div>
                         <button class="btn btn-sm mb-2" :class="[ useStartTime == true ? 'btn-primary' : 'btn-secondary' ]" @click.stop="useStartTime = !useStartTime">
-                            use start time
+                            Use start time
                         </button>
 
                         <span v-if="useStartTime == true">
-                            showing timestamps based on when they took place after the game started
+                            Showing timestamps based on when they took place after the game started
                         </span>
                         <span v-else>
-                            showing timestamps based on when they took place after the game was loaded
+                            Showing timestamps based on when they took place after the game was loaded
                         </span>
                     </div>
 
-                    <div v-if="ShowMobile == true">
-                        <div v-for="msg in messages" :key="msg.id" class="mb-3">
-                            <div>
-                                [<span class="font-monospace">{{ msg.timestamp }}</span>]
-                                <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
-                                &rarr;
-                                <b :style="{ 'color': msg.color }">{{ msg.to }}</b>
-                            </div>
-
-                            <div>
-                                {{ msg.message }}
-                            </div>
-                        </div>
+                    <div>
+                        <button class="btn btn-sm mb-2" :class="[ showPingLocation == true ? 'btn-primary' : 'btn-secondary' ]" @click.stop="showPingLocation = !showPingLocation">
+                            Show map pings
+                        </button>
                     </div>
 
-                    <div v-else class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
-                        <template v-for="msg in messages">
-                            <div style="grid-column: 1;" class="text-nowrap my-2">
-                                [<span class="font-monospace">{{ msg.timestamp }}</span>]
-                                <span :style="{ 'color': msg.color }">
-                                    ({{ msg.to }})
-                                </span>
+                    <div style="max-height: 400px; overflow-y: scroll;">
+                        <div v-if="ShowMobile == true">
+                            <div v-for="msg in messages" :key="msg.id" class="mb-3">
+                                <div>
+                                    [<span class="font-monospace">{{ msg.timestamp }}</span>]
+                                    <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
+                                    &rarr;
+                                    <b :style="{ 'color': msg.color }">{{ msg.to }}</b>
+                                </div>
+
+                                <div>
+                                    {{ msg.message }}
+                                </div>
+
+                                <div v-if="showPingLocation == true && msg.ping != undefined">
+                                    <match-chat-ping-map :match="match" :ping="msg.ping"></match-chat-ping-map>
+                                </div>
                             </div>
-                            <div style="grid-column: 2;" class="text-end border-end pe-2 py-2">
-                                <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
-                            </div>
-                            <div style="grid-column: 3;" class="my-2 ms-2">{{ msg.message }}</div>
-                        </template>
+                        </div>
+
+                        <div v-else class="d-grid" style="grid-template-columns: min-content auto 1fr; column-gap: 0.25rem;">
+                            <template v-for="msg in messages">
+                                <div style="grid-column: 1;" class="text-nowrap my-2">
+                                    [<span class="font-monospace">{{ msg.timestamp }}</span>]
+                                    <span :style="{ 'color': msg.color }">
+                                        ({{ msg.to }})
+                                    </span>
+                                </div>
+                                <div style="grid-column: 2;" class="text-end border-end pe-2 py-2">
+                                    <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
+                                </div>
+                                <div style="grid-column: 3;" class="my-2 ms-2">
+                                    {{ msg.message }}
+
+                                    <div v-if="showPingLocation == true && msg.ping != undefined">
+                                        <match-chat-ping-map :match="match" :ping="msg.ping"></match-chat-ping-map>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -64,8 +82,11 @@
     import Vue, { PropType } from "vue";
 
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchMapDraw, BarMatchMapDrawPoint } from "model/BarMatchMapDraws";
 
     import TimeUtils from "util/Time";
+
+    import MatchChatPingMap from "./MatchChatPingMap.vue";
 
     import Collapsible from "components/Collapsible.vue";
     import ToggleButton from "components/ToggleButton";
@@ -78,7 +99,8 @@
         timestamp: string;
         gametime: number;
         message: string;
-        playerColor: string; 
+        playerColor: string;
+        ping: BarMatchMapDrawPoint | undefined;
     }
 
     export const MatchChat = Vue.extend({
@@ -90,7 +112,8 @@
         data: function() {
             return {
                 show: false as boolean,
-                useStartTime: true as boolean
+                useStartTime: true as boolean,
+                showPingLocation: false as boolean,
             }
         },
 
@@ -160,10 +183,37 @@
                         color: this.getIdColor(iter.toId, allyTeamID),
                         playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(timestamp),
-                        gametime: timestamp,
-                        message: iter.message
+                        gametime: iter.gameTimestamp,
+                        message: iter.message,
+                        ping: undefined
                     }
                 });
+
+                for (const ping of this.match.mapDraws) {
+                    if (ping.action != "point") {
+                        continue;
+                    }
+
+                    const point: BarMatchMapDrawPoint = ping as BarMatchMapDrawPoint;
+                    if (point.label == "") {
+                        continue;
+                    }
+
+                    const allyTeamID = this.getPlayerAllyTeamId(point.playerID);
+                    let timestamp: number = Math.max(0, (this.useStartTime == true) ? point.gameTime - this.match.startOffset : point.gameTime);
+
+                    messages.push({
+                        id: messages.length + 1,
+                        from: this.getIdName(ping.playerID),
+                        to: allyTeamID != -1 ? this.getIdName(252, allyTeamID) : this.getIdName(253),
+                        color: allyTeamID != -1 ? this.getIdColor(252, allyTeamID) : this.getIdColor(253),
+                        playerColor: this.getPlayerColor(point.playerID),
+                        timestamp: TimeUtils.duration(timestamp),
+                        gametime: point.gameTime,
+                        message: (point.label + ` (pinged at ${point.x}, ${point.z})`),
+                        ping: point
+                    });
+                }
 
                 if (this.match.startOffset > 0) {
                     const id: number = messages.length == 0 ? 0 : messages[messages.length - 1].id + 1;
@@ -176,7 +226,8 @@
                         playerColor: this.getPlayerColor(255),
                         timestamp: TimeUtils.duration(this.useStartTime == true ? 0 : this.match.startOffset),
                         gametime: this.match.startOffset,
-                        message: "Game started"
+                        message: "Game started",
+                        ping: undefined,
                     });
                 }
 
@@ -188,7 +239,7 @@
         },
 
         components: {
-            Collapsible, ToggleButton
+            Collapsible, ToggleButton, MatchChatPingMap
         }
     });
     export default MatchChat;

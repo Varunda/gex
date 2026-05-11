@@ -3,6 +3,7 @@ import { ApmStats } from "./ApmStats";
 import { BarMap } from "./BarMap";
 import { BarMatchAllyTeam } from "./BarMatchAllyTeam";
 import { BarMatchChatMessage } from "./BarMatchChatMessage";
+import { BarMatchMapDraw, BarMatchMapDrawBase } from "./BarMatchMapDraws";
 import { BarMatchPlayer } from "./BarMatchPlayer";
 import { BarMatchProcessing } from "./BarMatchProcessing";
 import { BarMatchSpectator } from "./BarMatchSpectator";
@@ -37,6 +38,7 @@ export class BarMatch {
     public teamDeaths: BarMatchTeamDeath[] = [];
 
     public mapData: BarMap | null = null;
+    public mapDraws: BarMatchMapDraw[] = [];
     public processing: BarMatchProcessing | null = null;
     public usersPrioritizing: string[] = [];
     public headlessRunStatus: HeadlessRunStatus | null = null;
@@ -62,6 +64,7 @@ export class BarMatch {
             teamDeaths: elem.teamDeaths.map((iter: any) => BarMatchTeamDeath.parse(iter)),
 
             mapData: elem.mapData == null ? null : BarMap.parse(elem.mapData),
+            mapDraws: elem.mapDraws.map((iter: any) => BarMatchMapDrawBase.parse(iter)),
             processing: elem.processing == null ? null : BarMatchProcessing.parse(elem.processing),
             usersPrioritizing: elem.usersPrioritizing,
             headlessRunStatus: elem.headlessRunStatus == null ? null : HeadlessRunStatus.parse(elem.headlessRunStatus),

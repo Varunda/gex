@@ -4,11 +4,13 @@ using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.Queues;
 using gex.Services.BarApi;
+using gex.Services.Db.Match;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,16 +32,19 @@ namespace gex.Services.Hosted.BackgroundTasks {
         private readonly BarHeadlessInstance _HeadlessRunner;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
+        private readonly BarMatchProcessingPriorityDb _PriorityDb;
 
         public PriorityMatchHeadlessBackgroundTask(ILogger<PriorityMatchHeadlessBackgroundTask> logger,
             BarMatchProcessingRepository processingRepository, BarHeadlessInstance headlessRunner,
-            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, ServiceHealthMonitor serviceHealthMonitor) {
+            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, ServiceHealthMonitor serviceHealthMonitor,
+            BarMatchProcessingPriorityDb priorityDb) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;
             _HeadlessRunner = headlessRunner;
             _ActionLogParseQueue = actionLogParseQueue;
             _ServiceHealthMonitor = serviceHealthMonitor;
+            _PriorityDb = priorityDb;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -101,7 +106,15 @@ namespace gex.Services.Hosted.BackgroundTasks {
 
                     _Logger.LogDebug($"found game to process based on priority [gameID={nextPrio.GameID}] [priority={nextPrio.Priority}]");
 
-                    Result<GameOutput, string> output = await _HeadlessRunner.RunGame(nextPrio.GameID, false, cancel);
+                    TimeSpan timeout = TimeSpan.FromMinutes(10);
+                    try {
+                        List<ulong> usersPrio = await _PriorityDb.GetByGameID(nextPrio.GameID, cancel);
+                        timeout += TimeSpan.FromMinutes(5) * usersPrio.Count;
+                    } catch (Exception ex) {
+                        _Logger.LogError(ex, $"failed to load users prioritizing a game [gameID={nextPrio.GameID}]");
+                    }
+
+                    Result<GameOutput, string> output = await _HeadlessRunner.RunGame(nextPrio.GameID, false, timeout, cancel);
                     if (output.IsOk == false) {
                         _Logger.LogError($"failed to process game in headless mode (priority) [gameID={nextPrio.GameID}] [error={output.Error}]");
                         continue;

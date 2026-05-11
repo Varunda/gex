@@ -59,8 +59,16 @@
 
                             <div :id="'stats-group-' + group.id" class="accordion-collapse collapse" :class="{ 'show': index == 0 }" data-bs-parent="#stat-accordion-parent">
                                 <div class="btn-group btn-group-vertical w-100 mb-2">
-                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])" class="btn ms-0" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]">
-                                        {{ stat[1] }}
+                                    <button v-for="stat in group.values" :key="stat[0]" @click="showDataset(stat[0])"
+                                        class="btn ms-0 d-flex align-items-center" :class="[ showedStat == stat[0] ? 'btn-primary' : 'btn-dark border' ]" style="align-items: center;">
+
+                                        <span class="flex-grow-1">
+                                            {{ stat[1] }}
+                                        </span>
+
+                                        <span v-if="stat[2] != ''" style="font-size: 0.8rem;" class="flex-grow-0">
+                                            <info-hover :text="stat[2]"></info-hover>
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -93,6 +101,8 @@
     import MergedStats from "../compute/MergedStats";
 
     import Chart, { ChartDataset, LegendItem, Plugin } from "chart.js/auto/auto.esm";
+
+    import InfoHover from "components/InfoHover.vue";
 
     import TimeUtils from "util/Time";
     import TableUtils from "util/Table";
@@ -252,7 +262,7 @@
     type StatGroup = {
         id: string;
         name: string;
-        values: [StatKey, string][]
+        values: [StatKey, string, string | undefined][]
     };
 
     const STAT_GROUPS: StatGroup[] = [
@@ -260,60 +270,60 @@
             id: "basic",
             name: "Basic",
             values: [
-                ["armyValue", "Army value"],
-                ["unitsProduced", "Units created"],
-                ["unitsKilled", "Units killed"],
-                ["actions", "Actions"],
-                ["damageDealt", "Damage dealt"],
-                ["damageReceived", "Damage receieved"],
+                ["armyValue", "Army value", "Metal value of any unit with a weapon"],
+                ["unitsProduced", "Units created", ""],
+                ["unitsKilled", "Units killed", ""],
+                ["actions", "Actions", ""],
+                ["damageDealt", "Damage dealt", ""],
+                ["damageReceived", "Damage receieved", ""],
             ]
         },
         {
             id: "unit-value",
             name: "Unit value",
             values: [
-                ["totalValue", "Total value"],
-                ["defenseValue", "Defense value"],
-                ["ecoValue", "Eco value"],
-                ["utilValue", "Util value"],
-                ["otherValue", "Other value"],
+                ["totalValue", "Total value", "Total metal value of all units and buildings a player has"],
+                ["defenseValue", "Defense value", "Total metal value of all buildings with a weapon"],
+                ["ecoValue", "Eco value", "Total metal value of all buildings that produce metal or energy"],
+                ["utilValue", "Util value", "Total metal value of a unit or building with a unitgroup of 'util'"],
+                ["otherValue", "Other value", "Total metal value of all other units or buildings"],
             ]
         },
         {
             id: "build-power",
             name: "Build power",
             values: [
-                ["buildPowerAvailable", "Build power total"],
-                ["buildPowerUsed", "Build power used"],
-                ["buildPowerPercent", "Build power usage"]
+                ["buildPowerAvailable", "Build power total", "Total build power of all units and buildings"],
+                ["buildPowerUsed", "Build power used", "Total build power being used"],
+                ["buildPowerPercent", "Build power usage", "Percentage of build power being used"]
             ]
         },
         {
             id: "eco",
             name: "Eco",
             values: [
-                ["metalProduced", "Metal produced"],
-                ["metalExcess", "Metal excess"],
-                ["metalReceived", "Metal receieved"],
-                ["metalSent", "Metal sent"],
-                ["metalCurrent", "Metal Current"],
-                ["metalExcessPercent", "Metal excess %"],
-                ["energyProduced", "Energy produced"],
-                ["energyExcess", "Energy excess"],
-                ["energyReceived", "Energy receieved"],
-                ["energySent", "Energy sent"],
-                ["energyCurrent", "Energy Current"],
-                ["energyExcessPercent", "Energy excess %"],
+                ["metalProduced", "Metal produced", ""],
+                ["metalExcess", "Metal excess", ""],
+                ["metalReceived", "Metal receieved", ""],
+                ["metalSent", "Metal sent", ""],
+                ["metalCurrent", "Metal Current", ""],
+                ["metalExcessPercent", "Metal excess %", ""],
+                ["energyProduced", "Energy produced", ""],
+                ["energyExcess", "Energy excess", ""],
+                ["energyReceived", "Energy receieved", ""],
+                ["energySent", "Energy sent", ""],
+                ["energyCurrent", "Energy Current", ""],
+                ["energyExcessPercent", "Energy excess %", ""],
             ]
         },
         {
             id: "unit",
             name: "Unit",
             values: [
-                ["unitsCaptured", "Units captured"],
-                ["unitsSent", "Units sent"],
-                ["unitsReceived", "Units received"],
-                ["unitsOutCaptured", "Units out captured"]
+                ["unitsCaptured", "Units captured", ""],
+                ["unitsSent", "Units sent", ""],
+                ["unitsReceived", "Units received", ""],
+                ["unitsOutCaptured", "Units out captured", ""]
             ]
         }
 
@@ -738,7 +748,7 @@
         },
 
         components: {
-            Collapsible
+            Collapsible, InfoHover
         }
     });
     export default TeamStatsChart;

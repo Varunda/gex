@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.Common", "gex.Common\ge
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.Familiar", "gex.Familiar\gex.Familiar.csproj", "{DA9B9874-0415-43BB-B10F-0F24FD33F5FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.TestUpload", "gex.TestUpload\gex.TestUpload.csproj", "{3D080275-5F80-489B-8B4C-F9F7A2730DDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +90,18 @@ Global
 		{DA9B9874-0415-43BB-B10F-0F24FD33F5FC}.Release|x64.Build.0 = Release|Any CPU
 		{DA9B9874-0415-43BB-B10F-0F24FD33F5FC}.Release|x86.ActiveCfg = Release|Any CPU
 		{DA9B9874-0415-43BB-B10F-0F24FD33F5FC}.Release|x86.Build.0 = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|x64.Build.0 = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Debug|x86.Build.0 = Debug|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x64.ActiveCfg = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x64.Build.0 = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x86.ActiveCfg = Release|Any CPU
+		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
