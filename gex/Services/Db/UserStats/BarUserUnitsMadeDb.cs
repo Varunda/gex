@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Models.Db;
 using gex.Models.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -24,46 +25,96 @@ namespace gex.Services.Db.UserStats {
         }
 
         /// <summary>
-        ///     generate <see cref="BarUserUnitsMade"/> results for a set of users, on a specific day,
-        ///     on specific maps
+        ///     generate the user units made for the given map, gamemode and day
         /// </summary>
-        /// <param name="userIDs"></param>
-        /// <param name="day"></param>
-        /// <param name="mapFilenames"></param>
+        /// <param name="entry"></param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        public async Task<List<BarUserUnitsMade>> Generate(IEnumerable<long> userIDs, DateTime day,
-            IEnumerable<string> mapFilenames, CancellationToken cancel) {
+        public async Task Generate(UserUnitsMadeNeedsUpdate entry, CancellationToken cancel) {
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            return (await conn.QueryAsync<BarUserUnitsMade>(
+            using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+            List<BarUserUnitsMade> unitsMade = (await evConn.QueryAsync<BarUserUnitsMade>(
                 new CommandDefinition(@"
                     SELECT
                         mp.user_id ""user_id"",
                         date_trunc('day', m.start_time) ""day"",
                         m.map_name ""map_filename"",
-                        c.definition_name ""definition_name"",
-                        count(*) ""count"",
+                        m.gamemode ""gamemode"", 
+                        gum.definition_name ""definition_name"",
+                        sum(gum.count) ""count"",
                         NOW() at time zone 'utc' ""timestamp""
                     from
                         bar_match_player mp
                         INNER JOIN bar_match m ON mp.game_id = m.id
-                        LEFT JOIN game_event_unit_created c ON mp.game_id = c.game_id AND mp.team_id = c.team_id
+                        LEFT JOIN game_units_created gum ON gum.game_id = mp.game_id AND mp.team_id = gum.team_id
                     WHERE
-                        mp.user_id = ANY(@UserIDs)
-                        AND m.map_name = ANY(@MapFilenames)
+                        mp.user_id = @UserID
+                        AND m.map_name = @MapFilename
+                        AND m.gamemode = @Gamemode
                         AND date_trunc('day', m.start_time) = @Day
-                        AND c.definition_name <> ''
-                    GROUP BY 1, 2, 3, 4;
+                        AND gum.definition_name <> ''
+                    GROUP BY 1, 2, 3, 4, 5;
                 ",
-                new { 
-                    UserIDs = userIDs.ToList(),
-                    MapFilenames = mapFilenames.ToList(),
-                    Day = day
+                new {
+                    UserID = entry.UserID,
+                    MapFilename = entry.MapFilename,
+                    Gamemode = entry.Gamemode,
+                    Day = entry.Day
                 },
                 commandTimeout: 120,
-                cancellationToken: cancel))
-            ).ToList();
+                cancellationToken: cancel)
+            )).ToList();
+
+            if (unitsMade.Count == 0) {
+                _Logger.LogWarning($"failed to generate any unitsMade [userID={entry.UserID}] [day={entry.Day:u}] [map={entry.MapFilename}] [gamemode={entry.Gamemode}]");
+                return;
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
+				BEGIN TRANSACTION;
+
+				DELETE FROM user_units_made
+                WHERE 
+                    user_id = @UserID
+                    AND map_filename = @MapFileName 
+                    AND gamemode = @Gamemode
+                    AND day = @Day;
+
+				INSERT INTO user_units_made (
+					user_id, map_filename, gamemode, day,
+                    definition_name, count,
+					timestamp
+				) VALUES 
+                    {string.Join(",\n", unitsMade.Select((iter, index) =>
+                        $@"(@UserID, @MapFileName, @Gamemode, @Day,
+                            @DefName{index}, @Count{index},
+                            NOW() at time zone 'utc'
+                        )"
+                    ))};
+
+				COMMIT TRANSACTION;
+			", cancel);
+
+            //_Logger.LogDebug($"{cmd.Print()}");
+
+            cmd.AddParameter("UserID", entry.UserID);
+            cmd.AddParameter("MapFileName", entry.MapFilename);
+            cmd.AddParameter("Gamemode", entry.Gamemode);
+            cmd.AddParameter("Day", entry.Day);
+
+            for (int i = 0; i < unitsMade.Count; ++i) {
+                BarUserUnitsMade opener = unitsMade[i];
+                cmd.AddParameter($"@DefName{i}", opener.DefinitionName);
+                cmd.AddParameter($"@Count{i}", opener.Count);
+            }
+
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+
+            return;
         }
 
         /// <summary>

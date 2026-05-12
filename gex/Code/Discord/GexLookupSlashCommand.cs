@@ -1253,8 +1253,8 @@ namespace gex.Code.Discord {
                     decimal winRate = Math.Truncate((decimal)winCount / playCount * 100m);
 
                     embed.AddField($"{BarGamemode.GetName(s.Gamemode)}",
-                        $"current: {s.Skill}±{s.SkillUncertainty}\n"
-                        + $"highest: {peakOs}±{peakUncert}\n"
+                        $"Current: {s.Skill}\n"
+                        + $"Peak: {peakOs}\n"
                         + $"{winRate}% won of {playCount}",
                         true
                     );
@@ -1429,7 +1429,7 @@ namespace gex.Code.Discord {
                 if (players.Count != 2) {
                     title = $"ERROR: expected 2 players, got {players.Count} instead";
                 } else {
-                    title = $"Duel: {players[0].Name} v {players[1].Name}";
+                    title = $"{players[0].Name} v {players[1].Name}";
                 }
             } else {
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);
@@ -1441,7 +1441,7 @@ namespace gex.Code.Discord {
                     if (biggestTeam == 1) {
                         title = $"{allyTeams.Count}-way FFA";
                     } else {
-                        title = $"{BarGamemode.GetName(match.Gamemode)}: " + string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount));
+                        title = $"{string.Join(" v ", allyTeams.Select(iter => iter.PlayerCount))}";
                     }
                 }
             }

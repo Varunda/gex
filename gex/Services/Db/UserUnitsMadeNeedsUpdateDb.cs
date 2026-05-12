@@ -9,10 +9,6 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Db {
 
-    /// <summary>
-    ///     defunct
-    /// </summary>
-    [Obsolete("only kept for when map opening labs update is done")]
     public class UserUnitsMadeNeedsUpdateDb {
 
         private readonly ILogger<UserUnitsMadeNeedsUpdateDb> _Logger;
@@ -71,16 +67,17 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO user_units_made_needs_update (
-                    user_id, day, map_filename, last_dirtied
+                    user_id, day, map_filename, gamemode, last_dirtied
                 ) VALUES (
-                    @UserID, @Day, @MapFilename, @LastDirtied
-                ) ON CONFLICT (user_id, day, map_filename) DO UPDATE
+                    @UserID, @Day, @MapFilename, @Gamemode, @LastDirtied
+                ) ON CONFLICT (user_id, day, gamemode, map_filename) DO UPDATE
                     SET last_dirtied = @LastDirtied;
             ", cancel);
 
             cmd.AddParameter("UserID", update.UserID);
             cmd.AddParameter("Day", update.Day.Date);
             cmd.AddParameter("MapFilename", update.MapFilename);
+            cmd.AddParameter("Gamemode", update.Gamemode);
             cmd.AddParameter("LastDirtied", update.LastDirtied);
 
             await cmd.PrepareAsync(cancel);
@@ -102,11 +99,13 @@ namespace gex.Services.Db {
                     WHERE user_id = @UserID
                         AND day = @Day
                         AND map_filename = @MapFilename
+                        AND gamemode = @Gamemode;
             ", cancel);
 
             cmd.AddParameter("UserID", update.UserID);
             cmd.AddParameter("Day", update.Day);
             cmd.AddParameter("MapFilename", update.MapFilename);
+            cmd.AddParameter("Gamemode", update.Gamemode);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);

@@ -30,6 +30,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionMessageQueue;
         private readonly MapStatsNeedsUpdateDb _MapStatsNeedsUpdateDb;
         private readonly BarMatchRepository _MatchRepository;
+        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
 
         private readonly ActionLogParser _ActionLogParser;
         private readonly GameOutputStorage _OutputStorage;
@@ -52,6 +53,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         private readonly UnitPositionFileStorage _UnitPositionStorage;
         private readonly GameUnitsCreatedDb _UnitsCreatedDb;
+        private readonly UserUnitsMadeNeedsUpdateDb _UserUnitsMadeNeedsUpdateDb;
 
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -67,8 +69,9 @@ namespace gex.Services.Hosted.QueueProcessor {
             GameEventUnitResourcesDb unitResourcesDb, GameEventUnitDamageDb unitDamageDb,
             GameEventUnitPositionDb unitPositionDb, BaseQueue<SubscriptionMessageQueueEntry> subscriptionMessageQueue,
             UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb,
-            MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository, 
-            GameOutputStorage outputStorage)
+            MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository,
+            GameOutputStorage outputStorage, UserUnitsMadeNeedsUpdateDb userUnitsMadeNeedsUpdateDb,
+            BarMatchPlayerRepository matchPlayerRepository)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -98,6 +101,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             _MapStatsNeedsUpdateDb = mapStatsNeedsUpdateDb;
             _MatchRepository = matchRepository;
             _OutputStorage = outputStorage;
+            _UserUnitsMadeNeedsUpdateDb = userUnitsMadeNeedsUpdateDb;
+            _MatchPlayerRepository = matchPlayerRepository;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -203,8 +208,23 @@ namespace gex.Services.Hosted.QueueProcessor {
                 BarMatch? match = await _MatchRepository.GetByID(entry.GameID, cancel);
                 if (match == null) {
                     _Logger.LogError($"match is null from repository? [gameID={entry.GameID}]");
-                } else {
-                    await _MapStatsNeedsUpdateDb.Upsert(new MapStatsNeedsUpdate() {
+                    return true;
+                }
+
+                List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByGameID(match.ID, cancel);
+                if (players.Count == 0) {
+                    _Logger.LogWarning($"no players in match? [gameID={entry.GameID}]");
+                }
+
+                await _MapStatsNeedsUpdateDb.Upsert(new MapStatsNeedsUpdate() {
+                    MapFilename = match.MapName,
+                    Day = match.StartTime.Date,
+                    Gamemode = match.Gamemode,
+                }, CancellationToken.None);
+
+                foreach (BarMatchPlayer player in players) {
+                    await _UserUnitsMadeNeedsUpdateDb.Upsert(new UserUnitsMadeNeedsUpdate() {
+                        UserID = player.UserID,
                         MapFilename = match.MapName,
                         Day = match.StartTime.Date,
                         Gamemode = match.Gamemode,
