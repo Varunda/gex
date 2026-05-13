@@ -8,6 +8,10 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Services.Db;
+using gex.Models.UserStats;
+using gex.Models.Db;
+using System;
 
 namespace gex.Controllers.Api {
 
@@ -20,16 +24,19 @@ namespace gex.Controllers.Api {
         private readonly BarWeaponDefinitionRepository _WeaponDefinitionRepository;
         private readonly BarI18nRepository _I18n;
         private readonly BarMoveDefinitionRepository _MoveDefinitionRepository;
+        private readonly UserUnitsMadeLeaderboardRepository _UnitsMadeLeaderboardRepository;
 
         public BarUnitApiController(ILogger<BarUnitApiController> logger,
             BarUnitRepository barUnitRepository, BarI18nRepository i18n,
-            BarWeaponDefinitionRepository weaponDefinitionRepository, BarMoveDefinitionRepository moveDefinitionRepository) {
+            BarWeaponDefinitionRepository weaponDefinitionRepository, BarMoveDefinitionRepository moveDefinitionRepository,
+            UserUnitsMadeLeaderboardRepository unitsMadeLeaderboardRepository) {
 
             _Logger = logger;
             _BarUnitRepository = barUnitRepository;
             _I18n = i18n;
             _WeaponDefinitionRepository = weaponDefinitionRepository;
             _MoveDefinitionRepository = moveDefinitionRepository;
+            _UnitsMadeLeaderboardRepository = unitsMadeLeaderboardRepository;
         }
 
         /// <summary>
@@ -100,6 +107,61 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(await _Convert(res.Value, cancel));
+        }
+
+        /// <summary>
+        ///     get unit created leaderboard
+        /// </summary>
+        /// <param name="unitDefs"></param>
+        /// <param name="periodStart"></param>
+        /// <param name="periodEnd"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        /// <param name="mapFilenames"></param>
+        /// <param name="gamemodes"></param>
+        /// <param name="userIDs"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("leaderboard")]
+        public async Task<ApiResponse<List<UserUnitsMadeLeaderboardEntry>>> GetLeaderboard(
+            [FromQuery] List<string> unitDefs,
+            [FromQuery] DateTime periodStart,
+            [FromQuery] DateTime periodEnd,
+            [FromQuery] int limit = 50,
+            [FromQuery] int offset = 0,
+            [FromQuery] List<string>? mapFilenames = null,
+            [FromQuery] List<byte>? gamemodes = null,
+            [FromQuery] List<long>? userIDs = null,
+            CancellationToken cancel = default
+        ) {
+            if (limit > 1000) {
+                return ApiBadRequest<List<UserUnitsMadeLeaderboardEntry>>($"{nameof(limit)} cannot be greater than 1000");
+            }
+            if (limit < 1) {
+                return ApiBadRequest<List<UserUnitsMadeLeaderboardEntry>>($"{nameof(limit)} cannot be less than 1");
+            }
+            if (offset < 0) {
+                return ApiBadRequest<List<UserUnitsMadeLeaderboardEntry>>($"{nameof(offset)} cannot be less than 0");
+            }
+            if (offset > 10000) {
+                return ApiBadRequest<List<UserUnitsMadeLeaderboardEntry>>($"{nameof(offset)} cannot be greater than 10000");
+            }
+            if (periodStart > periodEnd) {
+                return ApiBadRequest<List<UserUnitsMadeLeaderboardEntry>>($"{nameof(periodStart)} cannot come after {nameof(periodEnd)}");
+            }
+
+            UserUnitsMadeLeaderboardOptions options = new();
+            options.UnitDefinitions = unitDefs;
+            options.PeriodStart = periodStart;
+            options.PeriodEnd = periodEnd;
+            options.MapFilename = mapFilenames;
+            options.Gamemodes = gamemodes;
+            options.UserIDs = userIDs;
+            options.Limit = limit;
+            options.Offset = offset;
+
+            List<UserUnitsMadeLeaderboardEntry> entries = await _UnitsMadeLeaderboardRepository.Get(options, cancel);
+            return ApiOk(entries);
         }
 
         private async Task<ApiBarUnit> _Convert(BarUnit def, CancellationToken cancel) {

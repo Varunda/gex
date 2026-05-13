@@ -33,6 +33,7 @@ namespace gex.Services.Repositories {
 
             // user stats
             services.AddSingleton<BarUserRepository>();
+            services.AddSingleton<UserUnitsMadeLeaderboardRepository>();
         }
 
     }
