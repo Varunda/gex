@@ -54,6 +54,7 @@ namespace gex.Services.Db {
                         AND uum.day < @PeriodEnd
                         AND {(conds.Count > 0 ? string.Join("\n AND ", conds) : "1=1")}
                     GROUP BY uum.user_id
+                    ORDER BY 2 DESC
                     OFFSET {options.Offset}
                     LIMIT {options.Limit}
                 )
