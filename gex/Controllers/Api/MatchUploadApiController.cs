@@ -527,7 +527,8 @@ namespace gex.Controllers.Api {
                     PoolID = matchPoolID.Value,
                     MatchID = match.ID,
                     AddedByID = AppAccount.Root,
-                    Timestamp = DateTime.UtcNow
+                    Timestamp = DateTime.UtcNow,
+                    Description = description
                 }, CancellationToken.None);
             }
 

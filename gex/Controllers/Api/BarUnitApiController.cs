@@ -112,16 +112,30 @@ namespace gex.Controllers.Api {
         /// <summary>
         ///     get unit created leaderboard
         /// </summary>
-        /// <param name="unitDefs"></param>
-        /// <param name="periodStart"></param>
-        /// <param name="periodEnd"></param>
-        /// <param name="limit"></param>
-        /// <param name="offset"></param>
-        /// <param name="mapFilenames"></param>
-        /// <param name="gamemodes"></param>
-        /// <param name="userIDs"></param>
-        /// <param name="cancel"></param>
-        /// <returns></returns>
+        /// <param name="unitDefs">list of unit definition names to include. the resulting count is combined into 1 entry</param>
+        /// <param name="periodStart">when to start the search period (inclusive)</param>
+        /// <param name="periodEnd">when to end the search period (exclusive)</param>
+        /// <param name="limit">how many results to return. capped to 1000</param>
+        /// <param name="offset">the offset into the search results. capped at 10000</param>
+        /// <param name="mapFilenames">optional, list of maps to filter the results to</param>
+        /// <param name="gamemodes">optional, list of gamemodes to filter the results to</param>
+        /// <param name="userIDs">optional, list of users to filter the results to</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a list of <see cref="UserUnitsMadeLeaderboardEntry"/> that
+        ///     match the filters given in the parameteres. each user will have a single <see cref="UserUnitsMadeLeaderboardEntry"/>
+        ///     that combines all unit defs from <paramref name="unitDefs"/> into 1 count
+        /// </response>
+        /// <response code="400">
+        ///     one of the following validation errors occured:
+        ///     <ul>
+        ///         <li><paramref name="limit"/> was greater than 1000</li>
+        ///         <li><paramref name="limit"/> was less than 1</li>
+        ///         <li><paramref name="offset"/>was less than 0</li>
+        ///         <li><paramref name="offset"/> was greater than 10000</li>
+        ///         <li><paramref name="periodStart"/> comes after <paramref name="periodEnd"/></li>
+        ///     </ul>
+        /// </response>
         [HttpGet("leaderboard")]
         public async Task<ApiResponse<List<UserUnitsMadeLeaderboardEntry>>> GetLeaderboard(
             [FromQuery] List<string> unitDefs,
@@ -164,6 +178,12 @@ namespace gex.Controllers.Api {
             return ApiOk(entries);
         }
 
+        /// <summary>
+        ///     convert a <see cref="BarUnit"/> into a <see cref="ApiBarUnit"/>
+        /// </summary>
+        /// <param name="def"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         private async Task<ApiBarUnit> _Convert(BarUnit def, CancellationToken cancel) {
             ApiBarUnit unit = new();
             unit.DefinitionName = def.DefinitionName;
