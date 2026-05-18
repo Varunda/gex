@@ -228,7 +228,7 @@
             </tbody>
         </table>
 
-        <pre v-if="DumpJson">{{ JSON.stringify(unit, null, 4) }}</pre>
+        <pre v-if="DumpJson">{{ dumpedJson }}</pre>
 
     </div>
 </template>
@@ -590,6 +590,19 @@
                 }
 
                 return this.CompareWeapon?.weaponDefinition.clusterWeapon ?? new BarWeaponDefinition();
+            },
+
+            dumpedJson: function(): string {
+                return JSON.stringify(this.unit, (key, value) => {
+                    if (value instanceof Map) {
+                        return Array.from(value).map(([k,v]) => {
+                            return {
+                                [k]: v
+                            }
+                        });
+                    } 
+                    return value;
+                }, 4);
             }
         },
 
