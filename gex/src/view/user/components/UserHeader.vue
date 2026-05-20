@@ -110,6 +110,8 @@
 
         <h6 class="ps-3">
             <a :href="'https://www.bar-stats.pro/playerstats?playerName=' + user.username" target="_blank" ref="nofollow">BarStats link</a>
+
+            <a :href="'https://server4.beyondallreason.info/profile/' + user.userID" target="_blank" ref="nofollow">BAR website account</a>
         </h6>
 
         <div class="d-none">
