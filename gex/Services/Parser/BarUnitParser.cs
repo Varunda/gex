@@ -4,6 +4,7 @@ using gex.Models.Bar;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,21 +16,16 @@ namespace gex.Services.Parser {
         private readonly ILogger<BarUnitParser> _Logger;
         private readonly LuaRunner _LuaRunner;
         private readonly BarWeaponDefinitionParser _WeaponDefinitionParser;
-
-        /// <summary>
-        ///		what functions and variables the Lua state running the unit info is allowed to use
-        /// </summary>
-        private static readonly List<string?> ALLOWED_VARS = [
-            "ipairs", "math", "string", "table", "tonumber",
-            "tostring", "type", "unpack", "pack", "next", "pairs"
-        ];
+        private readonly BarFeatureDefintionParser _FeatureParser;
 
         public BarUnitParser(ILogger<BarUnitParser> logger,
-            BarWeaponDefinitionParser weaponDefinitionParser, LuaRunner luaRunner) {
+            BarWeaponDefinitionParser weaponDefinitionParser, LuaRunner luaRunner,
+            BarFeatureDefintionParser featureParser) {
 
             _Logger = logger;
             _LuaRunner = luaRunner;
             _WeaponDefinitionParser = weaponDefinitionParser;
+            _FeatureParser = featureParser;
         }
 
         /// <summary>
@@ -152,6 +148,36 @@ namespace gex.Services.Parser {
                 unit.EnergyConversionEfficiency = _Double(parms, "energyconv_efficiency", 0);
                 unit.ReactiveArmorHealth = _Double(parms, "reactive_armor_health", 0d);
                 unit.ReactiveArmorRestore = _Double(parms, "reactive_armor_restore", 0d);
+            }
+
+            object? featureDefs = info.GetValueOrDefault("featuredefs");
+            if (featureDefs != null) {
+                if (featureDefs is Dictionary<object, object> featureDefParms) {
+                    Dictionary<object, object>? deadFeatureDef = _Dict(featureDefParms, "dead");
+                    if (deadFeatureDef != null) {
+                        Result<BarUnitFeatureDefinition, string> deadFeature = _FeatureParser.Parse(deadFeatureDef);
+                        if (deadFeature.IsOk == false) {
+                            _Logger.LogError($"failed to parse dead featuredef [unitDef={unit.DefinitionName}] [error={deadFeature.Error}]");
+                            Debug.Fail("how did this fail?");
+                        } else {
+                            unit.DeadFeature = deadFeature.Value;
+                        }
+                    }
+
+                    Dictionary<object, object>? heapFeatureDef = _Dict(featureDefParms, "heap");
+                    if (heapFeatureDef != null) {
+                        Result<BarUnitFeatureDefinition, string> heapFeature = _FeatureParser.Parse(heapFeatureDef);
+                        if (heapFeature.IsOk == false) {
+                            _Logger.LogError($"failed to parse heap featuredef [unitDef={unit.DefinitionName}] [error={heapFeature.Error}]");
+                            Debug.Fail("how did this fail?");
+                        } else {
+                            unit.HeapFeature = heapFeature.Value;
+                        }
+                    }
+
+                } else {
+                    _Logger.LogWarning($"unchecked type of featuredefs [unitDef={unit.DefinitionName}] [featureDefs={featureDefs.GetType().FullName}]");
+                }
             }
 
             // <definition name, definition>, key normalized to UPPER CASE

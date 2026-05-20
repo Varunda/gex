@@ -225,6 +225,20 @@
                 <tr is="Cell" name="Explode range" field="explodeAsWeaponDefinition.areaOfEffect" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Explode falloff" field="explodeAsWeaponDefinition.edgeEffectiveness" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Damage modifier" field="damageModifier" :unit="unit" :compare="compareUnit"></tr>
+
+                <tr is="Header" name="Dead/Resurrectable feature definition" :colspan="colspan"></tr>
+                <tr is="Cell" name="Blockable" field="blocking" :unit="unit.deadFeature" :compare="compareDeadFeature"></tr>
+                <tr is="Cell" name="Health" field="damage" :unit="unit.deadFeature" :compare="compareDeadFeature"></tr>
+                <tr is="Cell" name="Metal" field="metal" :unit="unit.deadFeature" :compare="compareDeadFeature"> m</tr>
+                <tr is="Cell" name="Reclaimable" field="reclaimable" :unit="unit.deadFeature" :compare="compareDeadFeature"></tr>
+                <tr is="Cell" name="Resurrectable" field="resurrectableName" :unit="unit.deadFeature" :compare="compareDeadFeature"></tr>
+
+                <tr is="Header" name="Heap/Debris feature definition" :colspan="colspan"></tr>
+                <tr is="Cell" name="Blockable" field="blocking" :unit="unit.heapFeature" :compare="compareHeapFeature"></tr>
+                <tr is="Cell" name="Health" field="damage" :unit="unit.heapFeature" :compare="compareHeapFeature"></tr>
+                <tr is="Cell" name="Metal" field="metal" :unit="unit.heapFeature" :compare="compareHeapFeature"> m</tr>
+                <tr is="Cell" name="Reclaimable" field="reclaimable" :unit="unit.heapFeature" :compare="compareHeapFeature"></tr>
+                <tr is="Cell" name="Resurrectable" field="resurrectableName" :unit="unit.heapFeature" :compare="compareHeapFeature"></tr>
             </tbody>
         </table>
 
@@ -250,7 +264,7 @@
     import InfoHover from "components/InfoHover.vue";
     import UnitIcon from "components/app/UnitIcon.vue";
 
-    import { ApiBarUnit, BarShieldData, BarUnit, BarUnitCarrierData, BarUnitWeapon, BarWeaponDefinition } from "model/BarUnit";
+    import { ApiBarUnit, BarShieldData, BarUnit, BarUnitCarrierData, BarUnitFeatureDefinition, BarUnitWeapon, BarWeaponDefinition } from "model/BarUnit";
 
     import LocaleUtil from "util/Locale";
 
@@ -590,6 +604,14 @@
                 }
 
                 return this.CompareWeapon?.weaponDefinition.clusterWeapon ?? new BarWeaponDefinition();
+            },
+
+            compareDeadFeature: function(): BarUnitFeatureDefinition | null {
+                return this.compare?.unit.deadFeature ?? null;
+            },
+
+            compareHeapFeature: function(): BarUnitFeatureDefinition | null {
+                return this.compare?.unit.heapFeature ?? null;
             },
 
             dumpedJson: function(): string {

@@ -1,3 +1,4 @@
+import MatchUnitGraph from "view/match/components/MatchUnitGraph.vue";
 
 export class ApiBarUnit {
 
@@ -102,6 +103,9 @@ export class BarUnit {
     public reactiveArmorDelay: number = 0;
     public reactiveArmorThreshold: number = 0;
 
+    public deadFeature: BarUnitFeatureDefinition | null = null;
+    public heapFeature: BarUnitFeatureDefinition | null = null;
+
     public weapons: BarUnitWeapon[] = [];
 
     public selfDestructWeaponDefinition: BarWeaponDefinition = new BarWeaponDefinition();
@@ -112,6 +116,8 @@ export class BarUnit {
     public static parse(elem: any): BarUnit {
         const unit: BarUnit = {
             ...elem,
+            deadFeature: elem.deadFeature == null ? new BarUnitFeatureDefinition() : BarUnitFeatureDefinition.parse(elem.deadFeature),
+            heapFeature: elem.heapFeature == null ? new BarUnitFeatureDefinition() : BarUnitFeatureDefinition.parse(elem.heapFeature),
             weapons: elem.weapons.map((iter: any) => BarUnitWeapon.parse(iter))
         };
 
@@ -329,6 +335,36 @@ export class BarUnitCarrierData {
     public static parse(elem: any): BarUnitCarrierData {
         return {
             ...elem
+        };
+    }
+
+}
+
+export class BarUnitFeatureDefinition {
+
+    public blocking: boolean = false;
+
+    public category: string = "";
+
+    public damage: number = 0;
+
+    public metal: number = 0;
+
+    public indestructible: boolean = false;
+
+    public reclaimable: boolean = false;
+
+    public resurrectable: number = -1;
+
+    public resurrectableName: string = "Never";
+
+    public static parse(elem: any): BarUnitFeatureDefinition {
+        return {
+            ...elem,
+            resurrectableName: elem.resurrectable == -1 ? "Yes"
+                : elem.resurrectable == 0 ? "Never"
+                : elem.resurrectable == 1 ? "Always"
+                : `<unchecked ${elem.resurrectable}>`
         };
     }
 

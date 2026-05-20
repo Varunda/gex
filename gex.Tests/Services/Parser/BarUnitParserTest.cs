@@ -25,8 +25,10 @@ namespace gex.Tests.Services.Parser {
             ILogger<BarWeaponDefinitionParser> logger2 = new TestLogger<BarWeaponDefinitionParser>();
             BarWeaponDefinitionParser defParser = new(logger2, runner);
 
+            BarFeatureDefintionParser featureDefParser = new(new TestLogger<BarFeatureDefintionParser>());
+
             ILogger<BarUnitParser> logger = new TestLogger<BarUnitParser>();
-            BarUnitParser parser = new(logger, defParser, runner);
+            BarUnitParser parser = new(logger, defParser, runner, featureDefParser);
             return parser;
         }
 
@@ -109,6 +111,22 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(1800d, unit.IdleTime);
             Assert.AreEqual(1d, unit.DamageModifier);
             Assert.AreEqual(false, unit.OnOffAble);
+
+            Assert.IsNotNull(unit.DeadFeature);
+            Assert.AreEqual(false, unit.DeadFeature.Blocking);
+            Assert.AreEqual("corpses", unit.DeadFeature.Category);
+            Assert.AreEqual(192, unit.DeadFeature.Damage);
+            Assert.AreEqual(29, unit.DeadFeature.Metal);
+            Assert.AreEqual(true, unit.DeadFeature.Reclaimable);
+            Assert.AreEqual(-1, unit.DeadFeature.Resurrectable);
+
+            Assert.IsNotNull(unit.HeapFeature);
+            Assert.AreEqual(false, unit.HeapFeature.Blocking);
+            Assert.AreEqual("heaps", unit.HeapFeature.Category);
+            Assert.AreEqual(96, unit.HeapFeature.Damage);
+            Assert.AreEqual(12, unit.HeapFeature.Metal);
+            Assert.AreEqual(true, unit.HeapFeature.Reclaimable);
+            Assert.AreEqual(0, unit.HeapFeature.Resurrectable);
 
             // weapons
             Assert.AreEqual(1, unit.Weapons.Count);

@@ -11,6 +11,7 @@ namespace gex.Services.Parser {
             services.AddSingleton<BarWeaponDefinitionParser>();
             services.AddSingleton<LuaCommandParser>();
             services.AddSingleton<BarMoveDefinitionParser>();
+            services.AddSingleton<BarFeatureDefintionParser>();
         }
 
     }
