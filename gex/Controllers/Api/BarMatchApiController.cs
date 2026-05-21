@@ -1,4 +1,5 @@
 ﻿using gex.Code;
+using gex.Common.Code.Constants;
 using gex.Common.Models;
 using gex.Models;
 using gex.Models.Api;
@@ -94,6 +95,11 @@ namespace gex.Controllers.Api {
         ///     will <see cref="BarMatch.MapDraws"/> be populated with pings that include a label? defaults to false.
         ///     if <paramref name="includeMapDraws"/> is <c>true</c>, then this parameter is ignored (as it is a subset of data)
         /// </param>
+        /// <param name="includeCommands">will <see cref="BarMatch.Commands"/> be populated? defaults to false</param>
+        /// <param name="includeSelfDCommands">
+        ///     will <see cref="BarMatch.Commands"/> be populated with Self-D commands? defaults to false.
+        ///     if <paramref name="includeCommands"/>> is <c>true</c>, then this parameter is ignored (as it is a subset of the data)
+        /// </param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
@@ -104,7 +110,9 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeSpectators = false,
             [FromQuery] bool includeTeamDeaths = false,
             [FromQuery] bool includeMapDraws = false,
-            [FromQuery] bool includeLabeledPings = false
+            [FromQuery] bool includeLabeledPings = false,
+            [FromQuery] bool includeCommands = false,
+            [FromQuery] bool includeSelfDCommands = false
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
@@ -131,7 +139,9 @@ namespace gex.Controllers.Api {
                 match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
             }
 
-            if (includeMapDraws == true || includeLabeledPings == true) {
+            if (includeMapDraws == true || includeLabeledPings == true
+                || includeCommands == true || includeSelfDCommands == true) {
+
                 Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
                 if (demofile.IsOk == false) {
                     _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
@@ -139,7 +149,7 @@ namespace gex.Controllers.Api {
                 }
 
                 Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions() {
-                    IncludeCommands = false,
+                    IncludeCommands = includeCommands || includeSelfDCommands,
                     IncludeMapDraws = includeMapDraws || includeLabeledPings,
                 }, cancel);
                 if (fromDemofile.IsOk == false) {
@@ -153,8 +163,16 @@ namespace gex.Controllers.Api {
                             && iter is BarMatchMapDrawPoint point
                             && point.Label != "";
                     }).ToList();
-                } else {
+                } else if (includeMapDraws == true) {
                     match.MapDraws = fromDemofile.Value.MapDraws;
+                }
+
+                if (includeSelfDCommands == true && includeCommands == false) {
+                    match.Commands = fromDemofile.Value.Commands.Where(iter => {
+                        return iter.ID == BarCommandId.SELFD;
+                    }).ToList();
+                } else {
+                    match.Commands = fromDemofile.Value.Commands;
                 }
 
             }

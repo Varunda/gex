@@ -21,6 +21,10 @@
                     <b>unit</b>
                 </a-header>
 
+                <a-filter field="definitionName" type="string" method="dropdown"
+                    :conditions="[ 'equals' ]">
+                </a-filter>
+
                 <a-body v-slot="entry">
                     {{ entry.definitionName }}
                 </a-body>

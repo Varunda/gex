@@ -1,10 +1,7 @@
 ﻿<template>
     <div>
         <div class="d-flex flex-wrap" :class="classes" data-bs-toggle="collapse" :data-bs-target="'#' + elementID">
-            <!--
-            <span :id="'icon-' + elementID" class="fas fa-caret-down" style="height: 24px;"></span>
-            -->
-            <span :id="'icon-' + elementID" class="fas fa-caret-down flex-grow-0"></span>
+            <span :id="'icon-' + elementID" class="ph-fill ph-caret-down flex-grow-0"></span>
             <span>
                 {{HeaderText}}
             </span>

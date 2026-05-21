@@ -324,7 +324,7 @@ namespace gex.Services.Parser {
                     string packetGameID = BitConverter.ToString(packetReader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
 
                     if (packetGameID != header.GameID) {
-                        return $"inconsistent gameID found, refusing to process further";
+                        return $"inconsistent gameID found, refusing to process further [packet gameID={packetGameID}] [header gameID={header.GameID}]";
                     }
                 } else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
                     ByteArrayReader pr = new(packet.Data);

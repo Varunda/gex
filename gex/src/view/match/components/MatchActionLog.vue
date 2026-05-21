@@ -216,13 +216,16 @@
                         entry.parts.push(this.createText(`(distance: ${LocaleUtil.locale(dist, 0)})`));
                     }
 
+                    // https://github.com/beyond-all-reason/RecoilEngine/blob/cdfc9d7b872c3d890fc7c77bcb645a23cd9ec8e5/rts/Sim/Objects/SolidObject.h#L93-L123
                     if (ev.weaponDefinitionID < 0) {
                         if (ev.weaponDefinitionID == -19) {
                             entry.parts.push(this.createText("(decayed)"));
                         } else if (ev.weaponDefinitionID == -12) {
-
+                            // intentionally empty, as it's checked above
                         } else if (ev.weaponDefinitionID == -8) {
                             entry.parts.push(this.createText("(crashed)"));
+                        } else if (ev.weaponDefinitionID == -10) {
+                            entry.parts.push(this.createText("(self-d)"));
                         } else if (ev.weaponDefinitionID == -21) {
                             entry.parts.push(this.createText("(lua script)"));
                         } else if (ev.weaponDefinitionID == -15) {
@@ -261,20 +264,6 @@
                 return entries;
             },
 
-            downloadJson: function(): void {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                    "match": this.entries,
-                }, null, 4));
-                const dl = document.getElementById("downloadJsonAnchor");
-                if (dl == null) {
-                    console.error(`Match> missing #downloadJsonAnchor to attach JSON download payload to`);
-                    return;
-                }
-                dl.setAttribute("href", dataStr);
-                dl.setAttribute("download", `action-log-${this.match.id}-${this.match.fileName.replace(".sdfz", "")}.json`);
-                dl.click();
-            },
-
             makeWindUpdate: function(): ActionLogEntry[] {
                 const entries: ActionLogEntry[] = [];
 
@@ -292,6 +281,24 @@
                 }
 
                 return entries;
+            },
+
+            makeSelfD: function(): ActionLogEntry[] {
+                return [];
+            },
+
+            downloadJson: function(): void {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                    "match": this.entries,
+                }, null, 4));
+                const dl = document.getElementById("downloadJsonAnchor");
+                if (dl == null) {
+                    console.error(`Match> missing #downloadJsonAnchor to attach JSON download payload to`);
+                    return;
+                }
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", `action-log-${this.match.id}-${this.match.fileName.replace(".sdfz", "")}.json`);
+                dl.click();
             },
 
             createText: function(str: string): LogPart {
