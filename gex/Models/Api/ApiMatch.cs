@@ -44,6 +44,7 @@ namespace gex.Models.Api {
             MinOS = match.MinOS;
             MaxOS = match.MaxOS;
             AverageOS = match.AverageOS;
+            MatchPoolEntryNote = match.MatchPoolEntryNote;
         }
 
         public string ID { get; set; } = "";
@@ -118,6 +119,8 @@ namespace gex.Models.Api {
         public float MaxOS { get; set; }
 
         public float AverageOS { get; set; }
+
+        public string? MatchPoolEntryNote { get; set; }
 
     }
 }

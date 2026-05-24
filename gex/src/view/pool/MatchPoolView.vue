@@ -5,6 +5,8 @@
 
             <toggle-button v-model="showPlayerStats">show player stats</toggle-button>
 
+            <toggle-button v-model="matchGroupOverride">disable match grouping</toggle-button>
+
             <toggle-button v-if="hasAddRemovePermission" v-model="showEntryEdit">show entry edit</toggle-button>
 
             <toggle-button v-if="canEditPool" v-model="showPoolEdit">show pool edit</toggle-button>
@@ -139,7 +141,7 @@
             </div>
 
             <div v-else-if="matches.state == 'loaded'">
-                <match-list :matches="matches.data"></match-list>
+                <match-list :matches="matches.data" :group-match-override="matchGroupOverride"></match-list>
 
                 <div v-if="matches.data.length == 0">
                     No matches found!
@@ -343,7 +345,9 @@
                 mapStats: [] as MapStats[],
 
                 showPlayerStats: false as boolean,
-                playerStats: [] as PlayerStats[]
+                playerStats: [] as PlayerStats[],
+
+                matchGroupOverride: false as boolean
             }
         },
 

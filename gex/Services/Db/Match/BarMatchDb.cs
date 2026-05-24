@@ -359,23 +359,15 @@ namespace gex.Services.Db.Match {
 
             if (parms.MinimumOS != null) {
                 conditions.Add($"m.min_os > @MinOS");
-                //withs.Add(@"min_os AS (select game_id, min(skill) ""skill"" from bar_match_player group by game_id)");
                 cmd.AddParameter("MinOS", parms.MinimumOS.Value);
-                //minOs = true;
             }
 
             if (parms.MaximumOS != null) {
                 conditions.Add($"m.max_os <= @MaxOS");
-                //withs.Add(@"max_os AS (select game_id, max(skill) ""skill"" from bar_match_player group by game_id)");
                 cmd.AddParameter("MaxOS", parms.MaximumOS.Value);
-                //maxOs = true;
             }
 
             if (parms.MinimumAverageOS != null || parms.MaximumAverageOS != null) {
-                // can use the same CTE for avg os!
-                //withs.Add(@"avg_os AS (select game_id, avg(skill) ""skill"" from bar_match_player group by game_id)");
-                //avgOs = true;
-
                 if (parms.MinimumAverageOS != null) {
                     conditions.Add($"m.average_os > @MinAvgOS");
                     cmd.AddParameter("MinAvgOS", parms.MinimumAverageOS.Value);

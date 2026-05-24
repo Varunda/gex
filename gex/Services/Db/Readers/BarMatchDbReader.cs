@@ -1,6 +1,7 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Models.Db;
 using Npgsql;
+using System;
 using System.Data;
 
 namespace gex.Services.Db.Readers {
@@ -33,6 +34,12 @@ namespace gex.Services.Db.Readers {
             match.MapSettings = reader.GetJsonb("map_settings");
             match.SpadsSettings = reader.GetJsonb("spads_settings");
             match.Restrictions = reader.GetJsonb("restrictions");
+
+            try {
+                match.MatchPoolEntryNote = reader.GetNullableString("description");
+            } catch (IndexOutOfRangeException) {
+                // this is fine, it just means that the query did not join to match_pool
+            }
 
             return match;
         }

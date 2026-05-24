@@ -1,63 +1,74 @@
 
 <template>
-    <div class="d-flex flex-wrap justify-content-center" style="font-size: 14px; line-height: 1;">
-        <div v-for="match in matches" :key="match.id" class="me-3 mb-3">
-            <div>
-                <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
-                    <div class="position-absolute tile-overlay"></div>
+    <div class="" style="font-size: 14px; line-height: 1;">
 
-                    <h5 class="tile-title">
-                        {{ mapNameWithoutVersion(match.map) }}
-                    </h5>
+        <div v-for="(group, index) in matchGroups" :key="index" class="me-3 mb-3">
+            <h2 v-if="group.name != null" class="text-center">
+                {{ group.name }}
+            </h2>
 
-                    <div class="flex-grow-1 align-content-center w-100 mh-100" style="z-index: 10;">
-                        <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
-                            <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" class="tile-team-parent">
+            <div class="d-flex flex-wrap justify-content-center">
+                <div v-for="match in group.matches" :key="match.id" class="me-3 mb-3">
+                    <div>
+                        <a :href="'/match/' + match.id" :style="getMatchStyle(match)" class="tile">
+                            <div class="position-absolute tile-overlay"></div>
 
-                                <div class="tile-team"
-                                    :style="getTeamPanelStyle(match, allyTeam)">
+                            <h5 class="tile-title">
+                                {{ mapNameWithoutVersion(match.map) }}
+                            </h5>
 
-                                    <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
-                                        :style="{
-                                            'text-shadow': '1px 1px 1px #000000',
-                                            'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                                            'overflow': 'clip',
-                                            'text-overflow': 'ellipsis',
-                                            'margin': '0.25rem 0'
-                                        }">
+                            <div class="flex-grow-1 align-content-center w-100 mh-100" style="z-index: 10;">
+                                <div class="d-flex text-center p-2 tile-teams flex-wrap" style="max-height: 80%; overflow-y: auto;">
+                                    <div v-for="allyTeam in matchAllyTeams(match)" :key="allyTeam.allyTeamID" class="tile-team-parent">
 
-                                        {{ player.username }}
+                                        <div class="tile-team"
+                                            :style="getTeamPanelStyle(match, allyTeam)">
+
+                                            <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                                :style="{
+                                                    'text-shadow': '1px 1px 1px #000000',
+                                                    'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
+                                                    'overflow': 'clip',
+                                                    'text-overflow': 'ellipsis',
+                                                    'margin': '0.25rem 0'
+                                                }">
+
+                                                {{ player.username }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="match.allyTeams.length == 2" style="position: absolute; font-size: 0.75rem;" class="text-center">
+                                        VS
                                     </div>
                                 </div>
                             </div>
-
-                            <div v-if="match.allyTeams.length == 2" style="position: absolute; font-size: 0.75rem;" class="text-center">
-                                VS
-                            </div>
-                        </div>
+                        </a>
                     </div>
-                </a>
+
+                    <div class="tile-time-ago">
+                        <span v-if="(new Date().getTime()) - match.endTime.getTime() > (1000 * 60 * 60 * 12)">
+                            Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mma ZZZZ") }}
+                        </span>
+
+                        <span v-else :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
+                            Ended {{ match.endTime | compactTimeAgo }} ago
+                            &middot;
+                            <span>
+                                {{ match.endTime | moment("hh:mma")}}
+                            </span>
+                        </span>
+
+                        <span v-if="match.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
+                            title="This match is for a bad version and cannot be processed"></span>
+
+                        <span v-else-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
+                            title="This match has not been fully processed!"></span>
+                    </div>
+                </div>
             </div>
 
-            <div class="tile-time-ago">
-                <span v-if="(new Date().getTime()) - match.endTime.getTime() > (1000 * 60 * 60 * 12)">
-                    Ended at {{ match.endTime | moment("yyyy-MM-dd hh:mma ZZZZ") }}
-                </span>
-
-                <span v-else :title="match.endTime | moment('yyyy-MM-dd hh:mm:ssa ZZZZ')">
-                    Ended {{ match.endTime | compactTimeAgo }} ago
-                    &middot;
-                    <span>
-                        {{ match.endTime | moment("hh:mma")}}
-                    </span>
-                </span>
-
-                <span v-if="match.isBadGameVersion == true" class="bi bi-exclamation-octagon-fill text-danger"
-                    title="This match is for a bad version and cannot be processed"></span>
-
-                <span v-else-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
-                    title="This match has not been fully processed!"></span>
-            </div>
+            <hr v-if="group.name != null" class="border w-100">
         </div>
 
     </div>
@@ -213,9 +224,16 @@
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
+    class MatchGroup {
+        public name: string | null = null;
+        public matches: BarMatch[] = [];
+        public lastMatchTime: Date | null = null;
+    }
+
     export const MatchList = Vue.extend({
         props: {
-            matches: { type: Array as PropType<BarMatch[]>, required: true }
+            matches: { type: Array as PropType<BarMatch[]>, required: true },
+            GroupMatchOverride: { type: Boolean, required: false, default: false }
         },
 
         data: function() {
@@ -294,6 +312,49 @@
                 return {
                     "background-image": `url(${this.getMapThumbnail(match.mapName)})`
                 }
+            }
+        },
+
+        computed: {
+            matchGroups: function(): MatchGroup[] {
+                const hasNames: boolean = this.matches.find(iter => iter.matchPoolEntryNote != null) != null;
+
+                if (hasNames == false || this.GroupMatchOverride == true) {
+                    return [
+                        {
+                            name: null,
+                            matches: this.matches,
+                            lastMatchTime: null
+                        }
+                    ];
+                }
+
+                const map: Map<string, BarMatch[]> = new Map();
+                for (const match of this.matches) {
+                    const key: string = match.matchPoolEntryNote ?? "";
+
+                    if (map.has(key) == false) {
+                        map.set(key, []);
+                    }
+
+                    map.get(key)!.push(match);
+                }
+
+                const groups: MatchGroup[] = [];
+                const values: BarMatch[][] = Array.from(map.values());
+                for (const v of values) {
+                    groups.push({
+                        name: v[0].matchPoolEntryNote ?? "",
+                        matches: v,
+                        lastMatchTime: new Date(Math.max(...v.map(iter => iter.startTime.getTime())))
+                    });
+                }
+
+                groups.sort((a, b) => {
+                    return (a.lastMatchTime?.getTime() ?? 0) - (b.lastMatchTime?.getTime() ?? 0);
+                });
+
+                return groups;
             }
         }
     });

@@ -88,5 +88,10 @@ namespace gex.Models.Db {
 
         public BarMap? MapData { get; set; }
 
+        /// <summary>
+        ///     when searching by a match pool ID, this will be populated with the <see cref="MatchPoolEntry.Description"/>
+        /// </summary>
+        public string? MatchPoolEntryNote { get; set; }
+
     }
 }
