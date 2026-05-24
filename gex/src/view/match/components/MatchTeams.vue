@@ -24,7 +24,7 @@
                                     - {{ teamPlacement(allyTeam.allyTeamID) }}
                                 </span>
 
-                                <span v-else-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
+                                <span v-else-if="showWinner == true && allyTeam.won" class="ph-fill ph-trophy text-warning"
                                     title="This team won the match!">
                                 </span>
                             </h4>
@@ -46,7 +46,7 @@
                         <tr>
                             <th v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID" :style="{ 'background-color': allyTeamColor(allyTeam.allyTeamID) }">
                                 Team {{ allyTeam.allyTeamID + 1 }}
-                                <span v-if="showWinner == true && allyTeam.won" class="bi bi-trophy-fill text-warning"
+                                <span v-if="showWinner == true && allyTeam.won" class="ph-fill ph-trophy text-warning"
                                     title="This team won the match!">
                                 </span>
 
