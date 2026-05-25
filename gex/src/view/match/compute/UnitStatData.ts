@@ -24,6 +24,7 @@ export class UnitStats {
     public damageTaken: number = 0;
 
     public unitsKilled: Map<string, number> = new Map();
+    public unitsTeamKilled: Map<string, number> = new Map();
 
     public metalKilled: number = 0;
     public energyKilled: number = 0;
@@ -79,6 +80,7 @@ export class UnitStats {
                 damageTaken: 0,
 
                 unitsKilled: new Map(),
+                unitsTeamKilled: new Map(),
 
                 metalKilled: 0,
                 energyKilled: 0,
@@ -111,7 +113,11 @@ export class UnitStats {
                     const unitDef: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
                     if (unitDef != undefined) {
 
-                        attacker.unitsKilled.set(unitDef.definitionName, (attacker.unitsKilled.get(unitDef.definitionName) ?? 0) + 1);
+                        if (ev.teamID == ev.attackerTeam) {
+                            attacker.unitsTeamKilled.set(unitDef.definitionName, (attacker.unitsTeamKilled.get(unitDef.definitionName) ?? 0) + 1);
+                        } else {
+                            attacker.unitsKilled.set(unitDef.definitionName, (attacker.unitsKilled.get(unitDef.definitionName) ?? 0) + 1);
+                        }
 
                         attacker.metalKilled += unitDef.metalCost;
                         attacker.energyKilled += unitDef.energyCost;

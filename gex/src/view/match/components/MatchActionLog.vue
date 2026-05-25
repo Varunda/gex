@@ -26,12 +26,16 @@
 
             <a-table :entries="tableData"
                 default-sort-column="frame" default-sort-order="asc"
-                :paginate="false" :hover="true" :striped="false">
+                :paginate="false" :hover="true" :striped="false" :show-filters="true">
 
                 <a-col>
                     <a-header>
                         <b>Type</b>
                     </a-header>
+
+                    <a-filter field="type" type="string" method="dropdown"
+                        :conditions="[ 'equals' ]">
+                    </a-filter>
 
                     <a-body v-slot="entry">
                         {{ entry.type }}

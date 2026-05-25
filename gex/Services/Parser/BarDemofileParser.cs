@@ -280,8 +280,8 @@ namespace gex.Services.Parser {
             // HOWEVER, the commit to use packet ID 32 is NOT part of 2025.04.xx, but the commit to use u32 IS part of 2025.04.xx
             // which means for only version 2025.04.xx, packet ID 31 uses u32 coords
             //bool hasWrongPacket31CoordSize = (header.EngineVersion == "2025.04.01" || header.EngineVersion == "2025.04.04" || header.EngineVersion == "2025.04.08");
-            BarEngineVersion wrongPacketIdStart = new("2025.03.01");
-            BarEngineVersion wrongPacketIdEnd = new("2025.06.01");
+            BarEngineVersion wrongPacketIdStart = new("2025.03.01"); // inclusive, all engines on and after this
+            BarEngineVersion wrongPacketIdEnd = new("2025.06.01"); // exclusive, all engines before this (but not this one)
             BarEngineVersion matchEngineVersion = new(header.EngineVersion);
             bool hasWrongPacket31CoordSize = (matchEngineVersion >= wrongPacketIdStart) && (matchEngineVersion < wrongPacketIdEnd);
 
