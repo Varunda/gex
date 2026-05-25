@@ -86,6 +86,7 @@ namespace gex.Tests.Services.Parser {
             // builder
             Assert.AreEqual(0d, unit.BuildDistance);
             Assert.AreEqual(0d, unit.BuildPower);
+            Assert.AreEqual(0d, unit.CapturePower);
 
             // los
             Assert.AreEqual(429d, unit.SightDistance);
@@ -193,6 +194,7 @@ namespace gex.Tests.Services.Parser {
             // builder
             Assert.AreEqual(145d, unit.BuildDistance);
             Assert.AreEqual(300d, unit.BuildPower);
+            Assert.AreEqual(1800d, unit.CapturePower);
             Assert.AreEqual(26, unit.BuildOptions.Count);
             Assert.AreEqual("corsolar", unit.BuildOptions[0]);
             Assert.AreEqual("corfhp", unit.BuildOptions[25]);

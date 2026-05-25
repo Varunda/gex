@@ -100,6 +100,7 @@ namespace gex.Services.Parser {
             // builder
             unit.BuildDistance = _Double(info, "builddistance", 0);
             unit.BuildPower = _Double(info, "workertime", 0);
+            unit.CapturePower = _Double(info, "capturespeed", 0);
             unit.IsBuilder = _Bool(info, "builder", false);
             unit.CanAssist = _Bool(info, "canassist", false);
             unit.CanReclaim = _Bool(info, "canreclaim", false);

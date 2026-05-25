@@ -66,6 +66,8 @@ namespace gex.Models.Bar {
 
         public double BuildPower { get; set; }
 
+        public double CapturePower { get; set; }
+
         public List<string> BuildOptions { get; set; } = [];
 
         public bool CanResurrect { get; set; }

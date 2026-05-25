@@ -203,6 +203,7 @@
                 <tr is="Cell" name="Can resurrect?" field="canResurrect" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Build range" field="buildDistance" :unit="unit" :compare="compareUnit"></tr>
                 <tr is="Cell" name="Build power" field="buildPower" :unit="unit" :compare="compareUnit"></tr>
+                <tr is="Cell" name="Capture power" field="capturePower" :unit="unit" :compare="compareUnit"></tr>
 
                 <tr is="Header" name="Transport info" :colspan="colspan"></tr>
                 <tr is="Cell" name="Transport capacity" field="transportCapacity" :unit="unit" :compare="compareUnit"></tr>

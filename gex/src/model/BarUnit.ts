@@ -67,6 +67,7 @@ export class BarUnit {
     // builder stuff
     public buildDistance: number = 0;
     public buildPower: number = 0;
+    public capturePower: number = 0;
     public buildOptions: string[] = [];
     public isBuilder: boolean = false;
     public canAssist: boolean = false;
