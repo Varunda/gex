@@ -24,8 +24,19 @@ namespace gex.Services.Storage {
             _Options = options;
         }
 
+        /// <summary>
+        ///     get the folder that contains all game logs
+        /// </summary>
+        /// <param name="gameID"></param>
+        /// <returns></returns>
+        public string GetGameLogLocation(string gameID) => Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID);
+
+        /// <summary>
+        ///     check if a game has actions.json or actions.zstd stored
+        /// </summary>
+        /// <param name="gameID">ID of the game</param>
         public bool HasActionLog(string gameID) {
-            string folder = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID);
+            string folder = GetGameLogLocation(gameID);
 
             string jsonPath = Path.Join(folder, "actions.json");
             string zstdPath = Path.Join(folder, "actions.zstd");
@@ -33,13 +44,17 @@ namespace gex.Services.Storage {
             return File.Exists(jsonPath) || File.Exists(zstdPath);
         }
         
+        /// <summary>
+        ///     delete the actions.json and actions.zstd of a game
+        /// </summary>
+        /// <param name="gameID">ID of the game</param>
         public void DeleteActionLog(string gameID) {
-            string folder = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID);
+            string folder = GetGameLogLocation(gameID);
 
             File.Delete(Path.Join(folder, "actions.json"));
             File.Delete(Path.Join(folder, "actions.zstd"));
 
-            _Logger.LogInformation($"deleted action log for game [gameID={gameID}]");
+            _Logger.LogTrace($"deleted action log for game [gameID={gameID}] [folder={folder}]");
         }
 
         /// <summary>
@@ -55,7 +70,7 @@ namespace gex.Services.Storage {
 
             _Logger.LogDebug($"getting action log of game [gameID={gameID}]");
 
-            string folder = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID);
+            string folder = GetGameLogLocation(gameID);
 
             string jsonPath = Path.Join(folder, "actions.json");
             if (File.Exists(jsonPath) == true) {
@@ -89,7 +104,7 @@ namespace gex.Services.Storage {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for the async operation completes</returns>
         public async Task SaveActionLog(string gameID, string contents, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "actions.json");
+            string path = Path.Join(GetGameLogLocation(gameID), "actions.json");
 
             if (File.Exists(path) == true) {
                 _Logger.LogWarning($"action log already exists, not overwriting [gameID={gameID}] [path='{path}']");
@@ -108,7 +123,7 @@ namespace gex.Services.Storage {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation completes</returns>
         public async Task SaveActionLog(string gameID, FileStream input, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "actions.json");
+            string path = Path.Join(GetGameLogLocation(gameID), "actions.json");
 
             if (File.Exists(path) == true) {
                 _Logger.LogWarning($"action log already exists, not overwriting [gameID={gameID}] [path='{path}']");
@@ -128,7 +143,7 @@ namespace gex.Services.Storage {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task CompressActionLog(string gameID, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "actions.zstd");
+            string path = Path.Join(GetGameLogLocation(gameID), "actions.zstd");
 
             if (File.Exists(path) == true) {
                 _Logger.LogWarning($"compressed action log already exists, not overwriting [gameID={gameID}] [path='{path}']");
@@ -158,7 +173,7 @@ namespace gex.Services.Storage {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public async Task<Result<string, string>> GetStdout(string gameID, CancellationToken cancel) {
-            string path = Path.Join(_Options.Value.GameLogLocation, gameID[..2], gameID, "stdout.txt");
+            string path = Path.Join(GetGameLogLocation(gameID), "stdout.txt");
 
             if (File.Exists(path) == false) {
                 return Result<string, string>.Err($"missing path '{path}'");
@@ -167,6 +182,30 @@ namespace gex.Services.Storage {
             string contents = await File.ReadAllTextAsync(path, cancel);
 
             return Result<string, string>.Ok(contents);
+        }
+
+        /// <summary>
+        ///     delete a saved stdout.txt for a match
+        /// </summary>
+        /// <param name="gameID">ID of the match</param>
+        public void DeleteStdout(string gameID) {
+            string folder = GetGameLogLocation(gameID);
+
+            File.Delete(Path.Join(folder, "stdout.txt"));
+
+            _Logger.LogTrace($"deleted stdout for game [gameID={gameID}]");
+        }
+
+        /// <summary>
+        ///     delete a saved stderr.txt of a match
+        /// </summary>
+        /// <param name="gameID">ID of the match</param>
+        public void DeleteStderr(string gameID) {
+            string folder = GetGameLogLocation(gameID);
+
+            File.Delete(Path.Join(folder, "stderr.txt"));
+
+            _Logger.LogTrace($"deleted stderr for game [gameID={gameID}]");
         }
 
     }
