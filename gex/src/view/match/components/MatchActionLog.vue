@@ -18,13 +18,40 @@
                 <toggle-button v-model="options.showDebug">Show debug</toggle-button>
                 <toggle-button v-model="options.showFrame">Show frame</toggle-button>
 
+                <div class="d-inline border h-100 mx-2"></div>
+
+                <div class="ms-1 btn-group border">
+                    <button type="button" class="btn" :class="[ filter.teamIDs.length > 0 ? 'btn-primary' : '' ]" data-bs-toggle="dropdown">
+                        Shown players
+                        <span v-if="filter.teamIDs.length > 0">
+                            ({{ filter.teamIDs.length }})
+                        </span>
+                        <span v-else>
+                            (All)
+                        </span>
+                    </button>
+                    <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" :class="[ filter.teamIDs.length > 0 ? 'btn-primary' : '' ]">
+                        <span class="visually-hidden">toggle dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li v-for="player in match.players" :key="player.teamID">
+                            <a class="dropdown-item" :style="{ 'color': player.hexColor, 'user-select': 'none' }" @click.stop="toggleFilterPlayer($event)">
+                                <input class="form-check-input" type="checkbox" :id="'action-log-filter-player-' + player.teamID" :data-team-id="player.teamID">
+                                <label class="form-check-label w-100" :for="'action-log-filter-player-' + player.teamID">
+                                    {{ player.username }}
+                                </label>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
                 <div v-if="entries.length > 0">
                     <a href="javascript:void(0)" download="download" @click="downloadJson" class="me-2">Download action log</a>
                     <a id="downloadJsonAnchor" style="display: none"></a>
                 </div>
             </div>
 
-            <a-table :entries="tableData"
+            <a-table v-if="showTable" :entries="tableData"
                 default-sort-column="frame" default-sort-order="asc"
                 :paginate="false" :hover="true" :striped="false" :show-filters="true">
 
@@ -39,6 +66,34 @@
 
                     <a-body v-slot="entry">
                         {{ entry.type }}
+                    </a-body>
+                </a-col>
+
+                <a-col v-if="options.extraFilters">
+                    <a-header>
+                        <b>Player</b>
+                    </a-header>
+
+                    <a-filter field="teamName" type="string" method="dropdown"
+                        :conditions="[ 'equals' ]">
+                    </a-filter>
+
+                    <a-body v-slot="entry">
+                        {{ entry.teamName }}
+                    </a-body>
+                </a-col>
+
+                <a-col v-if="options.extraFilters">
+                    <a-header>
+                        <b>Unit type</b>
+                    </a-header>
+
+                    <a-filter field="unitName" type="string" method="dropdown"
+                        :conditions="[ 'equals' ]">
+                    </a-filter>
+
+                    <a-body v-slot="entry">
+                        {{ entry.unitName }}
                     </a-body>
                 </a-col>
 
@@ -113,6 +168,9 @@
         event?: object;
         unitID?: number;
         otherUnitID?: number;
+        unitName?: string;
+        teamID?: number;
+        allyTeamID?: number;
     };
 
     export const MatchActionLog = Vue.extend({
@@ -128,7 +186,14 @@
                 options: {
                     showDebug: false as boolean,
                     showFrame: false as boolean,
-                }
+                    extraFilters: false as boolean,
+                },
+
+                filter: {
+                    teamIDs: [] as number[]
+                },
+
+                showTable: true as boolean
 
             }
         },
@@ -161,6 +226,8 @@
                         frame: ev.frame,
                         event: ev,
                         unitID: ev.unitID,
+                        teamID: ev.teamID,
+                        allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                         parts: [
                             this.createPlayerName(ev.teamID),
                             this.createText("created a"),
@@ -185,6 +252,8 @@
                         frame: ev.frame,
                         event: ev,
                         unitID: ev.unitID,
+                        teamID: ev.teamID,
+                        allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                         parts: [
                             this.createPlayerName(ev.teamID, true),
                             this.createUnitIcon(ev.definitionID),
@@ -256,6 +325,8 @@
                         type: "team_killed",
                         frame: ev.frame,
                         event: ev,
+                        teamID: ev.teamID,
+                        allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                         parts: [
                             this.createPlayerName(ev.teamID),
                             this.createText("was killed")
@@ -342,16 +413,44 @@
 
                 const p = this.createText(`<img src="/image-proxy/UnitIcon?defName=${encodeURIComponent(unitDef.definitionName)}" height="16" title="Unit icon for ${unitDef.name}">`);
                 return p;
+            },
+
+            getDefinitionName: function(defID: number): string | undefined {
+                const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defID);
+                return unitDef?.name;
+            },
+
+            toggleFilterPlayer: function(ev: MouseEvent): void {
+                if (!ev.target) {
+                    return;
+                }
+
+                let t = ev.target as HTMLElement;
+                if (t.nodeName != "INPUT") {
+                    return;
+                }
+
+                const teamID: string | undefined = t.dataset["teamId"];
+                if (teamID == undefined) {
+                    throw `missing data-team-id on ${t.id} (cannot get teamId to toggle)`;
+                }
+
+                const value = (t as HTMLInputElement).checked;
+                if (value == true) {
+                    this.filter.teamIDs.push(Number.parseInt(teamID));
+                } else if (value == false) {
+                    this.filter.teamIDs = this.filter.teamIDs.filter(iter => iter != Number.parseInt(teamID));
+                }
             }
 
         },
 
         computed: {
-
             tableData: function(): Loading<ActionLogEntry[]> {
-                return Loadable.loaded(this.entries);
+                return Loadable.loaded(this.entries.filter(iter => {
+                    return (this.filter.teamIDs.length == 0 || (iter.teamID != undefined && this.filter.teamIDs.indexOf(iter.teamID) > -1));
+                }));
             }
-
         },
 
         components: {

@@ -29,9 +29,7 @@ namespace gex.Tests.Services.Storage {
             string gameLogLoc = storage.GetGameLogLocation("9cc46f691f6516ec84e41320251b4ae2");
             string wanted = Path.Join("/mnt/vda1/game_logs", "9c", "9cc46f691f6516ec84e41320251b4ae2");
             Assert.AreEqual(wanted, gameLogLoc);
-
         }
-
 
     }
 

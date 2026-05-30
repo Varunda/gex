@@ -525,12 +525,18 @@
 
                 this.datasets.clear();
 
+                const lastFrame: number = Math.max(...this.stats.map(iter => iter.frame));
+                console.log(`TeamStatsChart> last frame is ${lastFrame}`);
+
                 for (const stat of this.statNames) {
                     const statName: keyof MergedStats = stat[0];
 
                     const map: Map<number, StatEntry[]> = new Map();
                     for (const i of this.stats) {
                         if (i.id.startsWith("ally-team-")) {
+                            continue;
+                        }
+                        if (i.frame == lastFrame) {
                             continue;
                         }
 
@@ -548,6 +554,7 @@
                         if (allyTeamID == undefined) {
                             console.warn(`TeamStatsChart> missing allyTeamID for player [teamID=${i.teamID}]`);
                         } else {
+                            // find the data set ID of the ally team, and add this team's stats to the ally team they are a part of
                             const datasetID: number = -1 * (allyTeamID + 1);
                             //console.log(`TeamStatsChart> player ${i.teamID} is on ally team ${allyTeamID} (which is going to ${datasetID})`);
                             const allyTeamStats: StatEntry[] = map.get(datasetID) ?? [];
