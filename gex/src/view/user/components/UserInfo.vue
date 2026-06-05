@@ -90,6 +90,17 @@
             </div>
         </div>
 
+        <div>
+            <h4 class="wt-header">Win rate by duration</h4>
+
+            <div class="mb-3">
+                <div style="height: 200px; max-height: 200px;">
+                    <canvas id="user-win-rate-by-duration"></canvas>
+                </div>
+            </div>
+
+        </div>
+
         <div v-if="user.previousNames.length > 1" class="mb-3">
             <h4 class="wt-header bg-light text-dark mb-2">Previous names</h4>
 
@@ -268,6 +279,7 @@
     import { BarUserSkillChanges } from "model/BarUserSkillChanges";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
     import { MapApi } from "api/MapApi";
@@ -281,8 +293,14 @@
     import { FactionUtil } from "util/Faction";
     import { GamemodeUtil } from "util/Gamemode";
     import ColorUtils from "util/Color";
+    import TimeUtils from "util/Time";
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
-import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+
+    interface WinrateDurationEntry {
+        minute: number;
+        wins: number;
+        total: number;
+    }
 
     const FactionStatsRow = Vue.extend({
         props: {
@@ -331,6 +349,10 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                     data: Loadable.idle() as Loading<BarUserSkillChanges>,
                     chart: null as Chart | null
                 },
+
+                winrateDurationChart: null as Chart | null,
+
+                winrateDurationData: new Map() as Map<number, WinrateDurationEntry>,
 
                 averageSkillDiffs: new Map() as Map<number, number>,
 
@@ -429,6 +451,156 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                                     color: "#fff",
                                     font: {
                                         family: "Atkinson Hyperlegible"
+                                    }
+                                }
+                            }
+                        },
+                    },
+                });
+            },
+
+            makeWinRateDurationChart: function(): void {
+                if (this.matches.state != "loaded") {
+                    return console.warn(`UserInfo> cannot make winrate by duration chart, matches is ${this.matches.state} not 'loaded'`);
+                }
+
+                if (this.winrateDurationChart != null) {
+                    this.winrateDurationChart.destroy();
+                    this.winrateDurationChart = null;
+                }
+
+                const canvas = document.getElementById("user-win-rate-by-duration") as HTMLCanvasElement | null;
+                if (canvas == null) {
+                    return console.error(`missing #user-win-rate-by-duration`);
+                }
+
+                const matchCount: number = this.matches.data.length;
+                const interval: number = matchCount < 20 ? 15
+                    : matchCount < 100 ? 10
+                    : matchCount < 1000 ? 2
+                    : 1;
+
+                console.log(`UserInfo> interval ${interval} over ${matchCount} matches`);
+
+                this.winrateDurationData.clear();
+                for (const match of this.matches.data) {
+                    const matchDurationMins: number = Math.floor(match.durationFrameCount / 30 / 60 / interval);
+
+                    const matchPlayer: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
+                    if (matchPlayer == undefined) {
+                        throw `UserInfo> user ${this.user.userID} was not found in match ${match.id}: ${match.players.map(iter => `${iter.username}/${iter.userID}`).join(", ")}`;
+                    }
+
+                    const allyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(iter => iter.allyTeamID == matchPlayer.allyTeamID);
+                    if (allyTeam == undefined) {
+                        throw `UserInfo> user ${this.user.userID} on ally team ${matchPlayer.allyTeamID} was not found in match ${match.id}: ${match.allyTeams.map(iter => iter.allyTeamID).join(", ")}`;
+                    }
+
+                    let entry: WinrateDurationEntry = this.winrateDurationData.get(matchDurationMins) ?? { 
+                        minute: matchDurationMins,
+                        wins: 0,
+                        total: 0
+                    };
+
+                    if (allyTeam.won == true) {
+                        ++entry.wins;
+                    }
+                    ++entry.total;
+
+                    this.winrateDurationData.set(matchDurationMins, entry);
+                }
+
+                const maxInterval: number = Math.max(...Array.from(this.winrateDurationData.values()).map(iter => iter.total));
+
+                this.winrateDurationChart = new Chart(canvas.getContext("2d")!, {
+                    type: "line",
+                    data: {
+                        datasets: [
+                            {
+                                label: "Win rate",
+                                backgroundColor: "white",
+                                borderColor: "white",
+                                tension: 0.2,
+                                pointRadius: (ctx) => {
+                                    const minute: number = ctx.parsed.x;
+
+                                    const entry: WinrateDurationEntry | undefined = this.winrateDurationData.get(minute);
+                                    if (entry == undefined) {
+                                        console.warn(`UserInfo> missing WinrateDurationEntry for ${minute}`);
+                                    }
+                                    return Math.max(3, Math.floor((entry?.total ?? 10) / maxInterval * 12));
+                                },
+                                data: Array.from(this.winrateDurationData.values()).map(iter => {
+                                    return {
+                                        x: iter.minute,
+                                        y: Math.round(iter.wins / iter.total * 100)
+                                    }
+                                })
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: "linear",
+                                ticks: {
+                                    color: "#fff",
+                                    autoSkip: false,
+                                    callback: function(value) {
+                                        if (typeof(value) == "string") {
+                                            return value;
+                                        }
+
+                                        return TimeUtils.duration(value * interval * 60);
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: "#555"
+                                },
+                            },
+                            y: {
+                                ticks: {
+                                    color: "#fff"
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    color: "#777"
+                                }
+                            },
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: "nearest"
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                                labels: {
+                                    color: "#fff",
+                                    font: {
+                                        family: "Atkinson Hyperlegible"
+                                    },
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: (tooltip) => {
+                                        const minute: number = tooltip[0].parsed.x;
+                                        return `${(minute * interval)} - ${(minute + 1) * interval} minutes`;
+                                    },
+                                    label: (tooltip) => {
+                                        const minute: number = tooltip.parsed.x;
+                                        const winrate: number = tooltip.parsed.y;
+
+                                        const entry: WinrateDurationEntry | undefined = this.winrateDurationData.get(minute);
+                                        if (entry == undefined) {
+                                            console.warn(`UserInfo> missing WinrateDurationEntry for ${minute}`);
+                                        }
+
+                                        return `Win: ${winrate}% over ${entry?.total ?? 0} games`;
                                     }
                                 }
                             }
@@ -613,6 +785,8 @@ import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
                 if (this.matches.state != "loaded") {
                     return;
                 }
+
+                this.makeWinRateDurationChart();
 
                 const skill: Map<number, number> = new Map();
                 const count: Map<number, number> = new Map();

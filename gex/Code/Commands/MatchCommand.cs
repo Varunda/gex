@@ -127,5 +127,10 @@ namespace gex.Code.Commands {
             }).Start();
         }
 
+        public async Task Delete(string matchID) {
+            await _MatchDb.Delete(matchID);
+            _Logger.LogInformation($"deleted match [matchID={matchID}");
+        }
+
     }
 }
