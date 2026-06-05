@@ -30,6 +30,21 @@ namespace gex.Services.Db {
             );
         }
 
+        /// <summary>
+        ///     get a list of all <see cref="MatchPoolEntry"/>s a match is a part of
+        /// </summary>
+        /// <param name="matchID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<List<MatchPoolEntry>> GetByMatchID(string matchID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<MatchPoolEntry>(
+                "SELECT * FROM match_pool_entry WHERE match_id = @MatchID",
+                new { MatchID = matchID },
+                cancel
+            );
+        }
+
         public async Task Insert(MatchPoolEntry entry, CancellationToken cancel) {
             if (string.IsNullOrEmpty(entry.MatchID)) {
                 throw new Exception($"missing {nameof(MatchPoolEntry.MatchID)}");

@@ -8,6 +8,7 @@ using gex.Services.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -46,7 +47,7 @@ namespace gex.Controllers.Api {
         /// <remarks>
         ///     a <see cref="MatchPool"/> is included in the response if any of the following conditions are met:
         ///     <ul>
-        ///         <li>the <see cref="MatchPool"/> has <see cref="MatchPool.Hidden"/> false</li>
+        ///         <li>the <see cref="MatchPool"/> has <see cref="MatchPool.Unlisted"/> false</li>
         ///         <li>the user making the request has the <see cref="AppPermission.GEX_DEV"/> permission</li>
         ///         <li>the user making the request is the user that made the <see cref="MatchPool"/> (and the pool is hidden)</li>
         ///     </ul>
@@ -59,13 +60,23 @@ namespace gex.Controllers.Api {
         public async Task<ApiResponse<List<MatchPool>>> GetPools(CancellationToken cancel = default) {
 
             AppAccount? currentUser = await _CurrentUser.Get(cancel);
-            bool includeHidden = await _PermissionRepository.HasPermission(currentUser?.ID ?? -1, [AppPermission.GEX_DEV], cancel);
+            bool includeHidden = currentUser != null && await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_DEV], cancel);
 
             List<MatchPool> pools = await _MatchPoolRepository.GetAll(cancel);
 
             if (includeHidden == false) {
                 pools = pools.Where(iter => {
-                    return iter.Hidden == false || iter.CreatedByID == currentUser?.ID;
+                    // creators of unlisted pools can view them
+                    if (iter.Unlisted == true && iter.CreatedByID != currentUser?.ID) {
+                        return false;
+                    }
+
+                    // creators of pools hidden until a certain time can view them
+                    if (iter.HideUntil != null && iter.CreatedByID != currentUser?.ID && DateTime.UtcNow < iter.HideUntil) {
+                        return false;
+                    }
+
+                    return true;
                 }).ToList();
             }
 
@@ -85,6 +96,10 @@ namespace gex.Controllers.Api {
                 return ApiNoContent<MatchPool>();
             }
 
+            if (await _CanViewPool(poolID, cancel) == false) {
+                return ApiForbidden<MatchPool>($"no permission to view this pool (it is hidden)");
+            }
+
             return ApiOk(pool);
         }
 
@@ -92,19 +107,34 @@ namespace gex.Controllers.Api {
         ///     create a new <see cref="MatchPool"/>
         /// </summary>
         /// <param name="name">name of the match pool to create</param>
+        /// <param name="unlisted">if the match pool will be unlisted when created</param>
+        /// <param name="hideUntil">if the match pool will be hidden until a specific time</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain the newly created <see cref="MatchPool"/>
         /// </response>
         [HttpPost]
         [PermissionNeeded(AppPermission.GEX_MATCH_POOL_CREATE)]
-        public async Task<ApiResponse<MatchPool>> Create([FromQuery] string name, CancellationToken cancel = default) {
+        public async Task<ApiResponse<MatchPool>> Create([FromQuery] string name,
+            [FromQuery] bool unlisted = false,
+            [FromQuery] DateTime? hideUntil = null,
+            CancellationToken cancel = default
+        ) {
             AppAccount currentUser = await _CurrentUser.Get(cancel)
-                ?? throw new System.Exception($"expected current user to exist here");
+                ?? throw new Exception($"expected current user to exist here");
+
+            if (hideUntil != null && hideUntil < DateTime.UtcNow) {
+                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} ({hideUntil:u}) cannot be in the past when creating a {nameof(MatchPool)}");
+            }
+            if (hideUntil != null && (hideUntil - DateTime.UtcNow) > TimeSpan.FromDays(90)) {
+                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
+            }
 
             MatchPool pool = new() {
                 Name = name,
                 CreatedByID = currentUser.ID,
+                Unlisted = unlisted,
+                HideUntil = hideUntil
             };
 
             long poolID = await _MatchPoolRepository.Create(pool, cancel);
@@ -116,11 +146,12 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///     update a <see cref="MatchPool"/> with new <see cref="MatchPool.Name"/> and <see cref="MatchPool.Hidden"/> status
+        ///     update a <see cref="MatchPool"/> with new <see cref="MatchPool.Name"/> and <see cref="MatchPool.Unlisted"/> status
         /// </summary>
         /// <param name="poolID">ID of the <see cref="MatchPool"/> to be updated</param>
         /// <param name="name">new name of the <see cref="MatchPool"/></param>
-        /// <param name="hidden">new value of <see cref="MatchPool.Hidden"/></param>
+        /// <param name="unlisted">new value of <see cref="MatchPool.Unlisted"/></param>
+        /// <param name="hideUntil">new value of <see cref="MatchPool.HideUntil"/></param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain the updated <see cref="MatchPool"/>
@@ -133,9 +164,15 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpPost("{poolID}")]
         [Authorize]
-        public async Task<ApiResponse<MatchPool>> Update(long poolID, [FromQuery] string name, [FromQuery] bool hidden, CancellationToken cancel) {
+        public async Task<ApiResponse<MatchPool>> Update(long poolID,
+            [FromQuery] string name,
+            [FromQuery] bool unlisted = false,
+            [FromQuery] DateTime? hideUntil = null,
+            CancellationToken cancel = default
+        ) {
+
             AppAccount currentUser = await _CurrentUser.Get(cancel)
-                ?? throw new System.Exception($"expected current user to exist here");
+                ?? throw new Exception($"expected current user to exist here");
 
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
             if (pool == null) {
@@ -149,11 +186,15 @@ namespace gex.Controllers.Api {
             if (string.IsNullOrWhiteSpace(name)) {
                 return ApiBadRequest<MatchPool>($"{nameof(name)} cannot be empty or contain only whitespace");
             }
+            if (hideUntil != null && (hideUntil - DateTime.UtcNow) > TimeSpan.FromDays(90)) {
+                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
+            }
 
             pool.Name = name;
-            pool.Hidden = hidden;
+            pool.Unlisted = unlisted;
+            pool.HideUntil = hideUntil;
 
-            _Logger.LogDebug($"updating match pool [poolID={poolID}] [name={pool.Name}] [hidden={pool.Hidden}]");
+            _Logger.LogDebug($"updating match pool [poolID={poolID}] [name={pool.Name}] [unlisted={pool.Unlisted}] [hideUntil={pool.HideUntil:u}]");
             await _MatchPoolRepository.Update(poolID, pool, cancel);
 
             return ApiOk(pool);
@@ -178,6 +219,10 @@ namespace gex.Controllers.Api {
                 return ApiNotFound<List<MatchPoolEntry>>($"{nameof(MatchPool)} {poolID}");
             }
 
+            if (await _CanViewPool(poolID, cancel) == false) {
+                return ApiForbidden<List<MatchPoolEntry>>($"no permission to view {nameof(MatchPool)} {poolID} (it is likely hidden)");
+            }
+
             List<MatchPoolEntry> entries = await _MatchPoolEntryDb.GetByPoolID(poolID, cancel);
             return ApiOk(entries);
         }
@@ -199,7 +244,7 @@ namespace gex.Controllers.Api {
             }
 
             AppAccount currentUser = await _CurrentUser.Get(cancel)
-                ?? throw new System.Exception($"expected current user to exist here");
+                ?? throw new Exception($"expected current user to exist here");
 
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
             if (pool == null) {
@@ -246,7 +291,7 @@ namespace gex.Controllers.Api {
             }
 
             AppAccount currentUser = await _CurrentUser.Get(cancel)
-                ?? throw new System.Exception($"expected current user to exist here");
+                ?? throw new Exception($"expected current user to exist here");
 
             MatchPoolEntry entry = new() {
                 PoolID = poolID,
@@ -265,13 +310,9 @@ namespace gex.Controllers.Api {
         ///     check if the user making the request has the Gex.Dev permissions or is the 
         ///     creator of the pool
         /// </summary>
-        /// <param name="poolID"></param>
-        /// <param name="cancel"></param>
-        /// <returns></returns>
-        /// <exception cref="System.Exception"></exception>
         private async Task<bool> _IsPoolCreatorOrDev(long poolID, CancellationToken cancel) {
             AppAccount currentUser = await _CurrentUser.Get(cancel)
-                ?? throw new System.Exception($"expected current user to exist here");
+                ?? throw new Exception($"expected current user to exist here");
 
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
             if (pool == null) {
@@ -281,6 +322,15 @@ namespace gex.Controllers.Api {
             bool isDev = await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_DEV], cancel);
 
             return isDev == true || pool.CreatedByID == currentUser.ID;
+        }
+
+        /// <summary>
+        ///     check if a user has permission to view a match pool, which means they have the Gex.Dev permission,
+        ///     are the create of the pool, or the HideUntil value has passed
+        /// </summary>
+        private async Task<bool> _CanViewPool(long poolID, CancellationToken cancel) {
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+            return await _MatchPoolRepository.CanView(poolID, currentUser?.ID, cancel);
         }
 
     }

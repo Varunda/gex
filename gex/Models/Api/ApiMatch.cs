@@ -45,6 +45,7 @@ namespace gex.Models.Api {
             MaxOS = match.MaxOS;
             AverageOS = match.AverageOS;
             MatchPoolEntryNote = match.MatchPoolEntryNote;
+            MatchPoolIsHidden = match.MatchPoolIsHidden;
         }
 
         public string ID { get; set; } = "";
@@ -121,6 +122,8 @@ namespace gex.Models.Api {
         public float AverageOS { get; set; }
 
         public string? MatchPoolEntryNote { get; set; }
+
+        public bool MatchPoolIsHidden { get; set; }
 
     }
 }

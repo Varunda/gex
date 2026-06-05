@@ -34,8 +34,14 @@ namespace gex.Models.Db {
         /// <summary>
         ///     will the match pool be shown in the public list?
         /// </summary>
-        [ColumnMapping("hidden")]
-        public bool Hidden { get; set; }
+        [ColumnMapping("unlisted")]
+        public bool Unlisted { get; set; }
+
+        /// <summary>
+        ///     will the contents of this pool (including the matches within the pool) be hidden until this time?
+        /// </summary>
+        [ColumnMapping("hide_until")]
+        public DateTime? HideUntil { get; set; }
 
     }
 }

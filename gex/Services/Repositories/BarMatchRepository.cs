@@ -1,4 +1,5 @@
-﻿using gex.Models.Db;
+﻿using gex.Models;
+using gex.Models.Db;
 using gex.Services.Db.Match;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -89,18 +90,17 @@ namespace gex.Services.Repositories {
             return _MatchDb.GetAll(cancel);
         }
 
-        public async Task<List<BarMatch>> GetRecent(int offset, int limit, CancellationToken cancel) {
-            return await _MatchDb.GetRecent(offset, limit, cancel);
+        public Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, AppAccount? currentUser, CancellationToken cancel) {
+            return _MatchDb.Search(parms, offset, limit, currentUser, cancel);
         }
 
-        public Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
-            return _MatchDb.Search(parms, offset, limit, cancel);
-        }
-
-        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end, CancellationToken cancel) {
-            return await _MatchDb.GetByTimePeriod(start, end, cancel);
-        }
-
+        /// <summary>
+        ///     get all bar matches a user has played in, including any matches that would
+        ///     be hidden due to match pools
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public async Task<List<BarMatch>> GetByUserID(long userID, CancellationToken cancel) {
             // caching here is mostly used to speed up full user stat fixes
             string cacheKey = string.Format(CACHE_KEY_GAMES_BY_USER, userID);
@@ -115,6 +115,9 @@ namespace gex.Services.Repositories {
             return matches;
         }
 
+        /// <summary>
+        ///     get the oldest match that Gex has stored
+        /// </summary>
         public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
             if (_Cache.TryGetValue(CACHE_KEY_OLDEST, out BarMatch? oldest) == false) {
                 oldest = await _MatchDb.GetOldestMatch(cancel);
@@ -128,6 +131,9 @@ namespace gex.Services.Repositories {
             return oldest;
         }
 
+        /// <summary>
+        ///     get a list of unique engines across all stored matches
+        /// </summary>
         public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {
             if (_Cache.TryGetValue(CACHE_KEY_UNIQUE_ENGINES, out List<string>? list) == false || list == null) {
                 list = await _MatchDb.GetUniqueEngines(cancel);
@@ -141,6 +147,9 @@ namespace gex.Services.Repositories {
             return list;
         }
 
+        /// <summary>
+        ///     get a list of all unique game versions across all stored matches
+        /// </summary>
         public async Task<List<string>> GetUniqueGameVersions(CancellationToken cancel) {
             if (_Cache.TryGetValue(CACHE_KEY_UNIQUE_GAME_VERSIONS, out List<string>? list) == false || list == null) {
                 list = await _MatchDb.GetUniqueGameVersions(cancel);

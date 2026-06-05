@@ -25,7 +25,7 @@ export class MatchPoolApi extends ApiWrapper<MatchPool> {
     }
 
     public static update(poolID: number, matchPool: MatchPool): Promise<Loading<MatchPool>> {
-        return MatchPoolApi.get().postReply(`/api/match-pool/${poolID}?name=${matchPool.name}&hidden=${matchPool.hidden}`, MatchPool.parse);
+        return MatchPoolApi.get().postReply(`/api/match-pool/${poolID}?name=${matchPool.name}&unlisted=${matchPool.unlisted}${(matchPool.hideUntil != null ? `&hideUntil=${matchPool.hideUntil.toISOString()}` : "")}`, MatchPool.parse);
     }
 
     public static addMatchToPool(poolID: number, matchID: string): Promise<Loading<void>> {

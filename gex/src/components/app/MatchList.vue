@@ -64,6 +64,10 @@
 
                         <span v-else-if="match.processing == null || match.processing.actionsParsed == null" class="bi bi-cone text-warning"
                             title="This match has not been fully processed!"></span>
+
+
+                        <span v-if="match.matchPoolIsHidden == true" class="bi bi-eye-slash text-info"
+                            title="This match is hidden from public view until the match pool it is a part of is public"></span>
                     </div>
                 </div>
             </div>
@@ -310,7 +314,8 @@
 
             getMatchStyle: function(match: BarMatch) {
                 return {
-                    "background-image": `url(${this.getMapThumbnail(match.mapName)})`
+                    "background-image": `url(${this.getMapThumbnail(match.mapName)})`,
+                    "border": match.matchPoolIsHidden ? "3px solid var(--bs-info-border-subtle)" : ""
                 }
             }
         },

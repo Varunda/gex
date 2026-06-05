@@ -93,5 +93,10 @@ namespace gex.Models.Db {
         /// </summary>
         public string? MatchPoolEntryNote { get; set; }
 
+        /// <summary>
+        ///     if this match is part of a match pool, is this match pool hidden? (not unlisted)
+        /// </summary>
+        public bool MatchPoolIsHidden { get; set; }
+
     }
 }

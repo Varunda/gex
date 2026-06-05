@@ -338,6 +338,10 @@ namespace gex.Controllers {
                         return;
                     }
 
+                    if (pool.HideUntil != null && pool.HideUntil > DateTime.UtcNow) {
+                        return;
+                    }
+
                     ogDesc = $"View matches for {pool.Name}";
                 }, cancel).WaitAsync(TimeSpan.FromSeconds(1), cancel);
 

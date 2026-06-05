@@ -41,6 +41,13 @@ namespace gex.Services.Db.Readers {
                 // this is fine, it just means that the query did not join to match_pool
             }
 
+            try {
+                DateTime? matchPoolHideUntil = reader.GetNullableDateTime("hide_until");
+                match.MatchPoolIsHidden = matchPoolHideUntil != null && DateTime.UtcNow < matchPoolHideUntil.Value;
+            } catch (IndexOutOfRangeException) {
+                // this is fine, it just means that the query did not join to match_pool
+            }
+
             return match;
         }
 

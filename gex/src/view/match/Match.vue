@@ -184,6 +184,10 @@
                     <pre>{{ stdout.data }}</pre>
                 </div>
 
+                <div v-if="match.data.matchPoolIsHidden == true" class="alert alert-info text-center">
+                    This match is in a match pool that is currently hidden from public view. 
+                </div>
+
                 <div>
                     <h3 class="wt-header bg-light text-dark">
                         <b>Downloads</b>
@@ -352,6 +356,8 @@
                         <unit-def-view :unit-defs="Array.from(output.data.unitDefinitions.values())" :output="output.data" class="my-4"></unit-def-view>
                     </div>
                 </div>
+
+                <api-error v-else-if="output.state == 'error'" :error="output.problem"></api-error>
             </div>
 
             <div v-else-if="match.state == 'error'">

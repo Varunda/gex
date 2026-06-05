@@ -101,7 +101,12 @@
             </div>
 
             <div class="mb-2">
-                <toggle-button v-model="poolEdit.hidden">toggle hidden</toggle-button>
+                <toggle-button v-model="poolEdit.unlisted">toggle unlisted</toggle-button>
+            </div>
+
+            <div class="mb-2">
+                <label>edit hide until</label>
+                <date-time-input v-model="poolEdit.hideUntil" :allow-null="true"></date-time-input>
             </div>
 
             <div>
@@ -116,14 +121,19 @@
         </div>
 
         <div class="mb-3">
-            <div v-if="pool.state == 'loaded' && pool.data.hidden == true" class="alert alert-info text-center">
+            <div v-if="pool.state == 'loaded' && pool.data.unlisted == true" class="alert alert-info text-center">
                 <strong>
-                    This match pool is hidden!
+                    This match pool is unlisted!
                 </strong>
 
                 <div>
                     Please be polite when sharing it to others
                 </div>
+            </div>
+
+            <div v-if="pool.state == 'loaded' && showPoolHiddenMessage" class="alert alert-info text-center">
+                This match pool is marked as hidden until {{ pool.data.hideUntil | moment }}.
+                <br>Only the creator of this match pool and Gex admins can view this match pool.
             </div>
 
             <h2 class="wt-header bg-light text-dark">
@@ -132,6 +142,8 @@
                     {{ pool.data.name }}
                 </span>
             </h2>
+
+            <api-error v-if="pool.state == 'error'" :error="pool.problem"></api-error>
 
             <div v-if="matches.state == 'idle'"></div>
 
@@ -273,6 +285,7 @@
     import ToggleButton from "components/ToggleButton";
     import ApiError from "components/ApiError";
     import Busy from "components/Busy.vue";
+    import DateTimeInput from "components/DateTimeInput.vue";
 
     import { MatchPool } from "model/MatchPool";
     import { BarMatch } from "model/BarMatch";
@@ -671,11 +684,18 @@
                     "Cortex": ColorUtils.Cortex + "11",
                     "Legion": ColorUtils.Legion + "11",
                 };
+            },
+
+            showPoolHiddenMessage: function(): boolean {
+                return this.pool.state == "loaded"
+                    && this.pool.data.hideUntil != null
+                    && this.pool.data.hideUntil.getTime() > Date.now();
             }
         },
 
         components: {
-            InfoHover, MatchList, ToggleButton, ApiError, Busy
+            InfoHover, MatchList, ToggleButton, ApiError, Busy,
+            DateTimeInput
         }
     });
     export default MatchPoolView;

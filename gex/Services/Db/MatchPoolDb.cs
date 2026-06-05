@@ -46,14 +46,16 @@ namespace gex.Services.Db {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO match_pool (
-                    name, created_by_id, timestamp, hidden
+                    name, created_by_id, timestamp, unlisted, hide_until
                 ) VALUES (
-                    @Name, @CreatedByID, NOW() at time zone 'utc', false
+                    @Name, @CreatedByID, NOW() at time zone 'utc', @Unlisted, @HideUntil
                 ) RETURNING id;
             ", cancel);
 
             cmd.AddParameter("Name", pool.Name);
             cmd.AddParameter("CreatedByID", pool.CreatedByID);
+            cmd.AddParameter("Unlisted", pool.Unlisted);
+            cmd.AddParameter("HideUntil", pool.HideUntil);
             await cmd.PrepareAsync(cancel);
 
             long ID = await cmd.ExecuteInt64(cancel);
@@ -70,12 +72,15 @@ namespace gex.Services.Db {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 UPDATE match_pool
                     SET name = @Name,
-                        hidden = @Hidden
+                        unlisted = @Unlisted,
+                        hide_until = @HideUntil
                     WHERE id = @ID;
             ", cancel);
 
             cmd.AddParameter("Name", pool.Name);
-            cmd.AddParameter("Hidden", pool.Hidden);
+            cmd.AddParameter("Unlisted", pool.Unlisted);
+            cmd.AddParameter("HideUntil", pool.HideUntil);
+
             cmd.AddParameter("ID", poolID);
             await cmd.PrepareAsync(cancel);
 

@@ -789,7 +789,12 @@ namespace gex.Code.Discord {
 
             await ctx.CreateDeferred(false);
 
-            List<BarMatch> matches = await _MatchRepository.GetByUserID(userID, cancel);
+            List<BarMatch> matches = await _MatchRepository.Search(new BarMatchSearchParameters() {
+                UserIDs = [userID],
+                OrderBy = OrderBy.START_TIME,
+                OrderByDirection = OrderByDirection.DESC
+            }, offset: 0, limit: 1, currentUser: null, cancel: cancel);
+
             if (matches.Count == 0) {
                 embed.Title = "No matches found!";
                 embed.Description = $"Gex only tracks public PvP games, and could not find any matches ";
@@ -800,7 +805,7 @@ namespace gex.Code.Discord {
                 }
                 embed.Color = DiscordColor.Yellow;
             } else {
-                BarMatch match = matches.OrderByDescending(iter => iter.StartTime).First();
+                BarMatch match = matches.First();
                 embed = await _GetMatchInfo(match, userID, cancel);
                 builder.AddComponents(
                     new DiscordLinkButtonComponent($"https://{_Instance.GetHost()}/match/{match.ID}", "View on Gex")
@@ -1301,7 +1306,9 @@ namespace gex.Code.Discord {
             }
 
             // get recent games
-            List<BarMatch> recentGames = allGames.Take(4).ToList();
+            List<BarMatch> recentGames = await _MatchRepository.Search(new BarMatchSearchParameters() {
+                UserIDs = [user.UserID]
+            }, offset: 0, limit: 4, currentUser: null, cancel);
             if (recentGames.Count > 0) {
                 embed.Description += $"**Recent public PvP games:**\n";
 

@@ -48,6 +48,7 @@ export class BarMatch {
     public isBadGameVersion: boolean = false;
 
     public matchPoolEntryNote: string | null = null;
+    public matchPoolIsHidden: boolean = false;
 
     public static parse(elem: any): BarMatch {
         return {

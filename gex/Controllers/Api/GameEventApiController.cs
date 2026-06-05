@@ -2,6 +2,7 @@
 using gex.Models;
 using gex.Models.Db;
 using gex.Models.Event;
+using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Repositories;
@@ -19,6 +20,8 @@ namespace gex.Controllers.Api {
     public class GameEventApiController : ApiControllerBase {
 
         private readonly ILogger<GameEventApiController> _Logger;
+        private readonly ICurrentAccount _CurrentUser;
+
         private readonly BarMatchRepository _MatchRepository;
         private readonly GameEventTeamStatsDb _TeamStatsDb;
         private readonly GameEventUnitCreatedDb _UnitCreatedDb;
@@ -38,6 +41,8 @@ namespace gex.Controllers.Api {
         private readonly GameEventUnitDamageDb _UnitDamageDb;
         private readonly GameEventUnitPositionDb _UnitPositionDb;
         private readonly UnitPositionFileStorage _UnitPositionStorage;
+        private readonly MatchPoolRepository _MatchPoolRepository;
+        private readonly MatchPoolEntryDb _MatchPoolEntryDb;
 
         public GameEventApiController(ILogger<GameEventApiController> logger,
             GameEventTeamStatsDb teamStatsDb, GameEventUnitCreatedDb unitCreatedDb,
@@ -49,7 +54,8 @@ namespace gex.Controllers.Api {
             GameEventTransportLoadedDb transportLoadedDb, GameEventTransportUnloadedDb transportUnloadedDb,
             GameEventTeamDiedDb teamDiedDb, GameEventUnitResourcesDb unitResourcesDb,
             GameEventUnitDamageDb unitDamageDb, GameEventUnitPositionDb unitPositionDb,
-            UnitPositionFileStorage unitPositionStorage) {
+            UnitPositionFileStorage unitPositionStorage, MatchPoolRepository matchPoolRepository,
+            MatchPoolEntryDb matchPoolEntryDb, ICurrentAccount currentUser) {
 
             _Logger = logger;
 
@@ -72,6 +78,9 @@ namespace gex.Controllers.Api {
             _UnitDamageDb = unitDamageDb;
             _UnitPositionDb = unitPositionDb;
             _UnitPositionStorage = unitPositionStorage;
+            _MatchPoolRepository = matchPoolRepository;
+            _MatchPoolEntryDb = matchPoolEntryDb;
+            _CurrentUser = currentUser;
         }
 
         /// <summary>
@@ -132,6 +141,23 @@ namespace gex.Controllers.Api {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return ApiNoContent<GameOutput>();
+            }
+
+            List<MatchPoolEntry> poolEntries = await _MatchPoolEntryDb.GetByMatchID(gameID, cancel);
+            if (poolEntries.Count > 0) {
+                AppAccount? currentUser = await _CurrentUser.Get(cancel);
+
+                bool canView = false;
+                foreach (MatchPoolEntry entry in poolEntries) {
+                    canView |= await _MatchPoolRepository.CanView(entry.PoolID, currentUser?.ID, cancel);
+                    if (canView == true) {
+                        break;
+                    }
+                }
+
+                if (canView == false) {
+                    return ApiForbidden<GameOutput>($"this {nameof(BarMatch)} is in a match pool that is hidden");
+                }
             }
 
             GameOutput output = new();

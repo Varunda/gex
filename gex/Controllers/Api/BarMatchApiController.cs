@@ -48,6 +48,8 @@ namespace gex.Controllers.Api {
         private readonly DemofileStorage _DemofileStorage;
         private readonly ApmCalculatorUtil _ApmCalculator;
         private readonly BadGameVersionRepository _BadGameVersionRepository;
+        private readonly MatchPoolRepository _MatchPoolRepository;
+        private readonly MatchPoolEntryDb _MatchPoolEntryDb;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -58,7 +60,8 @@ namespace gex.Controllers.Api {
             BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
             GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
-            BadGameVersionRepository badGameVersionRepository) {
+            BadGameVersionRepository badGameVersionRepository, MatchPoolRepository matchPoolRepository,
+            MatchPoolEntryDb matchPoolEntryDb) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -78,11 +81,20 @@ namespace gex.Controllers.Api {
             _DemofileStorage = demofileStorage;
             _ApmCalculator = apmCalculator;
             _BadGameVersionRepository = badGameVersionRepository;
+            _MatchPoolRepository = matchPoolRepository;
+            _MatchPoolEntryDb = matchPoolEntryDb;
         }
 
         /// <summary>
-        ///     get a <see cref="BarMatch"/>, optionally including additional information
+        ///     get a <see cref="BarMatch"/>, optionally including additional information.
+        ///     see remarks for how hidden match pools are handled
         /// </summary>
+        /// <remarks>
+        ///     some match pools are marked as hidden until a specific time.
+        ///     if the match is in a <see cref="MatchPool"/> that is current hidden* (see more below), 
+        ///     then a 403 is returned. if the match is in multiple match pools, the match is allowed
+        ///     if at least one of the match pools is not hidden
+        /// </remarks>
         /// <param name="cancel">cancel token</param>
         /// <param name="gameID">ID of the game</param>
         /// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated? defaults to false</param>
@@ -117,6 +129,29 @@ namespace gex.Controllers.Api {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return ApiNoContent<ApiMatch>();
+            }
+
+            List<MatchPoolEntry> poolEntries = await _MatchPoolEntryDb.GetByMatchID(gameID, cancel);
+            if (poolEntries.Count > 0) {
+                match.MatchPoolIsHidden = true;
+                AppAccount? currentUser = await _CurrentUser.Get(cancel);
+
+                bool canView = false;
+                foreach (MatchPoolEntry entry in poolEntries) {
+                    canView |= await _MatchPoolRepository.CanView(entry.PoolID, currentUser?.ID, cancel);
+                    if (canView == true) {
+                        MatchPool allowedPool = await _MatchPoolRepository.GetByID(entry.PoolID, cancel)
+                            ?? throw new Exception($"failsafe tripped, if canView is true, then how is this pool null?");
+                        if (allowedPool.HideUntil != null) {
+                            match.MatchPoolIsHidden = DateTime.UtcNow < allowedPool.HideUntil;
+                        }
+                        break;
+                    }
+                }
+
+                if (canView == false) {
+                    return ApiForbidden<ApiMatch>($"this {nameof(BarMatch)} is in a match pool that is hidden");
+                }
             }
 
             if (includeAllyTeams == true) {
@@ -263,20 +298,11 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<List<ApiMatch>>($"{nameof(limit)} must be between 0 and 100 (is {limit})");
             }
 
-            List<ApiMatch> ret = [];
-            List<BarMatch> matches = await _MatchRepository.GetRecent(offset, limit, cancel);
-            foreach (BarMatch m in matches) {
-                m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
-                m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
-
-                ApiMatch api = new(m);
-                api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
-                api.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(m.GameVersion, cancel);
-
-                ret.Add(api);
-            }
-
-            return ApiOk(ret);
+            return await Search(
+                offset: offset, limit: limit,
+                orderBy: "start_time", orderByDir: "desc",
+                cancel: cancel
+            );
         }
 
         /// <summary>
@@ -399,6 +425,8 @@ namespace gex.Controllers.Api {
                 }
             }
 
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+
             BarMatchSearchParameters parms = new();
             parms.EngineVersion = engine;
             parms.GameVersion = gameVersion;
@@ -437,7 +465,7 @@ namespace gex.Controllers.Api {
             parms.OrderByDirection = dir;
 
             List<ApiMatch> ret = [];
-            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, cancel);
+            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, currentUser, cancel);
             foreach (BarMatch m in matches) {
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
@@ -463,8 +491,26 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpGet("user/{userID}")]
         public async Task<ApiResponse<List<ApiMatch>>> GetByUserID(CancellationToken cancel, int userID) {
+
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+            BarMatchSearchParameters searchParameters = new() {
+                UserIDs = [userID]
+            };
+
+            List<BarMatch> matches = [];
+            int offset = 0;
+            while (true) {
+                List<BarMatch> iter = await _MatchRepository.Search(searchParameters, offset, 1000, currentUser, cancel);
+
+                matches.AddRange(iter);
+                offset += 1000;
+
+                if (offset > 10000 || iter.Count < 1000) {
+                    break;
+                }
+            }
+
             List<ApiMatch> ret = [];
-            List<BarMatch> matches = await _MatchRepository.GetByUserID(userID, cancel);
             foreach (BarMatch m in matches) {
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);

@@ -1,4 +1,5 @@
 ﻿using gex.Models.Db;
+using gex.Models.Internal;
 using gex.Services.Db;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -13,16 +14,20 @@ namespace gex.Services.Repositories {
 
         private readonly ILogger<MatchPoolRepository> _Logger;
         private readonly MatchPoolDb _MatchPoolDb;
-        private readonly IMemoryCache _Cache;
 
+        private readonly AppPermissionRepository _PermissionRepository;
+
+        private readonly IMemoryCache _Cache;
         private const string CACHE_KEY_ALL = "Gex.MatchPool.All";
 
         public MatchPoolRepository(ILogger<MatchPoolRepository> logger,
-            MatchPoolDb matchPoolDb, IMemoryCache cache) {
+            MatchPoolDb matchPoolDb, IMemoryCache cache,
+            AppPermissionRepository permissionRepository) {
 
             _Logger = logger;
             _MatchPoolDb = matchPoolDb;
             _Cache = cache;
+            _PermissionRepository = permissionRepository;
         }
 
         public async Task<List<MatchPool>> GetAll(CancellationToken cancel) {
@@ -49,6 +54,28 @@ namespace gex.Services.Repositories {
         public async Task Update(long poolID, MatchPool pool, CancellationToken cancel) {
             _Cache.Remove(CACHE_KEY_ALL);
             await _MatchPoolDb.Update(poolID, pool, cancel);
+        }
+
+        /// <summary>
+        ///     check if a user can view a <see cref="MatchPool"/>, or any user if <paramref name="appUserID"/> is null
+        /// </summary>
+        /// <param name="poolID">ID of the <see cref="MatchPool"/> to check permission to view</param>
+        /// <param name="appUserID">ID of the user to check the permission of, or <c>null</c> if any user</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<bool> CanView(long poolID, long? appUserID, CancellationToken cancel) {
+            MatchPool? pool = await GetByID(poolID, cancel);
+            if (pool == null) {
+                return false;
+            }
+
+            if (pool.HideUntil == null) {
+                return true;
+            }
+
+            bool isDev = appUserID != null && await _PermissionRepository.HasPermission(appUserID.Value, [AppPermission.GEX_DEV], cancel);
+            _Logger.LogTrace($"checking if user can view match pool [poolID={poolID}] [isDev={isDev}] [appUserID={appUserID}] [hideUntil={pool.HideUntil.Value:u}]");
+            return isDev == true || pool.CreatedByID == appUserID || DateTime.UtcNow >= pool.HideUntil.Value;
         }
 
     }

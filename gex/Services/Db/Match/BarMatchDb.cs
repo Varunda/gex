@@ -1,6 +1,9 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Models;
 using gex.Models.Db;
+using gex.Models.Internal;
+using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
@@ -17,12 +20,16 @@ namespace gex.Services.Db.Match {
         private readonly IDbHelper _DbHelper;
         private readonly IDataReader<BarMatch> _Reader;
 
+        private readonly AppPermissionRepository _PermissionRepository;
+
         public BarMatchDb(ILogger<BarMatchDb> logger,
-            IDbHelper dbHelper, IDataReader<BarMatch> reader) {
+            IDbHelper dbHelper, IDataReader<BarMatch> reader,
+            AppPermissionRepository permissionRepository) {
 
             _Logger = logger;
             _DbHelper = dbHelper;
             _Reader = reader;
+            _PermissionRepository = permissionRepository;
         }
 
         /// <summary>
@@ -189,52 +196,24 @@ namespace gex.Services.Db.Match {
         }
 
         /// <summary>
-        ///     get recent matches
-        /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="limit"></param>
-        /// <param name="cancel">cancellation token</param>
-        /// <returns></returns>
-        public async Task<List<BarMatch>> GetRecent(int offset, int limit, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
-                SELECT *
-                    FROM bar_match
-                    ORDER BY start_time DESC
-                    LIMIT {limit}
-                    OFFSET {offset}
-            ", cancel);
-
-            await cmd.PrepareAsync(cancel);
-
-            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
-            await conn.CloseAsync();
-
-            return matches;
-        }
-
-        /// <summary>
         ///		perform a search in the DB based on the parameters passed in <paramref name="parms"/>
         /// </summary>
         /// <param name="parms">parameters used to search</param>
         /// <param name="offset">offset into the search</param>
         /// <param name="limit">limit the returned results</param>
+        /// <param name="currentUser">the user making the request, or <c>null</c> if no user</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns>
         ///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
         /// </returns>
-        public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, CancellationToken cancel) {
+        public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, AppAccount? currentUser, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, ""); // command text will be set later
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, "", cancel); // command text will be set later
 
             List<string> conditions = [];
             List<string> withs = [];
 
             bool joinProcessing = false;
-            bool joinPool = false;
-            bool minOs = false;
-            bool maxOs = false;
-            bool avgOs = false;
 
             if (parms.EngineVersion != null) {
                 conditions.Add("m.engine = @Engine");
@@ -324,7 +303,6 @@ namespace gex.Services.Db.Match {
             if (parms.PoolID != null) {
                 conditions.Add("mp.pool_id = @PoolID");
                 cmd.AddParameter("PoolID", parms.PoolID.Value);
-                joinPool = true;
             }
 
             for (int i = 0; i < parms.GameSettings.Count; ++i) {
@@ -379,15 +357,25 @@ namespace gex.Services.Db.Match {
                 }
             }
 
+            bool isDev = currentUser != null && await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_DEV], cancel);
+            if (isDev == false) {
+                string cond = $"(mpool.hide_until IS NULL OR mpool.hide_until <= NOW() at time zone 'utc' ";
+                if (currentUser != null) {
+                    cond += $" OR mpool.created_by_id = @CurrentUserID ";
+                    cmd.AddParameter("CurrentUserID", currentUser.ID);
+                }
+
+                cond += ")";
+                conditions.Add(cond);
+            }
+
             cmd.CommandText = $@"
                 {((withs.Count > 0 ? $"WITH {string.Join(",\n", withs)}" : "" ))}
                 SELECT *
                     FROM bar_match m
+                        LEFT JOIN match_pool_entry mp ON mp.match_id = m.id
+                        LEFT JOIN match_pool mpool ON mp.pool_id = mpool.id
 						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
-                        {((joinPool == true) ? "INNER JOIN match_pool_entry mp ON mp.match_id = m.id " : "")}
-                        {((minOs == true) ? "INNER JOIN min_os ON min_os.game_id = m.id" : "")}
-                        {((maxOs == true) ? "INNER JOIN max_os ON max_os.game_id = m.id" : "")}
-                        {((avgOs == true) ? "INNER JOIN avg_os ON avg_os.game_id = m.id" : "")}
                         {joinPlayersStr}
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}

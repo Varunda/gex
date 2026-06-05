@@ -26,13 +26,19 @@
 
                     <a-body v-slot="entry">
                         <div class="d-flex align-items-center">
-                            <span v-if="entry.hidden == true" class="ph-bold ph-eye-slash pe-2 text-muted" title="This match pool is hidden"></span>
+                            <span v-if="entry.hideUntil != null && entry.hideUntil.getTime() > (new Date().getTime())" class="ph-bold ph-eye-slash pe-2 text-info" title="This match pool is hidden"></span>
+                            <span v-else-if="entry.unlisted == true" class="ph-bold ph-eye-slash pe-2 text-muted" title="This match pool is unlisted"></span>
+
                             <a :href="'/pool/' + entry.id" class="flex-grow-1">
                                 {{ entry.name }}
                             </a>
 
-                            <span v-if="entry.hidden == true" class="text-muted">
+                            <span v-if="entry.hideUntil != null && entry.hideUntil.getTime() > new Date().getTime()" class="text-muted">
                                 This pool is hidden!
+                            </span>
+
+                            <span v-if="entry.unlisted == true" class="text-muted">
+                                This pool is unlisted!
                             </span>
                         </div>
                     </a-body>
