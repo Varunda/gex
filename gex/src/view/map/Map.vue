@@ -33,6 +33,21 @@
                 Start spots for {{ selectedGamemode | gamemode }}
             </h2>
 
+            <div class="d-flex justify-content-center mb-3">
+                <div class="flex-grow-0"></div>
+                <div>
+                    <div class="text-center">
+                        Gamemode:
+                    </div>
+                    <div class="btn-group">
+                        <button v-for="gamemode in startSpotGamemodes" :key="gamemode" @click="selectedGamemode = gamemode" class="btn" :class="[ selectedGamemode == gamemode ? 'btn-primary' : 'btn-secondary' ]">
+                            {{ gamemode | gamemode }}
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow-0"></div>
+            </div>
+
             <div class="d-flex justify-content-center">
                 <div class="flex-grow-0 bg-danger">
                 </div>
@@ -63,19 +78,19 @@
                     <td class="text-end pe-4">Wind</td>
                     <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
                 </tr>
+
+                <tr>
+                    <td class="text-end pe-4">Symmetry axis</td>
+                    <td>{{ mapSymmetryAxis }}</td>
+                </tr>
             </table>
 
             <div class="d-flex justify-content-center">
                 <div class="flex-grow-0"></div>
                 <div>
-                    <div class="text-center">
-                        Gamemode:
-                    </div>
-                    <div class="btn-group">
-                        <button v-for="gamemode in startSpotGamemodes" :key="gamemode" @click="selectedGamemode = gamemode" class="btn" :class="[ selectedGamemode == gamemode ? 'btn-primary' : 'btn-secondary' ]">
-                            {{ gamemode | gamemode }}
-                        </button>
-                    </div>
+                    <toggle-button v-model="showStartSpotMetadata">
+                        Show start spot suggestions
+                    </toggle-button>
                 </div>
                 <div class="flex-grow-0"></div>
             </div>
@@ -292,6 +307,7 @@
 
     import ApiError from "components/ApiError";
     import MatchList from "components/app/MatchList.vue";
+    import ToggleButton from "components/ToggleButton";
 
     import "filters/BarGamemodeFilter";
     import "filters/BarFactionFilter";
@@ -299,7 +315,7 @@
     import "filters/LocaleFilter";
     import "filters/DefNameFilter";
 
-    import { BarMap } from "model/BarMap";
+    import { BarMap, StartPosition, StartPositionData } from "model/BarMap";
     import { BarMatch } from "model/BarMatch";
     import { MapStats } from "model/map_stats/MapStats";
     import { MapStatsByGamemode } from "model/map_stats/MapStatsByGamemode";
@@ -314,6 +330,7 @@
 
     import LocaleUtil from "util/Locale";
     import ColorUtils, { RGB } from "util/Color";
+import SymmetryAxis from "util/SymmetryAxis";
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
@@ -350,7 +367,9 @@
                     ColorUtils.hexToRgb("#d1e5f0"), // 51%
                     ColorUtils.hexToRgb("#67a9cf"), // 54%
                     ColorUtils.hexToRgb("#2166ac"), // >56%
-                ] as RGB[]
+                ] as RGB[],
+
+                showStartSpotMetadata: true as boolean,
             }
         },
 
@@ -480,6 +499,8 @@
 
                 this.setupMap();
                 this.bindRecent();
+
+                this.getMapSym();
             },
 
             bindRecent: async function(): Promise<void> {
@@ -549,18 +570,125 @@
                 return a * (1 - p) + b * p;
             },
 
+            drawStartSpotMetadata: function(): void {
+                if (this.svg == null) { return console.warn(`cannot draw map: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot draw map: root is null`); }
+
+                if (this.barMap.state != "loaded") {
+                    return console.warn(`cannot draw start spot metadata: barMap is not loaded`);
+                }
+
+                const startSpotData: StartPositionData | null = this.barMap.data.startPositionData;
+                if (startSpotData == null) {
+                    console.log(`cannot draw start spot metadata: there is none on the map`);
+                    return;
+                }
+
+                const g = this.root.append("g")
+                    .attr("id", "start-spot-metadata-group")
+                    .style("opacity", this.showStartSpotMetadata == true ? "1" : "0");
+
+                const firstConfig = startSpotData.teams[0];
+
+                for (const side of firstConfig.sides) {
+                    for (const pos of side.starts) {
+                        const spot = startSpotData.positions.find(iter => iter.name == pos.spawnPoint) || null;
+                        if (spot == null) {
+                            console.warn(`missing start spot ${pos.spawnPoint}`);
+                            continue;
+                        }
+
+                        g.append("circle")
+                            .attr("cx", this.toImgX(spot.x))
+                            .attr("cy", this.toImgZ(spot.y))
+                            .attr("r", "20")
+                            //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
+                            .style("fill", "#FFFFFF55")
+                            .style("stroke", "#000000CC")
+                            .style("stroke-width", "2px")
+                            .style("paint-order", "fill stroke");
+
+                        g.append("text")
+                            .attr("x", (this.toImgX(spot.x)))
+                            .attr("y", this.toImgZ(spot.y))
+                            .style("fill", "black")
+                            .style("font-size", "1.3rem")
+                            .style("paint-order", "stroke")
+                            .style("stroke", "black").style("stroke-width", "2px")
+                            .style("pointer-events", "none")
+                            .text(`${pos.spawnPoint}: ${pos.role}`);
+                    }
+                }
+            },
+
+            getMapSym: function(): void {
+
+                if (this.barMap.state != "loaded") {
+                    return;
+                }
+
+                if (this.barMap.data.startPositionData == null) {
+                    return;
+                }
+
+                let vm: number = 0;
+                let hm: number = 0;
+                let dm: number = 0;
+
+                const MAX_SPOT_DIFF: number = 300;
+
+                const config = this.barMap.data.startPositionData.teams[0];
+
+                const spots: Map<string, StartPosition> = new Map();
+                for (const pos of this.barMap.data.startPositionData.positions) {
+                    spots.set(pos.name, pos);
+                }
+
+                const mapH: number = this.barMap.data.height * 512;
+                const mapW: number = this.barMap.data.width * 512;
+
+                for (let i = 0; i < config.playersPerTeam; ++i) {
+                    const t1 = config.sides[0].starts[i];
+                    const t2 = config.sides[1].starts[i];
+
+                    const t1s = spots.get(t1.spawnPoint)!;
+                    const t2s = spots.get(t2.spawnPoint)!;
+
+
+
+                    const x1diff: number = Math.abs(t1s.x);
+                    const x2diff: number = Math.abs(mapW - t2s.x);
+                    const xdiff = Math.abs(x1diff - x2diff);
+
+                    const y1diff: number = Math.abs(t1s.y);
+                    const y2diff: number = Math.abs(mapH - t2s.y);
+                    const ydiff = Math.abs(y1diff - y2diff);
+
+                    console.log(`pos${i}: ${t1s.name}@(${t1s.x},${t1s.y}) ${t2s.name}@(${t2s.x},${t2s.y}) [diff ${x1diff} ${x2diff} ${y1diff} ${y2diff}] [abs diff ${xdiff} ${ydiff}]`);
+                }
+
+            },
+
             drawMap: function(): void {
                 if (this.svg == null) { return console.warn(`cannot draw map: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot draw map: root is null`); }
 
                 this.root.selectAll("*:not(.map-no-remove)").remove();
 
-                const cellSize: number = 128;
+                this.drawStartSpotMetadata();
+                this.drawStartSpotStats();
+            },
+
+            drawStartSpotStats: function(): void {
+                if (this.svg == null) { return console.warn(`cannot draw map: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot draw map: root is null`); }
 
                 if (this.stats.state != "loaded") {
                     console.warn(`Map> cannot drawMap, stats is not loaded`);
                     return;
                 }
+
+                const cellSize: number = 128;
 
                 if (this.selectedGamemode == 0 && this.startSpotGamemodes.length > 0) {
                     this.selectedGamemode = this.sumMapStats.gamemode;
@@ -631,7 +759,8 @@
                             this.hideTooltip();
                         });
                 }
-            },
+
+            }
 
         },
 
@@ -778,17 +907,35 @@
 
             openingLabSum: function(): number {
                 return this.openingLabs.reduce((acc, iter) => acc += iter.count, 0);
+            },
+
+            mapSymmetryAxis: function(): string {
+                if (this.barMap.state != "loaded") {
+                    return SymmetryAxis.getName(SymmetryAxis.MISSING);
+                }
+
+                return SymmetryAxis.getName(this.barMap.data.symmetryAxis);
             }
         },
 
         watch: {
             selectedGamemode: function(): void {
                 this.drawMap();
+            },
+
+            showStartSpotMetadata: function(): void {
+
+                if (this.root == null) {
+                    return;
+                }
+
+                this.root.select("#start-spot-metadata-group")
+                    .style("opacity", this.showStartSpotMetadata == true ? "1" : "0")
             }
         },
 
         components: {
-            ApiError, MatchList
+            ApiError, MatchList, ToggleButton
         }
     });
     export default MapView;

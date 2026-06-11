@@ -221,8 +221,10 @@ namespace gex {
                 SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
             }
 
-            SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.UIntHandler());
-            SqlMapper.AddTypeHandler(new DapperUnsignedTypeHandlers.ULongHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.UIntHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.ULongHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.JsonbHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.MapSymmetryAxisHandler());
         }
 
         /// <summary>

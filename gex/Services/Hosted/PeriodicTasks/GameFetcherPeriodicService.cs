@@ -52,13 +52,14 @@ namespace gex.Services.Hosted.PeriodicTasks {
             int page = 1;
             int limit = 50;
             int maxPage = Math.Min(_InstanceOptions.Value.MaxReplayPagePulls, 1000);
+            int minPage = 3; // these many pages will always be checked
 
             if (_InstanceOptions.Value.MaxReplayPagePulls > 1000) {
                 _Logger.LogWarning($"capping Instance:MaxReplayPagePulls to 1000 [value={_InstanceOptions.Value.MaxReplayPagePulls}]");
             }
 
             while (cancel.IsCancellationRequested == false) {
-                _Logger.LogDebug($"getting recent matches [limit={limit}] [maxPage={maxPage}]");
+                _Logger.LogDebug($"getting recent matches [limit={limit}] [minPage={minPage}] [maxPage={maxPage}]");
                 Result<List<BarRecentReplay>, string> recentMatches = await _ReplayApi.GetRecent(page, limit, cancel);
                 if (recentMatches.IsOk == false) {
                     return $"error getting recent matches: {recentMatches.Error}";
@@ -95,7 +96,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                     }
                 }
 
-                if (alreadyIter != limit) {
+                if (page < minPage || alreadyIter != limit) {
                     _Logger.LogInformation($"got a full page of new replays, getting another one! [page={page}] [ok={okCount}] [already={alreadyCount}] [error={errorCount}]");
                     page += 1;
                 } else {

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2 class="wt-header bg-light text-dark">
+        <h2 class="wt-header border-0">
             Units created
         </h2>
 
@@ -171,6 +171,9 @@
 
         data: function() {
             return {
+
+                agg: Loadable.idle() as Loading<BarUser>,
+
                 range: "all_time" as "daily" | "weekly" | "monthly" | "all_time",
 
                 filter: {
@@ -190,6 +193,12 @@
                 showDebug: false as boolean,
                 showTable: true as boolean,
             }
+        },
+
+        mounted: function(): void {
+            BarUserApi.getUnitsMadeByUserID(this.user.userID).then((value: Loading<BarUser>) => {
+                this.agg = value;
+            });
         },
 
         methods: {
@@ -257,7 +266,11 @@
 
             unitsMade: function(): Loading<UnitsMade[]> {
                 if (this.full.state == "idle") {
-                    return Loadable.loaded(this.user.unitsMade.map(iter => {
+                    if (this.agg.state != "loaded") {
+                        return Loadable.rewrap(this.agg);
+                    }
+
+                    return Loadable.loaded(this.agg.data.unitsMade.map(iter => {
                         return {
                             definitionName: iter.definitionName,
                             unitName: iter.unitName ?? `<missing ${iter.definitionName}>`,
@@ -326,11 +339,15 @@
             },
 
             lastUpdated: function(): Date {
-                if (this.user.unitsMade.length == 0) {
+                if (this.agg.state != "loaded") {
                     return new Date();
                 }
 
-                return new Date(Math.max(...this.user.unitsMade.map(iter => iter.timestamp.getTime())));
+                if (this.agg.data.unitsMade.length == 0) {
+                    return new Date();
+                }
+
+                return new Date(Math.max(...this.agg.data.unitsMade.map(iter => iter.timestamp.getTime())));
             },
 
             dayStart: function(): Date {

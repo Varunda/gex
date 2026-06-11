@@ -1,4 +1,5 @@
-﻿using gex.Common.Models.Options;
+﻿using gex.Common.Models;
+using gex.Common.Models.Options;
 using gex.Models.Bar;
 using gex.Services.Repositories;
 using ImageMagick;
@@ -26,6 +27,7 @@ namespace gex.Controllers {
 
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarMapRepository _MapRepository;
+        private readonly MapImageRepository _MapImageRepository;
         private readonly IMemoryCache _Cache;
 
         private const string CACHE_KEY_ICON_TYPES = "Gex.ImageProxy.IconTypes";
@@ -41,13 +43,14 @@ namespace gex.Controllers {
 
         public GameImageController(ILogger<GameImageController> logger,
             IOptions<FileStorageOptions> options, IMemoryCache cache,
-            BarMapRepository mapRepository) {
+            BarMapRepository mapRepository, MapImageRepository mapImageRepository) {
 
             _Logger = logger;
 
             _Options = options;
             _MapRepository = mapRepository;
             _Cache = cache;
+            _MapImageRepository = mapImageRepository;
         }
 
         /// <summary>
@@ -63,31 +66,13 @@ namespace gex.Controllers {
                 return StatusCode(400, $"{nameof(mapName)} is empty or null");
             }
 
-            mapName = mapName.Replace(" ", "%20");
+            Result<string, string> mapPath = await _MapImageRepository.GetMapPath(mapName, size);
 
-            string mapDir = Path.Join(_Options.Value.WebImageLocation, "maps");
-            if (Directory.Exists(mapDir) == false) {
-                Directory.CreateDirectory(mapDir);
+            if (mapPath.IsOk == false) {
+                return StatusCode(500, $"failed to load map image: {mapPath.Error}]");
             }
 
-            string sizeDir = Path.Join(mapDir, size);
-            Directory.CreateDirectory(sizeDir);
-
-            string mapPath = Path.Join(sizeDir, mapName + ".jpg");
-
-            if (System.IO.File.Exists(mapPath) == false) {
-                string url = BASE_URL + "/maps/" + mapName + "/" + size + ".jpg";
-                _Logger.LogDebug($"missing map background for given size, downloading [mapName={mapName}] [size={size}] [url={url}]");
-
-                HttpResponseMessage response = await _Http.GetAsync(url);
-                if (response.StatusCode != HttpStatusCode.OK) {
-                    return StatusCode((int)response.StatusCode);
-                }
-
-                await System.IO.File.WriteAllBytesAsync(mapPath, await response.Content.ReadAsByteArrayAsync());
-            }
-
-            FileStream image = System.IO.File.OpenRead(mapPath);
+            FileStream image = System.IO.File.OpenRead(mapPath.Value);
             return File(image, "image/jpeg", $"{mapName}.jpg", false);
         }
 

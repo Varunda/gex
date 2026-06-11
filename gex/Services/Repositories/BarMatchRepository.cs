@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,6 +61,7 @@ namespace gex.Services.Repositories {
 
             List<string> localIDs = new(IDs);
 
+            Stopwatch timer = Stopwatch.StartNew();
             // the .toList here is to make a copy, so its safe to remove entries from localIDs
             foreach (string ID in localIDs.ToList()) {
                 cancel.ThrowIfCancellationRequested();
@@ -70,11 +72,14 @@ namespace gex.Services.Repositories {
                     matches.Add(match);
                 }
             }
+            long cacheMs = timer.ElapsedMilliseconds; timer.Restart();
 
             if (localIDs.Count > 0) {
                 List<BarMatch> dbMatches = await _MatchDb.GetByIDs(localIDs, cancel);
                 matches.AddRange(dbMatches);
             }
+
+            long dbMs = timer.ElapsedMilliseconds; timer.Restart();
 
             foreach (BarMatch m in matches) {
                 string cacheKey = string.Format(CACHE_KEY_ID, m.ID);
@@ -82,6 +87,8 @@ namespace gex.Services.Repositories {
                     SlidingExpiration = TimeSpan.FromMinutes(5)
                 });
             }
+
+            _Logger.LogTrace($"loaded matches by ids [count={IDs.Count()}] [cache={cacheMs}ms] [db={dbMs}ms]");
 
             return matches;
         }

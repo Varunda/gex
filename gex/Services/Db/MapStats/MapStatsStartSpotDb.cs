@@ -1,9 +1,12 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Models.Bar;
+using gex.Models.Db;
 using gex.Models.MapStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,13 +78,51 @@ namespace gex.Services.Db.MapStats {
         /// <summary>
         ///     get start spot by map and user
         /// </summary>
-        /// <param name="mapFilename">filename of the map (see <see cref="BarMap.FileName"/>)</param>
-        /// <param name="userID">ID of the user to get the start spots of</param>
+        /// <param name="parameters">
+        ///     parameters used to perform the search. 
+        ///     must provide <see cref="UserStartSpotSearchParameters.MapFilename"/> 
+        ///     and <see cref="UserStartSpotSearchParameters.UserID"/>
+        ///  </param>
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
-        public async Task<List<MapStatsStartSpot>> GetByMapAndUser(string mapFilename, long userID, CancellationToken cancel) {
+        public async Task<List<MapStatsStartSpot>> GetByMapAndUser(UserStartSpotSearchParameters parameters, CancellationToken cancel) {
+
+            if (parameters.UserID == 0) {
+                throw new ArgumentException($"{nameof(UserStartSpotSearchParameters.UserID)} cannot be 0");
+            }
+            if (string.IsNullOrWhiteSpace(parameters.MapFilename) == true) {
+                throw new ArgumentException($"{nameof(UserStartSpotSearchParameters.MapFilename)} cannot be empty");
+            }
+
+            List<string> conditions = [];
+            conditions.Add($"m.map_name = @MapFilename");
+            conditions.Add($"m.gamemode <> 0");
+            conditions.Add($"p.user_id = @UserID");
+
+            if (parameters.Gamemode != null) {
+                conditions.Add($"m.gamemode = @Gamemode");
+            }
+            if (parameters.MinimumOS != null) {
+                conditions.Add($"m.min_os > @MinimumOS");
+            }
+            if (parameters.MinimumAverageOS != null) {
+                conditions.Add($"m.average_os > @MinimumAverageOS");
+            }
+            if (parameters.MaximumOS != null) {
+                conditions.Add($"m.max_os > @MaximumOS");
+            }
+            if (parameters.MaximumAverageOS != null) {
+                conditions.Add($"m.average_os > @MaximumAverageOS");
+            }
+            if (parameters.PeriodStart != null) {
+                conditions.Add($"m.start_time >= @PeriodStart");
+            }
+            if (parameters.PeriodEnd != null) {
+                conditions.Add($"m.start_time < @PeriodEnd");
+            }
+
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return await conn.QueryListAsync<MapStatsStartSpot>(@"
+            return await conn.QueryListAsync<MapStatsStartSpot>(@$"
                     SELECT 
 						m.map_name ""map_file_name"",
 						m.gamemode ""gamemode"",
@@ -94,13 +135,21 @@ namespace gex.Services.Db.MapStats {
 						bar_match m
 						LEFT JOIN bar_match_player p ON p.game_id = m.id
 						LEFT JOIN bar_match_ally_team at ON p.ally_team_id = at.ally_team_id AND p.game_id = at.game_id
-					WHERE 
-						m.map_name = @MapFileName
-						AND m.gamemode <> 0
-                        AND p.user_id = @UserID
+					WHERE 1=1
+						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
 					GROUP BY
 						1, 2, 4, 5",
-                new { MapFileName = mapFilename, UserID = userID },
+                new {
+                    MapFileName = parameters.MapFilename,
+                    UserID = parameters.UserID,
+                    Gamemode = parameters.Gamemode,
+                    MinimumOS = parameters.MinimumOS,
+                    MinimumAverageOS = parameters.MinimumAverageOS,
+                    MaximumOS = parameters.MaximumOS,
+                    MaximumAverageOS = parameters.MaximumAverageOS,
+                    PeriodStart = parameters.PeriodStart,
+                    PeriodEnd = parameters.PeriodEnd,
+                },
                 cancel
             );
         }

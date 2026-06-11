@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -218,9 +219,14 @@ namespace gex.Controllers.Api {
                 return ApiNoContent<BarUserSkillChanges>();
             }
 
+            Stopwatch timer = Stopwatch.StartNew();
             List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByUserID(userID, cancel);
+            long playersMs = timer.ElapsedMilliseconds; timer.Restart();
             Dictionary<string, BarMatch> matches = (await _MatchRepository.GetByIDs(players.Select(iter => iter.GameID).Distinct(), cancel))
                 .ToDictionaryDistinct(iter => iter.ID);
+            long matchesMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            _Logger.LogTrace($"loaded matches for user skill changes [players={playersMs}ms] [matches={matchesMs}ms]");
 
             BarUserSkillChanges changes = new();
             Dictionary<byte, BarUserSkillGamemode> gamemodes = [];
@@ -400,6 +406,13 @@ namespace gex.Controllers.Api {
         /// <param name="userID">ID of the user</param>
         /// <param name="mapFilename">filename of the map. either this one or <paramref name="mapName"/> must be given</param>
         /// <param name="mapName">name of the map. either this or <paramref name="mapFilename"/> must be given</param>
+        /// <param name="gamemode">optional, filters results based on gamemode of the match. if null (default), all are included</param>
+        /// <param name="minimumOS">optional, filters results based on minimum OS of the match. if null (default), all are included</param>
+        /// <param name="minimumAverageOS">optional, filters results based on minimum average OS of the match. if null (default), all are included</param>
+        /// <param name="maximumOS">optional, filters results based on maximum OS of the match. if null (default), all are included</param>
+        /// <param name="maximumAverageOS">optional, filters results based on maximum average OS of the match. if null (default), all are included</param>
+        /// <param name="periodStart">optional, filters results based on start time of the match. if null (default), all are included</param>
+        /// <param name="periodEnd">optional, filters results based on start time of the match. if null (default), all are included</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain a list of <see cref="MapStatsStartSpot"/>s
@@ -420,6 +433,16 @@ namespace gex.Controllers.Api {
             long userID,
             [FromQuery] string? mapFilename = null,
             [FromQuery] string? mapName = null,
+
+            [FromQuery] byte? gamemode = null,
+
+            [FromQuery] float? minimumOS = null,
+            [FromQuery] float? minimumAverageOS = null,
+            [FromQuery] float? maximumOS = null,
+            [FromQuery] float? maximumAverageOS = null,
+            [FromQuery] DateTime? periodStart = null,
+            [FromQuery] DateTime? periodEnd = null,
+
             CancellationToken cancel = default
         ) {
 
@@ -447,7 +470,7 @@ namespace gex.Controllers.Api {
             }
 
             if (map == null) {
-                throw new System.Exception($"logic error: why is map null here, 404 was expected");
+                throw new Exception($"logic error: why is map null here, 404 was expected");
             }
 
             BarUser? user = await _UserRepository.GetByID(userID, cancel);
@@ -455,7 +478,18 @@ namespace gex.Controllers.Api {
                 return ApiNotFound<List<MapStatsStartSpot>>($"{nameof(BarUser)} {userID}");
             }
 
-            List<MapStatsStartSpot> spots = await _StartSpotRepository.GetByMapAndUser(map.FileName, userID, cancel);
+            UserStartSpotSearchParameters parameters = new();
+            parameters.UserID = userID;
+            parameters.MapFilename = map.FileName;
+            parameters.Gamemode = gamemode;
+            parameters.MinimumOS = minimumOS;
+            parameters.MinimumAverageOS = minimumAverageOS;
+            parameters.MaximumOS = maximumOS;
+            parameters.MaximumAverageOS = maximumAverageOS;
+            parameters.PeriodStart = periodStart;
+            parameters.PeriodEnd = periodEnd;
+
+            List<MapStatsStartSpot> spots = await _StartSpotRepository.GetByMapAndUser(parameters, cancel);
             return ApiOk(spots);
         }
 

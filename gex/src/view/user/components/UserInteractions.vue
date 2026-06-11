@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2 class="wt-header bg-white text-dark mb-2">
+        <h2 class="wt-header border-0">
             Player encounters
         </h2>
 
@@ -107,6 +107,7 @@
     import { BarUserApi } from "api/BarUserApi";
 
     import { BarUserInteractions } from "model/BarUserInteractions";
+    import { BarUser } from "model/BarUser";
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
 
@@ -114,7 +115,7 @@
 
     export const UserInteractions = Vue.extend({
         props: {
-            UserId: { type: Number, required: true }
+            user: { type: Object as PropType<BarUser>, required: true }
         },
 
         data: function() {
@@ -132,7 +133,7 @@
         methods: {
             bind: async function(): Promise<void> {
                 this.interactions = Loadable.loading();
-                this.interactions = await BarUserApi.getInteractions(this.UserId);
+                this.interactions = await BarUserApi.getInteractions(this.user.userID);
             }
         },
 

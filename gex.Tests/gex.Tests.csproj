@@ -14,6 +14,7 @@
     <None Remove="resources\bomb.gzip" />
     <None Remove="resources\github_data\language\en\units.json" />
     <None Remove="resources\github_data\movedefs.lua" />
+    <None Remove="resources\images\texture-mq\hellas_basin_v1.4.jpg" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
     <None Remove="resources\unit_data\armpw.lua" />
     <None Remove="resources\unit_data\armsolar.lua" />
@@ -59,6 +60,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\github_data\movedefs.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\images\texture-mq\hellas_basin_v1.4.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\temp\file_to_create_dir_in_output.txt">

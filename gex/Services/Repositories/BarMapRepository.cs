@@ -56,7 +56,7 @@ namespace gex.Services.Repositories {
                     Result<BarMap, string> api = await _Api.GetByName(filename, cancel);
 
                     if (api.IsOk == true) {
-                        await _Db.Upsert(api.Value);
+                        await _Db.Upsert(api.Value, cancel);
                         map = api.Value;
                     } else {
                         _Logger.LogWarning($"failed to load map from API [filename={filename}] [error={api.Error}]");
@@ -70,6 +70,10 @@ namespace gex.Services.Repositories {
             }
 
             return map;
+        }
+
+        public async Task Upsert(BarMap map, CancellationToken cancel) {
+            await _Db.Upsert(map, cancel);
         }
 
     }

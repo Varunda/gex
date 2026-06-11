@@ -1,5 +1,8 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Common.Code.Constants;
+using System;
+using System.Text.Json;
 
 namespace gex.Models.Bar {
 
@@ -41,6 +44,15 @@ namespace gex.Models.Bar {
 
         [ColumnMapping("author")]
         public string Author { get; set; } = "";
+
+        [ColumnMapping("start_position_data")]
+        public JsonElement? StartPositionData { get; set; }
+
+        [ColumnMapping("symmetry_axis")]
+        public MapSymmetryAxis? SymmetryAxis { get; set; } = null;
+
+        [ColumnMapping("timestamp")]
+        public DateTime Timestamp { get; set; }
 
     }
 }

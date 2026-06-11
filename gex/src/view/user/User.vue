@@ -1,70 +1,83 @@
 
 <template>
     <div class="container remove-container-padding">
-        <div>
-            <h2 class="wt-header bg-light text-dark">User info</h2>
 
-            <div v-if="user.state == 'idle'"></div>
+        <div v-if="user.state == 'idle'"></div>
 
-            <div v-else-if="user.state == 'loading'">
-                <busy class="busy busy-sm"></busy>
-                Loading...
-            </div>
-
-            <div v-else-if="user.state == 'loaded'">
-                <user-info :user="user.data" :matches="matches"></user-info>
-            </div>
-        </div>
-
-        <div>
-            <div class="wt-header mb-2 bg-light text-dark" style="white-space: nowrap; text-wrap: wrap;">
-                <h2 class="d-inline-block mb-0">
-                    Recorded matches
-                </h2>
-
-                <wbr/>
-
-                <h6 class="d-inline-block mb-0">
-                    Only includes public PvP matches
-                </h6>
-            </div>
-
-            <div v-if="matches.state == 'idle'"></div>
-            
-            <div v-else-if="matches.state == 'loading'">
-                <busy class="busy busy-sm"></busy>
-                Loading...
-            </div>
-
-            <div v-else-if="matches.state == 'loaded'">
-                <user-matches :data="matches.data" :user-id="userID"></user-matches>
-            </div>
-
-            <div v-else-if="matches.state == 'error'">
-                <api-error :error="matches.problem"></api-error>
-            </div>
-
-            <div v-else>
-                unchecked state of matches: {{ matches.state }}
-            </div>
-        </div>
-
-        <div v-if="user.state == 'loaded'">
-            <user-interactions :user-id="userID"></user-interactions>
-        </div>
-
-        <div v-if="unitData.state == 'idle'"></div>
-
-        <div v-else-if="unitData.state == 'loading'">
-            <h2 class="wt-header bg-light text-dark">
-                Units created
-            </h2>
-
+        <div v-else-if="user.state == 'loading' || matches.state == 'loading'" class="text-center">
+            Loading...
             <busy class="busy busy-sm"></busy>
+
+            <table class="table table-sm">
+                <tbody>
+                    <tr>
+                        <td>User</td>
+                        <td>{{ user.state }}</td>
+                    </tr>
+                    <tr>
+                        <td>Matches</td>
+                        <td>{{ matches.state }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
-        <div v-if="unitData.state == 'loaded' && matches.state == 'loaded'">
-            <user-units-made :user="unitData.data" :matches="matches.data"></user-units-made>
+        <div v-else-if="user.state == 'nocontent'">
+            <div class="alert alert-danger">
+                No user with ID {{ userID }} exists
+            </div>
+        </div>
+
+        <div v-else-if="user.state == 'loaded' && matches.state == 'loaded'">
+
+            <user-header :user="user.data"></user-header>
+
+            <ul class="nav nav-tabs border-bottom-0 justify-content-center">
+                <li class="nav-item" @click="selectTab('overview')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'overview' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Overview
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('faction')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'faction' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Faction stats
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('charts')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'charts' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Charts
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('names')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'names' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Previous names
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('map')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'map' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Map stats
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('matches')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'matches' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Match history
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('encounters')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'encounters' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Player encounters
+                    </a>
+                </li>
+                <li class="nav-item" @click="selectTab('units')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'units' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Units created
+                    </a>
+                </li>
+            </ul>
+
+            <keep-alive>
+                <component :is="selectedComponent" :user="user.data" :matches="matches.data"></component>
+            </keep-alive>
         </div>
     </div>
 </template>
@@ -83,10 +96,16 @@
     import ToggleButton from "components/ToggleButton";
     import Busy from "components/Busy.vue";
 
+    import UserHeader from "./components/UserHeader.vue";
     import UserMatches from "./components/UserMatches.vue";
     import UserInfo from "./components/UserInfo.vue";
     import UserUnitsMade from "./components/UserUnitsMade.vue";
     import UserInteractions from "./components/UserInteractions.vue";
+    import UserCharts from "./components/UserCharts.vue";
+    import UserOverview from "./components/UserOverview.vue";
+    import UserFactionStats from "./components/UserFactionStats.vue";
+    import UserMaps from "./components/UserMaps.vue";
+    import UserPreviousNames from "./components/UserPreviousNames.vue";
 
     import { BarMatchApi } from "api/BarMatchApi";
     import { BarUserApi } from "api/BarUserApi";
@@ -106,34 +125,74 @@
                 matches: Loadable.idle() as Loading<BarMatch[]>,
                 user: Loadable.idle() as Loading<BarUser>,
 
-                unitData: Loadable.idle() as Loading<BarUser>,
+                selectedTab: "overview" as string,
+                selectedComponent: "UserOverview" as string,
             };
         },
 
         created: function(): void {
-            this.userID = Number.parseInt(location.pathname.split("/")[2]);
         },
 
         beforeMount: function(): void {
-            this.loadMatches();
             this.loadUser();
         },
 
         methods: {
             loadUser: async function(): Promise<void> {
+                const parts: string[] = location.pathname.split("/");
+                if (parts.length < 3) {
+                    throw `User> invalid URL passed '${location.pathname}': expected at least 3 parts after split on '/'`;
+                }
+
+                if (parts[1] != "user") {
+                    throw `User> expected 'user' in parts[1], got '${parts[1]}' instead`;
+                }
+
+                this.userID = Number.parseInt(parts[2]);
+                this.loadMatches();
+
                 this.user = Loadable.loading();
-                this.unitData = Loadable.loading();
                 this.user = await BarUserApi.getByUserID(this.userID);
 
                 if (this.user.state == "loaded") {
                     document.title = `Gex / User / ${this.user.data.username}`;
-                    const url = new URL(location.href);
-                    url.searchParams.set("name", this.user.data.username);
-
-                    history.replaceState({ path: url.href }, "", `/user/${this.userID}/?${url.searchParams.toString()}`);
-
-                    this.unitData = await BarUserApi.getUnitsMadeByUserID(this.userID);
                 }
+
+                if (parts.length >= 4 && parts[3] != "") {
+                    console.log(`User> viewing tab '${parts[3]}'`);
+                    this.selectTab(parts[3]);
+                }
+            },
+
+            selectTab: function(tab: string): void {
+                console.log(`User> selecting tab '${tab}'`);
+                this.selectedTab = tab.toLowerCase();
+
+                if (this.selectedTab == "overview") {
+                    this.selectedComponent = "UserOverview";
+                } else if (this.selectedTab == "faction") {
+                    this.selectedComponent = "UserFactionStats";
+                } else if (this.selectedTab == "matches") {
+                    this.selectedComponent = "UserMatches";
+                } else if (this.selectedTab == "encounters") {
+                    this.selectedComponent = "UserInteractions";
+                } else if (this.selectedTab == "map") {
+                    this.selectedComponent = "UserMaps";
+                } else if (this.selectedTab == "names") {
+                    this.selectedComponent = "UserPreviousNames";
+                } else if (this.selectedTab == "charts"){
+                    this.selectedComponent = "UserCharts";
+                } else if (this.selectedTab == "units"){
+                    this.selectedComponent = "UserUnitsMade";
+                } else {
+                    throw `User> unhandled tab select '${this.selectedTab}'`;
+                }
+
+                const url = new URL(location.href);
+                if (this.user.state == "loaded") {
+                    url.searchParams.set("name", encodeURIComponent(this.user.data.username));
+                }
+                history.pushState({ path: url.href }, "", `/user/${this.userID}/${this.selectedTab}?${url.searchParams.toString()}`);
             },
 
             loadMatches: async function(): Promise<void> {
@@ -177,7 +236,8 @@
         components: {
             GexMenu, InfoHover, ApiError, ToggleButton, Busy,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            UserMatches, UserInfo, UserUnitsMade, UserInteractions,
+            UserHeader, UserMatches, UserInfo, UserUnitsMade, UserInteractions,
+            UserCharts, UserOverview, UserFactionStats, UserMaps, UserPreviousNames,
         }
     });
     export default User;

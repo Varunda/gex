@@ -341,6 +341,7 @@ namespace gex {
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarMatchTitleUtilService>();
             services.AddSingleton<ApmCalculatorUtil>();
+            services.AddSingleton<MapSymmetryUtil>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist
@@ -465,7 +466,7 @@ namespace gex {
 
                 endpoints.MapControllerRoute(
                     name: "user",
-                    pattern: "/user/{userID}",
+                    pattern: "/user/{userID}/{*.}",
                     defaults: new { controller = "Home", action = "User" }
                 );
 

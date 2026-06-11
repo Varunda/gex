@@ -27,17 +27,17 @@ namespace gex.Services.Db {
         /// </summary>
         /// <param name="map">parameters used to upsert</param>
         /// <returns>a task for when the async operation is complete</returns>
-        public async Task Upsert(BarMap map) {
+        public async Task Upsert(BarMap map, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_map (
                     id, name, filename, description,
                     tidal_strength, max_metal, extractor_radius, minimum_wind, maximum_wind,
-                    width, height, author
+                    width, height, author, start_position_data, timestamp, symmetry_axis
                 ) VALUES (
                     @ID, @Name, @FileName, @Description,
                     @TidalStrength, @MaxMetal, @ExtractorRadius, @MinimumWind, @MaximumWind,
-                    @Width, @Height, @Author
+                    @Width, @Height, @Author, @StartPositionData, NOW() at time zone 'utc', @SymmetryAxis
                 ) ON CONFLICT (id) DO UPDATE
                     SET name = @Name,
                         filename = @FileName,
@@ -49,8 +49,11 @@ namespace gex.Services.Db {
                         maximum_wind = @MaximumWind,
                         width = @Width,
                         height = @Height,
-                        author = @Author;
-            ");
+                        author = @Author,
+                        start_position_data = @StartPositionData,
+                        timestamp = NOW() at time zone 'utc',
+                        symmetry_axis = @SymmetryAxis;
+            ", cancel);
 
             cmd.AddParameter("ID", map.ID);
             cmd.AddParameter("Name", map.Name);
@@ -64,9 +67,11 @@ namespace gex.Services.Db {
             cmd.AddParameter("Width", map.Width);
             cmd.AddParameter("Height", map.Height);
             cmd.AddParameter("Author", map.Author);
-            await cmd.PrepareAsync();
+            cmd.AddParameter("StartPositionData", map.StartPositionData);
+            cmd.AddParameter("SymmetryAxis", (int?)map.SymmetryAxis);
+            await cmd.PrepareAsync(cancel);
 
-            await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync(cancel);
             await conn.CloseAsync();
         }
 

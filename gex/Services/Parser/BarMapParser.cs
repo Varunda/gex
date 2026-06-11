@@ -254,7 +254,6 @@ namespace gex.Services.Parser {
         }
 
         private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, CancellationToken cancel) {
-
             if (File.Exists(location) == false) {
                 return $"failed to open SMF at '{location}'";
             }
@@ -277,6 +276,12 @@ namespace gex.Services.Parser {
             header.ID = reader.ReadInt32LE();
             header.Width = reader.ReadInt32LE();
             header.Height = reader.ReadInt32LE();
+            header.SquareSize = reader.ReadInt32LE();
+            header.TexelsPerSquare = reader.ReadInt32LE();
+            header.TileSize = reader.ReadInt32LE();
+            header.MinHeight = reader.ReadFloat32LE();
+            header.MaxHeight = reader.ReadFloat32LE();
+            header.HeightMapOffset = reader.ReadInt32LE();
 
             return header;
         }

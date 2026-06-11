@@ -1,12 +1,24 @@
 <template>
     <div>
+        <div class="wt-header border-0" style="white-space: nowrap; text-wrap: wrap;">
+            <h2 class="d-inline-block mb-0">
+                Recorded matches
+            </h2>
+
+            <wbr/>
+
+            <h6 class="d-inline-block mb-0">
+                Only includes public PvP matches
+            </h6>
+        </div>
+
         <toggle-button v-model="showOutcome" class="mb-2">
             Show outcome
         </toggle-button>
 
-        <a-table :entries="matches"
+        <a-table :entries="loadableMatches"
             :show-filters="true"
-            :default-page-size="10" :overflow-wrap="true"
+            :default-page-size="25" :overflow-wrap="true"
             default-sort-field="startTime" default-sort-order="desc">
 
             <a-col sort-field="startTime">
@@ -107,7 +119,7 @@
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <user-match-rating-cell :user-id="UserId" :match="entry"></user-match-rating-cell>
+                    <user-match-rating-cell :user-id="user.userID" :match="entry"></user-match-rating-cell>
                 </a-body>
             </a-col>
 
@@ -167,6 +179,7 @@
     import MatchInfo from "components/app/MatchInfo.vue";
     import FactionIcon from "components/app/FactionIcon";
 
+    import { BarUser } from "model/BarUser";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
@@ -225,8 +238,8 @@
 
     export const UserMatches = Vue.extend({
         props: {
-            data: { type: Array as PropType<BarMatch[]>, required: true },
-            UserId: { type: Number, required: true }
+            matches: { type: Array as PropType<BarMatch[]>, required: true },
+            user: { type: Object as PropType<BarUser>, required: true }
         },
 
         data: function() {
@@ -245,9 +258,9 @@
             },
 
             playerFaction: function(match: BarMatch): number {
-                const player: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.UserId);
+                const player: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
                 if (player == undefined) {
-                    console.warn(`UserMatches> how is player not in this match? [gameID=${match.id}] [userID=${this.UserId}]`);
+                    console.warn(`UserMatches> how is player not in this match? [gameID=${match.id}] [userID=${this.user.userID}]`);
                     return 1;
                 }
 
@@ -260,9 +273,9 @@
                     return "Tie";
                 }
 
-                const player = match.players.find(iter => iter.userID == this.UserId);
+                const player = match.players.find(iter => iter.userID == this.user.userID);
                 if (player == undefined) {
-                    console.error(`UserMatches> user was not a player? ${this.UserId}`);
+                    console.error(`UserMatches> user was not a player? ${this.user.userID}`);
                     return "Unknown";
                 }
 
@@ -275,8 +288,8 @@
         },
 
         computed: {
-            matches: function(): Loading<BarMatch[]> {
-                return Loadable.loaded(this.data);
+            loadableMatches: function(): Loading<BarMatch[]> {
+                return Loadable.loaded(this.matches);
             },
 
             source: function() {

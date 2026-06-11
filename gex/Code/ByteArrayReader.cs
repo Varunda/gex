@@ -18,6 +18,10 @@ namespace gex.Code {
 
         public int Index => _Index;
 
+        public void Seek(int offset) {
+            _Index = offset;
+        }
+
         public Span<byte> Read(int amount) {
             Span<byte> span = _Data.AsSpan(_Index, amount);
             _Index += amount;
@@ -86,6 +90,12 @@ namespace gex.Code {
 
         public ushort ReadUInt16LE() {
             ushort value = BinaryPrimitives.ReadUInt16LittleEndian(_Data.AsSpan(_Index, 2));
+            _Index += 2;
+            return value;
+        }
+
+        public ushort ReadUInt16BE() {
+            ushort value = BinaryPrimitives.ReadUInt16BigEndian(_Data.AsSpan(_Index, 2));
             _Index += 2;
             return value;
         }
