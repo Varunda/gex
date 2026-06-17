@@ -57,12 +57,6 @@ namespace gex.Services.Migrations {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task FixMap(BarMap map, CancellationToken cancel) {
-            StartSpotData? data = await _StartSpotDataRepository.GetLatestByMapFilename(map.FileName, cancel);
-            if (data == null) {
-                _Logger.LogWarning($"cannot fix match players for map, start position data is null [map={map.FileName}]");
-                return;
-            }
-
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
 
@@ -96,6 +90,13 @@ namespace gex.Services.Migrations {
             foreach (BarMatch match in matches) {
                 List<BarMatchPlayer> matchPlayers = playerDict.GetValueOrDefault(match.ID) ?? [];
                 match.AllyTeams = allyTeamDict.GetValueOrDefault(match.ID) ?? [];
+
+                StartSpotData? data = await _StartSpotDataRepository.GetLatestByMapFilename(map.FileName, cancel);
+                if (data == null) {
+                    _Logger.LogWarning($"cannot fix match players for map, start position data is null [map={map.FileName}]");
+                    return;
+                }
+
                 await FixMatch(match, matchPlayers, data, cancel);
             }
 

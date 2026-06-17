@@ -4,7 +4,9 @@ using gex.Models.Bar;
 using gex.Models.Internal;
 using gex.Models.Map;
 using gex.Services.Db.Map;
+using gex.Services.Migrations;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -23,16 +25,19 @@ namespace gex.Controllers.Api {
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotSideStartRoleOverrideDb _OverrideDb;
         private readonly BarMatchPlayerRepository _MatchPlayerRepository;
+        private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
 
         public MapApiController(ILogger<MapApiController> logger,
             BarMapRepository mapRepository, StartSpotDataRepository startSpotDataRepository,
-            StartSpotSideStartRoleOverrideDb overrideDb, BarMatchPlayerRepository matchPlayerRepository) {
+            StartSpotSideStartRoleOverrideDb overrideDb, BarMatchPlayerRepository matchPlayerRepository,
+            BarMatchPlayerStartSpotMigration playerStartSpotMigration) {
 
             _Logger = logger;
             _MapRepository = mapRepository;
             _StartSpotDataRepository = startSpotDataRepository;
             _OverrideDb = overrideDb;
             _MatchPlayerRepository = matchPlayerRepository;
+            _PlayerStartSpotMigration = playerStartSpotMigration;
         }
 
         /// <summary>
@@ -122,6 +127,30 @@ namespace gex.Controllers.Api {
                 + $"[position={position}] [role={role}] [timer={timer.ElapsedMilliseconds}ms]");
 
             return ApiOk(@override);
+        }
+
+        /// <summary>
+        ///     recalculate player start spots for a map
+        /// </summary>
+        /// <param name="mapFilename">name of the map</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the stats for the map were recalculated
+        /// </response>
+        [HttpPost("{mapFilename}/recalculate-player-start-spots")]
+        [Authorize]
+        [PermissionNeeded(AppPermission.GEX_DEV)]
+        public async Task<ApiResponse> RecalculatePlayerStartSpots(string mapFilename, CancellationToken cancel) {
+            BarMap? map = await _MapRepository.GetByFileName(mapFilename, cancel);
+            if (map == null) {
+                return ApiNotFound($"{nameof(BarMap)} {mapFilename}");
+            }
+
+            _Logger.LogDebug($"fixing start spot [map={mapFilename}]");
+            await _PlayerStartSpotMigration.FixMap(map, cancel);
+            _Logger.LogInformation($"fixed start spots for map [map={mapFilename}]");
+
+            return ApiOk();
         }
 
     }

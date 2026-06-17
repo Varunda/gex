@@ -25,6 +25,13 @@
                 <h5 class="mb-0">
                     by {{ barMap.data.author }}
                 </h5>
+
+
+                <div v-if="isDev">
+                    <button class="btn btn-info" @click="recalculateMapStartSpots">
+                        recalc player start spots
+                    </button>
+                </div>
             </div>
 
             <img id="map-dims" :src="mapUrl" style="display: none;">
@@ -893,6 +900,13 @@
                 Toaster.add("Done", `copied ${this.positions.length} to ${this.overrideCopy.map} v${this.overrideCopy.version}`)
 
                 this.bind();
+            },
+
+            recalculateMapStartSpots: async function(): Promise<void> {
+                const ret = await MapApi.recalculatePlayerStartSpots(this.mapFilename);
+                if (ret.state == "loaded") {
+                    Toaster.add("done!", "recalulcated player start spots for map", "success");
+                }
             }
 
         },
@@ -1052,6 +1066,10 @@
 
             isMapEditor: function(): boolean {
                 return AccountUtil.hasPermission("Gex.MapStartSpot.Editor");
+            },
+
+            isDev: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Dev");
             }
         },
 

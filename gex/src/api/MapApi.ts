@@ -21,4 +21,8 @@ export class MapApi extends ApiWrapper<BarMap> {
             + `${maxRadius != null ? `&maxRadius=${maxRadius}` : ""}`);
     }
 
+    public static recalculatePlayerStartSpots(mapFilename: string): Promise<Loading<void>> {
+        return MapApi.get().post(`/api/map/${encodeURIComponent(mapFilename)}/recalculate-player-start-spots`);
+    }
+
 }
