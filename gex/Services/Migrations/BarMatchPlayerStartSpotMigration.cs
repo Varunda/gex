@@ -20,17 +20,20 @@ namespace gex.Services.Migrations {
         private readonly BarMapRepository _MapRepository;
         private readonly BarMatchDb _MatchDb;
         private readonly BarMatchPlayerDb _MatchPlayerDb;
+        private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
 
         public BarMatchPlayerStartSpotMigration(ILogger<BarMatchPlayerStartSpotMigration> logger,
             BarMapRepository mapRepository, BarMatchDb matchDb,
-            BarMatchPlayerDb matchPlayerDb, StartSpotDataRepository startSpotDataRepository) {
+            BarMatchPlayerDb matchPlayerDb, StartSpotDataRepository startSpotDataRepository,
+            BarMatchAllyTeamDb matchAllyTeamDb) {
 
             _Logger = logger;
             _MapRepository = mapRepository;
             _MatchDb = matchDb;
             _MatchPlayerDb = matchPlayerDb;
             _StartSpotDataRepository = startSpotDataRepository;
+            _MatchAllyTeamDb = matchAllyTeamDb;
         }
 
         /// <summary>
@@ -80,8 +83,19 @@ namespace gex.Services.Migrations {
             }
             long playerDbMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            List<BarMatchAllyTeam> allyTeams = await _MatchAllyTeamDb.GetByGameIDs(matches.Select(iter => iter.ID), cancel);
+            Dictionary<string, List<BarMatchAllyTeam>> allyTeamDict = [];
+            foreach (BarMatchAllyTeam at in allyTeams) {
+                if (allyTeamDict.ContainsKey(at.GameID) == false) {
+                    allyTeamDict.Add(at.GameID, new List<BarMatchAllyTeam>());
+                }
+
+                allyTeamDict.GetValueOrDefault(at.GameID)!.Add(at);
+            }
+
             foreach (BarMatch match in matches) {
                 List<BarMatchPlayer> matchPlayers = playerDict.GetValueOrDefault(match.ID) ?? [];
+                match.AllyTeams = allyTeamDict.GetValueOrDefault(match.ID) ?? [];
                 await FixMatch(match, matchPlayers, data, cancel);
             }
 
@@ -105,19 +119,24 @@ namespace gex.Services.Migrations {
                 return;
             }
 
+            int missing = 0;
+            int found = 0;
+
             foreach (BarMatchPlayer player in players) {
                 StartSpotSideStart? nearestSpot = data.GetNearestStartSpot(match.AllyTeams.Count, player.StartingPosition.X, player.StartingPosition.Z);
 
                 if (nearestSpot == null) {
+                    ++missing;
                     continue;
                 }
+
+                ++found;
 
                 player.StartSpot = nearestSpot.SpawnPoint;
                 player.StartSpotLabel = nearestSpot.Role;
 
                 await _MatchPlayerDb.UpdateStartSpot(player, cancel);
             }
-
         }
 
     }

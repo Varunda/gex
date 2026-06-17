@@ -44,11 +44,11 @@ namespace gex.Tests.Services.Util {
 
             Result<MapSymmetryAxis, string> hellas = await util.Find("hellas_basin_v1.4");
             Assert.IsTrue(hellas.IsOk, $"output not ok: {hellas.Error}");
-            Assert.AreEqual(MapSymmetryAxis.MIRRORED_DIAGONOL, hellas.Value);
+            Assert.AreEqual(MapSymmetryAxis.MIRRORED_DIAGONAL, hellas.Value);
 
             Result<MapSymmetryAxis, string> glitters = await util.Find("all_that_glitters_v2.2.3");
             Assert.IsTrue(glitters.IsOk, $"output not ok: {glitters.Error}");
-            Assert.AreEqual(MapSymmetryAxis.MIRRORED_VERTICAL, glitters.Value);
+            Assert.AreEqual(MapSymmetryAxis.FLIPPED_HORIZONTAL, glitters.Value);
 
         }
 
