@@ -31,6 +31,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BadGameVersionRepository>();
             services.AddSingleton<GameUnitsCreatedRepository>();
             services.AddSingleton<MapImageRepository>();
+            services.AddSingleton<StartSpotDataRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

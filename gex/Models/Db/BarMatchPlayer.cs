@@ -70,5 +70,17 @@ namespace gex.Models.Db {
         /// </summary>
         public string? CountryCode { get; set; }
 
+        /// <summary>
+        ///     the position on the map the player started at, e.x. P1, P4, etc.
+        ///     is null if the map does not have this info
+        /// </summary>
+        public string? StartSpot { get; set; }
+
+        /// <summary>
+        ///     name of the start spot, e.x. tech, front, sea, etc.
+        ///     is null if the map does not have this info
+        /// </summary>
+        public string? StartSpotLabel { get; set; }
+
     }
 }

@@ -1,4 +1,7 @@
-﻿using gex.Models.Options;
+﻿using Dapper;
+using Dapper.ColumnMapper;
+using gex.Code;
+using gex.Models.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -56,6 +59,18 @@ namespace gex.Services.Db.Implementations {
                     await UpdateVersion(patch.MinVersion);
                 }
             }
+
+            Type[] types = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(iter => iter.GetCustomAttribute<DapperColumnsMappedAttribute>() != null).ToArray();
+
+            foreach (Type t in types) {
+                SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
+            }
+
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.UIntHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.ULongHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.JsonbHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.MapSymmetryAxisHandler());
         }
 
         /// <summary>

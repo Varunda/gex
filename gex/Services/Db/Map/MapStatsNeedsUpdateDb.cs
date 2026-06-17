@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Db.MapStats {
+namespace gex.Services.Db.Map {
 
     public class MapStatsNeedsUpdateDb {
 

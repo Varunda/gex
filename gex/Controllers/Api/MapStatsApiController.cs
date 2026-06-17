@@ -1,7 +1,7 @@
 ﻿using gex.Models;
 using gex.Models.Bar;
 using gex.Models.MapStats;
-using gex.Services.Db.MapStats;
+using gex.Services.Db.Map;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

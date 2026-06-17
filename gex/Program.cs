@@ -212,7 +212,7 @@ namespace gex {
         /// </summary>
         /// <param name="logger"></param>
         private static void MapDapperTypes(ILogger<Program> logger) {
-
+            /*
             Type[] types = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(iter => iter.GetCustomAttribute<DapperColumnsMappedAttribute>() != null).ToArray();
 
@@ -225,6 +225,7 @@ namespace gex {
             SqlMapper.AddTypeHandler(new DapperSqlMappers.ULongHandler());
             SqlMapper.AddTypeHandler(new DapperSqlMappers.JsonbHandler());
             SqlMapper.AddTypeHandler(new DapperSqlMappers.MapSymmetryAxisHandler());
+            */
         }
 
         /// <summary>

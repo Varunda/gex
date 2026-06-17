@@ -1,6 +1,6 @@
 ﻿using gex.Models.Db;
 using gex.Models.MapStats;
-using gex.Services.Db.MapStats;
+using gex.Services.Db.Map;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;

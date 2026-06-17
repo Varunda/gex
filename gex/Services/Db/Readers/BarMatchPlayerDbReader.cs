@@ -1,4 +1,5 @@
-﻿using gex.Models.Db;
+﻿using gex.Code.ExtensionMethods;
+using gex.Models.Db;
 using Npgsql;
 using System.Data;
 
@@ -25,6 +26,8 @@ namespace gex.Services.Db.Readers {
             player.SkillUncertainty = reader.GetDouble("skill_uncertainty");
             player.Color = reader.GetInt32("color");
             player.Handicap = reader.GetDecimal("handicap");
+            player.StartSpot = reader.GetNullableString("start_spot");
+            player.StartSpotLabel = reader.GetNullableString("start_spot_label");
 
             return player;
         }

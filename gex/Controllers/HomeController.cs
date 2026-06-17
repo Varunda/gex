@@ -7,6 +7,7 @@ using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Models.UserStats;
 using gex.Services;
+using gex.Services.Db;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Repositories;
@@ -43,6 +44,7 @@ namespace gex.Controllers {
         private readonly BarMapRepository _MapRepository;
         private readonly BarUserRepository _UserRepository;
         private readonly MatchPoolRepository _MatchPoolRepository;
+        private readonly MatchPoolEntryDb _PoolEntryDb;
 
         public HomeController(ILogger<HomeController> logger,
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
@@ -50,7 +52,7 @@ namespace gex.Controllers {
             BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository mapRepository, BarUserRepository userRepository,
             ICurrentAccount currentUser, AppAccountDbStore accountDb,
-            MatchPoolRepository matchPoolRepository) {
+            MatchPoolRepository matchPoolRepository, MatchPoolEntryDb poolEntryDb) {
 
             _Logger = logger;
             _HttpContextAccessor = httpContextAccessor;
@@ -66,6 +68,7 @@ namespace gex.Controllers {
             _MapRepository = mapRepository;
             _UserRepository = userRepository;
             _MatchPoolRepository = matchPoolRepository;
+            _PoolEntryDb = poolEntryDb;
         }
 
         public IActionResult Index() {
@@ -245,6 +248,23 @@ namespace gex.Controllers {
             BarMatch? match = await _MatchRepository.GetByID(gameID, CancellationToken.None);
             if (match == null) {
                 return NotFound();
+            }
+
+            List<MatchPoolEntry> poolEntries = await _PoolEntryDb.GetByMatchID(gameID, CancellationToken.None);
+            if (poolEntries.Count > 0) {
+                AppAccount? currentUser = await _CurrentUser.Get(CancellationToken.None);
+
+                bool canView = false;
+                foreach (MatchPoolEntry entry in poolEntries) {
+                    canView |= await _MatchPoolRepository.CanView(entry.PoolID, currentUser?.ID, CancellationToken.None);
+                    if (canView == true) {
+                        break;
+                    }
+                }
+
+                if (canView == false) {
+                    return StatusCode(403, $"this {nameof(BarMatch)} is in a match pool that is hidden");
+                }
             }
 
             string path = Path.Join(_Options.Value.ReplayLocation, match.FileName);

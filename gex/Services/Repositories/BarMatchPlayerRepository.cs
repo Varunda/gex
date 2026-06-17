@@ -1,4 +1,5 @@
 ﻿using gex.Models.Db;
+using gex.Models.Map;
 using gex.Services.Db.Match;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ namespace gex.Services.Repositories {
                 players = await _Db.GetByGameID(gameID, cancel);
 
                 _Cache.Set(cacheKey, players, new MemoryCacheEntryOptions() {
-                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
                 });
             }
 
@@ -69,7 +70,7 @@ namespace gex.Services.Repositories {
             foreach (IGrouping<string, BarMatchPlayer> groupedPlayers in players) {
                 string cacheKey = string.Format(CACHE_KEY_ID, groupedPlayers.Key);
                 _Cache.Set(cacheKey, groupedPlayers.ToList(), new MemoryCacheEntryOptions() {
-                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
                 });
             }
 
@@ -84,6 +85,10 @@ namespace gex.Services.Repositories {
             string cacheKey = string.Format(CACHE_KEY_ID, player.GameID);
             _Cache.Remove(cacheKey);
             await _Db.Insert(player);
+        }
+
+        public async Task UpdateStartSpotRole(StartSpotSideStartRoleOverride @override, CancellationToken cancel) {
+            await _Db.UpdateStartSpotRole(@override, cancel);
         }
 
         public async Task DeleteByGameID(string gameID) {

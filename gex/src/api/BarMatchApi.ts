@@ -118,4 +118,8 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         return BarMatchApi.get().readList(`/api/match/search?${search.toString()}`, BarMatch.parse);
     }
 
+    public static recalculatePlayerStartSpots(gameID: string): Promise<Loading<void>> {
+        return BarMatchApi.get().post(`/api/match/${gameID}/recalculate-player-start-spots`);
+    }
+
 }

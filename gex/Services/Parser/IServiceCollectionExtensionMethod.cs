@@ -12,6 +12,7 @@ namespace gex.Services.Parser {
             services.AddSingleton<LuaCommandParser>();
             services.AddSingleton<BarMoveDefinitionParser>();
             services.AddSingleton<BarFeatureDefintionParser>();
+            services.AddSingleton<StartSpotDataParser>();
         }
 
     }

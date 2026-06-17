@@ -1,5 +1,5 @@
 ﻿using gex.Models.Queues;
-using gex.Services.Db.MapStats;
+using gex.Services.Db.Map;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;

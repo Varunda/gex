@@ -241,7 +241,9 @@
                                     }
                                     return Math.max(3, Math.floor((entry?.total ?? 10) / maxInterval * 12));
                                 },
-                                data: Array.from(this.winrateDuration.data.values()).map(iter => {
+                                data: Array.from(this.winrateDuration.data.values()).sort((a, b) => {
+                                    return a.minute - b.minute;
+                                }).map(iter => {
                                     return {
                                         x: iter.minute,
                                         y: Math.round(iter.wins / iter.total * 100)

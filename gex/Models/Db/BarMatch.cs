@@ -86,6 +86,8 @@ namespace gex.Models.Db {
 
         public float MaxOS { get; set; }
 
+        public int? StartSpotVersion { get; set; }
+
         public BarMap? MapData { get; set; }
 
         /// <summary>

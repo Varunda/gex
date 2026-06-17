@@ -53,5 +53,8 @@ namespace gex.Models.Internal {
         public const string GEX_MATCH_POOL_ENTRY_ADDREMOVE = "Gex.MatchPoolEntry.AddRemove";
         public readonly static AppPermission GexMatchPoolEntryAddRemove = new(GEX_MATCH_POOL_ENTRY_ADDREMOVE, "Add and remove entries to a match pool");
 
+        public const string GEX_MAP_START_SPOT_EDITOR = "Gex.MapStartSpot.Editor";
+        public readonly static AppPermission GexMapStartSpotEditor = new(GEX_MAP_START_SPOT_EDITOR, "edit map start spot data");
+
     }
 }

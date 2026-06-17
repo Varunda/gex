@@ -1307,7 +1307,9 @@ namespace gex.Code.Discord {
 
             // get recent games
             List<BarMatch> recentGames = await _MatchRepository.Search(new BarMatchSearchParameters() {
-                UserIDs = [user.UserID]
+                UserIDs = [user.UserID],
+                OrderBy = OrderBy.DURATION,
+                OrderByDirection = OrderByDirection.DESC
             }, offset: 0, limit: 4, currentUser: null, cancel);
             if (recentGames.Count > 0) {
                 embed.Description += $"**Recent public PvP games:**\n";

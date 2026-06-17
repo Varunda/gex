@@ -1,5 +1,6 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Models.Db;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
@@ -35,12 +36,14 @@ namespace gex.Services.Db.Match {
                     game_id, player_id, user_id, user_name, team_id, ally_team_id, faction,
                     starting_position_x, starting_position_y, starting_position_z,
                     skill, skill_uncertainty,
-                    color, handicap
+                    color, handicap,
+                    start_spot, start_spot_label
                 ) VALUES (
                     @GameID, @PlayerID, @UserID, @Username, @TeamID, @AllyTeamID, @Faction,
                     @StartingPositionX, @StartingPositionY, @StartingPositionZ, 
                     @Skill, @SkillUncertainty,
-                    @Color, @Handicap
+                    @Color, @Handicap,
+                    @StartSpot, @StartSpotLabel
                 );
             ");
 
@@ -58,10 +61,38 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("SkillUncertainty", player.SkillUncertainty);
             cmd.AddParameter("Color", player.Color);
             cmd.AddParameter("Handicap", player.Handicap);
+            cmd.AddParameter("StartSpot", player.StartSpot);
+            cmd.AddParameter("StartSpotLabel", player.StartSpotLabel);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
+        }
+
+        public async Task UpdateStartSpot(BarMatchPlayer player, CancellationToken cancel) {
+            if (string.IsNullOrWhiteSpace(player.GameID) == true) {
+                throw new ArgumentException($"missing {nameof(BarMatchPlayer.GameID)}");
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                UPDATE bar_match_player
+                    SET start_spot = @StartSpot,
+                        start_spot_label = @StartSpotLabel
+                    WHERE
+                        game_id = @GameID
+                        AND player_id = @PlayerID;
+            ", cancel);
+
+            cmd.AddParameter("StartSpot", player.StartSpot);
+            cmd.AddParameter("StartSpotLabel", player.StartSpotLabel);
+            cmd.AddParameter("GameID", player.GameID);
+            cmd.AddParameter("PlayerID", player.PlayerID);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+
         }
 
         public async Task<List<BarMatchPlayer>> GetByGameID(string gameID, CancellationToken cancel) {
@@ -121,6 +152,32 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        public async Task UpdateStartSpotRole(StartSpotSideStartRoleOverride @override, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                WITH matches AS (
+					SELECT id
+					FROM bar_match m
+					WHERE m.map_name = @MapFilename
+						AND m.start_spot_version = @Version
+				)
+				UPDATE bar_match_player
+                    SET start_spot_label = @Role
+                WHERE
+                    game_id IN (select id from matches)
+					AND start_spot = @Position;
+            ", cancel);
+
+            cmd.AddParameter("MapFilename", @override.MapFilename);
+            cmd.AddParameter("Role", @override.Role);
+            cmd.AddParameter("Version", @override.Version);
+            cmd.AddParameter("Position", @override.Position);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
         public async Task DeleteByGameID(string gameID) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
@@ -134,7 +191,6 @@ namespace gex.Services.Db.Match {
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
         }
-
 
     }
 }

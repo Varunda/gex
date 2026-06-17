@@ -112,9 +112,9 @@ namespace gex.Models.Db {
 
         public double? MaximumAverageOS { get; set; }
 
-        public OrderBy OrderBy { get; set; } = OrderBy.DURATION;
+        public OrderBy OrderBy { get; set; } = OrderBy.START_TIME;
 
-        public OrderByDirection OrderByDirection { get; set; } = OrderByDirection.ASC;
+        public OrderByDirection OrderByDirection { get; set; } = OrderByDirection.DESC;
 
         public static OrderBy? ParseOrderBy(string name) {
             return name.ToLower() switch {

@@ -1,8 +1,11 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Models.Db;
 using Npgsql;
+using Npgsql.Schema;
 using System;
+using System.Collections.ObjectModel;
 using System.Data;
+using System.Linq;
 
 namespace gex.Services.Db.Readers {
 
@@ -28,6 +31,7 @@ namespace gex.Services.Db.Readers {
             match.AverageOS = reader.GetFloat("average_os");
             match.MinOS = reader.GetFloat("min_os");
             match.MaxOS = reader.GetFloat("max_os");
+            match.StartSpotVersion = reader.GetNullableInt32("start_spot_version");
 
             match.HostSettings = reader.GetJsonb("host_settings");
             match.GameSettings = reader.GetJsonb("game_settings");
@@ -35,17 +39,17 @@ namespace gex.Services.Db.Readers {
             match.SpadsSettings = reader.GetJsonb("spads_settings");
             match.Restrictions = reader.GetJsonb("restrictions");
 
-            try {
+            ReadOnlyCollection<NpgsqlDbColumn> columns = reader.GetColumnSchema();
+
+            bool hasDesc = columns.FirstOrDefault(iter => iter.ColumnName == "description") != null;
+            if (hasDesc == true) {
                 match.MatchPoolEntryNote = reader.GetNullableString("description");
-            } catch (IndexOutOfRangeException) {
-                // this is fine, it just means that the query did not join to match_pool
             }
 
-            try {
+            bool hasHideUntil = columns.FirstOrDefault(iter => iter.ColumnName == "hide_until") != null;
+            if (hasHideUntil == true) {
                 DateTime? matchPoolHideUntil = reader.GetNullableDateTime("hide_until");
                 match.MatchPoolIsHidden = matchPoolHideUntil != null && DateTime.UtcNow < matchPoolHideUntil.Value;
-            } catch (IndexOutOfRangeException) {
-                // this is fine, it just means that the query did not join to match_pool
             }
 
             return match;

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Db.MapStats {
+namespace gex.Services.Db.Map {
 
     public class MapStatsStartSpotDb {
 
@@ -141,14 +141,14 @@ namespace gex.Services.Db.MapStats {
 						1, 2, 4, 5",
                 new {
                     MapFileName = parameters.MapFilename,
-                    UserID = parameters.UserID,
-                    Gamemode = parameters.Gamemode,
-                    MinimumOS = parameters.MinimumOS,
-                    MinimumAverageOS = parameters.MinimumAverageOS,
-                    MaximumOS = parameters.MaximumOS,
-                    MaximumAverageOS = parameters.MaximumAverageOS,
-                    PeriodStart = parameters.PeriodStart,
-                    PeriodEnd = parameters.PeriodEnd,
+                    parameters.UserID,
+                    parameters.Gamemode,
+                    parameters.MinimumOS,
+                    parameters.MinimumAverageOS,
+                    parameters.MaximumOS,
+                    parameters.MaximumAverageOS,
+                    parameters.PeriodStart,
+                    parameters.PeriodEnd,
                 },
                 cancel
             );

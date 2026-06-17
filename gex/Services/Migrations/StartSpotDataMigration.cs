@@ -11,53 +11,55 @@ using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Hosted.PeriodicTasks {
+namespace gex.Services.Migrations {
 
-    public class MapStartPositionDataUpdatePeriodicService : AppBackgroundPeriodicService {
+    public class StartSpotDataMigration {
 
+        private readonly ILogger<StartSpotDataMigration> _Logger;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMapRepository _MapRepository;
+        private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotDataParser _PositionsParser;
 
-        public MapStartPositionDataUpdatePeriodicService(ILoggerFactory loggerFactory,
-            ServiceHealthMonitor healthMon, BarMatchRepository matchRepository,
-            BarMapRepository mapRepository, StartSpotDataParser positionsParser)
-        : base("map_start_position_data_update_periodic_service", TimeSpan.FromMinutes(15), loggerFactory, healthMon) {
+        public StartSpotDataMigration(ILogger<StartSpotDataMigration> logger,
+            BarMatchRepository matchRepository, BarMapRepository mapRepository,
+            StartSpotDataParser positionsParser, StartSpotDataRepository startSpotDataRepository) {
 
+            _Logger = logger;
             _MatchRepository = matchRepository;
             _MapRepository = mapRepository;
             _PositionsParser = positionsParser;
+            _StartSpotDataRepository = startSpotDataRepository;
         }
 
-        protected override async Task<string?> PerformTask(CancellationToken cancel) {
-
+        public async Task FixAll(CancellationToken cancel) {
             List<BarMap> maps = await _MapRepository.GetAll(cancel);
 
             _Logger.LogDebug($"updating the map start position data for maps [all count={maps.Count}]");
-
-            List<BarMap> toUpdate = maps.Where(iter => {
-                return DateTime.UtcNow - iter.Timestamp > TimeSpan.FromMinutes(60);
-            }).ToList();
 
             int updatedCount = 0;
             int missingCount = 0;
             int errorCount = 0;
 
-            foreach (BarMap map in toUpdate) {
+            foreach (BarMap map in maps) {
                 _Logger.LogTrace($"updating map start position data [map={map.FileName}]");
+
+                StartSpotData? existing = await _StartSpotDataRepository.GetLatestByMapFilename(map.FileName, cancel);
+                if (existing != null) {
+                    _Logger.LogInformation($"map start spot data already exists, skipping [map={map.FileName}]");
+                    continue;
+                }
 
                 Stopwatch timer = Stopwatch.StartNew();
 
                 // get the latest match that has a start pos data set in the game settings
-                List<BarMatch> matches = await _MatchRepository.Search(new Models.Db.BarMatchSearchParameters() {
+                List<BarMatch> matches = await _MatchRepository.Search(new BarMatchSearchParameters() {
                     Map = map.Name,
                     GameSettings = [ new SearchKeyValue() {
                         Key = "mapmetadata_startpos",
@@ -101,7 +103,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
                         continue;
                     }
 
-                    map.StartPositionData = res.Value;
+                    await _StartSpotDataRepository.Insert(res.Value, cancel);
                     ++updatedCount;
                 }
 
@@ -113,7 +115,6 @@ namespace gex.Services.Hosted.PeriodicTasks {
 
             string msg = $"updated map start pos data [updated={updatedCount}] [missing={missingCount}] [error={errorCount}]";
             _Logger.LogInformation(msg);
-            return msg;
         }
 
     }

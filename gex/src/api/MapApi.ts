@@ -15,4 +15,10 @@ export class MapApi extends ApiWrapper<BarMap> {
         return MapApi.get().readList(`/api/map/all`, BarMap.parse);
     }
 
+    public static updateStartSpotPositionRoleOverride(mapFilename: string, version: number, position: string, role: string, maxRadius: number | null): Promise<Loading<void>> {
+        return MapApi.get().post(`/api/map/start-spot-position-role-override?mapFilename=${mapFilename}`
+            + `&version=${version}&position=${position}&role=${encodeURIComponent(role)}`
+            + `${maxRadius != null ? `&maxRadius=${maxRadius}` : ""}`);
+    }
+
 }

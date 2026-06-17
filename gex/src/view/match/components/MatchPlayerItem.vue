@@ -1,6 +1,10 @@
 <template>
     <fragment>
         <a :href="'/user/' + player.userID" style="text-decoration: none" class="name">
+            <span v-if="player.startSpotLabel != null" class="role">
+                ({{ player.startSpotLabel }})
+            </span>
+
             <span style="text-shadow: 1px 1px 1px #000000" :style="{ color: player.hexColor }">
                 <img v-if="player.faction == 'Armada'" src="/img/armada.png" height="16" title="icon for armada" />
                 <img v-else-if="player.faction == 'Cortex'" src="/img/cortex.png" height="16" title="icon for cortex" />
@@ -23,6 +27,7 @@
                 <span v-else> ({{ player.handicap }}%) </span>
             </span>
         </span>
+
     </fragment>
 </template>
 
@@ -34,6 +39,10 @@
     .os {
         text-align: left;
         font-size: 0.9rem;
+    }
+
+    .role {
+
     }
 </style>
 

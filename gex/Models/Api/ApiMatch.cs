@@ -46,6 +46,7 @@ namespace gex.Models.Api {
             AverageOS = match.AverageOS;
             MatchPoolEntryNote = match.MatchPoolEntryNote;
             MatchPoolIsHidden = match.MatchPoolIsHidden;
+            StartSpotVersion = match.StartSpotVersion;
         }
 
         public string ID { get; set; } = "";
@@ -120,6 +121,8 @@ namespace gex.Models.Api {
         public float MaxOS { get; set; }
 
         public float AverageOS { get; set; }
+
+        public int? StartSpotVersion { get; set; }
 
         public string? MatchPoolEntryNote { get; set; }
 

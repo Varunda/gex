@@ -3,6 +3,10 @@
     <div>
         <h2 class="wt-header bg-primary text-light">
             Map
+
+            <toggle-button v-model="debug" class="btn-sm">
+                debug
+            </toggle-button>
         </h2>
 
         <div class="d-flex justify-content-lg-center mb-4 flex-wrap" style="gap: 0.5rem;">
@@ -13,6 +17,20 @@
             <toggle-button v-model="map.startingPosition">
                 Starting positions
             </toggle-button>
+
+            <template v-if="debug">
+                <toggle-button v-if="debug" v-model="map.mapStartSpots">
+                    Map start spots
+                </toggle-button>
+
+                <button class="btn btn-info-outline text-white" disabled="disabled">
+                    start spot version: {{ match.startSpotVersion }}
+                </button>
+
+                <button v-if="hasRecalcPermission" class="btn btn-warning" @click="recalculatePlayerStartSpots">
+                    recalc player start spots
+                </button>
+            </template>
 
             <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" class="d-flex justify-content-lg-center flex-wrap" style="gap: 0.25rem;">
                 <toggle-button v-model="map.deathHeatmap" :disabled="!hasEvents">
@@ -260,9 +278,11 @@
     import Collapsible from "components/Collapsible.vue";
     import DropdownSearch from "components/DropdownSearch.vue";
 
+    import { BarMatchApi } from "api/BarMatchApi";
+
     import { BarMatch } from "model/BarMatch";
     import { GameOutput } from "model/GameOutput";
-    import { BarMap } from "model/BarMap";
+    import { BarMap, StartPosition } from "model/BarMap";
     import { SearchResult } from "model/SearchResult";
 
     import { GameEventUnitDef } from "model/GameEventUnitDef";
@@ -272,6 +292,9 @@
     import { CommanderData } from "../compute/ComputeCommanderData";
     import { FactoryData, PlayerFactories } from "../compute/FactoryData";
     import { UnitPositionFrame } from "../compute/UnitPositionFrame";
+
+    import AccountUtil from "util/Account";
+import Toaster from "Toaster";
 
     // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
@@ -293,6 +316,8 @@
 
         data: function() {
             return {
+
+                debug: false as boolean,
                 
                 //svg: null as d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null,
                 //root: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
@@ -342,6 +367,7 @@
                     staticDefense: true as boolean,
                     factories: true as boolean,
                     showUnitPosition: false as boolean,
+                    mapStartSpots: false as boolean,
 
                     unitPositions: [] as GameEventUnitDef[]
                 },
@@ -539,6 +565,7 @@
                 this.addCommanderPositionUpdates();
                 this.addBuildingHeatmap();
                 this.addFactoryPositions();
+                this.addMapStartSpotMetadata();
                 this.addPlayerStartingPositions();
                 this.addRadars();
                 this.addStaticDefense();
@@ -885,6 +912,77 @@
                         .style("stroke", "black").style("stroke-width", "2px")
                         .style("pointer-events", "none")
                         .text(player.username);
+
+                    if (player.startSpotLabel != null) {
+                        this.root.append("text")
+                            .attr("x", (this.toImgX(player.startingPosition.x)) + offset)
+                            .attr("y", (this.toImgZ(player.startingPosition.z)) + 20)
+                            .classed("map-starting-position", true)
+                            .style("fill", player.hexColor)
+                            .style("text-anchor", rightSide ? "end" : "start")
+                            .style("font-size", "1.2rem")
+                            .style("paint-order", "stroke")
+                            .style("stroke", "black").style("stroke-width", "2px")
+                            .style("pointer-events", "none")
+                            .text(`(${player.startSpotLabel})`);
+                    }
+                }
+            },
+
+            addMapStartSpotMetadata: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add start pos: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add start pos: root is null`); }
+
+                console.log(`MatchMap> adding start spots from metadata`);
+
+                if (this.match.mapData?.startPositionData == null) {
+                    console.log(`MatchMap> no start spot data`);
+                    return;
+                }
+
+                const posMap: Map<string, StartPosition> = new Map();
+                for (const pos of this.match.mapData.startPositionData.positions) {
+                    posMap.set(pos.name, pos);
+                }
+
+                const g = this.root.append("g")
+                    .attr("id", "match-map-start-position-data")
+                    .style("pointer-events", "none")
+                    .style("opacity", this.map.mapStartSpots == true ? "1" : "0")
+
+                for (const team of this.match.mapData.startPositionData.configurations) {
+                    for (const side of team.sides) {
+                        for (const starts of side.starts) {
+
+                            const pos = posMap.get(starts.baseCenter ?? starts.spawnPoint);
+                            if (pos == null) {
+                                console.error(`MatchMap> missing position for ${starts.baseCenter ?? starts.spawnPoint}`);
+                                continue;
+                            }
+
+                            const r: number = Math.max(this.toImgX(pos.maxRadius ?? 300), this.toImgZ(pos.maxRadius ?? 300));
+
+                            g.append("circle")
+                                .attr("cx", this.toImgX(pos.x))
+                                .attr("cy", this.toImgZ(pos.y))
+                                .attr("r", `${r}`)
+                                //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
+                                .style("fill", "#FFFFFF55")
+                                .style("stroke", "#000000CC")
+                                .style("stroke-width", "2px")
+                                .style("paint-order", "fill stroke");
+
+                            g.append("text")
+                                .attr("x", (this.toImgX(pos.x)))
+                                .attr("y", this.toImgZ(pos.y))
+                                .style("fill", "white")
+                                .style("font-size", "1.3rem")
+                                .style("paint-order", "stroke")
+                                .style("stroke", "black").style("stroke-width", "1px")
+                                .style("pointer-events", "none")
+                                .text(`${pos.name}: ${starts.role}`);
+                        }
+                    }
                 }
             },
 
@@ -1510,6 +1608,13 @@
                     .attr("href", `/image-proxy/UnitIcon?defName=${defName}&color=${playerColor}`);
 
                 return facGroup;
+            },
+
+            recalculatePlayerStartSpots: async function(): Promise<void> {
+                const ret: Loading<void> = await BarMatchApi.recalculatePlayerStartSpots(this.match.id);
+                if (ret.state == "loaded") {
+                    Toaster.add("success!", "successfully recalculated player start spots for match", "success");
+                }
             }
 
         },
@@ -1567,6 +1672,10 @@
                     .filter(iter => this.playback.selectedUnitDefs.find(i2 => i2.definitionName == iter.definitionName) != undefined)
                     .filter(iter => iter.speed > 0)
                     .sort((a, b) => a.disambiguatedName.localeCompare(b.disambiguatedName));
+            },
+
+            hasRecalcPermission: function(): boolean {
+                return AccountUtil.hasPermission("Gex.Dev");
             }
         },
 
@@ -1689,6 +1798,18 @@
                         .style("pointer-events", "none");
                 } else {
                     this.root?.selectAll(".map-starting-position")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.mapStartSpots": function(): void {
+                if (this.map.mapStartSpots == false) {
+                    this.root?.selectAll("#match-map-start-position-data")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll("#match-map-start-position-data")
                         .style("opacity", "1")
                         .style("pointer-events", "auto");
                 }

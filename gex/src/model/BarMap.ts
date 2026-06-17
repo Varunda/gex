@@ -27,24 +27,18 @@ export class BarMap {
 
 export class StartPositionData {
 
+    public mapFilename: string = "";
+    public version: number = 0;
+    public timestamp: Date = new Date();
+    public minTimestamp: Date = new Date();
+    public maxTimestamp: Date | null = null;
     public positions: StartPosition[] = [];
-    public teams: StartTeamConfiguration[] = [];
+    public configurations: StartTeamConfiguration[] = [];
 
     public static parse(elem: any): StartPositionData {
-        const positions: StartPosition[] = [];
-        for (const pos of Object.keys(elem.positions)) {
-            const value = elem.positions[pos];
-
-            positions.push({
-                name: pos,
-                x: value.x,
-                y: value.y
-            });
-        }
-
         return {
-            positions: positions,
-            teams: elem.team.map((iter: any) => StartTeamConfiguration.parse(iter))
+            ...elem,
+            timestamp: new Date(elem.timestamp)
         };
     }
 
@@ -54,6 +48,7 @@ export class StartPosition {
     public name: string = "";
     public x: number = 0;
     public y: number = 0;
+    public maxRadius: number = 0;
 }
 
 export class StartTeamConfiguration {
@@ -81,12 +76,16 @@ export class StartTeamSide {
 }
 
 export class StartTeamSideStart {
+    public mapFilename: string = "";
+    public version: number = 0;
     public role: string = "";
     public spawnPoint: string = "";
     public baseCenter: string | null = null;
 
     public static parse(elem: any): StartTeamSideStart {
         return {
+            mapFilename: elem.mapFilename,
+            version: elem.version,
             role: elem.role,
             spawnPoint: elem.spawnPoint,
             baseCenter: elem.baseCenter == undefined ? null : elem.baseCenter

@@ -17,6 +17,7 @@ using gex.Services.Hosted;
 using gex.Services.Hosted.Startup;
 using gex.Services.Lobby;
 using gex.Services.Metrics;
+using gex.Services.Migrations;
 using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
@@ -338,10 +339,15 @@ namespace gex {
             services.AddSingleton<LuaRunner>();
             services.AddStorageServices();
 
+            // util
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<BarMatchTitleUtilService>();
             services.AddSingleton<ApmCalculatorUtil>();
             services.AddSingleton<MapSymmetryUtil>();
+
+            // migrations
+            services.AddSingleton<BarMatchPlayerStartSpotMigration>();
+            services.AddSingleton<StartSpotDataMigration>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist

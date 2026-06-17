@@ -7,7 +7,7 @@ using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Event;
-using gex.Services.Db.MapStats;
+using gex.Services.Db.Map;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Storage;

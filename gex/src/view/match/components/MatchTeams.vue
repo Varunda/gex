@@ -13,6 +13,10 @@
                 </a>
             </div>
 
+            <div v-if="showDebug">
+                start spot version: {{ match.startSpotVersion }}
+            </div>
+
             <div v-if="isFunkyTeams == false">
                 <div class="teams">
                     <div class="team" v-for="allyTeam in allyTeamsSorted" :key="allyTeam.allyTeamID">

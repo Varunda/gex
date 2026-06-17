@@ -28,7 +28,6 @@
 
                 <a-body v-slot="entry">
                     <a :href="'/match/' + entry.id">
-
                         {{ entry.startTime | moment }}
                     </a>
                 </a-body>
@@ -49,12 +48,26 @@
                     <b>Map</b>
                 </a-header>
 
-                <a-filter field="map" type="string" method="input"
+                <a-filter field="map" type="string" method="input" max-width="24ch"
                     :conditions="[ 'contains', 'equals' ]">
                 </a-filter>
 
                 <a-body v-slot="entry">
                     {{ entry.map }}
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
+                    <b>Position</b>
+                </a-header>
+
+                <a-filter field="playerPosition" type="string" method="input" max-width="20ch"
+                    :conditions="[ 'contains', 'equals' ]">
+                </a-filter>
+
+                <a-body v-slot="entry">
+                    {{ entry.playerPosition }}
                 </a-body>
             </a-col>
 
@@ -230,11 +243,15 @@
                 {{ avgSkill | locale(2) }}
 
                 <small class="text-muted" :title="titleText" :style="cssStyle">
-                    <span v-if="avgSkill > userSkill">-</span><span v-else>+</span>{{ Math.abs(avgSkill - userSkill) | locale(2) }}
+                    <span v-if="avgSkill > userSkill"><wbr>-</span><span v-else>+</span>{{ Math.abs(avgSkill - userSkill) | locale(2) }}
                 </small>
             </span>
         `
     });
+
+    type MatchAndPosition = BarMatch & {
+        playerPosition: string | null;
+    };
 
     export const UserMatches = Vue.extend({
         props: {
@@ -284,12 +301,27 @@
                 }
 
                 return "Lost";
+            },
+
+            playerPosition: function(match: BarMatch): string | null {
+                const player: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
+                if (player == undefined) {
+                    console.warn(`UserMatches> how is player not in this match? [gameID=${match.id}] [userID=${this.user.userID}]`);
+                    return null;
+                }
+
+                return player.startSpotLabel;
             }
         },
 
         computed: {
-            loadableMatches: function(): Loading<BarMatch[]> {
-                return Loadable.loaded(this.matches);
+            loadableMatches: function(): Loading<MatchAndPosition[]> {
+                return Loadable.loaded(this.matches.map(iter => {
+                    return {
+                        ...iter,
+                        playerPosition: this.playerPosition(iter)
+                    };
+                }));
             },
 
             source: function() {

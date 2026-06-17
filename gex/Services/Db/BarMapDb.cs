@@ -1,6 +1,10 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Models;
 using gex.Models.Bar;
+using gex.Models.Db;
+using gex.Models.Map;
+using gex.Services.Parser;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Collections.Generic;
@@ -26,6 +30,7 @@ namespace gex.Services.Db {
         ///     update/insert a <see cref="BarMap"/>
         /// </summary>
         /// <param name="map">parameters used to upsert</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation is complete</returns>
         public async Task Upsert(BarMap map, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
@@ -33,11 +38,11 @@ namespace gex.Services.Db {
                 INSERT INTO bar_map (
                     id, name, filename, description,
                     tidal_strength, max_metal, extractor_radius, minimum_wind, maximum_wind,
-                    width, height, author, start_position_data, timestamp, symmetry_axis
+                    width, height, author, timestamp, symmetry_axis
                 ) VALUES (
                     @ID, @Name, @FileName, @Description,
                     @TidalStrength, @MaxMetal, @ExtractorRadius, @MinimumWind, @MaximumWind,
-                    @Width, @Height, @Author, @StartPositionData, NOW() at time zone 'utc', @SymmetryAxis
+                    @Width, @Height, @Author, NOW() at time zone 'utc', @SymmetryAxis
                 ) ON CONFLICT (id) DO UPDATE
                     SET name = @Name,
                         filename = @FileName,
@@ -50,7 +55,6 @@ namespace gex.Services.Db {
                         width = @Width,
                         height = @Height,
                         author = @Author,
-                        start_position_data = @StartPositionData,
                         timestamp = NOW() at time zone 'utc',
                         symmetry_axis = @SymmetryAxis;
             ", cancel);
@@ -67,7 +71,6 @@ namespace gex.Services.Db {
             cmd.AddParameter("Width", map.Width);
             cmd.AddParameter("Height", map.Height);
             cmd.AddParameter("Author", map.Author);
-            cmd.AddParameter("StartPositionData", map.StartPositionData);
             cmd.AddParameter("SymmetryAxis", (int?)map.SymmetryAxis);
             await cmd.PrepareAsync(cancel);
 
@@ -103,11 +106,11 @@ namespace gex.Services.Db {
         /// </returns>
         public async Task<BarMap?> GetByName(string name, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return await conn.QueryFirstOrDefaultAsync<BarMap>(new CommandDefinition(
+            return await conn.QuerySingleAsync<BarMap>(
                 "SELECT * FROM bar_map WHERE name = @Name",
                 new { Name = name },
                 cancellationToken: cancel
-            ));
+            );
         }
 
         /// <summary>

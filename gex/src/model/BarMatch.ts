@@ -39,6 +39,9 @@ export class BarMatch {
     public teamDeaths: BarMatchTeamDeath[] = [];
     public commands: BarPlayerCommand[] = [];
 
+    public minOS: number = 0;
+    public maxOS: number = 0;
+
     public mapData: BarMap | null = null;
     public mapDraws: BarMatchMapDraw[] = [];
     public processing: BarMatchProcessing | null = null;
@@ -46,6 +49,7 @@ export class BarMatch {
     public headlessRunStatus: HeadlessRunStatus | null = null;
     public uploadedBy: AppAccount | null = null;
     public isBadGameVersion: boolean = false;
+    public startSpotVersion: number | null = null;
 
     public matchPoolEntryNote: string | null = null;
     public matchPoolIsHidden: boolean = false;

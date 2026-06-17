@@ -65,16 +65,32 @@
 
             <a-col>
                 <a-header>
-                    <b>Start spots</b>
+                    <b>Position</b>
                 </a-header>
 
                 <a-body v-slot="entry">
-                    <button class="btn btn-primary btn-sm px-1 py-0 border-0" @click="generateStartSpots(entry.map, entry.gamemode)">
-                        Generate
-                    </button>
+                    {{ entry.favoritePosition }}
+                </a-body>
+            </a-col>
+
+            <a-col>
+                <a-header>
+                    <b>View more</b>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-sm px-1 py-0 border-0" @click="selectedMap = entry.map">
+                            View
+                        </button>
+                    </div>
                 </a-body>
             </a-col>
         </a-table>
+
+        <user-map-view v-if="selectedMap != null"
+            :user="user" :map="selectedMap" :matches="selectedMapMatches">
+        </user-map-view>
 
         <div v-if="startSpot.loaded == true" class="mb-3">
             <h4 class="wt-header bg-light text-dark">
@@ -121,6 +137,7 @@
     import { BarMap } from "model/BarMap";
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { BarUserMapStats } from "model/BarUserMapStats";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
@@ -130,10 +147,16 @@
     import InfoHover from "components/InfoHover.vue";
     import StartSpotMap from "components/app/StartSpotMap.vue";
 
+    import UserMapView from "./UserMapView.vue";
+
     import "filters/BarGamemodeFilter";
     import "filters/LocaleFilter";
     import "filters/BarFactionFilter";
     import "filters/BarGamemodeFilter";
+
+    type BarUserMapStatsWithPosition = BarUserMapStats & {
+        favoritePosition: string | null;
+    };
 
     export const UserMaps = Vue.extend({
         props: {
@@ -143,6 +166,8 @@
 
         data: function() {
             return {
+
+                selectedMap: null as string | null,
 
                 startSpot: {
                     loaded: false as boolean,
@@ -197,8 +222,46 @@
         },
 
         computed: {
-            mapData: function(): Loading<BarUserMapStats[] >{
-                return Loadable.loaded(this.user.mapStats);
+            mapData: function(): Loading<BarUserMapStatsWithPosition[]> {
+                return Loadable.loaded(this.user.mapStats.map((iter) => {
+                    const matches: BarMatch[] = this.matches.filter(m => m.map == iter.map);
+
+                    const positionCount: Map<string, number> = new Map();
+                    for (const match of matches) {
+                        const player: BarMatchPlayer | undefined = match.players.find(i => i.userID == this.user.userID);
+                        if (player == undefined) {
+                            continue;
+                        }
+
+                        if (player.startSpotLabel == null) {
+                            continue;
+                        }
+
+                        positionCount.set(player.startSpotLabel, (positionCount.get(player.startSpotLabel) ?? 0) + 1);
+                    }
+
+                    let favPos: string | null = null;
+                    if (positionCount.size > 0) {
+                        const entry = Array.from(positionCount.entries()).sort((a, b) => {
+                            return b[1] - a[1];
+                        })[0];
+
+                        favPos = `${entry[0]} (${Math.floor(entry[1] / matches.length * 100)}%)`;
+                    }
+
+                    return {
+                        ...iter,
+                        favoritePosition: favPos
+                    };
+                }));
+            },
+
+            selectedMapMatches: function(): BarMatch[] {
+                if (this.selectedMap == null) {
+                    return [];
+                }
+
+                return this.matches.filter(iter => iter.map == this.selectedMap);
             },
 
             startSpotGamemodes: function(): number[] {
@@ -213,7 +276,7 @@
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             InfoHover, Busy,
-            StartSpotMap, 
+            StartSpotMap, UserMapView
         }
     });
     export default UserMaps;

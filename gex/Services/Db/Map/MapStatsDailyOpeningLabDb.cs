@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Db.MapStats {
+namespace gex.Services.Db.Map {
 
     public class MapStatsDailyOpeningLabDb {
 
@@ -100,8 +100,8 @@ namespace gex.Services.Db.MapStats {
                 ",
                 new { 
                     MapFileName = entry.MapFilename,
-                    Day = entry.Day,
-                    Gamemode = entry.Gamemode
+                    entry.Day,
+                    entry.Gamemode
                 },
                 commandTimeout: 60 * 5,
                 cancellationToken: cancel

@@ -14,6 +14,8 @@ export class BarMatchPlayer {
     public color: number = 0;
     public hexColor: string = "";
     public handicap: number = 0;
+    public startSpot: string | null = null;
+    public startSpotLabel: string | null = null;
 
     public static parse(elem: any): BarMatchPlayer {
         const lut: number = Lut.lut(elem.color);

@@ -49,12 +49,12 @@ namespace gex.Services.Db.Match {
                 INSERT INTO bar_match (
                     id, start_time, start_offset, map, duration_ms, duration_frame_count,
 					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
-                    average_os, min_os, max_os,
+                    average_os, min_os, max_os, start_spot_version,
                     host_settings, game_settings, map_settings, spads_settings, restrictions
                 ) VALUES (
                     @ID, @StartTime, @StartOffset, @Map, @DurationMs, @DurationFrameCount,
 					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy, @WrongSkillValues,
-                    @AverageOS, @MinOS, @MaxOS,
+                    @AverageOS, @MinOS, @MaxOS, @StartSpotVersion,
                     @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
                 );
             ", cancel);
@@ -76,6 +76,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("AverageOS", match.AverageOS);
             cmd.AddParameter("MinOS", match.MinOS);
             cmd.AddParameter("MaxOS", match.MaxOS);
+            cmd.AddParameter("StartSpotVersion", match.StartSpotVersion);
 
             cmd.AddParameter("HostSettings", match.HostSettings);
             cmd.AddParameter("GameSettings", match.GameSettings);
@@ -127,6 +128,29 @@ namespace gex.Services.Db.Match {
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        public async Task UpdateStartSpotDataVersion(BarMatch match, CancellationToken cancel) {
+            if (match.StartSpotVersion == null) {
+                throw new ArgumentNullException("StartSpotVersion is null");
+            }
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET start_spot_version = @Version
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("Version", match.StartSpotVersion.Value);
+            cmd.AddParameter("ID", match.ID);
+            await cmd.PrepareAsync(cancel);
+
+            _Logger.LogDebug(cmd.Print());
+
+            int ret = await cmd.ExecuteNonQueryAsync(cancel);
+            _Logger.LogDebug($"{match.ID} {match.StartSpotVersion} {ret}");
             await conn.CloseAsync();
         }
 
@@ -187,6 +211,21 @@ namespace gex.Services.Db.Match {
                 SELECT * FROM bar_match;
             ", cancel);
 
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        public async Task<List<BarMatch>> GetAllByMap(string mapFilename, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match WHERE map_name = @MapFilename;
+            ", cancel);
+
+            cmd.AddParameter("MapFilename", mapFilename);
             await cmd.PrepareAsync(cancel);
 
             List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);

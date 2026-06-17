@@ -5,15 +5,18 @@ using gex.Models;
 using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Internal;
+using gex.Models.Map;
 using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Db.Patches;
+using gex.Services.Migrations;
 using gex.Services.Parser;
 using gex.Services.Repositories;
 using gex.Services.Storage;
 using gex.Services.Util;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -50,6 +53,8 @@ namespace gex.Controllers.Api {
         private readonly BadGameVersionRepository _BadGameVersionRepository;
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
+        private readonly StartSpotDataRepository _StartSpotDataRepository;
+        private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
@@ -61,7 +66,8 @@ namespace gex.Controllers.Api {
             GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
             BadGameVersionRepository badGameVersionRepository, MatchPoolRepository matchPoolRepository,
-            MatchPoolEntryDb matchPoolEntryDb) {
+            MatchPoolEntryDb matchPoolEntryDb, StartSpotDataRepository startSpotDataRepository,
+            BarMatchPlayerStartSpotMigration playerStartSpotMigration) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -83,6 +89,8 @@ namespace gex.Controllers.Api {
             _BadGameVersionRepository = badGameVersionRepository;
             _MatchPoolRepository = matchPoolRepository;
             _MatchPoolEntryDb = matchPoolEntryDb;
+            _StartSpotDataRepository = startSpotDataRepository;
+            _PlayerStartSpotMigration = playerStartSpotMigration;
         }
 
         /// <summary>
@@ -214,6 +222,10 @@ namespace gex.Controllers.Api {
 
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
+            if (ret.MapData != null && ret.StartSpotVersion != null) {
+                ret.MapData.StartPositionData =
+                    await _StartSpotDataRepository.GetByVersionAndMapFilename(ret.MapName, ret.StartSpotVersion.Value, cancel);
+            }
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
             ret.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(match.GameVersion, cancel);
 
@@ -547,6 +559,44 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
+        }
+
+        /// <summary>
+        ///     recalculate the player start spots for a match. if there is no start spot data,
+        ///     this does not generate it
+        /// </summary>
+        /// <param name="gameID">ID of the match to recalculate the player start spots for</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the match with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> had its
+        ///     player start spot data recalculated
+        /// </response>
+        /// <response code="400">
+        ///     the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>
+        ///     has no <see cref="BarMatch.StartSpotVersion"/>
+        /// </response>
+        [HttpPost("{gameID}/recalculate-player-start-spots")]
+        [Authorize]
+        [PermissionNeeded(AppPermission.GEX_DEV)]
+        public async Task<ApiResponse> RecalculatePlayerStartSpots(string gameID, CancellationToken cancel = default) {
+            BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
+            if (match == null) {
+                return ApiNotFound($"{nameof(BarMatch)} {gameID}");
+            }
+
+            if (match.StartSpotVersion == null) {
+                return ApiBadRequest($"{nameof(BarMatch)} {gameID} has no start spot version");
+            }
+
+            StartSpotData? data = await _StartSpotDataRepository.GetByVersionAndMapFilename(match.MapName, match.StartSpotVersion.Value, cancel);
+            if (data == null) {
+                return ApiInternalError($"no {nameof(StartSpotData)} for map {match.MapName} and version {match.StartSpotVersion} exists!");
+            }
+
+            _Logger.LogInformation($"recalculating player start spots for match [gameID={match.ID}] [map={match.MapName}] [version={data.Version}]");
+            await _PlayerStartSpotMigration.FixMatch(match, match.Players, data, cancel);
+
+            return ApiOk();
         }
 
     }

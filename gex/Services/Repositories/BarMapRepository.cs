@@ -1,8 +1,11 @@
-﻿using gex.Common.Models;
+﻿using gex.Common.Code.Constants;
+using gex.Common.Models;
 using gex.Common.Services.Bar;
 using gex.Models.Bar;
 using gex.Services.BarApi;
 using gex.Services.Db;
+using gex.Services.Util;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,20 +20,25 @@ namespace gex.Services.Repositories {
         private readonly ILogger<BarMapRepository> _Logger;
         private readonly BarMapApi _Api;
         private readonly BarMapDb _Db;
-        private readonly IMemoryCache _Cache;
+        private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly PrDownloaderService _PrDownloader;
+        private readonly MapSymmetryUtil _MapSymmetryUtil;
 
+        private readonly IMemoryCache _Cache;
         private const string CACHE_KEY_NAME = "Gex.BarMap.{0}"; // {0} => map name
 
         public BarMapRepository(ILogger<BarMapRepository> logger,
             BarMapApi api, BarMapDb db,
-            IMemoryCache cache, PrDownloaderService prDownloader) {
+            IMemoryCache cache, PrDownloaderService prDownloader,
+            StartSpotDataRepository startSpotDataRepository, MapSymmetryUtil mapSymmetryUtil) {
 
             _Logger = logger;
             _Api = api;
             _Db = db;
             _Cache = cache;
             _PrDownloader = prDownloader;
+            _StartSpotDataRepository = startSpotDataRepository;
+            _MapSymmetryUtil = mapSymmetryUtil;
         }
 
         public Task<List<BarMap>> GetAll(CancellationToken cancel) {
@@ -56,8 +64,16 @@ namespace gex.Services.Repositories {
                     Result<BarMap, string> api = await _Api.GetByName(filename, cancel);
 
                     if (api.IsOk == true) {
-                        await _Db.Upsert(api.Value, cancel);
                         map = api.Value;
+
+                        Result<MapSymmetryAxis, string> symAxis = await _MapSymmetryUtil.Find(filename);
+                        if (symAxis.IsOk == true) {
+                            map.SymmetryAxis = symAxis.Value;
+                        } else {
+                            _Logger.LogWarning($"error when getting symmetry axis of map [map={filename}] [error={symAxis.Error}]");
+                        }
+
+                        await _Db.Upsert(api.Value, cancel);
                     } else {
                         _Logger.LogWarning($"failed to load map from API [filename={filename}] [error={api.Error}]");
                     }

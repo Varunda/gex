@@ -105,6 +105,60 @@
                 </div>
             </div>
 
+            <div v-if="isMapEditor" class="text-center">
+
+                <collapsible header-text="Map start spot data editor">
+                    <table class="table">
+                        <thead>
+                            <tr class="table-secondary">
+                                <td>Position</td>
+                                <td>Role</td>
+                                <td>Max radius</td>
+                                <td></td>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr v-for="(pos, index) in positions" :key="pos.position">
+                                <td>
+                                    {{ pos.position }}
+                                </td>
+                                <td>
+                                    <input v-model="pos.role" type="text" class="form-control" @keyup.enter="saveOverride(index)">
+                                </td>
+                                <td>
+                                    <input v-model.number="pos.maxRadius" type="number" class="form-control" @keyup.enter="saveOverride(index)">
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" @click="saveOverride(index)">
+                                        Save
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div>
+                        <h4>Copy to another map</h4>
+
+                        <div>
+                            <input v-model="overrideCopy.map" type="text" class="form-control mb-2">
+                            <input v-model.number="overrideCopy.version" type="number" class="form-control mb-2">
+
+                            <button class="btn btn-primary mb-2" @click="copyOverrides">
+                                Copy
+                            </button>
+
+                            <span>
+                                copying start position and roles for {{ overrideCopy.map }} v{{ overrideCopy.version }}
+                            </span>
+                        </div>
+
+                    </div>
+                </collapsible>
+
+            </div>
+
             <div class="mb-3">
                 <div v-if="stats.state == 'loaded'">
 
@@ -308,6 +362,7 @@
     import ApiError from "components/ApiError";
     import MatchList from "components/app/MatchList.vue";
     import ToggleButton from "components/ToggleButton";
+    import Collapsible from "components/Collapsible.vue";
 
     import "filters/BarGamemodeFilter";
     import "filters/BarFactionFilter";
@@ -330,10 +385,20 @@
 
     import LocaleUtil from "util/Locale";
     import ColorUtils, { RGB } from "util/Color";
-import SymmetryAxis from "util/SymmetryAxis";
+    import SymmetryAxis from "util/SymmetryAxis";
+    import AccountUtil from "util/Account";
+    import Toaster from "Toaster";
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
+
+    type PositionRole = {
+        mapFilename: string;
+        version: number;
+        position: string;
+        role: string;
+        maxRadius: number | null;
+    }
 
     export const MapView = Vue.extend({
         props: {
@@ -359,6 +424,8 @@ import SymmetryAxis from "util/SymmetryAxis";
                 stats: Loadable.idle() as Loading<MapStats>,
                 recent: Loadable.idle() as Loading<BarMatch[]>,
 
+                positions: [] as PositionRole[],
+
                 palette: [
                     ColorUtils.hexToRgb("#b2182b"), // <44%
                     ColorUtils.hexToRgb("#ef8a62"), // 46%
@@ -369,7 +436,12 @@ import SymmetryAxis from "util/SymmetryAxis";
                     ColorUtils.hexToRgb("#2166ac"), // >56%
                 ] as RGB[],
 
-                showStartSpotMetadata: true as boolean,
+                showStartSpotMetadata: false as boolean,
+
+                overrideCopy: {
+                    map: "" as string,
+                    version: 0 as number
+                }
             }
         },
 
@@ -407,6 +479,34 @@ import SymmetryAxis from "util/SymmetryAxis";
                 } else {
                     this.mapW = mapData.width * 512;
                     this.mapH = mapData.height * 512;
+
+                    if (this.barMap.data.startPositionData != null) {
+                        this.positions = [];
+
+                        const map: Map<string, PositionRole> = new Map();
+
+                        for (const config of this.barMap.data.startPositionData.configurations) {
+                            for (const side of config.sides) {
+                                for (const start of side.starts) {
+                                    map.set(start.spawnPoint, {
+                                        mapFilename: this.barMap.data.fileName,
+                                        version: start.version,
+                                        position: start.spawnPoint,
+                                        role: start.role,
+                                        maxRadius: null
+                                    });
+                                }
+                            }
+                        }
+
+                        for (const pos of this.barMap.data.startPositionData.positions) {
+                            if (map.has(pos.name) == true) {
+                                map.get(pos.name)!.maxRadius = pos.maxRadius;
+                            }
+                        }
+
+                        this.positions = Array.from(map.values());
+                    }
                 }
 
                 this.isMapImageLoading = true;
@@ -426,13 +526,14 @@ import SymmetryAxis from "util/SymmetryAxis";
                     SVG = d3.select("#map-svg");
 
                     if (img.complete) {
+                        console.log(`Map> img.complete, setupImg`);
                         this.setupImg();
                     } else {
                         img.addEventListener("load", (ev: Event) => {
+                            console.log(`Map> img load event, setupImg`);
                             this.setupImg();
                         });
                     }
-
                 });
             },
 
@@ -460,6 +561,8 @@ import SymmetryAxis from "util/SymmetryAxis";
                 ROOT = this.svg.append("g")
                     .attr("id", "doc-root");
 
+                console.log(ROOT);
+
                 ROOT.append("image")
                     .classed("map-no-remove", true)
                     .attr("id", "map-image")
@@ -468,17 +571,19 @@ import SymmetryAxis from "util/SymmetryAxis";
                     .style("filter", "saturate(0%)")
                     ;
 
-                this.tooltip = d3.select("#d3_canvas")
-                    .append("div")
-                    .style("opacity", 0)
-                    .attr("class", "tooltip")
-                    .style("pointer-events", "none")
-                    .style("position", "absolute")
-                    .style("background-color", "var(--bs-body-bg)")
-                    .style("border", "solid")
-                    .style("border-width", "2px")
-                    .style("border-radius", "5px")
-                    .style("padding", "5px");
+                if (this.tooltip == null) {
+                    this.tooltip = d3.select("#d3_canvas")
+                        .append("div")
+                        .style("opacity", 0)
+                        .attr("class", "tooltip")
+                        .style("pointer-events", "none")
+                        .style("position", "absolute")
+                        .style("background-color", "var(--bs-body-bg)")
+                        .style("border", "solid")
+                        .style("border-width", "2px")
+                        .style("border-radius", "5px")
+                        .style("padding", "5px");
+                }
 
                 this.drawMap();
             },
@@ -588,7 +693,7 @@ import SymmetryAxis from "util/SymmetryAxis";
                     .attr("id", "start-spot-metadata-group")
                     .style("opacity", this.showStartSpotMetadata == true ? "1" : "0");
 
-                const firstConfig = startSpotData.teams[0];
+                const firstConfig = startSpotData.configurations[0];
 
                 for (const side of firstConfig.sides) {
                     for (const pos of side.starts) {
@@ -598,10 +703,12 @@ import SymmetryAxis from "util/SymmetryAxis";
                             continue;
                         }
 
+                        const r: number = Math.max(this.toImgX(spot.maxRadius ?? 300), this.toImgZ(spot.maxRadius ?? 300));
+
                         g.append("circle")
                             .attr("cx", this.toImgX(spot.x))
                             .attr("cy", this.toImgZ(spot.y))
-                            .attr("r", "20")
+                            .attr("r", `${r}`)
                             //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
                             .style("fill", "#FFFFFF55")
                             .style("stroke", "#000000CC")
@@ -611,7 +718,7 @@ import SymmetryAxis from "util/SymmetryAxis";
                         g.append("text")
                             .attr("x", (this.toImgX(spot.x)))
                             .attr("y", this.toImgZ(spot.y))
-                            .style("fill", "black")
+                            .style("fill", "white")
                             .style("font-size", "1.3rem")
                             .style("paint-order", "stroke")
                             .style("stroke", "black").style("stroke-width", "2px")
@@ -637,7 +744,7 @@ import SymmetryAxis from "util/SymmetryAxis";
 
                 const MAX_SPOT_DIFF: number = 300;
 
-                const config = this.barMap.data.startPositionData.teams[0];
+                const config = this.barMap.data.startPositionData.configurations[0];
 
                 const spots: Map<string, StartPosition> = new Map();
                 for (const pos of this.barMap.data.startPositionData.positions) {
@@ -653,8 +760,6 @@ import SymmetryAxis from "util/SymmetryAxis";
 
                     const t1s = spots.get(t1.spawnPoint)!;
                     const t2s = spots.get(t2.spawnPoint)!;
-
-
 
                     const x1diff: number = Math.abs(t1s.x);
                     const x2diff: number = Math.abs(mapW - t2s.x);
@@ -760,6 +865,34 @@ import SymmetryAxis from "util/SymmetryAxis";
                         });
                 }
 
+            },
+
+            saveOverride: async function(index: number): Promise<void> {
+                if (index < 0 || index > this.positions.length) {
+                    throw `bad index`;
+                }
+
+                const pos = this.positions[index];
+
+                console.log(`${pos.mapFilename} ${pos.version} ${pos.position} ${pos.role} ${pos.maxRadius}`);
+
+                if (pos.maxRadius == 0 || pos.maxRadius == "") {
+                    pos.maxRadius = null;
+                }
+
+                await MapApi.updateStartSpotPositionRoleOverride(pos.mapFilename, pos.version, pos.position, pos.role, pos.maxRadius);
+
+                this.bind();
+            },
+
+            copyOverrides: async function(): Promise<void> {
+                for (const pos of this.positions) {
+                    await MapApi.updateStartSpotPositionRoleOverride(this.overrideCopy.map, this.overrideCopy.version, pos.position, pos.role, pos.maxRadius);
+                }
+
+                Toaster.add("Done", `copied ${this.positions.length} to ${this.overrideCopy.map} v${this.overrideCopy.version}`)
+
+                this.bind();
             }
 
         },
@@ -915,6 +1048,10 @@ import SymmetryAxis from "util/SymmetryAxis";
                 }
 
                 return SymmetryAxis.getName(this.barMap.data.symmetryAxis);
+            },
+
+            isMapEditor: function(): boolean {
+                return AccountUtil.hasPermission("Gex.MapStartSpot.Editor");
             }
         },
 
@@ -924,18 +1061,17 @@ import SymmetryAxis from "util/SymmetryAxis";
             },
 
             showStartSpotMetadata: function(): void {
-
                 if (this.root == null) {
                     return;
                 }
 
                 this.root.select("#start-spot-metadata-group")
                     .style("opacity", this.showStartSpotMetadata == true ? "1" : "0")
-            }
+            },
         },
 
         components: {
-            ApiError, MatchList, ToggleButton
+            ApiError, MatchList, ToggleButton, Collapsible
         }
     });
     export default MapView;
