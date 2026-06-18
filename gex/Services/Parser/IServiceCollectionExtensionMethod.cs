@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using gex.Services.BarApi;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Parser {
 
@@ -13,6 +14,7 @@ namespace gex.Services.Parser {
             services.AddSingleton<BarMoveDefinitionParser>();
             services.AddSingleton<BarFeatureDefintionParser>();
             services.AddSingleton<StartSpotDataParser>();
+            services.AddSingleton<BarMapRotationParser>();
         }
 
     }

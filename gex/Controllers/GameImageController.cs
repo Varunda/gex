@@ -54,9 +54,9 @@ namespace gex.Controllers {
         }
 
         /// <summary>
-        ///     get the background of a map
+        ///     get the background of a map by <see cref="BarMap.FileName"/>
         /// </summary>
-        /// <param name="mapName">name of the map</param>
+        /// <param name="mapName">file name of the map</param>
         /// <param name="size">size of the map, examples: texture-mq, texture-hq, texture-thumb</param>
         /// <returns></returns>
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["mapName", "size"])] // 24 hours
@@ -76,6 +76,13 @@ namespace gex.Controllers {
             return File(image, "image/jpeg", $"{mapName}.jpg", false);
         }
 
+        /// <summary>
+        ///     get the background image of a map by <see cref="BarMap.Name"/>
+        /// </summary>
+        /// <param name="map">name of the map</param>
+        /// <param name="size">size of the map, examples: texture-mq, texture-hq, texture-thumb</param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["map", "size"])] // 24 hours
         public async Task<IActionResult> MapNameBackground(
             [FromQuery] string map,

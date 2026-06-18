@@ -65,6 +65,7 @@ namespace gex.Code.Discord {
         public BarWeaponDefinitionRepository _WeaponDefinitionRepository { set; private get; } = default!;
         public BarUnitRepository _UnitRepository { set; private get; } = default!;
         public BarI18nRepository _I18nRepository { set; private get; } = default!;
+        public BarMoveDefinitionRepository _MoveDefinitionRepository { set; private get; } = default!;
 
         /// <summary>
         ///     look up a user, and if able to find a unique one, print their stats
@@ -372,24 +373,42 @@ namespace gex.Code.Discord {
             if (showExtra == true) {
                 embed.Description += $" ({_N((1d - unit.DamageModifier) * 100)}% DR when closed)";
                 if (unit.ReactiveArmorHealth > 0) {
-                    embed.Description += $"\n**Armor**: {_N(unit.ReactiveArmorHealth / Math.Max(0.01, unit.DamageModifier))} hp / {_N(unit.ReactiveArmorRestore)}s recharge";
+                    embed.Description += $"\n**Armor**: {_N(unit.ReactiveArmorHealth / Math.Max(0.01, unit.DamageModifier))} hp | {_N(unit.ReactiveArmorRestore)}s recharge";
                 }
             }
             embed.Description += "\n";
 
-            embed.Description += $"**Cost**: {_N(unit.MetalCost)} M / {_N(unit.EnergyCost)} E / {_N(unit.BuildTime)} B\n";
+            embed.Description += $"**Cost**: {_N(unit.MetalCost)} M | {_N(unit.EnergyCost)} E | {_N(unit.BuildTime)} B\n";
             if (unit.Speed != 0 || unit.Acceleration != 0 || unit.TurnRate != 0) {
-                embed.Description += $"**Speed**: {_N(unit.Speed)} / {_N(900d * unit.Acceleration)} accel / {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n";
+                embed.Description += $"**Speed**: {_N(unit.Speed)} | {_N(900d * unit.Acceleration)} accel | {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n";
+
+                if (showExtra == true) {
+                    Result<BarMoveDefinition?, string> moveDef = await _MoveDefinitionRepository.Get(unit.MovementClass, cts.Token);
+                    if (moveDef.IsOk == false) {
+                        _Logger.LogError($"failed to parse moveDef for unit [unit={unit.DefinitionName}] [movementClass={unit.MovementClass}] [error={moveDef.Error}]");
+                    } else if (moveDef.Value == null) {
+                        embed.Description += $"**Movement**: null ({unit.MovementClass}]\n";
+                    } else {
+                        BarMoveDefinition md = moveDef.Value;
+                        embed.Description += $"**Movement**: {md.Name} | max slope: {_N(md.MaxSlope)} | max water depth: {_N(md.MaxWaterDepth)}";
+                        if (md.MaxWaterDepth > 4000) {
+                            embed.Description += " (amphibious)";
+                        }
+
+                        embed.Description += "\n";
+                    }
+                }
             }
+
             embed.Description += $"**Vision**: {_N(unit.SightDistance)} ";
 
-            if (unit.AirSightDistance > 0) { embed.Description += $" / {_N(unit.AirSightDistance)} (air) "; }
+            if (unit.AirSightDistance > 0) { embed.Description += $" | {_N(unit.AirSightDistance)} (air) "; }
             embed.Description += "\n";
 
             if (unit.RadarDistance > 0 && unit.SonarDistance > 0) {
                 embed.Description += $"**Radar**: {_N(unit.RadarDistance)}";
                 if (unit.RadarDistance != unit.SonarDistance) {
-                    embed.Description += $" / {_N(unit.SonarDistance)} (sonar)";
+                    embed.Description += $" | {_N(unit.SonarDistance)} (sonar)";
                 }
                 embed.Description += "\n";
             } else if (unit.RadarDistance > 0 && unit.SonarDistance == 0) {
@@ -425,7 +444,7 @@ namespace gex.Code.Discord {
             }
 
             if (unit.CloakCostStill != 0 || unit.CloakCostMoving != 0) {
-                embed.Description += $"**Cloaking**: {_N(unit.CloakCostStill)} / {_N(unit.CloakCostMoving)}\n";
+                embed.Description += $"**Cloaking**: {_N(unit.CloakCostStill)} | {_N(unit.CloakCostMoving)}\n";
             }
 
             if (unit.SelfDestructCountdown != 5d) {

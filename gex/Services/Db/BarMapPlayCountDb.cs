@@ -55,10 +55,6 @@ namespace gex.Services.Db {
                 throw new Exception($"{nameof(rangeStart)} cannot be in the future");
             }
 
-            if ((DateTime.UtcNow - rangeStart) > TimeSpan.FromDays(31)) {
-                throw new Exception($"{nameof(rangeStart)} can be at most 31 days ago");
-            }
-
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
                 WITH matches AS (
