@@ -264,7 +264,7 @@
                     </a>
                 </div>
 
-                <match-list :matches="recent.data"></match-list>
+                <match-list :matches="recent.data" :group-match-override="true"></match-list>
 
                 <div v-if="recent.data.length == 0">
                     No matches found!
