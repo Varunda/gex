@@ -295,6 +295,8 @@ namespace gex.Models.Map {
         [ColumnMapping("role")]
         public string Role { get; set; } = "";
 
+        public string BaseRole { get; set; } = "";
+
         [ColumnMapping("spawn_point")]
         public string SpawnPoint { get; set; } = "";
 

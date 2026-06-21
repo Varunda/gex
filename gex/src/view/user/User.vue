@@ -12,11 +12,17 @@
                 <tbody>
                     <tr>
                         <td>User</td>
-                        <td>{{ user.state }}</td>
+                        <td>
+                            {{ user.state }}
+                            <busy v-if="user.state == 'loading'" class="busy busy-sm"></busy>
+                        </td>
                     </tr>
                     <tr>
                         <td>Matches</td>
-                        <td>{{ matches.state }}</td>
+                        <td>
+                            {{ matches.state }}
+                            <busy v-if="matches.state == 'loading'" class="busy busy-sm"></busy>
+                        </td>
                     </tr>
                 </tbody>
             </table>

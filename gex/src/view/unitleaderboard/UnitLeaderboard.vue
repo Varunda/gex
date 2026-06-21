@@ -43,7 +43,37 @@
             </div>
         </div>
 
+
         <div v-if="showAllOptions">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label><b>Map filter</b></label>
+
+                    <div v-if="mapNames.state == 'loaded'">
+                        <input v-model="addMapInput" @keyup.enter="addMapWrapper" class="form-control" list="map-names" autocomplete="on" @change="addMapWrapper" @input="addMapInputWrapper"/>
+                        <datalist id="map-names" @select="addMapWrapper">
+                            <option v-for="map in mapNames.data" :key="map.fileName" :value="map.fileName">
+                                {{ map.name }}
+                            </option>
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label>Selected maps:</label>
+
+                    <span v-if="maps.length == 0">
+                        Including all maps
+                    </span>
+
+                    <div>
+                        <button v-for="map in maps" :key="map.fileName" class="btn btn-primary me-3" @click="removeMap(map.fileName)">
+                            &times; {{ map.name }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="row mb-3">
                 <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                     <label><b>Range start</b></label>
@@ -131,15 +161,21 @@
 
         <div v-if="leaderboard.state != 'idle'" class="mb-3">
             Showing top <code>{{ previousSearch.limit }}</code> users
-            with matches between <code>{{ previousSearch.periodStart | moment }}</code> and <code>{{ previousSearch.periodEnd | moment }}</code>
-            (a duration of {{ (previousSearch.periodEnd.getTime() - previousSearch.periodStart.getTime()) / 1000 | mduration }}),
+            <span v-if="previousSearch.periodStart.getTime() == allTimeStart.getTime()">
+                of all matches,
+            </span>
+            <span v-else>
+                with matches between <code>{{ previousSearch.periodStart | moment }}</code> and <code>{{ previousSearch.periodEnd | moment }}</code>
+                (a duration of {{ (previousSearch.periodEnd.getTime() - previousSearch.periodStart.getTime()) / 1000 | mduration }}),
+            </span>
 
             <span v-if="previousSearch.gamemodes && previousSearch.gamemodes.length > 0">
                 that were a {{ previousSearchGamemodes }}
             </span>
 
             <span v-if="previousSearch.mapsFilenames && previousSearch.mapsFilenames.length > 0">
-                maps
+                on any of the following maps: 
+                <code v-for="m in previousSearch.mapsFilenames" :key="m">{{ m }}</code>,
             </span>
 
             who created any of: <code v-for="ud in previousSearch.defNames" :key="ud">{{ ud }} </code>
@@ -148,6 +184,16 @@
         <div v-if="leaderboard.state != 'idle'">
             <a-table :entries="leaderboard"
                 default-sort-order="desc" default-sort-field="count">
+
+                <a-col>
+                    <a-header>
+                        <b>Rank</b>
+                    </a-header>
+
+                    <a-body>
+                        <a-rank></a-rank>
+                    </a-body>
+                </a-col>
 
                 <a-col>
                     <a-header>
@@ -190,14 +236,16 @@
     import * as luxon from "luxon";
 
     import DateTimeInput from "components/DateTimeInput.vue";
-    import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
+    import ATable, { ABody, AFilter, AFooter, AHeader, ACol, ARank } from "components/ATable";
     import ApiError from "components/ApiError";
     import ToggleButton from "components/ToggleButton";
 
     import { BarUnitApi, UserUnitsMadeLeaderboardOptions } from "api/BarUnitApi";
+    import { MapApi } from "api/MapApi";
 
     import { UserUnitsMaderLeaderboardEntry } from "model/UserUnitsMadeLeaderboardEntry";
     import { BarUnitName } from "model/BarUnitName";
+    import { BarMap } from "model/BarMap";
 
     import { GamemodeUtil } from "util/Gamemode";
 
@@ -216,9 +264,13 @@
                 unitNames: Loadable.idle() as Loading<BarUnitName[]>,
                 addUnitInput: "" as string,
 
+                mapNames: Loadable.idle() as Loading<BarMap[]>,
+                addMapInput: "" as string,
+
                 showAllOptions: false as boolean,
 
                 unitDefs: [] as BarUnitName[],
+                maps: [] as BarMap[],
                 periodStart: new Date() as Date,
                 periodEnd: new Date() as Date,
 
@@ -234,7 +286,8 @@
                 },
 
                 previousSearch: {
-                    defNames: [] as string[]
+                    defNames: [] as string[],
+                    mapsFilenames: [] as string[],
                 } as UserUnitsMadeLeaderboardOptions
             }
         },
@@ -243,6 +296,7 @@
             document.title = "Gex / Unit leaderboard";
 
             this.loadUnitNames();
+            this.loadMapNames();
 
             const lx: luxon.DateTime = luxon.DateTime.utc().startOf("day").plus(luxon.Duration.fromDurationLike({ days: 1 }));
             this.periodEnd = lx.toJSDate();
@@ -275,9 +329,23 @@
                     this.unitDefs = this.unitNames.data.filter(iter => prevNameSet.has(iter.definitionName));
                 }
             },
+            
+            loadMapNames: async function(): Promise<void> {
+                this.mapNames = Loadable.loading();
+                this.mapNames = await MapApi.getAll();
+
+                if (this.mapNames.state == "loaded" && this.previousSearch.mapsFilenames != undefined && this.previousSearch.mapsFilenames?.length > 0 && this.maps.length == 0) {
+                    const prevMapSet: Set<string> = new Set(this.previousSearch.mapsFilenames);
+                    this.maps = this.mapNames.data.filter(iter => prevMapSet.has(iter.fileName));
+                }
+            },
 
             removeUnitDef: function(defName: string): void {
                 this.unitDefs = this.unitDefs.filter(iter => iter.definitionName != defName);
+            },
+
+            removeMap: function(mapFilename: string): void {
+                this.maps = this.maps.filter(iter => iter.fileName != mapFilename);
             },
 
             searchWrapper: async function(): Promise<void> {
@@ -288,7 +356,7 @@
                     limit: 50,
                     offset: 0,
                     gamemodes: this.gamemodes.length == 0 ? undefined : this.gamemodes,
-                    mapsFilenames: this.mapFilenames.length == 0 ? undefined : this.mapFilenames,
+                    mapsFilenames: this.maps.length == 0 ? undefined : this.maps.map(iter => iter.fileName),
                 };
 
                 this.leaderboard = Loadable.loading();
@@ -319,6 +387,22 @@
                 this.addUnitInput = "";
             },
 
+            addMapWrapper: function(): void {
+                if (this.mapNames.state != "loaded") {
+                    console.warn(`UnitLeaderboard> cannot add ${this.addMapInput} to maps, mapNAmes is not loaded`);
+                    return;
+                }
+
+                const map: BarMap | undefined = this.mapNames.data.find(iter => iter.fileName == this.addMapInput);
+                if (map == undefined) {
+                    console.warn(`UnitLeaderboard> cannot add ${this.addUnitInput} to unit defs, failed to find a unitName with that def name`);
+                    return;
+                }
+
+                this.maps.push(map);
+                this.addMapInput = "";
+            },
+
             addUnitInputWrapper: function(ev: InputEvent): void {
                 if (ev.inputType == "insertText") {
                     return;
@@ -335,13 +419,29 @@
                 this.addUnitWrapper();
             },
 
+            addMapInputWrapper: function(ev: InputEvent): void {
+                if (ev.inputType == "insertText") {
+                    return;
+                }
+
+                const input = ev.target as HTMLInputElement;
+                const val = input.value;
+
+                console.log(`UnitLeaderboard> map input wrapper ${val} ${ev.inputType}`);
+
+                if (ev.inputType != "insertReplacementText") {
+                    return;
+                }
+                this.addMapWrapper();
+            },
+
             setRange: function(duration: string): void {
                 const now: Date = new Date(Date.now());
                 const lx: luxon.DateTime = luxon.DateTime.fromJSDate(now).startOf("day").plus(luxon.Duration.fromDurationLike({ days: 1 }));
 
                 this.periodEnd = new Date();
                 if (duration == "all_time") {
-                    this.periodStart = new Date(2010, 0, 0);
+                    this.periodStart = this.allTimeStart;
                 } else if (duration == "7d") {
                     this.periodStart = lx.minus(luxon.Duration.fromDurationLike({ days: 7 })).toJSDate();
                 } else if (duration == "30d") {
@@ -356,6 +456,10 @@
         },
 
         computed: {
+
+            allTimeStart: function(): Date {
+                return new Date(2010, 0, 0);
+            },
 
             gamemodes: function(): number[] {
                 let ret: number[] = [];
@@ -408,7 +512,7 @@
 
         components: {
             DateTimeInput, ApiError, ToggleButton,
-            ATable, AHeader, ABody, AFooter, AFilter, ACol
+            ATable, AHeader, ABody, AFooter, AFilter, ACol, ARank
         }
     });
 

@@ -97,6 +97,7 @@ namespace gex.Tests.Services.Repository {
             Assert.IsNotNull(r1);
 
             Assert.AreEqual("override", r1.Configurations[0].Sides[0].Starts[0].Role);
+            Assert.AreEqual("front", r1.Configurations[0].Sides[0].Starts[0].BaseRole);
         }
         
     }

@@ -42,6 +42,15 @@ namespace gex.Services.Repositories {
             _OverrideDb = overrideDb;
         }
 
+        /// <summary>
+        ///     get the latest <see cref="StartSpotData"/> (the highest version) of a specific map
+        /// </summary>
+        /// <param name="mapFilename">filename of the map</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     the latest <see cref="StartSpotData"/> with <see cref="StartSpotData.MapFilename"/> of <paramref name="mapFilename"/>,
+        ///     or <c>null</c> if it does not exist
+        /// </returns>
         public async Task<StartSpotData?> GetLatestByMapFilename(string mapFilename, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, mapFilename, "Latest");
             if (_Cache.TryGetValue(cacheKey, out StartSpotData? pos) == false || pos == null) {
@@ -65,6 +74,16 @@ namespace gex.Services.Repositories {
             return pos;
         }
 
+        /// <summary>
+        ///     get the start spot data for a specific version and map filename
+        /// </summary>
+        /// <param name="mapFilename">filename of the map</param>
+        /// <param name="version">version of the data to get</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     the <see cref="StartSpotData"/> with <see cref="StartSpotData.MapFilename"/> of <paramref name="mapFilename"/>
+        ///     and <see cref="StartSpotData.Version"/> of <paramref name="version"/>, or <c>null</c> if it does not exist
+        /// </returns>
         public async Task<StartSpotData?> GetByVersionAndMapFilename(string mapFilename, int version, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY, mapFilename, version);
             if (_Cache.TryGetValue(cacheKey, out StartSpotData? pos) == false || pos == null) {
@@ -115,6 +134,8 @@ namespace gex.Services.Repositories {
                         .OrderBy(iter => iter.SpawnPoint).ToList();
 
                     foreach (StartSpotSideStart start in side.Starts) {
+                        start.BaseRole = start.Role;
+
                         StartSpotSideStartRoleOverride? @override = overrides.FirstOrDefault(iter => iter.Position == start.SpawnPoint);
                         if (@override != null) {
                             start.Role = @override.Role;
@@ -126,6 +147,18 @@ namespace gex.Services.Repositories {
             return data;
         }
 
+        /// <summary>
+        ///     insert a new <see cref="StartSpotData"/> into the repository. the <see cref="StartSpotData.Version"/>
+        ///     will be updated to match the newly inserted version
+        /// </summary>
+        /// <remarks>
+        ///     the <see cref="StartSpotData.Version"/> of <paramref name="data"/> must be 0
+        /// </remarks>
+        /// <param name="data"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="Exception"></exception>
         public async Task<StartSpotData> Insert(StartSpotData data, CancellationToken cancel) {
             if (string.IsNullOrWhiteSpace(data.MapFilename) == true) {
                 throw new ArgumentException($"{nameof(StartSpotData.MapFilename)} cannot be empty");

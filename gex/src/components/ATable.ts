@@ -20,7 +20,7 @@ const Conditions: Map<string, ConditionSettings> = new Map([
     ["less_than", { title: "Less than", icon: "ph-less-than", color: "info" }],
     ["greater_than", { title: "Greater than", icon: "ph-greater-than", color: "success" }],
     ["contains", { title: "Contains", icon: "ph-asterisk", color: "info" }],
-    ["not_empty", { title: "Not empty", icon: "ph-circle", color: "info" }],
+    ["not_empty", { title: "Not empty", icon: "ph-circle", color: "warning" }],
     ["empty", { title: "Empty", icon: "ph-empty", color: "info" }]
 ]);
 

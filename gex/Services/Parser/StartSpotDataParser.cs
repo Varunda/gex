@@ -95,6 +95,7 @@ namespace gex.Services.Parser {
                         startStart.BaseCenter = start.NullableString("baseCenter");
 
                         startStart.Role = start.NullableString("role") ?? "<missing>";
+                        startStart.BaseRole = startStart.Role;
 
                         startSide.Starts.Add(startStart);
                     }

@@ -20,11 +20,17 @@ export class BarMatchPlayer {
     public static parse(elem: any): BarMatchPlayer {
         const lut: number = Lut.lut(elem.color);
 
+        let role: string | null = elem.startSpotLabel;
+        if (role != null) {
+            role = role.replaceAll("front", "Front").replaceAll("air", "Air").replaceAll("tech", "Tech").replaceAll("sea", "Sea");
+        }
+
         return {
             ...elem,
             color: lut,
             username: elem.name,
-            hexColor: "#" + lut.toString(16).padStart(6, "0")
+            hexColor: "#" + lut.toString(16).padStart(6, "0"),
+            startSpotLabel: role,
         };
     }
 }

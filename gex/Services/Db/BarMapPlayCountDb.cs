@@ -74,5 +74,17 @@ namespace gex.Services.Db {
             ", new { RangeStart = rangeStart }, cancel);
         }
 
+        public async Task<List<BarMapPlayCountEntry>> GetAllTime(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
+                SELECT NOW() at time zone 'utc' ""timestamp"", map, gamemode, count(*)
+                FROM
+                    bar_match
+                WHERE
+                    gamemode <> 0
+                GROUP BY map, gamemode;
+            ", cancel);
+        }
+
     }
 }

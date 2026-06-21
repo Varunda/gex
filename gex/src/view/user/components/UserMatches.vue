@@ -63,7 +63,7 @@
                 </a-header>
 
                 <a-filter field="playerPosition" type="string" method="input" max-width="20ch"
-                    :conditions="[ 'contains', 'equals' ]">
+                    :conditions="[ 'contains', 'equals', 'empty', 'not_empty' ]">
                 </a-filter>
 
                 <a-body v-slot="entry">

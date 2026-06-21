@@ -1,16 +1,16 @@
 <template>
     <div>
         <h2 class="wt-header">
-            Viewing map stats for {{ user.username }} on {{ map }}
+            Player start spot stats
         </h2>
 
         <div>
-            <h3 class="wt-header">
-                Position win rate
-            </h3>
-
             <collapsible header-text="Filters" :show="false" size-class="h6">
                 <div class="mb-2">
+                    <label>Map</label>
+                    <input v-model="mapFilter" type="text" class="form-control">
+                    <small class="text-muted mb-2 d-block">Use <code>*</code> for a wildcard at the start or end of the map name, for example <code>All That Glitters*</code></small>
+
                     <label>Min OS</label>
                     <input v-model.number="filter.minOS" type="number" class="form-control mb-2">
 
@@ -23,7 +23,6 @@
 
                     {{ conditions.join(", ") }}
                 </span>
-
             </collapsible>
 
             <a-table :entries="positionWinRates" default-sort-field="total" default-sort-order="desc">
@@ -106,6 +105,8 @@
 
         data: function() {
             return {
+                
+                mapFilter: "" as string,
 
                 filter: {
                     minOS: null as number | null,
@@ -118,12 +119,20 @@
 
         },
 
+        mounted: function(): void {
+            this.mapFilter = this.map;
+        },
+
         computed: {
             
             positionWinRates: function(): Loading<MapPositionWinRate[]> {
                 const map: Map<string, MapPositionWinRate> = new Map();
 
                 for (const match of this.matches) {
+                    if (this.validMaps.has(match.map) == false) {
+                        continue;
+                    }
+
                     const player = match.players.find(iter => iter.userID == this.user.userID);
                     if (player == undefined) {
                         console.warn(`UserMapView> missing player in match [match=${match.id}] [user=${this.user.userID}]`)
@@ -158,6 +167,31 @@
                 }
 
                 return Loadable.loaded(Array.from(map.values()));
+            },
+
+            validMaps: function(): Set<string> {
+                const set: Set<string> = new Set();
+
+                const mapFilterLower: string = this.mapFilter.toLowerCase();
+
+                for (const match of this.matches) {
+                    const mapLower: string = match.map.toLowerCase();
+                    if (mapFilterLower.indexOf("*") == -1) {
+                        if (mapLower == mapFilterLower) {
+                            set.add(match.map);
+                        }
+                    } else if (mapFilterLower.charAt(0) == '*') {
+                        if (mapLower.startsWith(mapFilterLower.slice(1))) {
+                            set.add(match.map);
+                        }
+                    } else if (mapFilterLower.charAt(this.mapFilter.length - 1) == '*') {
+                        if (mapLower.startsWith(mapFilterLower.slice(0, mapFilterLower.length - 1))) {
+                            set.add(match.map);
+                        }
+                    }
+                }
+
+                return set;
             },
 
             totalCount: function(): number {

@@ -89,7 +89,7 @@
         </a-table>
 
         <user-map-view v-if="selectedMap != null"
-            :user="user" :map="selectedMap" :matches="selectedMapMatches">
+            :user="user" :map="selectedMap" :matches="matches">
         </user-map-view>
 
         <div v-if="startSpot.loaded == true" class="mb-3">

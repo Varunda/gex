@@ -75,11 +75,13 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(8, side.Starts.Count);
 
             Assert.AreEqual("front", side.Starts[0].Role);
+            Assert.AreEqual("front", side.Starts[0].BaseRole);
             Assert.AreEqual("P1", side.Starts[0].SpawnPoint);
             Assert.AreEqual(0, side.Starts[0].SideIndex);
             Assert.IsNull(side.Starts[0].BaseCenter);
 
             Assert.AreEqual("front", side.Starts[3].Role);
+            Assert.AreEqual("front", side.Starts[3].BaseRole);
             Assert.AreEqual(0, side.Starts[3].SideIndex);
             Assert.AreEqual("P4", side.Starts[3].SpawnPoint);
             Assert.AreEqual("P17", side.Starts[3].BaseCenter);

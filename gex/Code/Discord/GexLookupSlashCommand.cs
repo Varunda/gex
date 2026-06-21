@@ -390,7 +390,7 @@ namespace gex.Code.Discord {
                         embed.Description += $"**Movement**: null ({unit.MovementClass}]\n";
                     } else {
                         BarMoveDefinition md = moveDef.Value;
-                        embed.Description += $"**Movement**: {md.Name} | max slope: {_N(md.MaxSlope)} | max water depth: {_N(md.MaxWaterDepth)}";
+                        embed.Description += $"**Movement**: {md.Name} | max slope: {_N(md.MaxSlope)} | min/max water depth: {_N(md.MinWaterDepth)}/{_N(md.MaxWaterDepth)}";
                         if (md.MaxWaterDepth > 4000) {
                             embed.Description += " (amphibious)";
                         }
@@ -576,7 +576,13 @@ namespace gex.Code.Discord {
                             // https://springrts.com/wiki/Gamedev:WeaponDefs#edgeEffectiveness
                             double edgeRange = weapon.AreaOfEffect * 0.99d;
                             double minDamage = damage * ((weapon.AreaOfEffect - edgeRange) / (weapon.AreaOfEffect - (edgeRange * weapon.EdgeEffectiveness)));
-                            embed.Description += $" ({_N(weapon.AreaOfEffect)} splash)";
+                            embed.Description += $" ({_N(weapon.AreaOfEffect)} splash";
+
+                            if (showExtra == true) {
+                                embed.Description += $", {weapon.EdgeEffectiveness} edge eff.";
+                            }
+
+                            embed.Description += ")";
                         }
                         embed.Description += "\n";
 

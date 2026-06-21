@@ -38,6 +38,8 @@ export class StartPositionData {
     public static parse(elem: any): StartPositionData {
         return {
             ...elem,
+            positions: elem.positions.map((iter: any) => StartPosition.parse(iter)),
+            configurations: elem.configurations.map((iter: any) => StartTeamConfiguration.parse(iter)),
             timestamp: new Date(elem.timestamp)
         };
     }
@@ -49,6 +51,12 @@ export class StartPosition {
     public x: number = 0;
     public y: number = 0;
     public maxRadius: number = 0;
+
+    public static parse(elem: any): StartPosition {
+        return {
+            ...elem
+        }
+    }
 }
 
 export class StartTeamConfiguration {
@@ -83,10 +91,13 @@ export class StartTeamSideStart {
     public baseCenter: string | null = null;
 
     public static parse(elem: any): StartTeamSideStart {
+        let role: string = elem.role;
+        role = role.replaceAll("front", "Front").replaceAll("air", "Air").replaceAll("tech", "Tech").replaceAll("sea", "Sea");
+
         return {
             mapFilename: elem.mapFilename,
             version: elem.version,
-            role: elem.role,
+            role: role,
             spawnPoint: elem.spawnPoint,
             baseCenter: elem.baseCenter == undefined ? null : elem.baseCenter
         };
