@@ -213,7 +213,7 @@
                     </a-header>
 
                     <a-body v-slot="entry">
-                        {{ entry.count }}
+                        {{ entry.count | locale }}
                     </a-body>
                 </a-col>
 
@@ -251,6 +251,7 @@
 
     import "filters/MomentFilter";
     import "filters/BarGamemodeFilter";
+    import "filters/LocaleFilter";
 
     export const UnitLeaderboard = Vue.extend({
         props: {
