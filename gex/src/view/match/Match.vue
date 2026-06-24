@@ -358,6 +358,13 @@
                 </div>
 
                 <api-error v-else-if="output.state == 'error'" :error="output.problem"></api-error>
+
+                <small v-if="match.data.processing != null" class="text-muted">
+                    Features:
+                    <span v-for="f in match.data.processing.features">
+                        <code class="me-2">{{ f }}</code>
+                    </span>
+                </small>
             </div>
 
             <div v-else-if="match.state == 'error'">

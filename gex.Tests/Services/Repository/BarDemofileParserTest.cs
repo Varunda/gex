@@ -1,11 +1,25 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Options;
+using gex.Common.Services;
+using gex.Common.Services.Bar;
 using gex.Models.Db;
+using gex.Services.BarApi;
+using gex.Services.Db;
+using gex.Services.Metrics;
 using gex.Services.Parser;
+using gex.Services.Repositories;
+using gex.Services.Util;
 using gex.Tests.Util;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Org.BouncyCastle.Asn1.X509.Qualified;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -16,6 +30,16 @@ namespace gex.Tests.Services.Repository {
 
     [TestClass]
     public class BarDemofileParserTest {
+
+        private async Task<(BarDemofileParser, ServiceProvider)> _Get() {
+            ServiceCollection services = await Service.Standard();
+            services.AddSingleton<LuaCommandParser>();
+            services.AddSingleton<BarDemofileParser>();
+
+            ServiceProvider svs = services.BuildServiceProvider();
+
+            return (svs.GetRequiredService<BarDemofileParser>(), svs);
+        }
 
         [DataTestMethod]
         [DataRow("test.sdfz")]
@@ -37,7 +61,7 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
+            (BarDemofileParser parser, _) = await _Get();
 
             Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
                 IncludeMapDraws = true,
@@ -62,7 +86,7 @@ namespace gex.Tests.Services.Repository {
             logger.LogInformation($"cwd: {Environment.CurrentDirectory}");
 
             byte[] comp = await File.ReadAllBytesAsync($"./resources/bomb.gzip");
-            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
+            (BarDemofileParser parser, _) = await _Get();
 
             Result<BarMatch, string> output = await parser.Parse("", comp, new DemofileParserOptions() {
                 IncludeCommands = true,
@@ -85,7 +109,7 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
+            (BarDemofileParser parser, _) = await _Get();
 
             Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
                 IncludeMapDraws = true,
@@ -136,7 +160,7 @@ namespace gex.Tests.Services.Repository {
 
             byte[] input = ms.ToArray();
 
-            BarDemofileParser parser = new(logger, new LuaCommandParser(new TestLogger<LuaCommandParser>()));
+            (BarDemofileParser parser, _) = await _Get();
 
             Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
                 IncludeMapDraws = true,
@@ -168,6 +192,79 @@ namespace gex.Tests.Services.Repository {
             Assert.AreEqual("hi", ((BarMatchMapDrawPoint)draws[13]).Label);
 
             //_DumpMapDrawsDebug(output.Value.MapDraws, logger);
+        }
+
+        [TestMethod]
+        public async Task Test_StartSpot_Out_Of_StartBox() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/start_spot_outside_start_box.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+            BarMapRepository mapRepo = svs.GetRequiredService<BarMapRepository>();
+
+            await mapRepo.GetByFileName("all_that_glitters_v2.2.3", CancellationToken.None);
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() {
+                IncludeMapDraws = true,
+                IncludeCommands = true,
+            }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            Assert.AreEqual("cetme", output.Value.Players[13].Name);
+            Assert.AreEqual(1161.8618, output.Value.Players[13].StartingPosition.X, 0.01);
+            Assert.AreEqual(220.4636, output.Value.Players[13].StartingPosition.Y, 0.01);
+            Assert.AreEqual(1968.3596, output.Value.Players[13].StartingPosition.Z, 0.01);
+        }
+
+        [TestMethod]
+        public async Task Test_Missing_Player_36() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/missing_player_36.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            // add user for the parser to find the user ID of a late join spec
+            BarUserRepository userRepo = svs.GetRequiredService<BarUserRepository>();
+            await userRepo.Upsert(11212, new gex.Models.UserStats.BarUser() {
+                UserID = 11212,
+                Username = "Arastais",
+                LastUpdated = DateTime.UtcNow,
+                CountryCode = "moon"
+            }, CancellationToken.None);
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("ae6a156861018b845447e8c075c394e0", match.ID);
+            Assert.AreEqual(35, match.Spectators.Count);
+
+            Assert.AreEqual("fightwar", match.Spectators[17].Name);
+            Assert.AreEqual(20, match.Spectators[17].PlayerID);
+            Assert.AreEqual(196408, match.Spectators[17].UserID);
+
+            Assert.AreEqual(11212, match.Spectators[21].UserID);
+            Assert.AreEqual("Arastais", match.Spectators[21].Name);
+            Assert.IsTrue(match.Spectators[21].UserIDCanBeWrong);
+
         }
 
         /// <summary>

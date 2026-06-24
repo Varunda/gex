@@ -35,11 +35,11 @@ namespace gex.Services.Db.Match {
                 INSERT INTO bar_match_processing (
                     game_id, demofile_fetched, demofile_parsed, headless_ran, actions_parsed, actions_compressed, actions_deleted,
                     fetch_ms, parse_ms, replay_ms, action_ms, actions_compressed_ms,
-					priority, unit_position_compressed
+					priority, unit_position_compressed, features
                 ) VALUES (
                     @GameID, @DemofileFetched, @DemofileParsed, @HeadlessRan, @ActionsParsed, @ActionsCompressed, @ActionsDeleted,
                     @FetchMs, @ParseMs, @ReplayMs, @ActionMs, @ActionsCompressedMs,
-					@Priority, @UnitPositionCompressed
+					@Priority, @UnitPositionCompressed, @Features
                 ) ON CONFLICT (game_id) DO UPDATE 
                     SET demofile_fetched = @DemofileFetched,
                         demofile_parsed = @DemofileParsed,
@@ -53,7 +53,8 @@ namespace gex.Services.Db.Match {
                         unit_position_compressed = @UnitPositionCompressed,
                         actions_compressed = @ActionsCompressed,
                         actions_compressed_ms = @ActionsCompressedMs,
-                        actions_deleted = @ActionsDeleted
+                        actions_deleted = @ActionsDeleted,
+                        features = @Features
                 ;
             ");
 
@@ -71,6 +72,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("ActionsCompressed", proc.ActionsCompressed);
             cmd.AddParameter("ActionsCompressedMs", proc.ActionsCompressedMs);
             cmd.AddParameter("ActionsDeleted", proc.ActionsDeleted);
+            cmd.AddParameter("Features", string.Join(",", proc.Features));
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();

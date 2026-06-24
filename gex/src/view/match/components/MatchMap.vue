@@ -87,6 +87,10 @@
                 </toggle-button>
             </div>
         </div>
+        
+        <div v-if="hasTeamFfaShuffleStartBoxes == true && map.startingBox == true" class="alert alert-warning text-center">
+            Start box colors are incorrect due to the start boxes shuffling <span class="text-muted">(<code>teamffa_start_boxes_shuffle</code> is true)</span>
+        </div>
 
         <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" v-if="map.showUnitPosition">
             <h6 class="wt-header">
@@ -294,7 +298,7 @@
     import { UnitPositionFrame } from "../compute/UnitPositionFrame";
 
     import AccountUtil from "util/Account";
-import Toaster from "Toaster";
+    import Toaster from "Toaster";
 
     // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
@@ -1676,6 +1680,12 @@ import Toaster from "Toaster";
 
             hasRecalcPermission: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Dev");
+            },
+
+            hasTeamFfaShuffleStartBoxes: function(): boolean {
+                return this.match.allyTeams.length > 2
+                    && this.match.allyTeams.find(iter => iter.playerCount > 1) != undefined
+                    && this.match.gameSettings["teamffa_start_boxes_shuffle"] == "1";
             }
         },
 

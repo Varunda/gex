@@ -33,9 +33,9 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_spectator (
-                    game_id, player_id, user_id, user_name
+                    game_id, player_id, user_id, user_name, user_id_can_be_wrong
                 ) VALUES (
-                    @GameID, @PlayerID, @UserID, @Username
+                    @GameID, @PlayerID, @UserID, @Username, @UserIDCanBeWrong
                 );
             ");
 
@@ -43,6 +43,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("PlayerID", spec.PlayerID);
             cmd.AddParameter("UserID", spec.UserID);
             cmd.AddParameter("Username", spec.Name);
+            cmd.AddParameter("UserIDCanBeWrong", spec.UserIDCanBeWrong);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();

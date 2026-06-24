@@ -40,19 +40,20 @@ namespace gex.Controllers.Api {
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
+        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
+        private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BarMatchProcessingPriorityDb _ProcessingPriorityDb;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
-        private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly AppAccountDbStore _AccountDb;
         private readonly GameOutputStorage _GameOutputStorage;
         private readonly BarDemofileParser _DemofileParser;
         private readonly DemofileStorage _DemofileStorage;
-        private readonly ApmCalculatorUtil _ApmCalculator;
         private readonly BadGameVersionRepository _BadGameVersionRepository;
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
+        private readonly BarMatchTextPingDb _TextPingDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
 
@@ -67,7 +68,8 @@ namespace gex.Controllers.Api {
             DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
             BadGameVersionRepository badGameVersionRepository, MatchPoolRepository matchPoolRepository,
             MatchPoolEntryDb matchPoolEntryDb, StartSpotDataRepository startSpotDataRepository,
-            BarMatchPlayerStartSpotMigration playerStartSpotMigration) {
+            BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchPlayerLeftDb playerLeftDb,
+            BarMatchTextPingDb textPingDb) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -85,12 +87,13 @@ namespace gex.Controllers.Api {
             _GameOutputStorage = gameOutputStorage;
             _DemofileParser = demofileParser;
             _DemofileStorage = demofileStorage;
-            _ApmCalculator = apmCalculator;
             _BadGameVersionRepository = badGameVersionRepository;
             _MatchPoolRepository = matchPoolRepository;
             _MatchPoolEntryDb = matchPoolEntryDb;
             _StartSpotDataRepository = startSpotDataRepository;
             _PlayerStartSpotMigration = playerStartSpotMigration;
+            _PlayerLeftDb = playerLeftDb;
+            _TextPingDb = textPingDb;
         }
 
         /// <summary>
@@ -110,6 +113,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
         /// <param name="includeSpectators">will <see cref="BarMatch.Spectators"/> be populated? defaults to false</param>
         /// <param name="includeTeamDeaths">will <see cref="BarMatch.TeamDeaths"/> be populated? defaults to false</param>
+        /// <param name="includePlayerLeaves">will <see cref="BarMatch.PlayerLeaves"/> be populated? defaults to false</param>
         /// <param name="includeMapDraws">will <see cref="BarMatch.MapDraws"/> be populated? defaults to false</param>
         /// <param name="includeLabeledPings">
         ///     will <see cref="BarMatch.MapDraws"/> be populated with pings that include a label? defaults to false.
@@ -122,21 +126,28 @@ namespace gex.Controllers.Api {
         /// </param>
         /// <returns></returns>
         [HttpGet("{gameID}")]
-        public async Task<ApiResponse<ApiMatch>> GetMatch(CancellationToken cancel,
-            string gameID,
+        public async Task<ApiResponse<ApiMatch>> GetMatch(string gameID,
             [FromQuery] bool includeAllyTeams = false,
             [FromQuery] bool includePlayers = false,
             [FromQuery] bool includeChat = false,
             [FromQuery] bool includeSpectators = false,
             [FromQuery] bool includeTeamDeaths = false,
+            [FromQuery] bool includePlayerLeaves = false,
             [FromQuery] bool includeMapDraws = false,
             [FromQuery] bool includeLabeledPings = false,
             [FromQuery] bool includeCommands = false,
-            [FromQuery] bool includeSelfDCommands = false
+            [FromQuery] bool includeSelfDCommands = false,
+            CancellationToken cancel = default
         ) {
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return ApiNoContent<ApiMatch>();
+            }
+
+            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
+            if (proc == null) {
+                Debug.Fail($"missing {nameof(BarMatchProcessing)} for gameID {gameID}");
+                _Logger.LogError($"missing bar match processing [gameID={gameID}]");
             }
 
             List<MatchPoolEntry> poolEntries = await _MatchPoolEntryDb.GetByMatchID(gameID, cancel);
@@ -182,9 +193,72 @@ namespace gex.Controllers.Api {
                 match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
             }
 
-            if (includeMapDraws == true || includeLabeledPings == true
-                || includeCommands == true || includeSelfDCommands == true) {
+            if (includePlayerLeaves == true) {
+                if (proc != null && proc.Features.Contains("player_left") == false) {
+                    _Logger.LogDebug($"match is missing player_left feature, fixing [gameID={gameID}]");
 
+                    Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions(), cancel);
+                    if (fromDemofile.IsOk == false) {
+                        _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                        return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
+                    }
+
+                    await _PlayerLeftDb.DeleteByGameID(gameID);
+                    foreach (BarMatchPlayerLeft left in fromDemofile.Value.PlayerLeaves) {
+                        await _PlayerLeftDb.Insert(left, cancel);
+                    }
+
+                    proc.Features.Add("player_left");
+                    await _ProcessingRepository.Upsert(proc);
+
+                    match.PlayerLeaves = fromDemofile.Value.PlayerLeaves;
+                } else {
+                    match.PlayerLeaves = await _PlayerLeftDb.GetByGameID(gameID, cancel);
+                }
+            }
+
+            if (includeLabeledPings == true && includeMapDraws == false) {
+                if (proc != null && proc.Features.Contains("text_ping") == false) {
+                    _Logger.LogDebug($"match is missing text_ping feature, fixing [gameID={gameID}]");
+
+                    Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions() {
+                        IncludeMapDraws = true,
+                    }, cancel);
+
+                    if (fromDemofile.IsOk == false) {
+                        _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                        return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
+                    }
+
+                    await _TextPingDb.DeleteByGameID(gameID);
+                    foreach (BarMatchMapDraw draw in fromDemofile.Value.MapDraws) {
+                        if (draw.Action != "point" || draw is not BarMatchMapDrawPoint point || point.Label == "") {
+                            continue;
+                        }
+
+                        if (match.MapDraws.FirstOrDefault(iter => {
+                            return iter.GameTime == point.GameTime && iter.PlayerID == point.PlayerID
+                                && iter.X == point.X && iter.Z == point.Z;
+                        }) != null) {
+                            _Logger.LogWarning($"duplicate map draw point found [gameID={gameID}] [gameTime={point.GameTime}] "
+                                + $"[player={point.PlayerID}] [coords={point.X},{point.Z}]");
+                            Debug.Fail("duplicate map draw point found");
+                            continue;
+                        }
+
+                        point.GameID = match.ID;
+                        await _TextPingDb.Insert(point, cancel);
+                        match.MapDraws.Add(draw);
+                    }
+
+                    proc.Features.Add("text_ping");
+                    await _ProcessingRepository.Upsert(proc);
+                } else {
+                    match.MapDraws.AddRange(await _TextPingDb.GetByGameID(gameID, cancel));
+                }
+            }
+
+            if (includeMapDraws == true || includeCommands == true || includeSelfDCommands == true) {
                 Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
                 if (demofile.IsOk == false) {
                     _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
@@ -193,20 +267,14 @@ namespace gex.Controllers.Api {
 
                 Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions() {
                     IncludeCommands = includeCommands || includeSelfDCommands,
-                    IncludeMapDraws = includeMapDraws || includeLabeledPings,
+                    IncludeMapDraws = includeMapDraws,
                 }, cancel);
                 if (fromDemofile.IsOk == false) {
                     _Logger.LogError($"failed to parse demofile [error={demofile.Error}] [matchID={match.ID}]");
                     return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
                 }
 
-                if (includeLabeledPings == true && includeMapDraws == false) {
-                    match.MapDraws = fromDemofile.Value.MapDraws.Where(iter => {
-                        return iter.Action == "point"
-                            && iter is BarMatchMapDrawPoint point
-                            && point.Label != "";
-                    }).ToList();
-                } else if (includeMapDraws == true) {
+                if (includeMapDraws == true) {
                     match.MapDraws = fromDemofile.Value.MapDraws;
                 }
 
@@ -217,7 +285,6 @@ namespace gex.Controllers.Api {
                 } else {
                     match.Commands = fromDemofile.Value.Commands;
                 }
-
             }
 
             ApiMatch ret = new(match);
@@ -597,6 +664,22 @@ namespace gex.Controllers.Api {
             await _PlayerStartSpotMigration.FixMatch(match, match.Players, data, cancel);
 
             return ApiOk();
+        }
+
+        private async Task<Result<BarMatch, string>> _Parse(BarMatch match, DemofileParserOptions options, CancellationToken cancel) {
+            Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
+            if (demofile.IsOk == false) {
+                _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
+                return demofile.Error;
+            }
+
+            Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, options, cancel);
+            if (fromDemofile.IsOk == false) {
+                _Logger.LogError($"failed to parse demofile [error={demofile.Error}] [matchID={match.ID}]");
+                return fromDemofile.Error;
+            }
+
+            return fromDemofile;
         }
 
     }

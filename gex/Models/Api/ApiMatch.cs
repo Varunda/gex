@@ -34,10 +34,11 @@ namespace gex.Models.Api {
             Players = match.Players;
             Spectators = match.Spectators;
             ChatMessages = match.ChatMessages;
+            TeamDeaths = match.TeamDeaths;
+            PlayerLeaves = match.PlayerLeaves;
             MapData = match.MapData;
             PlayerCount = match.PlayerCount;
             UploadedByID = match.UploadedByID;
-            TeamDeaths = match.TeamDeaths;
             WrongSkillValues = match.WrongSkillValues;
             Commands = match.Commands;
             MapDraws = match.MapDraws;
@@ -101,6 +102,8 @@ namespace gex.Models.Api {
         public List<BarMatchMapDraw> MapDraws { get; set; } = [];
 
         public List<BarCommand> Commands { get; set; } = [];
+
+        public List<BarMatchPlayerLeft> PlayerLeaves { get; set; } = [];
 
         public BarMap? MapData { get; set; }
 

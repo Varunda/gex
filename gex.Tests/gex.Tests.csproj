@@ -15,6 +15,8 @@
     <None Remove="resources\github_data\language\en\units.json" />
     <None Remove="resources\github_data\movedefs.lua" />
     <None Remove="resources\images\texture-mq\hellas_basin_v1.4.jpg" />
+    <None Remove="resources\missing_player_36.sdfz" />
+    <None Remove="resources\start_spot_outside_start_box.sdfz" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
     <None Remove="resources\unit_data\armpw.lua" />
     <None Remove="resources\unit_data\armsolar.lua" />
@@ -63,6 +65,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\images\texture-mq\hellas_basin_v1.4.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\missing_player_36.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\start_spot_outside_start_box.sdfz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\temp\file_to_create_dir_in_output.txt">

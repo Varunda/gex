@@ -126,6 +126,7 @@ namespace gex.Services.Hosted {
 
                 } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
                     _Logger.LogError(ex, $"error in queue processor [service={_ServiceName}]");
+                    Debug.Fail("error in queue");
                 } catch (Exception) when (cancel.IsCancellationRequested == true) {
                     _Logger.LogInformation($"stop requested! [service={_ServiceName}]");
                 }

@@ -41,6 +41,8 @@ namespace gex.Services.Util {
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
+        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
+        private readonly BarMatchTextPingDb _TextPingDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotDataParser _StartSpotDataParser;
         private readonly BarMatchDb _MatchDb;
@@ -58,7 +60,8 @@ namespace gex.Services.Util {
             BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
             BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, BarMatchTeamDeathDb teamDeathDb,
             StartSpotDataRepository startSpotDataRepository, StartSpotDataParser startSpotDataParser,
-            BarMatchDb matchDb) {
+            BarMatchDb matchDb, BarMatchPlayerLeftDb playerLeftDb,
+            BarMatchTextPingDb textPingDb) {
 
             _Logger = logger;
 
@@ -78,6 +81,8 @@ namespace gex.Services.Util {
             _StartSpotDataRepository = startSpotDataRepository;
             _StartSpotDataParser = startSpotDataParser;
             _MatchDb = matchDb;
+            _PlayerLeftDb = playerLeftDb;
+            _TextPingDb = textPingDb;
         }
 
         public async Task Process(BarMatch match, CancellationToken cancel) {
@@ -120,6 +125,7 @@ namespace gex.Services.Util {
                 } while (false);
             }
 
+            // pick the start spot data that'll be used for this match
             StartSpotData? pickedStartSpotData = null;
             if (startSpotData == null) {
                 if (newStartSpotData != null) {
@@ -155,12 +161,14 @@ namespace gex.Services.Util {
                 _Logger.LogDebug($"selected start spot data to use for match [gameID={match.ID}] [version={match.StartSpotVersion}]");
             }
 
+            // ally teams
             Stopwatch stepTimer = Stopwatch.StartNew();
             foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
                 await _MatchAllyTeamDb.Insert(allyTeam);
             }
             long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            // players
             foreach (BarMatchPlayer player in match.Players) {
                 if (pickedStartSpotData != null) {
                     StartSpotSideStart? startSpot = pickedStartSpotData.GetNearestStartSpot(match.AllyTeams.Count, player.StartingPosition.X, player.StartingPosition.Z);
@@ -173,20 +181,48 @@ namespace gex.Services.Util {
             }
             long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            // spectators
             foreach (BarMatchSpectator spec in match.Spectators) {
                 await _MatchSpectatorDb.Insert(spec);
+
+                if (spec.UserID != null && spec.UserIDCanBeWrong == false) {
+                    await _UserRepository.Upsert(spec.UserID.Value, new BarUser() {
+                        UserID = spec.UserID.Value,
+                        Username = spec.Name,
+                        LastUpdated = match.StartTime,
+                        CountryCode = null
+                    }, cancel);
+                }
             }
             long insertSpecMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            // chat messages
             foreach (BarMatchChatMessage msg in match.ChatMessages) {
                 await _MatchChatMessageDb.Insert(msg);
             }
             long insertChatMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            // team deaths
             foreach (BarMatchTeamDeath death in match.TeamDeaths) {
                 await _TeamDeathDb.Insert(death, cancel);
             }
             long insertDeathMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+            // player left
+            foreach (BarMatchPlayerLeft left in match.PlayerLeaves) {
+                await _PlayerLeftDb.Insert(left, cancel);
+            }
+            long insertPlayerLeftMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+            // map draw label
+            foreach (BarMatchMapDraw draw in match.MapDraws) {
+                if (draw.Action != "point" || draw is not BarMatchMapDrawPoint point || point.Label == "") {
+                    continue;
+                }
+
+                point.GameID = match.ID;
+                await _TextPingDb.Insert(point, cancel);
+            }
 
             await _MatchRepository.Insert(match, cancel);
             long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();

@@ -71,6 +71,7 @@ namespace gex.Services.Db.Implementations {
             SqlMapper.AddTypeHandler(new DapperSqlMappers.ULongHandler());
             SqlMapper.AddTypeHandler(new DapperSqlMappers.JsonbHandler());
             SqlMapper.AddTypeHandler(new DapperSqlMappers.MapSymmetryAxisHandler());
+            SqlMapper.AddTypeHandler(new DapperSqlMappers.HashSetStringHandler());
         }
 
         /// <summary>

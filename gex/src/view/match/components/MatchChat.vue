@@ -215,6 +215,29 @@
                     });
                 }
 
+                for (const playerLeft of this.match.playerLeaves) {
+                    const allyTeamID: number = this.getPlayerAllyTeamId(playerLeft.playerID);
+                    let timestamp: number = Math.max(0, (this.useStartTime == true) ? playerLeft.gameTime - this.match.startOffset : playerLeft.gameTime);
+
+                    const reason: string = playerLeft.reason == 0 ? `connection lost`
+                        : playerLeft.reason == 1 ? `quit`
+                        : playerLeft.reason == 2 ? `kicked`
+                        : `<unchecked ${playerLeft.reason}>`
+
+                    messages.push({
+                        id: messages.length + 1,
+                        from: this.getIdName(playerLeft.playerID),
+                        to: this.getIdName(254),
+                        color: this.getIdColor(254),
+                        playerColor: allyTeamID != -1 ? this.getPlayerColor(playerLeft.playerID) : this.getIdColor(253),
+                        timestamp: TimeUtils.duration(timestamp),
+                        gametime: playerLeft.gameTime,
+                        message: `Left the game (Reason: ${reason})`,
+                        ping: undefined
+                    });
+
+                }
+
                 if (this.match.startOffset > 0) {
                     const id: number = messages.length == 0 ? 0 : messages[messages.length - 1].id + 1;
 

@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using gex.Common.Code.Constants;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text.Json;
 
 namespace gex.Code {
@@ -61,6 +63,18 @@ namespace gex.Code {
             public override void SetValue(IDbDataParameter parameter, MapSymmetryAxis value) {
                 parameter.DbType = DbType.Int32;
                 parameter.Value = (int)value;
+            }
+
+        }
+
+        public class HashSetStringHandler : SqlMapper.TypeHandler<HashSet<string>> {
+
+            public override HashSet<string>? Parse(object value) {
+                return new HashSet<string>(value.ToString()!.Split(",").Where(iter => iter != ""));
+            }
+
+            public override void SetValue(IDbDataParameter parameter, HashSet<string>? value) {
+                throw new NotImplementedException();
             }
 
         }

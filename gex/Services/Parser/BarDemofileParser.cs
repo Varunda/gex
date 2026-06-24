@@ -20,6 +20,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ZstdSharp.Unsafe;
+using gex.Services.Repositories;
+using gex.Models;
+using gex.Models.UserStats;
+using System.Numerics;
 
 namespace gex.Services.Parser {
 
@@ -31,12 +35,17 @@ namespace gex.Services.Parser {
 
         private readonly ILogger<BarDemofileParser> _Logger;
         private readonly LuaCommandParser _CommandParser;
+        private readonly BarMapRepository _MapRepository;
+        private readonly BarUserRepository _UserRepository;
 
         public BarDemofileParser(ILogger<BarDemofileParser> logger,
-            LuaCommandParser commandParser) {
+            LuaCommandParser commandParser, BarMapRepository mapRepository,
+            BarUserRepository userRepository) {
 
             _Logger = logger;
             _CommandParser = commandParser;
+            _MapRepository = mapRepository;
+            _UserRepository = userRepository;
         }
 
         /// <summary>
@@ -83,10 +92,10 @@ namespace gex.Services.Parser {
             byte[] data = output.ToArray();
             _Logger.LogDebug($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
 
-            return ReadBytes(filename, data, options);
+            return await ReadBytes(filename, data, options, cancel);
         }
 
-        private Result<BarMatch, string> ReadBytes(string filename, byte[] data, DemofileParserOptions options) {
+        private async Task<Result<BarMatch, string>> ReadBytes(string filename, byte[] data, DemofileParserOptions options, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
             ByteArrayReader reader = new(data);
@@ -96,7 +105,7 @@ namespace gex.Services.Parser {
             BarMatch match = new();
             match.FileName = filename;
 
-            DemofileHeader header = new();
+            DemofileHeader header = new();;
             header.Magic = reader.ReadAsciiStringNullTerminated(16);
             if (header.Magic != "spring demofile") {
                 return $"expected 'spring demofile' from magic, got '{header.Magic}' instead";
@@ -161,6 +170,7 @@ namespace gex.Services.Parser {
 
                     // team parsing
                     if (iter.Name.StartsWith("team")) {
+                        // team colors are set via LUA_MSG with AutoColors:
                         int teamID = int.Parse(iter.Name.Split("team")[1]);
                         BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
                         player.TeamID = teamID;
@@ -265,6 +275,11 @@ namespace gex.Services.Parser {
             match.DurationMs = header.WallClockTime * 1000;
             long modSettingsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            BarMap? map = await _MapRepository.GetByName(match.Map, cancel); 
+            if (map == null) {
+                _Logger.LogWarning($"failed to find map, start spots will not be validated [map={match.Map}] [gameID={match.ID}]");
+            }
+
             if (header.PacketOffset != reader.Index) {
                 return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
             }
@@ -287,6 +302,19 @@ namespace gex.Services.Parser {
 
             Dictionary<byte, List<ushort>> selectedUnitIds = [];
 
+            HashSet<byte> playedPositionsLockedIn = [];
+
+            // for team ffa, there is a game setting that shuffles the start boxes for each ally team.
+            // this means doing a check on the ally team start box is not useful, as where each start box
+            //  is will have changed, and that is handled entirely within the game (would need to sim to get data)
+            bool startBoxesShuffled = match.GameSettings.GetString("teamffa_start_boxes_shuffle", "0") == "1"
+                && match.AllyTeams.Count > 2
+                && match.AllyTeams.FirstOrDefault(iter => players.Values.Where(i2 => i2.AllyTeamID == iter.AllyTeamID).Count() > 1) != null;
+
+            if (startBoxesShuffled == true) {
+                _Logger.LogInformation($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
+            }
+
             int packetCount = 0;
             int frameCount = 0;
             int maxFrame = 0;
@@ -299,7 +327,22 @@ namespace gex.Services.Parser {
                 Span<byte> packetData = reader.Read(packet.Length - 1);
                 packet.Data = packetData.ToArray();
                 ++packetCount;
-                
+
+                // KEYFRAME (1)
+                if (packet.PacketType == BarPacketType.KEYFRAME) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    int frame = packetReader.ReadInt32LE();
+
+                    maxFrame = Math.Max(frameCount, frame);
+                }
+
+                // NEW_FRAME (2)
+                else if (packet.PacketType == BarPacketType.NEW_FRAME) {
+                    // it seems like this isn't accurate
+                    ++frameCount;
+                }
+
+                // START_PLAYING (4)
                 if (packet.PacketType == BarPacketType.START_PLAYING) {
                     ByteArrayReader pr = new(packet.Data);
 
@@ -307,7 +350,10 @@ namespace gex.Services.Parser {
                     if (countdown == 0) {
                         match.StartOffset = packet.GameTime;
                     }
-                } else if (packet.PacketType == BarPacketType.CHAT) {
+                }
+
+                // CHAT (7)
+                else if (packet.PacketType == BarPacketType.CHAT) {
                     ByteArrayReader packetReader = new(packet.Data);
 
                     BarMatchChatMessage msg = new();
@@ -319,14 +365,28 @@ namespace gex.Services.Parser {
                     msg.GameTimestamp = packet.GameTime;
 
                     match.ChatMessages.Add(msg);
-                } else if (packet.PacketType == BarPacketType.GAME_ID) {
+                }
+
+                // GAME_ID (9)
+                else if (packet.PacketType == BarPacketType.GAME_ID) {
                     ByteArrayReader packetReader = new(packet.Data);
                     string packetGameID = BitConverter.ToString(packetReader.Read(16).ToArray()).Replace("-", "").ToLowerInvariant();
 
                     if (packetGameID != header.GameID) {
                         return $"inconsistent gameID found, refusing to process further [packet gameID={packetGameID}] [header gameID={header.GameID}]";
                     }
-                } else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
+                }
+
+                // PAUSE (13)
+                else if (packet.PacketType == BarPacketType.PAUSE) {
+                    ByteArrayReader packetReader = new(packet.Data);
+
+                    byte playerID = packetReader.ReadByte();
+                    byte paused = packetReader.ReadByte();
+                }
+
+                // COMMAND (11)
+                else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
                     ByteArrayReader pr = new(packet.Data);
 
                     short size = pr.ReadInt16LE();
@@ -351,7 +411,10 @@ namespace gex.Services.Parser {
                     command.FullGameTime = packet.GameTime;
                     command.PlayerID = playerNum;
                     match.Commands.Add(command);
-                } else if (packet.PacketType == BarPacketType.SELECT && options.IncludeCommands == true) {
+                }
+
+                // SELECT command (12)
+                else if (packet.PacketType == BarPacketType.SELECT && options.IncludeCommands == true) {
                     ByteArrayReader pr = new(packet.Data);
 
                     short size = pr.ReadInt16LE();
@@ -365,7 +428,10 @@ namespace gex.Services.Parser {
                     }
 
                     selectedUnitIds[playerNum] = unitIDs;
-                } else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
+                }
+
+                // AI_COMMAND (14)
+                else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
                     ByteArrayReader pr = new(packet.Data);
                     short size = pr.ReadInt16LE();
                     byte playerNum = pr.ReadByte();
@@ -394,7 +460,10 @@ namespace gex.Services.Parser {
                     command.PlayerID = playerNum;
                     match.Commands.Add(command);
 
-                } else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
+                }
+
+                // AI_COMMANDS (15)
+                else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
                     ByteArrayReader pr = new(packet.Data);
 
                     short size = pr.ReadInt16LE();
@@ -439,7 +508,18 @@ namespace gex.Services.Parser {
 
                         match.Commands.Add(command);
                     }
-                } else if (options.IncludeMapDraws == true && packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
+                }
+
+                // GAME_OVER (30)
+                else if (packet.PacketType == BarPacketType.GAME_OVER) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte size = packetReader.ReadByte();
+                    byte playerNum = packetReader.ReadByte();
+                    winningAllyTeams = packetReader.ReadAll();
+                }
+
+                // MAP_DRAW_OLD (31)
+                else if (options.IncludeMapDraws == true && packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte size = packetReader.ReadByte();
                     byte playerID = packetReader.ReadByte();
@@ -455,6 +535,8 @@ namespace gex.Services.Parser {
                         match.MapDraws.Add(new BarMatchMapDrawPoint() {
                             Action = "point",
                             PlayerID = playerID,
+                            Index = packetCount,
+                            GameID = header.GameID,
                             GameTime = packet.GameTime,
                             Label = label,
                             X = x,
@@ -470,6 +552,7 @@ namespace gex.Services.Parser {
                             Action = "line",
                             PlayerID = playerID,
                             GameTime = packet.GameTime,
+                            Index = packetCount,
                             X = x,
                             EndX = x2,
                             Z = z,
@@ -481,13 +564,17 @@ namespace gex.Services.Parser {
                             Action = "erase",
                             PlayerID = playerID,
                             GameTime = packet.GameTime,
+                            Index = packetCount,
                             X = x,
                             Z = z,
                         });
                     } else {
                         _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
                     }
-                } else if (options.IncludeMapDraws == true 
+                }
+
+                // MAP_DRAW (32)
+                else if (options.IncludeMapDraws == true
                     && packet.PacketType == BarPacketType.MAP_DRAW || (packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize)) {
 
                     ByteArrayReader packetReader = new(packet.Data);
@@ -505,6 +592,8 @@ namespace gex.Services.Parser {
                         match.MapDraws.Add(new BarMatchMapDrawPoint() {
                             Action = "point",
                             PlayerID = playerID,
+                            GameID = header.GameID,
+                            Index = packetCount,
                             GameTime = packet.GameTime,
                             Label = label,
                             X = x,
@@ -518,6 +607,7 @@ namespace gex.Services.Parser {
                         match.MapDraws.Add(new BarMatchMapDrawLine() {
                             Action = "line",
                             PlayerID = playerID,
+                            Index = packetCount,
                             GameTime = packet.GameTime,
                             X = x,
                             EndX = x2,
@@ -529,13 +619,17 @@ namespace gex.Services.Parser {
                             Action = "erase",
                             PlayerID = playerID,
                             GameTime = packet.GameTime,
+                            Index = packetCount,
                             X = x,
                             Z = z
                         });
                     } else {
                         _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
                     }
-                } else if (packet.PacketType == BarPacketType.START_POS) {
+                }
+
+                // START_POS (36)
+                else if (packet.PacketType == BarPacketType.START_POS) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte playerID = packetReader.ReadByte();
                     byte teamID = packetReader.ReadByte();
@@ -544,18 +638,90 @@ namespace gex.Services.Parser {
                     float y = packetReader.ReadFloat32LE();
                     float z = packetReader.ReadFloat32LE();
 
-                    BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-                    if (player == null) {
-                        _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
-                    } else {
-                        player.StartingPosition = new System.Numerics.Vector3() {
+                    //
+                    // 2026-06-22: from what i can tell, the demofile just contains the last start spot a player sent,
+                    //  even if that start spot is not valid for that player.
+                    // so, gex will do some basic checks to ensure that the start spots are valid
+                    //
+                    // check if the new start spot is valid by:
+                    //  1. ensuring the spot is within the start box of the ally team
+                    //  2. the player has not already locked in their start spot
+                    //
+                    do {
+                        // this is set in LUA_MSG, with the data of "locking_in_place", see below for that handling
+                        if (readyState == 0 && playedPositionsLockedIn.Contains(playerID)) {
+                            _Logger.LogTrace($"cannot set set start position, player is already locked in [teamID={teamID}] [gameID={header.GameID}]");
+                            break;
+                        }
+
+                        BarMatchPlayer? player = players.GetValueOrDefault(teamID);
+                        if (player == null) {
+                            _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
+                            break;
+                        }
+
+                        if (startBoxesShuffled == true) {
+                            player.StartingPosition = new Vector3() {
+                                X = x,
+                                Y = y,
+                                Z = z
+                            };
+                            break;
+                        }
+
+                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == player.AllyTeamID);
+                        if (at == null) {
+                            _Logger.LogWarning($"cannot set start position, ally team does not exist [allyTeamID={player.AllyTeamID}] [gameID={header.GameID}]");
+                            break;
+                        }
+
+                        Rectangle scaled = new() {
+                            Left = (float)(at.StartBox.Left * ((map?.Width ?? 1f) * 512f)),
+                            Right = (float)(at.StartBox.Right * ((map?.Width ?? 1f) * 512f)),
+                            Top = (float)(at.StartBox.Top * ((map?.Height ?? 1f) * 512f)),
+                            Bottom = (float)(at.StartBox.Bottom * ((map?.Height ?? 1f) * 512f)),
+                        };
+
+                        if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
+                            if ((readyState == 3 || readyState == 1) && player.StartingPosition == Vector3.Zero) {
+                                _Logger.LogWarning($"player start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
+                                    + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                            } else {
+                                _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}]"
+                                    + $" [gameID={header.GameID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                                break;
+                            }
+                        }
+
+                        player.StartingPosition = new Vector3() {
                             X = x,
                             Y = y,
                             Z = z
                         };
-                    }
 
-                } else if (packet.PacketType == BarPacketType.LUA_MSG) {
+                        //_Logger.LogDebug($"start position changed [teamID={teamID}] [readyState={readyState}] [ts={packet.GameTime}] [x={x}] [y={y}] [z={z}]"
+                        //    + $"[rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                    } while (false);
+                }
+
+                // PLAYER_LEFT (39)
+                else if (packet.PacketType == BarPacketType.PLAYER_LEFT) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    byte playerNum = packetReader.ReadByte();
+                    byte reason = packetReader.ReadByte();
+
+                    BarMatchPlayerLeft left = new();
+                    left.GameID = header.GameID;
+                    left.PlayerID = playerNum;
+                    left.Reason = reason;
+                    left.GameTime = packet.GameTime;
+                    left.Index = packetCount;
+
+                    match.PlayerLeaves.Add(left);
+                }
+
+                // LUA_MSG (50)
+                else if (packet.PacketType == BarPacketType.LUA_MSG) {
                     ByteArrayReader packetReader = new(packet.Data);
                     short size = packetReader.ReadInt16LE();
                     byte playerNum = packetReader.ReadByte();
@@ -565,6 +731,7 @@ namespace gex.Services.Parser {
                     byte[] bytes = packetReader.ReadAll();
                     string msg = Encoding.ASCII.GetString(bytes);
 
+                    // LUA_MSG: AutoColors
                     if (msg.StartsWith("AutoColors")) {
                         JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg.Substring(10));
 
@@ -581,7 +748,10 @@ namespace gex.Services.Parser {
                                 player.Color = (r << 16) | (g << 8) | b;
                             }
                         }
-                    } else if (msg.StartsWith("changeStartUnit")) {
+                    }
+
+                    // LUA_MSG: changeStartUnit (faction change)
+                    else if (msg.StartsWith("changeStartUnit")) {
                         int unitDefID = int.Parse(msg.Substring("changeStartUnit".Length));
                         _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
 
@@ -606,7 +776,10 @@ namespace gex.Services.Parser {
                             }
                         }
 
-                    } else if (msg.StartsWith("unitdefs:")) {
+                    }
+
+                    // LUA_MSG: unitdefs
+                    else if (msg.StartsWith("unitdefs:")) {
                         if (unitDefDict.Count == 0) {
                             Span<byte> input = bytes.AsSpan("unitdefs:".Length);
                             using MemoryStream stream = new(input.ToArray());
@@ -631,20 +804,20 @@ namespace gex.Services.Parser {
                             }
                         }
                     }
-                } else if (packet.PacketType == BarPacketType.KEYFRAME) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    int frame = packetReader.ReadInt32LE();
 
-                    maxFrame = Math.Max(frameCount, frame);
-                } else if (packet.PacketType == BarPacketType.NEW_FRAME) {
-                    // it seems like this isn't accurate
-                    ++frameCount;
-                } else if (packet.PacketType == BarPacketType.GAME_OVER) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte size = packetReader.ReadByte();
-                    byte playerNum = packetReader.ReadByte();
-                    winningAllyTeams = packetReader.ReadAll();
-                } else if (packet.PacketType == BarPacketType.TEAM_MSG) {
+                    // LUA_MSG: locking_in_place
+                    else if (msg == "locking_in_place") {
+                        playedPositionsLockedIn.Add(playerNum);
+                    }
+
+                    // LUA_MSG: unlocking_in_place
+                    else if (msg == "unlocking_in_place") {
+                        playedPositionsLockedIn.Remove(playerNum);
+                    }
+                }
+
+                // TEAM_MSG (51)
+                else if (packet.PacketType == BarPacketType.TEAM_MSG) {
                     ByteArrayReader packetReader = new(packet.Data);
                     byte playerNum = packetReader.ReadByte();
                     byte action = packetReader.ReadByte();
@@ -675,7 +848,45 @@ namespace gex.Services.Parser {
                         death.GameTime = packet.GameTime;
                         match.TeamDeaths.Add(death);
                     }
-                } else if (packet.PacketType == BarPacketType.QUIT) {
+                }
+
+                // CREATE_NEW_PLAYER (75)
+                else if (packet.PacketType == BarPacketType.CREATE_NEW_PLAYER) {
+                    ByteArrayReader packetReader = new(packet.Data);
+                    short size = packetReader.ReadInt16LE();
+                    byte playerID = packetReader.ReadByte();
+                    bool isSpec = (packetReader.ReadByte() == 1);
+                    byte teamNum = packetReader.ReadByte();
+                    string playerName = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
+
+                    if (isSpec == false) {
+                        _Logger.LogWarning($"non-spectator joining via CREATE_NEW_PLAYER? [playerID={playerID}] [gameID={header.GameID}]");
+                        Debug.Fail("non-spectator joining via CREATE_NEW_PLAYER?");
+                        continue;
+                    }
+
+                    if (match.Spectators.FirstOrDefault(iter => iter.Name == playerName) != null) {
+                        _Logger.LogDebug($"spectator already exists [name={playerName}] [gameID={header.GameID}] [playerID={playerID}]");
+                        continue;
+                    }
+
+                    BarMatchSpectator spec = new();
+                    spec.GameID = header.GameID;
+                    spec.PlayerID = playerID;
+                    spec.Name = playerName;
+
+                    List<BarUser> users = await _UserRepository.GetByName(playerName, cancel);
+                    if (users.Count >= 1) {
+                        BarUser highestUser = users.MaxBy(iter => iter.UserID)!;
+                        spec.UserID = highestUser.UserID;
+                        spec.UserIDCanBeWrong = true;
+                    }
+
+                    match.Spectators.Add(spec);
+                }
+
+                // QUIT (3)
+                else if (packet.PacketType == BarPacketType.QUIT) {
                     _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
                     break;
                 }

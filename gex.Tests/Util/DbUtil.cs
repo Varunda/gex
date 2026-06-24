@@ -14,13 +14,13 @@ namespace gex.Tests.Util {
 
     public class DbUtil {
 
-        public static async Task<IDbHelper> Create() {
+        public static async Task<IDbHelper> Create(bool log = false) {
             PostgreSqlContainer container = new PostgreSqlBuilder("postgres:15.1")
                 .Build();
             await container.StartAsync();
 
             DbHelper dbHelper = new DbHelper(
-                logger: new TestLogger<DbHelper>(),
+                logger: new TestLogger<DbHelper>(log),
                 config: new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>() {
                     { "ConnectionStrings:gex", container.GetConnectionString() },
                     { "ConnectionStrings:event", container.GetConnectionString() },
@@ -28,7 +28,7 @@ namespace gex.Tests.Util {
             );
 
             DefaultDbCreator creator = new DefaultDbCreator(
-                logger: new TestLogger<DefaultDbCreator>(),
+                logger: new TestLogger<DefaultDbCreator>(log),
                 dbHelper: dbHelper,
                 instanceOptions: Options.Create<InstanceOptions>(new InstanceOptions() {
                     SplitDatabases = false

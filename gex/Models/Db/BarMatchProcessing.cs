@@ -1,6 +1,7 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
 using System;
+using System.Collections.Generic;
 
 namespace gex.Models.Db {
 
@@ -94,6 +95,9 @@ namespace gex.Models.Db {
         /// </summary>
         [ColumnMapping("actions_deleted")]
         public DateTime? ActionsDeleted { get; set; }
+
+        [ColumnMapping("features")]
+        public HashSet<string> Features { get; set; } = [];
 
     }
 }

@@ -64,6 +64,8 @@ namespace gex.Models.Db {
 
         public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
 
+        public List<BarMatchPlayerLeft> PlayerLeaves { get; set; } = [];
+
         public List<BarMatchMapDraw> MapDraws { get; set; } = [];
 
         public List<BarCommand> Commands { get; set; } = [];

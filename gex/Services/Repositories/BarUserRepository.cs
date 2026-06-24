@@ -102,6 +102,17 @@ namespace gex.Services.Repositories {
         }
 
         /// <summary>
+        ///     get the <see cref="BarUser"/>(s) with a name. it is possible for a single name to have 
+        ///     multiple entries due to deleted accounts
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public Task<List<BarUser>> GetByName(string name, CancellationToken cancel) {
+            return _UserDb.GetByName(name, cancel);
+        }
+
+        /// <summary>
         ///     get all names that a user has used
         /// </summary>
         /// <param name="userID">ID of the user to get the previous names of</param>

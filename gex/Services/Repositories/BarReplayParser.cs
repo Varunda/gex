@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace gex.Services.Repositories {
 
+    [Obsolete("old JS parser, use BarDemofileParser instead")]
     public class BarReplayParser {
 
         private readonly ILogger<BarReplayParser> _Logger;

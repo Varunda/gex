@@ -209,6 +209,7 @@
                 entries.push(...this.makeUnitKilled());
                 entries.push(...this.makeTeamsKilled());
                 entries.push(...this.makeWindUpdate());
+                entries.push(...this.makePlayerLeaves());
 
                 entries.sort((a, b) => {
                     return a.frame - b.frame;
@@ -356,6 +357,19 @@
                 }
 
                 return entries;
+            },
+
+            makePlayerLeaves: function(): ActionLogEntry[] {
+                return this.match.playerLeaves.map(iter => {
+                    return {
+                        type: "player_left",
+                        frame: iter.gameTime / 30,
+                        event: iter,
+                        parts: [
+                            this.createText(`Player ${iter.playerID} left`)
+                        ]
+                    }
+                });
             },
 
             makeSelfD: function(): ActionLogEntry[] {

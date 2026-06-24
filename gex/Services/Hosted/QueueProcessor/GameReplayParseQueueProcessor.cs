@@ -35,6 +35,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BarDemofileResultProcessor _ResultProcessor;
         private readonly BarMatchTeamDeathDb _TeamDeathDb;
+        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
+        private readonly BarMatchTextPingDb _TextPingDb;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -57,7 +59,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
             BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
-            BarMatchTeamDeathDb teamDeathDb) :
+            BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerLeftDb playerLeftDb,
+            BarMatchTextPingDb textPingDb) :
 
         base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
@@ -80,6 +83,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             _ResultProcessor = resultProcessor;
             _MapStatUpdateQueue = mapStatUpdateQueue;
             _TeamDeathDb = teamDeathDb;
+            _PlayerLeftDb = playerLeftDb;
+            _TextPingDb = textPingDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -114,6 +119,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                     await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
                     await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
                     await _TeamDeathDb.DeleteByGameID(entry.GameID);
+                    await _PlayerLeftDb.DeleteByGameID(entry.GameID);
+                    await _TextPingDb.DeleteByGameID(entry.GameID);
                     await _MatchRepository.Delete(entry.GameID);
                     _Logger.LogDebug($"deleting previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
                 }
@@ -133,7 +140,9 @@ namespace gex.Services.Hosted.QueueProcessor {
                 _Logger.LogDebug($"opening game replay [gameID={entry.GameID}] [path={replayPath}]");
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
 
-                Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, new DemofileParserOptions(), cancel);
+                Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, new DemofileParserOptions() {
+                    IncludeMapDraws = true
+                }, cancel);
                 long parseReplayMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 _Logger.LogDebug($"parsed replay file into match [ID={entry.GameID}]");
@@ -161,6 +170,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.Priority = priority;
             processing.ReplayParsed = DateTime.UtcNow;
             processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
+            processing.Features.Add("player_left");
+            processing.Features.Add("text_ping");
             await _ProcessingRepository.Upsert(processing);
 
             if (runHeadless && (entry.ForceForward == true || processing.ReplaySimulated == null)) {

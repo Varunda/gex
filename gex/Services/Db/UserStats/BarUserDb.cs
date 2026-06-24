@@ -33,14 +33,14 @@ namespace gex.Services.Db.UserStats {
         public async Task Upsert(long userID, BarUser user, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
-                INSERT INTO bar_user (
+                INSERT INTO bar_user AS u (
                     id, username, last_updated, country_code
                 ) VALUES (
                     @ID, @Username, @LastUpdated, @CountryCode
                 ) ON CONFLICT (id) DO UPDATE SET
                     username = @Username,
                     last_updated = @LastUpdated,
-                    country_code = @CountryCode;
+                    country_code = COALESCE(@CountryCode, u.country_code);
             ", cancel);
 
             cmd.AddParameter("ID", userID);
@@ -102,6 +102,21 @@ namespace gex.Services.Db.UserStats {
                     : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" FROM bar_user WHERE lower(username) LIKE lower(@Search)",
                 new { Search = name.Contains("*") ? name.Replace("*", "%") : $"%{name}%" },
                 cancellationToken: cancel
+            );
+        }
+
+        public async Task<List<BarUser>> GetByName(string name, CancellationToken cancel) {
+
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarUser>(
+                @"
+                    SELECT *
+                    FROM bar_user
+                    WHERE username = @Name;
+                ",
+                new {
+                    Name = name
+                }, cancel
             );
         }
 
