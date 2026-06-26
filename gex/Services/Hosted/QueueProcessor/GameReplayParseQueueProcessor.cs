@@ -2,6 +2,7 @@
 using gex.Common.Models.Options;
 using gex.Models.Bar;
 using gex.Models.Db;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
 using gex.Services.Db.Match;
@@ -16,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +45,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarDemofileParser _Parser;
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
+        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
 
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
@@ -60,9 +63,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
             BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
             BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb) :
-
-        base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
+            BarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions)
+        : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
             _Options = options;
@@ -85,6 +87,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _TeamDeathDb = teamDeathDb;
             _PlayerLeftDb = playerLeftDb;
             _TextPingDb = textPingDb;
+            _FocusUserOptions = focusUserOptions;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -158,6 +161,18 @@ namespace gex.Services.Hosted.QueueProcessor {
                 await _ResultProcessor.Process(parsed, cancel);
                 priority = await _PriorityCalculator.Calculate(parsed, cancel);
                 runHeadless |= (priority == -1);
+
+                if (_FocusUserOptions.Value.Enabled == true) {
+                    BarMatchPlayer? found = parsed.Players.FirstOrDefault(iter => _FocusUserOptions.Value.UserIDs.Contains(iter.UserID));
+                    if (found == null) {
+                        _Logger.LogWarning($"parsed a game that does not contain a focused user? [gameID={parsed.ID}]");
+                        Debug.Fail("why did this game get parsed?");
+                    }
+
+                    // put all games of focused users into the priority queue
+                    runHeadless = false;
+                    priority = 2; // not at 1 so people users can still prio if needed
+                }
 
                 _MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
                     MapFilename = parsed.MapName

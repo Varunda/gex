@@ -2,6 +2,7 @@
 using gex.Models;
 using gex.Models.Db;
 using gex.Models.Event;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db.Match;
@@ -9,6 +10,7 @@ using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,11 +35,12 @@ namespace gex.Services.Hosted.BackgroundTasks {
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
         private readonly BarMatchProcessingPriorityDb _PriorityDb;
+        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
 
         public PriorityMatchHeadlessBackgroundTask(ILogger<PriorityMatchHeadlessBackgroundTask> logger,
             BarMatchProcessingRepository processingRepository, BarHeadlessInstance headlessRunner,
             BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingPriorityDb priorityDb) {
+            BarMatchProcessingPriorityDb priorityDb, IOptions<FocusPlayerModeOptions> focusUserOptions) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;
@@ -45,6 +48,7 @@ namespace gex.Services.Hosted.BackgroundTasks {
             _ActionLogParseQueue = actionLogParseQueue;
             _ServiceHealthMonitor = serviceHealthMonitor;
             _PriorityDb = priorityDb;
+            _FocusUserOptions = focusUserOptions;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -107,11 +111,17 @@ namespace gex.Services.Hosted.BackgroundTasks {
                     _Logger.LogDebug($"found game to process based on priority [gameID={nextPrio.GameID}] [priority={nextPrio.Priority}]");
 
                     TimeSpan timeout = TimeSpan.FromMinutes(10);
-                    try {
-                        List<ulong> usersPrio = await _PriorityDb.GetByGameID(nextPrio.GameID, cancel);
-                        timeout += TimeSpan.FromMinutes(5) * usersPrio.Count;
-                    } catch (Exception ex) {
-                        _Logger.LogError(ex, $"failed to load users prioritizing a game [gameID={nextPrio.GameID}]");
+
+                    if (_FocusUserOptions.Value.Enabled == true) {
+                        timeout = TimeSpan.FromHours(1);
+                        _Logger.LogDebug($"focus user mode enabled, timeout set to 1h [gameID={nextPrio.GameID}]");
+                    } else {
+                        try {
+                            List<ulong> usersPrio = await _PriorityDb.GetByGameID(nextPrio.GameID, cancel);
+                            timeout += TimeSpan.FromMinutes(5) * usersPrio.Count;
+                        } catch (Exception ex) {
+                            _Logger.LogError(ex, $"failed to load users prioritizing a game [gameID={nextPrio.GameID}]");
+                        }
                     }
 
                     Result<GameOutput, string> output = await _HeadlessRunner.RunGame(nextPrio.GameID, false, timeout, cancel);

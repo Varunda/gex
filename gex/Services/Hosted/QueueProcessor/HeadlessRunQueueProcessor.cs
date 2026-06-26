@@ -2,6 +2,7 @@
 using gex.Common.Models.Options;
 using gex.Models.Db;
 using gex.Models.Event;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Queues;
@@ -21,12 +22,12 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarHeadlessInstance _HeadlessRunner;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
+        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
 
         public HeadlessRunQueueProcessor(ILoggerFactory factory, BaseQueue<HeadlessRunQueueEntry> queue,
             ServiceHealthMonitor serviceHealthMonitor, BarHeadlessInstance headlessRunner,
             IOptions<FileStorageOptions> options, BarMatchProcessingRepository processingRepository,
-            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue)
-
+            BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, IOptions<FocusPlayerModeOptions> focusUserOptions)
         : base("headless_run_queue_processor", factory, queue, serviceHealthMonitor) {
 
             _ThreadCount = 1;
@@ -35,11 +36,16 @@ namespace gex.Services.Hosted.QueueProcessor {
             _Options = options;
             _ProcessingRepository = processingRepository;
             _ActionLogParseQueue = actionLogParseQueue;
+            _FocusUserOptions = focusUserOptions;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(HeadlessRunQueueEntry entry, CancellationToken cancel) {
 
             _Logger.LogInformation($"running game headless [gameID={entry.GameID}] [force={entry.Force}]");
+
+            if (_FocusUserOptions.Value.Enabled == true) {
+                Debug.Fail("in focus user mode, headless queue does not run, only the priority queue");
+            }
 
             Stopwatch timer = Stopwatch.StartNew();
             Result<GameOutput, string> output = await _HeadlessRunner.RunGame(entry.GameID, entry.Force, TimeSpan.FromMinutes(10), cancel);

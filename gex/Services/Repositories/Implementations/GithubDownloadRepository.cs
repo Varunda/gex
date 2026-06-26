@@ -84,8 +84,7 @@ namespace gex.Services.Repositories.Implementations {
         }
 
         public Task DownloadFolder(string folder, CancellationToken cancel) {
-            return DownloadFolder(folder, false, cancel);
-
+            return DownloadFolder(folder, false, true, cancel);
         }
 
         /// <summary>
@@ -95,11 +94,12 @@ namespace gex.Services.Repositories.Implementations {
         /// </summary>
         /// <param name="folder"></param>
         /// <param name="force">will download be forced even if the latest commit is downloaded?</param>
+        /// <param name="recursive"></param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        public async Task DownloadFolder(string folder, bool force, CancellationToken cancel) {
+        public async Task DownloadFolder(string folder, bool force, bool recursive, CancellationToken cancel) {
 
-            _Logger.LogDebug($"downloading folder from github [folder={folder}]");
+            _Logger.LogDebug($"downloading folder from github [folder={folder}] [force={force}] [recursive={recursive}]");
 
             Result<GitHubRateLimits, string> limits = await GetRateLimits(cancel);
             if (limits.IsOk == false) {
@@ -158,7 +158,7 @@ namespace gex.Services.Repositories.Implementations {
                     foreach (GitHubContentsEntry entry in dirData.Value) {
                         cancel.ThrowIfCancellationRequested();
 
-                        if (entry.Type == "dir") {
+                        if (entry.Type == "dir" && recursive == true) {
                             _Logger.LogDebug($"queueing dir for download [path={entry.Path}]");
 
                             if (visited.Contains(entry.Path) == false) {

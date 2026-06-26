@@ -20,9 +20,10 @@ namespace gex.Services.Repositories {
         /// </summary>
         /// <param name="folder">folder within the github repo to download</param>
         /// <param name="force">will the download be forced, even if the latest commit is already downloaded</param>
+        /// <param name="recusive">will directories within the directory be downloaded as well?</param>
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for the async operation</returns>
-        Task DownloadFolder(string folder, bool force, CancellationToken cancel);
+        Task DownloadFolder(string folder, bool force, bool recusive, CancellationToken cancel);
 
         /// <summary>
         ///     check if a folder contains a file

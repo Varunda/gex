@@ -24,10 +24,11 @@ namespace gex.Services.Hosted.PeriodicTasks {
         protected override async Task<string?> PerformTask(CancellationToken cancel) {
             _Logger.LogInformation($"performing GitHub data update");
 
-            await _GithubRepository.DownloadFolder("units", cancel);
-            await _GithubRepository.DownloadFolder("weapons", cancel);
-            await _GithubRepository.DownloadFolder("language/en", cancel);
-            await _GithubRepository.DownloadFolder("gamedata", cancel);
+            await _GithubRepository.DownloadFolder("units", false, true, cancel);
+            await _GithubRepository.DownloadFolder("weapons", false, true, cancel);
+            await _GithubRepository.DownloadFolder("language/en", false, true, cancel);
+            await _GithubRepository.DownloadFolder("gamedata", false, true, cancel);
+            await _GithubRepository.DownloadFolder("icons", false, false, cancel);
 
             return null;
         }

@@ -316,6 +316,7 @@ namespace gex {
             services.Configure<ServiceOptions>(Configuration.GetSection("Services"));
             services.Configure<SpringLobbyOptions>(Configuration.GetSection("Spring"));
             services.Configure<GitHubOptions>(Configuration.GetSection("GitHub"));
+            services.Configure<FocusPlayerModeOptions>(Configuration.GetSection("FocusPlayerMode"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 

@@ -35,6 +35,12 @@ NOTE: use ^C or type `.close` into the console window to properly close the game
 
 ## other notes
 
+
+### user focus mode
+
+this option in `env.json` tells Gex to ignore all games unless they contain one of the user IDs provided.
+any game that contains one of these users will always be given a priority of 2
+
 ### jwts
 
 how to generate jwts for users (such as familiars or 3rd party website using Gex to upload like APM website)

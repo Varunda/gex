@@ -15,6 +15,7 @@ namespace gex.Services.Parser {
             services.AddSingleton<BarFeatureDefintionParser>();
             services.AddSingleton<StartSpotDataParser>();
             services.AddSingleton<BarMapRotationParser>();
+            services.AddSingleton<BarIconTypeParser>();
         }
 
     }

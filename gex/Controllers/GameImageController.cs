@@ -222,6 +222,132 @@ namespace gex.Controllers {
             return File(image, "image/png", $"{defName}.png", false);
         }
 
+        /*
+        /// <summary>
+        ///     get unit icons as an atlas, optionally coloring them
+        /// </summary>
+        /// <param name="defName">definition name of the unit</param>
+        /// <param name="color">optional color to tint the icons with</param>
+        /// <returns></returns>
+        [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["defName", "color"])] // 24 hours
+        public async Task<IActionResult> UnitIconAtlas([FromQuery] int? color) {
+
+            string iconDir = Path.Join(_Options.Value.WebImageLocation, "icons");
+            Directory.CreateDirectory(iconDir);
+
+            string storedName = defName;
+
+            if (color != null) {
+                storedName += $"_{color}";
+            }
+
+            string iconPath = Path.Join(iconDir, storedName + ".png");
+
+            if (System.IO.File.Exists(iconPath) == false) {
+                string uncoloredPath = Path.Join(iconDir, defName + ".png");
+                byte[] data = [];
+                if (System.IO.File.Exists(uncoloredPath)) {
+                    _Logger.LogDebug($"have an uncolored icon, can use that one instead of fetching [defName={defName}] [color={color}]");
+                    data = await System.IO.File.ReadAllBytesAsync(uncoloredPath);
+                } else {
+
+                    string overridePath = Path.Join(Environment.CurrentDirectory, "wwwroot", "img", "unit_icon_override");
+                    string overrideIcon = Path.Join(overridePath, $"{defName}.png");
+
+                    _Logger.LogDebug($"missing icon, checking if override exists or downloading from GitHub [defName={defName}] [overrideIcon={overrideIcon}]");
+
+                    if (System.IO.File.Exists(overrideIcon) == true) {
+                        _Logger.LogTrace($"unit icon for definition has override [defName={defName}] [path={overridePath}]");
+                        data = await System.IO.File.ReadAllBytesAsync(overrideIcon);
+                    } else {
+                        // no override, get from GitHub
+                        if (_Cache.TryGetValue(CACHE_KEY_ICON_TYPES, out string? body) == false || body == null) {
+                            _Logger.LogDebug($"icon types not cached, getting from GitHub");
+                            string url = "https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/gamedata/icontypes.lua";
+
+                            HttpResponseMessage response = await _Http.GetAsync(url);
+                            if (response.StatusCode != HttpStatusCode.OK) {
+                                return StatusCode(500, $"expected 200 OK from {url}, got {response.StatusCode} instead");
+                            }
+
+                            body = await response.Content.ReadAsStringAsync();
+                            _Cache.Set(CACHE_KEY_ICON_TYPES, body, new MemoryCacheEntryOptions() {
+                                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                            });
+                        }
+
+                        string[] units = body.Split("\n");
+                        string? iconName = null;
+
+                        for (int i = 0; i < units.Length; ++i) {
+                            string unit = units[i];
+
+                            // cormex and cormexp can get mixed up
+                            if (unit.Trim().StartsWith(defName + " =") == false) {
+                                continue;
+                            }
+
+                            string nextLine = units[i + 1].Trim();
+                            _Logger.LogTrace($"found unit def [defName={defName}] [nextLine={nextLine}]");
+                            Regex reg = new Regex(@"bitmap = ""icons/(.*).png""");
+                            Match match = reg.Match(nextLine);
+                            if (match.Success == false) {
+                                return StatusCode(500, $"failed to match regex {nextLine}");
+                            }
+
+                            iconName = match.Groups[1].Value;
+                            _Logger.LogTrace($"icon name found from regex [iconName={iconName}]");
+                        }
+
+                        if (iconName != null) {
+                            HttpResponseMessage iconRes = await _Http.GetAsync(
+                                $"https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/icons/{iconName}.png");
+
+                            if (iconRes.StatusCode != HttpStatusCode.OK) {
+                                return StatusCode((int)iconRes.StatusCode);
+                            }
+
+                            data = await iconRes.Content.ReadAsByteArrayAsync();
+                        } else {
+                            _Logger.LogWarning($"failed to find iconName from icontypes.lua [defName={defName}]");
+                            return StatusCode(404);
+                        }
+                    }
+                }
+
+                if (color != null && color != 0) {
+                    _Logger.LogTrace($"coloring icon [defName={defName}] [color={color}]");
+                    byte r = (byte)((color >> 16) & 0xFF);
+                    byte g = (byte)((color >> 8) & 0xFF);
+                    byte b = (byte)((color >> 0) & 0xFF);
+
+                    SKBitmap bp = SKBitmap.Decode(data);
+                    SKColor[] pixels = bp.Pixels;
+                    for (int col = 0; col < bp.Width; ++col) {
+                        for (int row = 0; row < bp.Height; ++row) {
+                            SKColor pixel = pixels[col + (row * bp.Width)];
+                            byte nr = (byte)(r * (pixel.Red / (double)255));
+                            byte ng = (byte)(g * (pixel.Red / (double)255));
+                            byte nb = (byte)(b * (pixel.Red / (double)255));
+
+                            // fix #41: copy pixel alpha to new image
+                            bp.SetPixel(col, row, new SKColor(nr, ng, nb, pixel.Alpha));
+                        }
+                    }
+
+                    SKData output = bp.Encode(SKEncodedImageFormat.Png, 100);
+                    data = output.AsSpan().ToArray();
+                }
+
+                _Logger.LogTrace($"saving icon [defName={defName}] [color={color}] [path={iconPath}]");
+                await System.IO.File.WriteAllBytesAsync(iconPath, data);
+            }
+
+            FileStream image = System.IO.File.OpenRead(iconPath);
+            return File(image, "image/png", $"{defName}.png", false);
+        }
+        */
+
         /// <summary>
         ///		get the picture of a unit, first locally saved, otherwise load it from the github
         /// </summary>

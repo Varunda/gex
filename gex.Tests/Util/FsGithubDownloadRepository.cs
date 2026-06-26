@@ -24,7 +24,7 @@ namespace gex.Tests.Util {
             throw new NotImplementedException();
         }
 
-        public Task DownloadFolder(string folder, bool force, CancellationToken cancel) {
+        public Task DownloadFolder(string folder, bool force, bool recursive, CancellationToken cancel) {
             throw new NotImplementedException();
         }
 

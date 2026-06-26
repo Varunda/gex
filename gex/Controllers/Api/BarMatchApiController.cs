@@ -237,8 +237,8 @@ namespace gex.Controllers.Api {
                         }
 
                         if (match.MapDraws.FirstOrDefault(iter => {
-                            return iter.GameTime == point.GameTime && iter.PlayerID == point.PlayerID
-                                && iter.X == point.X && iter.Z == point.Z;
+                            return iter.GameTime == point.GameTime && iter.PlayerID == point.PlayerID 
+                                && iter.Index == point.Index && iter.X == point.X && iter.Z == point.Z;
                         }) != null) {
                             _Logger.LogWarning($"duplicate map draw point found [gameID={gameID}] [gameTime={point.GameTime}] "
                                 + $"[player={point.PlayerID}] [coords={point.X},{point.Z}]");

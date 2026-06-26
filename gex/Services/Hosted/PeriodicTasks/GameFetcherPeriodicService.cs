@@ -26,11 +26,13 @@ namespace gex.Services.Hosted.PeriodicTasks {
         private readonly BarReplayDb _ReplayDb;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
         private readonly IOptions<InstanceOptions> _InstanceOptions;
+        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
 
         public GameFetcherPeriodicService(ILoggerFactory loggerFactory, ServiceHealthMonitor healthMon,
             BarReplayApi replayApi, BarMatchRepository matchRepo,
             BarReplayDb replayDb, BaseQueue<GameReplayDownloadQueueEntry> downloadQueue,
-            BarMatchProcessingRepository processingRepository, IOptions<InstanceOptions> instanceOptions)
+            BarMatchProcessingRepository processingRepository, IOptions<InstanceOptions> instanceOptions,
+            IOptions<FocusPlayerModeOptions> focusUserOptions)
         : base("GameFetcherPeriodicService", TimeSpan.FromMinutes(5), loggerFactory, healthMon) {
 
             _ReplayApi = replayApi;
@@ -39,6 +41,7 @@ namespace gex.Services.Hosted.PeriodicTasks {
             _DownloadQueue = downloadQueue;
             _ProcessingRepository = processingRepository;
             _InstanceOptions = instanceOptions;
+            _FocusUserOptions = focusUserOptions;
         }
 
         protected override async Task<string?> PerformTask(CancellationToken cancel) {

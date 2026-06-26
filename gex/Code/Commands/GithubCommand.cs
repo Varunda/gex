@@ -24,7 +24,7 @@ namespace gex.Code.Commands {
                 _Logger.LogInformation($"downloading unit data");
                 using CancellationTokenSource cts = new(TimeSpan.FromMinutes(10));
 
-                await _GithubDownloadRepository.DownloadFolder("units", true, cts.Token);
+                await _GithubDownloadRepository.DownloadFolder("units", true, true, cts.Token);
             });
 
             return Task.CompletedTask;
@@ -35,7 +35,7 @@ namespace gex.Code.Commands {
                 _Logger.LogInformation($"downloading i18n in languages/en");
                 using CancellationTokenSource cts = new(TimeSpan.FromMinutes(10));
 
-                await _GithubDownloadRepository.DownloadFolder("language/en", true, cts.Token);
+                await _GithubDownloadRepository.DownloadFolder("language/en", true, true, cts.Token);
             });
 
             return Task.CompletedTask;
@@ -46,7 +46,7 @@ namespace gex.Code.Commands {
                 _Logger.LogInformation($"downloading weapons");
                 using CancellationTokenSource cts = new(TimeSpan.FromMinutes(10));
 
-                await _GithubDownloadRepository.DownloadFolder("weapons", true, cts.Token);
+                await _GithubDownloadRepository.DownloadFolder("weapons", true, true, cts.Token);
             });
 
             return Task.CompletedTask;
