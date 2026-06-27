@@ -1,0 +1,13 @@
+on: [push]
+jobs:
+    build:
+        runs-on: docker
+        steps:
+            - run: echo test
+            - uses: actions/checkout@v6
+            - uses: actions/setup-dotnet@v5
+              with:
+                dotnet-version: '9.0.x'
+            - run: cd gex
+            - run: dotnet build --self-contained
+

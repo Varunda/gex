@@ -203,6 +203,7 @@ namespace gex.Controllers.Api {
         [HttpPost("upload-familiar")]
         [RequestTimeout(1000 * 60)] // allow 60 secs to upload
         [DisableFormValueModelBinding]
+        [RequestSizeLimit(1024 * 1024 * 512)] // 512mb upload limit
         [Authorize]
         public async Task<ApiResponse<BarMatch>> UploadFamiliar(CancellationToken cancel) {
             Claim? familiarClaim = Request.HttpContext.User.Claims.FirstOrDefault(iter => iter.Type == "familiar");
