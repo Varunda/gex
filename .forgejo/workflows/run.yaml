@@ -8,8 +8,8 @@ jobs:
             - uses: actions/setup-dotnet@v5
               with:
                 dotnet-version: '9.0.x'
-            - run: cd gex
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
-            - run: dotnet build --self-contained -r win-x64
+            - run: cd gex
+            - run: dotnet build --self-contained -c Release -p:RuntimeWorkaround=linux-x64
 
