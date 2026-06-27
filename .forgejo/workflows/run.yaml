@@ -21,4 +21,5 @@ jobs:
               with:
                 direction: upload
                 release-dir: gex-${{ forgejo.SHA }}.zip
+                token: ${{ secrets.WRITE_TOKEN }}
 
