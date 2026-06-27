@@ -11,5 +11,6 @@ jobs:
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
             - run: cd gex
+            - run: echo $(pwd)
             - run: dotnet build --self-contained -c Release -p:RuntimeWorkaround=linux-x64
 
