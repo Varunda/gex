@@ -59,7 +59,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "webpack --watch --progress"
+    "watch": "webpack --watch --progress",
+    "build": "webpack --progress"
   },
   "author": "varunda",
   "license": "MIT"
