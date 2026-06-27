@@ -5,7 +5,7 @@ jobs:
         steps:
             - uses: https://code.forgejo.org/actions/checkout@v6
             - run: apt-get update -qq
-            - run: apt-get -q install -y -qq npm
+            - run: apt-get -q install -y -qq npm zip
             - uses: https://git.ryujinx.app/actions/setup-dotnet@v5
               with:
                 dotnet-version: '9.0.x'
@@ -16,8 +16,9 @@ jobs:
                 cd gex
                 npm install
                 npm run build
-            - uses: https://code.forgejo.org/actions/forjo-release@v2.5.0
+            - run: zip gex-${{ forgejo.SHA }}.zip gex/
+            - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
-                release-dir: 
+                release-dir: gex-${{ forgejo.SHA }}.zip
 
