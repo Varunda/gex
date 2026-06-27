@@ -6,7 +6,7 @@ jobs:
             - uses: https://code.forgejo.org/actions/checkout@v6
             - run: apt-get update -qq
             - run: apt-get -q install -y -qq npm
-            - uses: https://code.forgejo.org/actions/setup-dotnet@v5
+            - uses: https://git.ryujinx.app/actions/setup-dotnet@v5
               with:
                 dotnet-version: '9.0.x'
             - run: cp gex/env.template.json gex/env.json
