@@ -14,5 +14,6 @@ jobs:
             - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=linux-x64
             - run: |
                 cd gex
+                npm install
                 npm run watch
 
