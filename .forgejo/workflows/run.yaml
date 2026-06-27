@@ -9,7 +9,6 @@ jobs:
               with:
                 dotnet-version: '9.0.x'
             - run: cd gex
-            - name: copy env and secrets
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
             - run: dotnet build --self-contained -r win-x64
