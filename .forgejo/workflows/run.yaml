@@ -3,14 +3,16 @@ jobs:
     build:
         runs-on: docker
         steps:
-            - run: echo test
-            - uses: actions/checkout@v6
-            - uses: actions/setup-dotnet@v5
+            - uses: https://code.forgejo.org/actions/checkout@v6
+            - run: apt-get update -qq
+            - run: apt-get -q install -y -qq npm
+            - uses: https://code.forgejo.org/actions/setup-dotnet@v5
               with:
                 dotnet-version: '9.0.x'
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
-            - run: cd gex
-            - run: echo $(pwd)
             - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=linux-x64
+            - run: |
+                cd gex
+                npm run watch
 
