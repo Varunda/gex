@@ -396,6 +396,18 @@ namespace gex.Services.Db.Match {
                 }
             }
 
+            if (parms.ReplayedAfter != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran IS NOT NULL AND p.headless_ran >= @ReplayedAfter");
+                cmd.AddParameter("ReplayedAfter", parms.ReplayedAfter.Value);
+            }
+
+            if (parms.ReplayedBefore != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran IS NOT NULL AND p.headless_ran < @ReplayedBefore");
+                cmd.AddParameter("ReplayedBefore", parms.ReplayedBefore.Value);
+            }
+
             bool isDev = currentUser != null && await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_DEV], cancel);
             if (isDev == false) {
                 string cond = $"(mpool.hide_until IS NULL OR mpool.hide_until <= NOW() at time zone 'utc' ";

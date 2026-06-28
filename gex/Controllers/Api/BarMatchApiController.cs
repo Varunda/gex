@@ -416,6 +416,14 @@ namespace gex.Controllers.Api {
         /// <param name="maximumOS">maximum OS of all players in the match, inclusive</param>
         /// <param name="minimumAverageOS">minimum average OS of all players in the match, exclusive</param>
         /// <param name="maximumAverageOS">maximum average OS of all players in the match, exclusive</param>
+        /// <param name="replayedAfter">
+        ///     shows games that were replayed after this time (inclusive).
+        ///     implies <paramref name="processingReplayed"/> of true
+        /// </param>
+        /// <param name="replayedBefore">
+        ///     shows games that were replayed before this time (exclusive).
+        ///     implies <paramref name="processingReplayed"/> of true
+        /// </param>
         /// <param name="offset">offset into the results. is a value, not a page number</param>
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
@@ -460,6 +468,8 @@ namespace gex.Controllers.Api {
             [FromQuery] double? maximumOS = null,
             [FromQuery] double? minimumAverageOS = null,
             [FromQuery] double? maximumAverageOS = null,
+            [FromQuery] DateTime? replayedAfter = null,
+            [FromQuery] DateTime? replayedBefore = null,
 
             [FromQuery] int offset = 0,
             [FromQuery] int limit = 24,
@@ -540,6 +550,8 @@ namespace gex.Controllers.Api {
             parms.MaximumOS = maximumOS;
             parms.MinimumAverageOS = minimumAverageOS;
             parms.MaximumAverageOS = maximumAverageOS;
+            parms.ReplayedAfter = replayedAfter;
+            parms.ReplayedBefore = replayedBefore;
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 

@@ -104,13 +104,35 @@ namespace gex.Models.Db {
         /// </summary>
         public List<long> UserIDs { get; set; } = [];
 
+        /// <summary>
+        ///     minimum OS of all players
+        /// </summary>
         public double? MinimumOS { get; set; }
 
+        /// <summary>
+        ///     maximum OS of all players
+        /// </summary>
         public double? MaximumOS { get; set; }
 
+        /// <summary>
+        ///     minimum average OS
+        /// </summary>
         public double? MinimumAverageOS { get; set; }
 
+        /// <summary>
+        ///     maximum average OS
+        /// </summary>
         public double? MaximumAverageOS { get; set; }
+
+        /// <summary>
+        ///     show games replayed after this time
+        /// </summary>
+        public DateTime? ReplayedAfter { get; set; }
+
+        /// <summary>
+        ///     show games replayed before this time
+        /// </summary>
+        public DateTime? ReplayedBefore { get; set; }
 
         public OrderBy OrderBy { get; set; } = OrderBy.START_TIME;
 
