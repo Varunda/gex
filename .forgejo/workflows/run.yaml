@@ -23,4 +23,6 @@ jobs:
                 direction: upload
                 release-dir: dist
                 token: ${{ secrets.WRITE_TOKEN }}
+                sha: ${{ forgejo.SHA }}
+                tag: ${{ forgejo.ref_name }}
 
