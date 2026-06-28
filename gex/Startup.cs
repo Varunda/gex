@@ -3,6 +3,7 @@ using gex.Code;
 using gex.Code.Converters;
 using gex.Code.Hubs;
 using gex.Code.Hubs.Implementations;
+using gex.Code.Swagger;
 using gex.Common.Models.Options;
 using gex.Common.Services;
 using gex.Models;
@@ -91,6 +92,10 @@ namespace gex {
             }).AddRazorRuntimeCompilation();
 
             services.AddSwaggerGen(doc => {
+                doc.CustomSchemaIds((Type type) => {
+                    return type.FullName;
+                });
+
                 doc.SwaggerDoc("api", new OpenApiInfo() {
                     Title = "Gex API",
                     Version = "v0.1",
@@ -111,6 +116,8 @@ namespace gex {
                     doc.IncludeXmlComments(file);
                 }
                 Console.WriteLine("");
+
+                doc.OperationFilter<SwaggerOperationFilters>();
             });
 
             if (Configuration.GetValue<bool>("Instance:LocalhostDeveloperAccount") == true) {

@@ -7,11 +7,11 @@
     <RootNamespace>gex</RootNamespace>
     <AssemblyName>gex</AssemblyName>
     <UserSecretsId>6c73819c-56ce-4453-88d3-9e5c73a6c56e</UserSecretsId>
+    <DocumentationFile>gex.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <DocumentationFile>gex.xml</DocumentationFile>
     <OutputPath>bin\Debug\</OutputPath>
     <NoWarn>1701;1702;CS1591;</NoWarn>
   </PropertyGroup>

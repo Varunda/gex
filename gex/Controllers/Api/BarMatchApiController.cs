@@ -17,6 +17,7 @@ using gex.Services.Repositories;
 using gex.Services.Storage;
 using gex.Services.Util;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -433,7 +434,7 @@ namespace gex.Controllers.Api {
         ///     the response will contain a list of <see cref="ApiMatch"/>s that meet the conditions set in the parameters.
         ///     any parameter set to null or excluded (which would default to null) is not used
         /// </response>
-        /// <reponse code="400">
+        /// <response code="400">
         ///     one of the following conditions was not met:
         ///     <ul>
         ///         <li><paramref name="offset"/> was less than 0</li>
@@ -442,7 +443,7 @@ namespace gex.Controllers.Api {
         ///         <li><paramref name="orderByDir"/> was an invalid value</li>
         ///         <li><paramref name="gameSettings"/> was not formatted correctly</li>
         ///     </ul>
-        /// </reponse>
+        /// </response>
         [HttpGet("search")]
         public async Task<ApiResponse<List<ApiMatch>>> Search(
             [FromQuery] string? engine = null,

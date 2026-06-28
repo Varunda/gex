@@ -3,6 +3,7 @@ using gex.Models.Bar;
 using gex.Models.Db;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace gex.Models.Api {
