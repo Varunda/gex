@@ -25,4 +25,5 @@ jobs:
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
                 tag: ${{ forgejo.ref_name }}
+                verbose: true
 
