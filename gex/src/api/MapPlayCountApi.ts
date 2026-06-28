@@ -23,4 +23,8 @@ export class MapPlayCountApi extends ApiWrapper<MapPlayCountEntry> {
         return MapPlayCountApi.get().readList(`/api/map-play-count/recent`, MapPlayCountEntry.parse);
     }
 
+    public static getAllTime(): Promise<Loading<MapPlayCountEntry[]>> {
+        return MapPlayCountApi.get().readList(`/api/map-play-count/recent/alltime`, MapPlayCountEntry.parse);
+    }
+
 }

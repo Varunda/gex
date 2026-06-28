@@ -39,7 +39,20 @@ namespace gex.Services.Repositories {
 
         public Task<List<BarMapPlayCountEntry>> GetWithDate(CancellationToken cancel) {
             return _Db.GetWithDate(DateTime.UtcNow - TimeSpan.FromDays(30), cancel);
-            //return await Get("alltime", DateTime.UtcNow - TimeSpan.FromDays(30), cancel);
+        }
+
+        public async Task<List<BarMapPlayCountEntry>> GetAllTime(CancellationToken cancel) {
+            string cacheKey = string.Format(CACHE_KEY, "AllTime");
+
+            if (_Cache.TryGetValue(cacheKey, out List<BarMapPlayCountEntry>? entries) == false || entries == null) {
+                entries = await _Db.GetAllTime(cancel);
+
+                _Cache.Set(cacheKey, entries, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+                });
+            }
+
+            return entries;
         }
 
         private async Task<List<BarMapPlayCountEntry>> Get(string interval, DateTime rangeStart, CancellationToken cancel) {

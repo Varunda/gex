@@ -34,7 +34,7 @@
                     30 day
                 </button>
                 <button class="btn btn-sm" :class="[ timespan == 'alltime' ? 'btn-primary' : 'btn-secondary' ]" @click="timespan = 'alltime'">
-                    all time
+                    All time
                 </button>
             </div>
         </h2>
@@ -119,8 +119,10 @@
         data: function() {
             return {
                 recent: Loadable.idle() as Loading<MapPlayCountEntry[]>,
+                alltime: Loadable.idle() as Loading<MapPlayCountEntry[]>,
+
                 map: new Map() as  Map<string, Map<number, MapPlayCountEntry>>,
-                timespan: "1d" as "1d" | "7d" | "14d" | "30d" | "alltime",
+                timespan: "30d" as "1d" | "7d" | "14d" | "30d" | "alltime",
             }
         },
 
@@ -135,6 +137,9 @@
             loadData: async function(): Promise<void> {
                 this.recent = Loadable.loading();
                 this.recent = await MapPlayCountApi.getRecent();
+
+                this.alltime = Loadable.loading();
+                this.alltime = await MapPlayCountApi.getAllTime();
             },
         },
 
@@ -158,16 +163,17 @@
             },
 
             mapPlayRecentGroups: function(): GroupedMapPlayCount[] {
-                if (this.recent.state != "loaded") {
+                const src: Loading<MapPlayCountEntry[]> = this.timespan == "alltime" ? this.alltime : this.recent;
+                if (src.state != "loaded") {
                     return [];
                 }
 
-                return this.recent.data.reduce((acc: GroupedMapPlayCount[], iter: MapPlayCountEntry) => {
+                return [...src.data].reduce((acc: GroupedMapPlayCount[], iter: MapPlayCountEntry) => {
                     if (iter.timestamp == null) {
                         return acc;
                     }
 
-                    if (iter.timestamp.getTime() <= this.dateCutoff.getTime()) {
+                    if (this.timespan != "alltime" && iter.timestamp.getTime() <= this.dateCutoff.getTime()) {
                         return acc;
                     }
 
@@ -176,12 +182,12 @@
                     if (g == undefined) {
                         acc.push({
                             gamemode: iter.gamemode,
-                            entries: [iter]
+                            entries: [{...iter}]
                         });
                     } else {
                         const m = g.entries.find(i => i.map == iter.map);
                         if (m == undefined) {
-                            g.entries.push(iter);
+                            g.entries.push({...iter});
                         } else {
                             m.count += iter.count;
                         }
