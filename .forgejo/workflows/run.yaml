@@ -11,15 +11,16 @@ jobs:
                 dotnet-version: '9.0.x'
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
+            - run: mkdir -p dist
             - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=linux-x64
             - run: |
                 cd gex
                 npm install
                 npm run build
-            - run: zip gex-${{ forgejo.SHA }}.zip gex/
+            - run: zip dist/gex-${{ forgejo.SHA }}.zip gex/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
-                release-dir: gex-${{ forgejo.SHA }}.zip
+                release-dir: dist
                 token: ${{ secrets.WRITE_TOKEN }}
 
