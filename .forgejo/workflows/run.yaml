@@ -17,7 +17,10 @@ jobs:
                 cd gex
                 npm install
                 npm run build
-            - run: zip dist/gex-${{ forgejo.SHA }}.zip gex/
+            - run: zip dist/gex-linux-x64-${{ forgejo.SHA }}.zip gex/
+            - run: dotnet clean
+            - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=win-x64
+            - run: zip dist/gex-win-x64-${{ forgejo.SHA }}.zip gex/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
@@ -25,6 +28,5 @@ jobs:
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
                 tag: ${{ forgejo.ref_name }}
-                verbose: true
                 override: true
 
