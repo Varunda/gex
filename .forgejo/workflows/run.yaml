@@ -5,26 +5,28 @@ jobs:
         steps:
             - uses: https://code.forgejo.org/actions/checkout@v6
             - run: apt-get update -qq
-            - run: apt-get -q install -y -qq npm zip
+            - run: apt-get -q install -y -qq npm zip curl
             - uses: https://git.ryujinx.app/actions/setup-dotnet@v5
               with:
                 dotnet-version: '9.0.x'
             - run: cp gex/env.template.json gex/env.json
             - run: cp gex/secrets.template.json gex/secrets.json
-            - run: mkdir -p dist
-            - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=linux-x64
             - run: |
                 cd gex
                 npm install
                 npm run build
-            - run: zip dist/gex-linux-x64-${{ forgejo.SHA }}.zip gex/
+            - run: ls
+            - run: mkdir -p dist
+            - run: mkdir -p release_builds
+            - run: dotnet publish gex/gex.sln -c PublishLinux
+            - run: zip -r release_builds/gex-linux-x64-${{ forgejo.SHA }}.zip gex/dist/linux-x64/
             - run: dotnet clean
-            - run: dotnet build gex/gex.sln --self-contained -c Release -p:RuntimeWorkaround=win-x64
-            - run: zip dist/gex-win-x64-${{ forgejo.SHA }}.zip gex/
+            - run: dotnet publish gex/gex.sln -c PublishWindows
+            - run: zip -r release_builds/gex-win-x64-${{ forgejo.SHA }}.zip gex/dist/win-x64/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
-                release-dir: dist
+                release-dir: release_builds
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
                 tag: ${{ forgejo.ref_name }}

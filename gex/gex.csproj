@@ -16,6 +16,24 @@
     <NoWarn>1701;1702;CS1591;</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|AnyCPU'">
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+	<OutputType>exe</OutputType>
+	<NoWarn>CS1591</NoWarn>
+	<PublishDir>./dist/linux-x64</PublishDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU'">
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<OutputType>exe</OutputType>
+	<NoWarn>CS1591</NoWarn>
+	<PublishDir>./dist/win-x64</PublishDir>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="logs\**" />
     <Compile Remove="wrapped\**" />
@@ -39,8 +57,8 @@
     <PackageReference Include="Emzi0767.Common" Version="2.12.1" />
     <PackageReference Include="Kuylar.DSharpPlus.ButtonCommands" Version="1.4.0" />
     <PackageReference Include="LuaCSharp" Version="0.4.2" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.13.0" />
-    <PackageReference Include="Magick.NET.Core" Version="14.13.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.14.0" />
+    <PackageReference Include="Magick.NET.Core" Version="14.14.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.1" />
@@ -52,11 +70,11 @@
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="8.0.7" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
-    <PackageReference Include="OpenTelemetry" Version="1.11.2" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.2" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.HttpListener" Version="1.11.2-beta.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageReference Include="Pfim" Version="0.11.3" />
     <PackageReference Include="Salaros.ConfigParser" Version="0.3.8" />
     <PackageReference Include="SkiaSharp" Version="3.116.1" />
