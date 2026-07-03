@@ -35,4 +35,5 @@ jobs:
                 sha: ${{ forgejo.SHA }}
                 tag: ${{ forgejo.ref_name }}
                 override: true
+                verbose: true
 
