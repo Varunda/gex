@@ -46,9 +46,11 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
         private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
+        private readonly IOptions<InstanceOptions> _InstanceOptions;
 
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
+        private readonly BaseQueue<MatchProcessingWebhookQueueEntry> _WebhookQueue;
 
         public GameReplayParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -63,7 +65,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
             BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
             BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions)
+            BarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
+            BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions)
         : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -88,6 +91,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             _PlayerLeftDb = playerLeftDb;
             _TextPingDb = textPingDb;
             _FocusUserOptions = focusUserOptions;
+            _WebhookQueue = webhookQueue;
+            _InstanceOptions = instanceOptions;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -164,7 +169,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
                 if (_FocusUserOptions.Value.Enabled == true) {
                     BarMatchPlayer? found = parsed.Players.FirstOrDefault(iter => _FocusUserOptions.Value.UserIDs.Contains(iter.UserID));
-                    if (found == null) {
+                    if (found == null && entry.Force == false) {
                         _Logger.LogWarning($"parsed a game that does not contain a focused user? [gameID={parsed.ID}]");
                         Debug.Fail("why did this game get parsed?");
                     }
@@ -188,6 +193,10 @@ namespace gex.Services.Hosted.QueueProcessor {
             processing.Features.Add("player_left");
             processing.Features.Add("text_ping");
             await _ProcessingRepository.Upsert(processing);
+
+            if (_InstanceOptions.Value.EnableWebhooks == true) {
+                _WebhookQueue.Queue(MatchProcessingWebhookQueueEntry.Parsed(entry.GameID));
+            }
 
             if (runHeadless && (entry.ForceForward == true || processing.ReplaySimulated == null)) {
                 _Logger.LogDebug($"putting entry into headless run queue [gameID={entry.GameID}]");

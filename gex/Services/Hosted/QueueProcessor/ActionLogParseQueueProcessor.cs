@@ -3,6 +3,7 @@ using gex.Common.Models.Options;
 using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.MapStats;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
@@ -26,6 +27,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly BaseQueue<GameReplayParseQueueEntry> _ParseQueue;
+        private readonly BaseQueue<MatchProcessingWebhookQueueEntry> _WebhookQueue;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BaseQueue<SubscriptionMessageQueueEntry> _SubscriptionMessageQueue;
         private readonly MapStatsNeedsUpdateDb _MapStatsNeedsUpdateDb;
@@ -55,6 +57,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly GameUnitsCreatedDb _UnitsCreatedDb;
         private readonly UserUnitsMadeNeedsUpdateDb _UserUnitsMadeNeedsUpdateDb;
 
+        private readonly IOptions<InstanceOptions> _InstanceOptions;
+
         public ActionLogParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<ActionLogParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             BarMatchProcessingRepository processingRepository, BaseQueue<GameReplayParseQueueEntry> parseQueue,
@@ -71,7 +75,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             UnitPositionFileStorage unitPositionStorage, GameUnitsCreatedDb unitsCreatedDb,
             MapStatsNeedsUpdateDb mapStatsNeedsUpdateDb, BarMatchRepository matchRepository,
             GameOutputStorage outputStorage, UserUnitsMadeNeedsUpdateDb userUnitsMadeNeedsUpdateDb,
-            BarMatchPlayerRepository matchPlayerRepository)
+            BarMatchPlayerRepository matchPlayerRepository, BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue,
+            IOptions<InstanceOptions> instanceOptions)
         : base("action_log_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -103,6 +108,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             _OutputStorage = outputStorage;
             _UserUnitsMadeNeedsUpdateDb = userUnitsMadeNeedsUpdateDb;
             _MatchPlayerRepository = matchPlayerRepository;
+            _WebhookQueue = webhookQueue;
+            _InstanceOptions = instanceOptions;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(ActionLogParseQueueEntry entry, CancellationToken cancel) {
@@ -197,6 +204,10 @@ namespace gex.Services.Hosted.QueueProcessor {
                 GameID = entry.GameID,
                 Force = entry.Force
             });
+
+            if (_InstanceOptions.Value.EnableWebhooks == true) {
+                _WebhookQueue.Queue(MatchProcessingWebhookQueueEntry.Replayed(entry.GameID));
+            }
 
             try {
                 await _UnitsCreatedDb.Generate(entry.GameID, cancel);

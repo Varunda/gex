@@ -30,6 +30,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<MapStatUpdateQueueProcessor>();
             services.AddHostedService<LobbyMessageQueueProcessor>();
             services.AddHostedService<BattleStatusQueueProcessor>();
+            services.AddHostedService<MatchProcessingWebhookQueueProcessor>();
         }
 
         public static void AddPeriodicServices(this IServiceCollection services) {

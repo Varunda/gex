@@ -33,6 +33,8 @@ namespace gex.Services.Repositories {
             services.AddSingleton<MapImageRepository>();
             services.AddSingleton<StartSpotDataRepository>();
             services.AddSingleton<BarMapRotationRepository>();
+            services.AddSingleton<MatchProcessingWebhookRepository>();
+            services.AddSingleton<GameOutputRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

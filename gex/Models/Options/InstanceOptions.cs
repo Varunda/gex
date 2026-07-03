@@ -23,5 +23,15 @@
         /// </summary>
         public int MaxReplayPagePulls { get; set; } = 20;
 
+        /// <summary>
+        ///     will the match processing webhook system be enabled?
+        /// </summary>
+        public bool EnableWebhooks { get; set; } = false;
+
+        /// <summary>
+        ///     will webhooks be allowed to have loopback URLs?
+        /// </summary>
+        public bool EnableWebhookLoopbackUrl { get; set; } = false;
+
     }
 }

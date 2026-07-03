@@ -26,6 +26,7 @@ namespace gex.Services.Queues {
             services.AddSingleton<BaseQueue<LobbyMessage>, LobbyMessageQueue>();
             services.AddSingleton<BaseQueue<BattleStatusUpdateQueueEntry>, BattleStatusUpdateQueue>();
             services.AddSingleton<BaseQueue<FixCountryCodeQueueEntry>, FixCountryCodeQueue>();
+            services.AddSingleton<BaseQueue<MatchProcessingWebhookQueueEntry>, MatchProcessingWebhookQueue>();
         }
 
     }

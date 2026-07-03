@@ -150,153 +150,28 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeSelfDCommands = false,
             CancellationToken cancel = default
         ) {
-            BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
-            if (match == null) {
+            Result<BarMatch?, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
+                IncludeAllyTeams = includeAllyTeams,
+                IncludePlayers = includePlayers,
+                IncludeChat = includeChat,
+                IncludeSpectators = includeSpectators,
+                IncludeTeamDeaths = includeTeamDeaths,
+                IncludePlayerLeaves = includePlayerLeaves,
+                IncludeMapDraws = includeMapDraws,
+                IncludeLabeledPings = includeLabeledPings,
+                IncludeCommands = includeCommands,
+                IncludeSelfDCommands = includeSelfDCommands,
+            }, await _CurrentUser.Get(cancel), cancel);
+
+            if (result.IsOk == false) {
+                return ApiInternalError<ApiMatch>($"failed to build match");
+            }
+
+            if (result.Value == null) {
                 return ApiNoContent<ApiMatch>();
             }
 
-            BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
-            if (proc == null) {
-                Debug.Fail($"missing {nameof(BarMatchProcessing)} for gameID {gameID}");
-                _Logger.LogError($"missing bar match processing [gameID={gameID}]");
-            }
-
-            List<MatchPoolEntry> poolEntries = await _MatchPoolEntryDb.GetByMatchID(gameID, cancel);
-            if (poolEntries.Count > 0) {
-                match.MatchPoolIsHidden = true;
-                AppAccount? currentUser = await _CurrentUser.Get(cancel);
-
-                bool canView = false;
-                foreach (MatchPoolEntry entry in poolEntries) {
-                    canView |= await _MatchPoolRepository.CanView(entry.PoolID, currentUser?.ID, cancel);
-                    if (canView == true) {
-                        MatchPool allowedPool = await _MatchPoolRepository.GetByID(entry.PoolID, cancel)
-                            ?? throw new Exception($"failsafe tripped, if canView is true, then how is this pool null?");
-                        if (allowedPool.HideUntil != null) {
-                            match.MatchPoolIsHidden = DateTime.UtcNow > allowedPool.HideUntil;
-                        }
-                        break;
-                    }
-                }
-
-                if (canView == false) {
-                    return ApiForbidden<ApiMatch>($"this {nameof(BarMatch)} is in a match pool that is hidden");
-                }
-            }
-
-            if (includeAllyTeams == true) {
-                match.AllyTeams = await _AllyTeamDb.GetByGameID(gameID, cancel);
-            }
-
-            if (includePlayers == true) {
-                match.Players = await _PlayerRepository.GetByGameID(gameID, cancel);
-            }
-
-            if (includeChat == true) {
-                match.ChatMessages = await _ChatMessageDb.GetByGameID(gameID, cancel);
-            }
-
-            if (includeSpectators == true) {
-                match.Spectators = await _SpectatorDb.GetByGameID(gameID, cancel);
-            }
-
-            if (includeTeamDeaths == true) {
-                match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
-            }
-
-            if (includePlayerLeaves == true) {
-                if (proc != null && proc.Features.Contains("player_left") == false) {
-                    _Logger.LogDebug($"match is missing player_left feature, fixing [gameID={gameID}]");
-
-                    Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions(), cancel);
-                    if (fromDemofile.IsOk == false) {
-                        _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
-                        return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
-                    }
-
-                    await _PlayerLeftDb.DeleteByGameID(gameID);
-                    foreach (BarMatchPlayerLeft left in fromDemofile.Value.PlayerLeaves) {
-                        await _PlayerLeftDb.Insert(left, cancel);
-                    }
-
-                    proc.Features.Add("player_left");
-                    await _ProcessingRepository.Upsert(proc);
-
-                    match.PlayerLeaves = fromDemofile.Value.PlayerLeaves;
-                } else {
-                    match.PlayerLeaves = await _PlayerLeftDb.GetByGameID(gameID, cancel);
-                }
-            }
-
-            if (includeLabeledPings == true && includeMapDraws == false) {
-                if (proc != null && proc.Features.Contains("text_ping") == false) {
-                    _Logger.LogDebug($"match is missing text_ping feature, fixing [gameID={gameID}]");
-
-                    Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions() {
-                        IncludeMapDraws = true,
-                    }, cancel);
-
-                    if (fromDemofile.IsOk == false) {
-                        _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
-                        return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
-                    }
-
-                    await _TextPingDb.DeleteByGameID(gameID);
-                    foreach (BarMatchMapDraw draw in fromDemofile.Value.MapDraws) {
-                        if (draw.Action != "point" || draw is not BarMatchMapDrawPoint point || point.Label == "") {
-                            continue;
-                        }
-
-                        if (match.MapDraws.FirstOrDefault(iter => {
-                            return iter.GameTime == point.GameTime && iter.PlayerID == point.PlayerID 
-                                && iter.Index == point.Index && iter.X == point.X && iter.Z == point.Z;
-                        }) != null) {
-                            _Logger.LogWarning($"duplicate map draw point found [gameID={gameID}] [gameTime={point.GameTime}] "
-                                + $"[player={point.PlayerID}] [coords={point.X},{point.Z}]");
-                            Debug.Fail("duplicate map draw point found");
-                            continue;
-                        }
-
-                        point.GameID = match.ID;
-                        await _TextPingDb.Insert(point, cancel);
-                        match.MapDraws.Add(draw);
-                    }
-
-                    proc.Features.Add("text_ping");
-                    await _ProcessingRepository.Upsert(proc);
-                } else {
-                    match.MapDraws.AddRange(await _TextPingDb.GetByGameID(gameID, cancel));
-                }
-            }
-
-            if (includeMapDraws == true || includeCommands == true || includeSelfDCommands == true) {
-                Result<byte[], string> demofile = await _DemofileStorage.GetDemofileByFilename(match.FileName, cancel);
-                if (demofile.IsOk == false) {
-                    _Logger.LogError($"failed to load demofile from storage [error={demofile.Error}] [filename={match.FileName}]");
-                    return ApiInternalError<ApiMatch>($"failed to load demofile from storage");
-                }
-
-                Result<BarMatch, string> fromDemofile = await _DemofileParser.Parse(match.FileName, demofile.Value, new DemofileParserOptions() {
-                    IncludeCommands = includeCommands || includeSelfDCommands,
-                    IncludeMapDraws = includeMapDraws,
-                }, cancel);
-                if (fromDemofile.IsOk == false) {
-                    _Logger.LogError($"failed to parse demofile [error={demofile.Error}] [matchID={match.ID}]");
-                    return ApiInternalError<ApiMatch>($"failed to parse demofile for match");
-                }
-
-                if (includeMapDraws == true) {
-                    match.MapDraws = fromDemofile.Value.MapDraws;
-                }
-
-                if (includeSelfDCommands == true && includeCommands == false) {
-                    match.Commands = fromDemofile.Value.Commands.Where(iter => {
-                        return iter.ID == BarCommandId.SELFD;
-                    }).ToList();
-                } else {
-                    match.Commands = fromDemofile.Value.Commands;
-                }
-            }
+            BarMatch match = result.Value;
 
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
