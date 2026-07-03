@@ -86,6 +86,7 @@ namespace gex.Services.Util {
         ///     generate all the maps used for checking symmetry
         /// </summary>
         /// <param name="mapName"></param>
+        /// <param name="mapDir">directory to store the map images in</param>
         /// <returns></returns>
         private async Task GenerateMaps(string mapName, string mapDir) {
             Result<string, string> mapPath = await _MapImageRepository.GetMapPath(mapName, "texture-mq");

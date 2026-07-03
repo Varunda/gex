@@ -54,7 +54,8 @@ namespace gex.Controllers.Api {
         /// </remarks>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
-        ///     the response will contain a list of all <see cref="MatchPool"/>s
+        ///     the response will contain a list of all <see cref="MatchPool"/>s the user making the request can see.
+        ///     if the user is not logged in, it will be a list of match pools that anyone can see
         /// </response>
         [HttpGet]
         public async Task<ApiResponse<List<MatchPool>>> GetPools(CancellationToken cancel = default) {
@@ -84,11 +85,24 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///     get a specific <see cref="MatchPool"/>
+        ///     get a specific <see cref="MatchPool"/>. any user can view an unlisted match pool,
+        ///     but a hidden match pool can only be seen by its creator (or dev perm) until the
+        ///     value in <see cref="MatchPool.HideUntil"/>
         /// </summary>
-        /// <param name="poolID"></param>
-        /// <param name="cancel"></param>
-        /// <returns></returns>
+        /// <param name="poolID">ID of the <see cref="MatchPool"/> to get</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain the <see cref="MatchPool"/> with <see cref="MatchPool.ID"/>
+        ///     of <paramref name="poolID"/>
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="MatchPool"/> with <see cref="MatchPool.ID"/> of <paramref name="poolID"/> exists
+        /// </response>
+        /// <response code="403">
+        ///     the user making the request lacks permission to view the <see cref="MatchPool"/>.
+        ///     this happens when the match pool has a <see cref="MatchPool.HideUntil"/> in the future,
+        ///     and the user is not the creator of the match pool (or a dev)
+        /// </response>
         [HttpGet("{poolID}")]
         public async Task<ApiResponse<MatchPool>> GetByID(long poolID, CancellationToken cancel = default) {
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
@@ -108,10 +122,18 @@ namespace gex.Controllers.Api {
         /// </summary>
         /// <param name="name">name of the match pool to create</param>
         /// <param name="unlisted">if the match pool will be unlisted when created</param>
-        /// <param name="hideUntil">if the match pool will be hidden until a specific time</param>
+        /// <param name="hideUntil">if the match pool will be hidden until a specific time. can be at most 90 days away</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain the newly created <see cref="MatchPool"/>
+        /// </response>
+        /// <response code="400">
+        ///     one of the following validation errors occured:
+        ///     <ul>
+        ///         <li><paramref name="hideUntil"/> was provided, and is in the past</li>
+        ///         <li><paramref name="hideUntil"/> was provided, and is more than 90 days in the future</li>
+        ///         <li><paramref name="name"/> was blank</li>
+        ///     </ul>
         /// </response>
         [HttpPost]
         [PermissionNeeded(AppPermission.GEX_MATCH_POOL_CREATE)]
@@ -128,6 +150,9 @@ namespace gex.Controllers.Api {
             }
             if (hideUntil != null && (hideUntil - DateTime.UtcNow) > TimeSpan.FromDays(90)) {
                 return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
+            }
+            if (string.IsNullOrWhiteSpace(name) == true) {
+                return ApiBadRequest<MatchPool>($"{nameof(name)} cannot be blank");
             }
 
             MatchPool pool = new() {
@@ -151,13 +176,22 @@ namespace gex.Controllers.Api {
         /// <param name="poolID">ID of the <see cref="MatchPool"/> to be updated</param>
         /// <param name="name">new name of the <see cref="MatchPool"/></param>
         /// <param name="unlisted">new value of <see cref="MatchPool.Unlisted"/></param>
-        /// <param name="hideUntil">new value of <see cref="MatchPool.HideUntil"/></param>
+        /// <param name="hideUntil">new value of <see cref="MatchPool.HideUntil"/>. can be at most 90 days in the future</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain the updated <see cref="MatchPool"/>
         /// </response>
         /// <response code="400">
-        ///     <paramref name="name"/> was empty or only contained whitespace. if no change is wanted, provide the original name
+        ///     one of the following validations failed:
+        ///     <ul>
+        ///         <li>
+        ///             <paramref name="name"/> was empty or only contained whitespace. if no change is wanted, provide the original name
+        ///         </li>
+        ///         <li><paramref name="hideUntil"/> was more than 90 days in the future</li>
+        ///     </ul>
+        /// </response>
+        /// <response code="403">
+        ///     the user is not the creator of the match pool, and lacks the dev permission
         /// </response>
         /// <response code="404">
         ///     no <see cref="MatchPool"/> with <see cref="MatchPool.ID"/> of <paramref name="poolID"/> exists
@@ -233,8 +267,24 @@ namespace gex.Controllers.Api {
         /// <param name="poolID"></param>
         /// <param name="matchID"></param>
         /// <param name="cancel"></param>
-        /// <returns></returns>
-        /// <exception cref="System.Exception"></exception>
+        /// <response code="200">
+        ///     a new <see cref="MatchPoolEntry"/> was successfully created, adding the match to the match pool
+        /// </response>
+        /// <response code="400">
+        ///     a <see cref="MatchPoolEntry"/> with <see cref="MatchPoolEntry.PoolID"/> of <paramref name="poolID"/>
+        ///     and <see cref="MatchPoolEntry.MatchID"/> of <paramref name="matchID"/> already exists, meaning
+        ///     this would create a duplicate <see cref="MatchPoolEntry"/>
+        /// </response>
+        /// <response code="403">
+        ///     the user making the request is not the creator of the match pool, and lacks the dev permission
+        /// </response>
+        /// <response code="404">
+        ///     one of the following was missing:
+        ///     <ul>
+        ///         <li>no <see cref="MatchPool"/> with <see cref="MatchPool.ID"/> of <paramref name="poolID"/> exists</li>
+        ///         <li>no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="matchID"/> exists</li> 
+        ///     </ul>
+        /// </response>
         [HttpPost("{poolID}/{matchID}")]
         [Authorize]
         public async Task<ApiResponse> AddMatchToPool(long poolID, string matchID, CancellationToken cancel = default) {
@@ -270,6 +320,68 @@ namespace gex.Controllers.Api {
             await _MatchPoolEntryDb.Insert(entry, cancel);
 
             _Logger.LogInformation($"match added to match pool [poolID={poolID}] [matchID={matchID}]");
+
+            return ApiOk();
+        }
+
+        /// <summary>
+        ///     update the <see cref="MatchPoolEntry.Description"/> of a <see cref="MatchPoolEntry"/>
+        /// </summary>
+        /// <param name="poolID">ID of the <see cref="MatchPool"/> the entry is in</param>
+        /// <param name="matchID">ID of the <see cref="BarMatch"/> the entry is for</param>
+        /// <param name="description">new description</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the <see cref="MatchPoolEntry"/> with <see cref="MatchPoolEntry.PoolID"/> of <paramref name="poolID"/>,
+        ///     and <see cref="MatchPoolEntry.MatchID"/> of <paramref name="matchID"/> was updated with a new
+        ///     <see cref="MatchPoolEntry.Description"/> of <paramref name="description"/>
+        /// </response>
+        /// <response code="400">
+        ///     <paramref name="description"/> was over 100 characters
+        /// </response>
+        /// <response code="403">
+        ///     the user making the request is not the creator of the <see cref="MatchPool"/> with <see cref="MatchPool.ID"/>
+        ///     of <paramref name="poolID"/>, and does not have the dev permission
+        /// </response>
+        /// <response code="404">
+        ///     one of the following entries were missing:
+        ///     <ul>
+        ///         <li>no <see cref="MatchPool"/> with <see cref="MatchPool.ID"/> of <paramref name="poolID"/> exists</li>
+        ///         <li>
+        ///             no <see cref="MatchPoolEntry"/> with <see cref="MatchPoolEntry.PoolID"/> of <paramref name="poolID"/>
+        ///             and <see cref="MatchPoolEntry.MatchID"/> of <paramref name="matchID"/> exists
+        ///         </li>
+        ///     </ul>
+        /// </response>
+        [HttpPost("{poolID}/{matchID}/update")]
+        [Authorize]
+        public async Task<ApiResponse> UpdateEntryDescription(long poolID, string matchID,
+            [FromQuery] string description,
+            CancellationToken cancel = default
+        ) {
+
+            if (description.Length > 100) {
+                return ApiBadRequest($"{nameof(description)} cannot be more than 100 characters");
+            }
+
+            if (await _IsPoolCreatorOrDev(poolID, cancel) == false) {
+                return ApiForbidden($"user is not the creator of the match pool (or a dev)");
+            }
+
+            MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
+            if (pool == null) {
+                return ApiNotFound($"{nameof(MatchPool)} {poolID}");
+            }
+
+            MatchPoolEntry? entry = await _MatchPoolEntryDb.GetByPoolAndMatchID(poolID, matchID, cancel);
+            if (entry == null) {
+                return ApiNotFound($"{nameof(MatchPoolEntry)} {poolID} {matchID}");
+            }
+
+            entry.Description = description;
+
+            await _MatchPoolEntryDb.UpdateDescription(entry, cancel);
+            _Logger.LogInformation($"match pool entry description updated [poolID={poolID}] [matchID={matchID}] [description='{description}']");
 
             return ApiOk();
         }

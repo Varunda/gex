@@ -45,6 +45,22 @@ namespace gex.Services.Db {
             );
         }
 
+        public async Task<MatchPoolEntry?> GetByPoolAndMatchID(long poolID, string matchID, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QuerySingleAsync<MatchPoolEntry>(
+                "SELECT * FROM match_pool_entry WHERE pool_id = @PoolID AND match_id = @MatchID",
+                new { PoolID = poolID, MatchID = matchID },
+                cancel
+            );
+        }
+
+        /// <summary>
+        ///     insert a new <see cref="MatchPoolEntry"/> into the DB
+        /// </summary>
+        /// <param name="entry">entry to insert</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public async Task Insert(MatchPoolEntry entry, CancellationToken cancel) {
             if (string.IsNullOrEmpty(entry.MatchID)) {
                 throw new Exception($"missing {nameof(MatchPoolEntry.MatchID)}");
@@ -63,6 +79,31 @@ namespace gex.Services.Db {
             cmd.AddParameter("MatchID", entry.MatchID);
             cmd.AddParameter("AddedByID", entry.AddedByID);
             cmd.AddParameter("Description", entry.Description);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     update the <see cref="MatchPoolEntry.Description"/> of an entry
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task UpdateDescription(MatchPoolEntry entry, CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+                UPDATE match_pool_entry
+                    SET description = @Description
+                WHERE
+                    pool_id = @PoolID
+                    AND match_id = @MatchID;
+            ");
+
+            cmd.AddParameter("Description", entry.Description);
+            cmd.AddParameter("PoolID", entry.PoolID);
+            cmd.AddParameter("MatchID", entry.MatchID);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);

@@ -125,7 +125,17 @@ namespace gex.Controllers.Api {
         ///     will <see cref="BarMatch.Commands"/> be populated with Self-D commands? defaults to false.
         ///     if <paramref name="includeCommands"/>> is <c>true</c>, then this parameter is ignored (as it is a subset of the data)
         /// </param>
-        /// <returns></returns>
+        /// <response code="200">
+        ///     the reponse will contain the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>,
+        ///     populating any of the fields with the parameters
+        /// </response>
+        /// <response code="204">
+        ///     no <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/> exist
+        /// </response>
+        /// <response code="403">
+        ///     the user making the request lacks permission to view the <see cref="BarMatch"/>. this occurs
+        ///     when the <see cref="BarMatch"/> is in a <see cref="MatchPool"/> that is currently hidden
+        /// </response>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(string gameID,
             [FromQuery] bool includeAllyTeams = false,
@@ -163,7 +173,7 @@ namespace gex.Controllers.Api {
                         MatchPool allowedPool = await _MatchPoolRepository.GetByID(entry.PoolID, cancel)
                             ?? throw new Exception($"failsafe tripped, if canView is true, then how is this pool null?");
                         if (allowedPool.HideUntil != null) {
-                            match.MatchPoolIsHidden = DateTime.UtcNow < allowedPool.HideUntil;
+                            match.MatchPoolIsHidden = DateTime.UtcNow > allowedPool.HideUntil;
                         }
                         break;
                     }

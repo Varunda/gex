@@ -235,6 +235,8 @@
                             </tbody>
                         </table>
 
+                        <map-daily-plays-view class="mb-5" :map="barMap.data" :stats="stats.data"></map-daily-plays-view>
+
                         <h2 class="wt-header mb-0">Faction stats for {{ selectedGamemode | gamemode }}</h2>
 
                         <table class="table mb-5">
@@ -370,6 +372,8 @@
     import MatchList from "components/app/MatchList.vue";
     import ToggleButton from "components/ToggleButton";
     import Collapsible from "components/Collapsible.vue";
+
+    import MapDailyPlaysView from "./components/MapDailyPlaysView.vue";
 
     import "filters/BarGamemodeFilter";
     import "filters/BarFactionFilter";
@@ -1089,7 +1093,8 @@
         },
 
         components: {
-            ApiError, MatchList, ToggleButton, Collapsible
+            ApiError, MatchList, ToggleButton, Collapsible,
+            MapDailyPlaysView
         }
     });
     export default MapView;

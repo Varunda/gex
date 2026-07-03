@@ -1,3 +1,4 @@
+import { MapDailyPlays } from "./MapDailyPlays";
 import { MapStatsByFaction } from "./MapStatsByFaction";
 import { MapStatsByGamemode } from "./MapStatsByGamemode";
 import { MapStatsDailyOpeningLab } from "./MapStatsDailyOpeningLab";
@@ -10,6 +11,7 @@ export class MapStats {
     public startSpots: MapStatsStartSpot[] = [];
     public factionStats: MapStatsByFaction[] = [];
     public openingLabs: MapStatsDailyOpeningLab[] = [];
+    public dailyPlays: MapDailyPlays[] = [];
 
     public static parse(elem: any): MapStats {
         return {
@@ -17,7 +19,8 @@ export class MapStats {
             stats: elem.stats.map((iter: any) => MapStatsByGamemode.parse(iter)),
             startSpots: elem.startSpots.map((iter: any) => MapStatsStartSpot.parse(iter)),
             factionStats: elem.factionStats.map((iter: any) => MapStatsByFaction.parse(iter)),
-            openingLabs: elem.openingLabs.map((iter: any) => MapStatsDailyOpeningLab.parse(iter))
+            openingLabs: elem.openingLabs.map((iter: any) => MapStatsDailyOpeningLab.parse(iter)),
+            dailyPlays: elem.dailyPlays.map((iter: any) => MapDailyPlays.parse(iter))
         };
     }
 
