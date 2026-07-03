@@ -4,12 +4,14 @@ using gex.Models.Event;
 using gex.Models.Queues;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -29,6 +31,7 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         static MatchProcessingWebhookQueueProcessor() {
             _Http.DefaultRequestHeaders.UserAgent.TryParseAdd("gex-webhooks/0.1");
+            _Http.Timeout = TimeSpan.FromSeconds(5);
         }
 
         public MatchProcessingWebhookQueueProcessor(ILoggerFactory factory,
@@ -121,13 +124,18 @@ namespace gex.Services.Hosted.QueueProcessor {
                 using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 
                 try {
+                    HttpRequestMessage req = new(HttpMethod.Post, webhook.Url);
+                    req.Headers.Authorization = new AuthenticationHeaderValue("SharedSecret", webhook.SharedSecret);
+
                     if (entry.Type == MatchProcessingWebhookQueueEntry.REPLAYED && webhook.IncludeEvents == false) {
-                        await _Http.PostAsJsonAsync(webhook.Url, rootNoEvents, opts, cts.Token);
-                        _Logger.LogDebug($"sent POST request [url={webhook.Url}] [type={entry.Type}]");
+                        req.Content = JsonContent.Create(rootNoEvents);
                     } else {
-                        await _Http.PostAsJsonAsync(webhook.Url, root, opts, cts.Token);
-                        _Logger.LogDebug($"sent POST request [url={webhook.Url}] [type={entry.Type}]");
+                        req.Content = JsonContent.Create(root);
                     }
+
+                    await _Http.SendAsync(req, cancel);
+
+                    _Logger.LogDebug($"sent POST request [url={webhook.Url}] [type={entry.Type}]");
                 } catch (Exception ex) {
                     _Logger.LogWarning($"failed to send webhook to url [exception={ex.Message}] [url={webhook.Url}]");
                 }
