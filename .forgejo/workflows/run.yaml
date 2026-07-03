@@ -26,6 +26,7 @@ jobs:
             - run: dotnet clean
             - run: dotnet publish gex/gex.sln -c PublishWindows
             - run: zip -r release_builds/gex-win-x64-${{ forgejo.SHA }}.zip gex/dist/win-x64/
+            - run: ls -lah release_builds/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
