@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.Familiar", "gex.Familia
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.TestUpload", "gex.TestUpload\gex.TestUpload.csproj", "{3D080275-5F80-489B-8B4C-F9F7A2730DDE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gex.WebhookConsumerExample", "gex.WebhookConsumerExample\gex.WebhookConsumerExample.csproj", "{B6D23218-860A-4B43-BFD9-16910D5850F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,18 @@ Global
 		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x64.Build.0 = Release|Any CPU
 		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x86.ActiveCfg = Release|Any CPU
 		{3D080275-5F80-489B-8B4C-F9F7A2730DDE}.Release|x86.Build.0 = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|x64.Build.0 = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|x64.ActiveCfg = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|x64.Build.0 = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{B6D23218-860A-4B43-BFD9-16910D5850F0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

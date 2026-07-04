@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <div class="col-12">
+            <div class="col-12 mb-2">
                 <label for="user-search-input-bottom">User search</label>
                 <div class="form-control user-input-parent px-0" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
                     <button v-for="user in search.users" :key="user.userID" class="btn btn-primary btn-sm rounded mx-2">
@@ -228,6 +228,91 @@
                     
                     <input class="pe-0 d-inline-block form-control border-0" style="background-color: inherit; outline: 0; width: auto;" placeholder="Search..." v-model="userInput" id="user-search-input-bottom" />
                 </div>
+            </div>
+
+            <div class="col-12">
+                <toggle-button v-model="adv">
+                    Show adv. player filter
+                </toggle-button>
+            </div>
+
+            <div v-show="adv == true" class="col-12">
+                <hr>
+
+                <label>Advanced player filters</label>
+
+                <span class="text-muted d-block">This is a WIP UI, it is not very good</span>
+
+                <table class="table table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>User ID</th>
+                            <th>Position</th>
+                            <th>Min OS</th>
+                            <th colspan="2">Max OS</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr v-if="search.players.length == 0">
+                            <td colspan="5" class="text-muted">
+                                No player filters added
+                            </td>
+                        </tr>
+
+                        <tr v-for="(player, index) in search.players" :key="index">
+                            <td>
+                                {{ player.userID }}
+                            </td>
+
+                            <td>
+                                {{ player.positionLabel }}
+                            </td>
+
+                            <td>
+                                {{ player.minOS }}
+                            </td>
+
+                            <td>
+                                {{ player.maxOS }}
+                            </td>
+
+                            <td>
+                                <button class="btn btn-danger" aria-label="close" @click="removePlayer(index)">
+                                    &times;
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    <tfoot>
+                        <tr class="table-dark">
+                            <td>
+                                <input class="form-control" v-model.number="player.userID" placeholder="This is user ID, not username">
+                            </td>
+
+                            <td>
+                                <input class="form-control" v-model="player.positionLabel">
+                            </td>
+
+                            <td>
+                                <input class="form-control" v-model.number="player.minOS" type="number">
+                            </td>
+
+                            <td>
+                                <input class="form-control" v-model.number="player.maxOS" type="number">
+                            </td>
+
+                            <td>
+                                <button class="btn btn-primary" @click="addPlayer">
+                                    Add
+                                </button>
+                            </td>
+                        </tr>
+                    </tfoot>
+
+                </table>
+
             </div>
 
             <div class="col-12 mt-2">
@@ -333,6 +418,7 @@
 
     import { BarUser } from "model/BarUser";
     import { UserSearchResult } from "model/UserSearchResult";
+    import { SearchPlayer } from "model/SearchOptions";
 
     import "filters/MomentFilter";
 
@@ -355,6 +441,7 @@
 
                 gameIdRegex: new RegExp(/[0-9a-f]{32}/) as RegExp,
                 enterLockout: 0 as number,
+                adv: false as boolean,
 
                 search: {
                     use: false as boolean,
@@ -375,6 +462,7 @@
                     legionEnabled: null as boolean | null,
                     gameSettings: [] as SearchKeyValue[],
                     users: [] as MinUser[],
+                    players: [] as SearchPlayer[],
                     processingDownloaded: null as boolean | null,
                     processingParsed: null as boolean | null,
                     processingReplayed: null as boolean | null,
@@ -386,6 +474,8 @@
                     orderBy: "start_time" as string,
                     orderByDir: "desc" as string,
                 },
+
+                player: new SearchPlayer() as SearchPlayer,
 
                 userInput: "" as string,
                 inputTimeout: -1 as number,
@@ -665,6 +755,15 @@
 
             removeUser: function(userID: number): void {
                 this.search.users = this.search.users.filter(iter => iter.userID != userID);
+            },
+
+            addPlayer: function(): void {
+                this.search.players.push({...this.player});
+                this.player = new SearchPlayer();
+            },
+
+            removePlayer: function(index: number): void {
+                this.search.players = this.search.players.filter((_, i) => i != index);
             }
         },
 
@@ -743,6 +842,9 @@
                 }
                 if (this.search.users.length > 0) {
                     options.users = this.search.users.map(iter => { return { username: iter.username, userID: iter.userID }; });
+                }
+                if (this.search.players.length > 0) {
+                    options.players = [...this.search.players];
                 }
                 if (this.search.minOS != null && this.search.minOS != "" && this.search.minOS != undefined) {
                     options.minOS = this.search.minOS;

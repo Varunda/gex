@@ -366,11 +366,50 @@ namespace gex.Services.Db.Match {
 
             // need a different join for each player, can't use the same join for the list of players
             string joinPlayersStr = "";
+            /*
             if (parms.UserIDs.Count > 0) {
                 for (int i = 0; i < parms.UserIDs.Count; ++i) {
                     joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
                     conditions.Add($"players{i}.user_id = @UserID{i}");
                     cmd.AddParameter($"UserID{i}", parms.UserIDs[i]);
+                }
+            }
+            */
+
+            if (parms.Players.Count > 0) {
+                for (int i = 0; i < parms.Players.Count; ++i) {
+                    SearchPlayer iter = parms.Players[i];
+                    joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
+
+                    if (iter.UserID != null) {
+                        conditions.Add($"players{i}.user_id = @UserID{i}");
+                        cmd.AddParameter($"UserID{i}", iter.UserID.Value);
+                    }
+
+                    if (iter.Position != null) {
+                        conditions.Add($"players{i}.starting_position_x BETWEEN @StartXMin{i} AND @StartXMax{i}");
+                        cmd.AddParameter($"StartXMin{i}", iter.Position.Value.X - (iter.PositionRadius ?? 150));
+                        cmd.AddParameter($"StartXMax{i}", iter.Position.Value.X + (iter.PositionRadius ?? 150));
+
+                        conditions.Add($"players{i}.starting_position_z BETWEEN @StartZMin{i} AND @StartZMax{i}");
+                        cmd.AddParameter($"StartZMin{i}", iter.Position.Value.Z - (iter.PositionRadius ?? 150));
+                        cmd.AddParameter($"StartZMax{i}", iter.Position.Value.Z + (iter.PositionRadius ?? 150));
+                    }
+
+                    if (iter.PositionLabel != null) {
+                        conditions.Add($"LOWER(players{i}.start_spot_label) = LOWER(@StartSpot{i})");
+                        cmd.AddParameter($"StartSpot{i}", iter.PositionLabel);
+                    }
+
+                    if (iter.MinOS != null) {
+                        conditions.Add($"players{i}.skill >= @PlayerMinOS{i}");
+                        cmd.AddParameter($"PlayerMinOS{i}", iter.MinOS.Value);
+                    }
+
+                    if (iter.MaxOS != null) {
+                        conditions.Add($"players{i}.skill < @PlayerMaxOS{i}");
+                        cmd.AddParameter($"PlayerMaxOS{i}", iter.MaxOS.Value);
+                    }
                 }
             }
 
@@ -422,17 +461,21 @@ namespace gex.Services.Db.Match {
 
             cmd.CommandText = $@"
                 {((withs.Count > 0 ? $"WITH {string.Join(",\n", withs)}" : "" ))}
-                SELECT *
-                    FROM bar_match m
-                        LEFT JOIN match_pool_entry mp ON mp.match_id = m.id
-                        LEFT JOIN match_pool mpool ON mp.pool_id = mpool.id
-						{((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
-                        {joinPlayersStr}
-					WHERE 1=1
-						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
-                    ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}
-                    LIMIT {limit}
-                    OFFSET {offset}
+                SELECT
+                    *
+                FROM (
+                    SELECT DISTINCT ON (m.id) *
+                        FROM bar_match m
+                            LEFT JOIN match_pool_entry mp ON mp.match_id = m.id
+                            LEFT JOIN match_pool mpool ON mp.pool_id = mpool.id
+                            {((joinProcessing == true) ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
+                            {joinPlayersStr}
+                        WHERE 1=1
+                            AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
+                ) sub_query
+                ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}
+                LIMIT {limit}
+                OFFSET {offset}
             ";
 
             _Logger.LogDebug($"performing DB search: " + cmd.Print());

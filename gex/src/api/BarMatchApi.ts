@@ -1,6 +1,7 @@
 import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
 import { BarMatch, SearchKeyValue } from "model/BarMatch";
+import { SearchOptions } from "model/SearchOptions";
 
 export class BarMatchApi extends ApiWrapper<BarMatch> {
     private static _instance: BarMatchApi = new BarMatchApi();
@@ -28,14 +29,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
     public static search(
         offset: number = 0, limit: number = 24,
         orderBy: string, orderByDir: string,
-        options: { 
-            engine?: string, gameVersion?: string, map?: string, startTimeAfter?: Date, startTimeBefore?: Date,
-            durationMinimum?: number, durationMaximum?: number, ranked?: boolean, gamemode?: number,
-            playerCountMinimum?: number, playerCountMaximum?: number, legionEnabled?: boolean, poolID?: number,
-            gameSettings?: SearchKeyValue[], users?: { username: string, userID: number }[],
-            minOS?: number, maxOS?: number, minAvgOS?: number, maxAvgOS?: number,
-            processingDownloaded?: boolean, processingParsed?: boolean, processingReplayed?: boolean, processingAction?: boolean
-        }
+        options: SearchOptions
     ) {
 
         const search: URLSearchParams = new URLSearchParams();
@@ -91,6 +85,11 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         if (options.users != undefined) {
             for (const user of options.users) {
                 search.append("userIDs", user.userID.toString());
+            }
+        }
+        if (options.players != undefined) {
+            for (const player of options.players) {
+                search.append("players", JSON.stringify(player));
             }
         }
         if (options.minOS != undefined) {

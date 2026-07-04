@@ -1,6 +1,9 @@
 ﻿using gex.Common.Code.Constants;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Text.Json;
 
 namespace gex.Models.Db {
 
@@ -105,6 +108,11 @@ namespace gex.Models.Db {
         public List<long> UserIDs { get; set; } = [];
 
         /// <summary>
+        ///     list of player filters to seach for
+        /// </summary>
+        public List<SearchPlayer> Players { get; set; } = [];
+
+        /// <summary>
         ///     minimum OS of all players
         /// </summary>
         public double? MinimumOS { get; set; }
@@ -191,6 +199,47 @@ namespace gex.Models.Db {
 
         public readonly static OrderByDirection DESC = new("DESC");
 
+    }
+
+    public class SearchPlayer : IParsable<SearchPlayer> {
+
+        public long? UserID { get; set; } = null;
+
+        public Vector3? Position { get; set; }
+
+        public float? PositionRadius { get; set; }
+
+        public string? PositionLabel { get; set; } = null;
+
+        public float? MinOS { get; set; }
+
+        public float? MaxOS { get; set; }
+
+        public static SearchPlayer Parse(string s, IFormatProvider? provider) {
+            if (TryParse(s, provider, out SearchPlayer? result) == false) {
+                throw new FormatException();
+            }
+            return result;
+        }
+
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out SearchPlayer result) {
+            if (s == null) {
+                result = null;
+                return false;
+            }
+
+            try {
+                SearchPlayer? player = JsonSerializer.Deserialize<SearchPlayer>(s, new JsonSerializerOptions() {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+
+                result = player;
+                return player != null;
+            } catch (Exception) {
+                result = null;
+                return false;
+            }
+        }
     }
 
 }

@@ -298,6 +298,10 @@ namespace gex.Controllers.Api {
         ///     the valid operations are: eq (equals), ne (not equals), st (starts with), en (ends with), and in (contains)
         /// </param>
         /// <param name="userIDs">list of user IDs to include. leave blank for any user</param>
+        /// <param name="players">
+        ///     advanced player filters. filters based on all provided parameters,
+        ///     for example could be used to find air players in matches over 30 OS
+        /// </param>
         /// <param name="minimumOS">minimum OS of all players in the match, exclusive</param>
         /// <param name="maximumOS">maximum OS of all players in the match, inclusive</param>
         /// <param name="minimumAverageOS">minimum average OS of all players in the match, exclusive</param>
@@ -350,6 +354,7 @@ namespace gex.Controllers.Api {
             [FromQuery] long? poolID = null,
             [FromQuery] List<string>? gameSettings = null,
             [FromQuery] List<long>? userIDs = null,
+            [FromQuery] List<SearchPlayer>? players = null,
             [FromQuery] double? minimumOS = null,
             [FromQuery] double? maximumOS = null,
             [FromQuery] double? minimumAverageOS = null,
@@ -420,6 +425,7 @@ namespace gex.Controllers.Api {
             parms.ProcessingAction = processingAction;
             parms.LegionEnabled = legionEnabled;
             parms.PoolID = poolID;
+
             parms.GameSettings = gameSettings?.Select(iter => {
                 string[] parts = iter.Split(",");
                 if (parts.Length != 3) {
@@ -431,7 +437,17 @@ namespace gex.Controllers.Api {
                     Operation = parts[2]
                 };
             }).ToList() ?? [];
-            parms.UserIDs = userIDs ?? [];
+
+            //parms.UserIDs = userIDs ?? [];
+            parms.Players = players ?? [];
+            if (userIDs != null) {
+                foreach (long userID in userIDs) {
+                    parms.Players.Add(new SearchPlayer() {
+                        UserID = userID,
+                    });
+                }
+            }
+
             parms.MinimumOS = minimumOS;
             parms.MaximumOS = maximumOS;
             parms.MinimumAverageOS = minimumAverageOS;
