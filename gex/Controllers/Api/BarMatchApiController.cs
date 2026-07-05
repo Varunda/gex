@@ -487,7 +487,11 @@ namespace gex.Controllers.Api {
 
             AppAccount? currentUser = await _CurrentUser.Get(cancel);
             BarMatchSearchParameters searchParameters = new() {
-                UserIDs = [userID]
+                Players = [
+                    new SearchPlayer() {
+                        UserID = userID
+                    }
+                ]
             };
 
             List<BarMatch> matches = [];
