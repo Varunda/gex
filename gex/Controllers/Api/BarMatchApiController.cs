@@ -300,7 +300,8 @@ namespace gex.Controllers.Api {
         /// <param name="userIDs">list of user IDs to include. leave blank for any user</param>
         /// <param name="players">
         ///     advanced player filters. filters based on all provided parameters,
-        ///     for example could be used to find air players in matches over 30 OS
+        ///     for example could be used to find air players in matches over 30 OS. 
+        ///     pass a URL encoded JSON
         /// </param>
         /// <param name="minimumOS">minimum OS of all players in the match, exclusive</param>
         /// <param name="maximumOS">maximum OS of all players in the match, inclusive</param>
@@ -487,11 +488,7 @@ namespace gex.Controllers.Api {
 
             AppAccount? currentUser = await _CurrentUser.Get(cancel);
             BarMatchSearchParameters searchParameters = new() {
-                Players = [
-                    new SearchPlayer() {
-                        UserID = userID
-                    }
-                ]
+                Players = [ new SearchPlayer() { UserID = userID } ]
             };
 
             List<BarMatch> matches = [];

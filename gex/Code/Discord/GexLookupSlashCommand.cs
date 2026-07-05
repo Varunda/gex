@@ -815,7 +815,7 @@ namespace gex.Code.Discord {
             await ctx.CreateDeferred(false);
 
             List<BarMatch> matches = await _MatchRepository.Search(new BarMatchSearchParameters() {
-                UserIDs = [userID],
+                Players = [ new SearchPlayer() { UserID = userID } ],
                 OrderBy = OrderBy.START_TIME,
                 OrderByDirection = OrderByDirection.DESC
             }, offset: 0, limit: 1, currentUser: null, cancel: cancel);
@@ -1332,8 +1332,8 @@ namespace gex.Code.Discord {
 
             // get recent games
             List<BarMatch> recentGames = await _MatchRepository.Search(new BarMatchSearchParameters() {
-                UserIDs = [user.UserID],
-                OrderBy = OrderBy.DURATION,
+                Players = [new SearchPlayer() {  UserID = user.UserID }],
+                OrderBy = OrderBy.START_TIME,
                 OrderByDirection = OrderByDirection.DESC
             }, offset: 0, limit: 4, currentUser: null, cancel);
             if (recentGames.Count > 0) {

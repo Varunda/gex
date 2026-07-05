@@ -103,11 +103,6 @@ namespace gex.Models.Db {
         public List<SearchKeyValue> GameSettings { get; set; } = [];
 
         /// <summary>
-        ///     list of user IDs to search for. if empty, no filter is applied
-        /// </summary>
-        public List<long> UserIDs { get; set; } = [];
-
-        /// <summary>
         ///     list of player filters to seach for
         /// </summary>
         public List<SearchPlayer> Players { get; set; } = [];
