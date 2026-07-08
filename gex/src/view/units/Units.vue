@@ -212,8 +212,14 @@
             map.set(unit.definitionName, unit);
         }
 
+        if (map.get(root) == undefined) {
+            throw `Units> missing root unit '${root}'`;
+        }
+
         const queue: string[] = [root];
         const found: Map<string, ApiBarUnit> = new Map();
+
+        found.set(root, map.get(root)!);
 
         let iter: string | undefined = queue.shift();
         while (iter != undefined) {
