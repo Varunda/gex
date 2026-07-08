@@ -4,7 +4,31 @@
             Player encounters
         </h2>
 
-        <a-table :entries="interactions" :show-filters="true" default-sort-field="total" default-sort-order="desc" :paginate="true" :default-page-size="10" :overflow-wrap="true">
+        <div class="btn-group mb-2">
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == null ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = null">
+                All
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 1 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 1">
+                Duel
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 2 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 2">
+                Small team
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 3 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 3">
+                Large team
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 4 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 4">
+                FFA
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 5 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 5">
+                Team FFA
+            </button>
+            <button class="btn btn-outline-light" :class="[ selectedGamemode == 0 ? 'btn-primary' : 'btn-secondary']" @click="selectedGamemode = 0">
+                Other
+            </button>
+        </div>
+
+        <a-table :entries="selected" :show-filters="true" default-sort-field="total" default-sort-order="desc" :paginate="true" :default-page-size="10" :overflow-wrap="true">
             <a-col sort-field="unitName">
                 <a-header>
                     <b>Player</b>
@@ -120,7 +144,8 @@
 
         data: function() {
             return {
-                interactions: Loadable.idle() as Loading<BarUserInteractions[]>
+                interactions: Loadable.idle() as Loading<BarUserInteractions[]>,
+                selectedGamemode: null as number | null
             }
         },
 
@@ -138,6 +163,16 @@
         },
 
         computed: {
+
+            selected: function(): Loading<BarUserInteractions[]> {
+                if (this.interactions.state != "loaded") {
+                    return this.interactions;
+                }
+
+                return Loadable.loaded(this.interactions.data.filter(iter => {
+                    return iter.gamemode == this.selectedGamemode
+                }));
+            }
 
         },
 

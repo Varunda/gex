@@ -3,6 +3,7 @@ import { BasicBarUser } from "./BarUser";
 export class BarUserInteractions {
     public userID: number = 0;
     public targetUserID: number = 0;
+    public gamemode: number = 0;
 
     public total: number = 0;
 
@@ -20,6 +21,7 @@ export class BarUserInteractions {
         return {
             userID: elem.interactions.userID,
             targetUserID: elem.interactions.targetUserID,
+            gamemode: elem.interactions.gamemode,
 
             total: elem.interactions.withCount + elem.interactions.againstCount,
 

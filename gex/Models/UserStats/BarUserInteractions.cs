@@ -13,6 +13,11 @@
         public long TargetUserID { get; set; }
 
         /// <summary>
+        ///     gamemode of the interactions. null for all
+        /// </summary>
+        public byte? Gamemode { get; set; }
+
+        /// <summary>
         ///     how many games <see cref="UserID"/> has played on the same ally team as <see cref="TargetUserID"/>
         /// </summary>
         public int WithCount { get; set; }

@@ -269,7 +269,8 @@ namespace gex.Controllers.Api {
         /// <param name="userID"><see cref="BarUser.UserID"/> of the <see cref="BarUser"/> to get the interactions of</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
-        ///     the response will contain a list of <see cref="ApiBarUserInteractions"/> for the user
+        ///     the response will contain a list of <see cref="ApiBarUserInteractions"/> for the user, broken into gamemodes,
+        ///     with a <c>null</c> <see cref="BarUserInteractions.Gamemode"/> for all gamemodes
         /// </response>
         /// <response code="204">
         ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
@@ -280,6 +281,9 @@ namespace gex.Controllers.Api {
             if (user == null) {
                 return ApiNoContent<List<ApiBarUserInteractions>>();
             }
+
+            List<BarMatch> matches = await _MatchRepository.GetByUserID(userID, cancel);
+            Dictionary<string, BarMatch> matchDict = matches.ToDictionary(iter => iter.ID);
 
             List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByUserID(userID, cancel);
 
@@ -303,9 +307,16 @@ namespace gex.Controllers.Api {
                 allyTeamDict[at.GameID] = gameAts;
             }
 
-            Dictionary<long, BarUserInteractions> ints = [];
+            Dictionary<string, BarUserInteractions> ints = [];
 
             foreach (BarMatchPlayer p in players) {
+
+                BarMatch? match = matchDict.GetValueOrDefault(p.GameID);
+                if (match == null) {
+                    _Logger.LogWarning($"missing match for interactions [gameID={p.GameID}] [userID={userID}]");
+                    continue;
+                }
+
                 List<BarMatchPlayer>? gamePlayers = dict.GetValueOrDefault(p.GameID);
                 if (gamePlayers == null) {
                     _Logger.LogWarning($"missing game players for interactions [gameID={p.GameID}] [userID={userID}]");
@@ -321,9 +332,19 @@ namespace gex.Controllers.Api {
                 foreach (BarMatchPlayer gamePlayer in gamePlayers) {
                     if (gamePlayer.UserID == userID) { continue; }
 
-                    BarUserInteractions inter = ints.GetValueOrDefault(gamePlayer.UserID) ?? new BarUserInteractions() {
+                    string key = $"{match.Gamemode}.{gamePlayer.UserID}";
+                    string allKey = $"-1.{gamePlayer.UserID}";
+
+                    BarUserInteractions inter = ints.GetValueOrDefault(key) ?? new BarUserInteractions() {
+                        Gamemode = match.Gamemode,
                         UserID = userID,
-                        TargetUserID = gamePlayer.UserID
+                        TargetUserID = gamePlayer.UserID,
+                    };
+
+                    BarUserInteractions allInter = ints.GetValueOrDefault(allKey) ?? new BarUserInteractions() {
+                        Gamemode = null,
+                        UserID = userID,
+                        TargetUserID = gamePlayer.UserID,
                     };
 
                     BarMatchAllyTeam? at = gameAllyTeams.FirstOrDefault(iter => iter.AllyTeamID == gamePlayer.AllyTeamID);
@@ -335,22 +356,27 @@ namespace gex.Controllers.Api {
                     
                     if (p.AllyTeamID == gamePlayer.AllyTeamID) {
                         inter.WithCount += 1;
+                        allInter.WithCount += 1;
                         if (at.Won == true) {
                             inter.WithWin += 1;
+                            allInter.WithWin += 1;
                         }
                     } else {
                         inter.AgainstCount += 1;
+                        allInter.AgainstCount += 1;
                         if (at.Won == false) { // the ally team is for the target User ID, so if their team lost, that means the user's ally team won
                             inter.AgainstWin += 1;
+                            allInter.AgainstWin += 1;
                         }
                     }
 
-                    ints[inter.TargetUserID] = inter;
+                    ints[key] = inter;
+                    ints[allKey] = allInter;
                 }
             }
 
             List<ApiBarUserInteractions> apiInters = [];
-            foreach (KeyValuePair<long, BarUserInteractions> inter in ints) {
+            foreach (KeyValuePair<string, BarUserInteractions> inter in ints) {
                 apiInters.Add(new ApiBarUserInteractions() {
                     Interactions = inter.Value,
                     User = await _UserRepository.GetByID(inter.Value.TargetUserID, cancel)
