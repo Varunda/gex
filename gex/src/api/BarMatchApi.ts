@@ -30,8 +30,27 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         offset: number = 0, limit: number = 24,
         orderBy: string, orderByDir: string,
         options: SearchOptions
-    ) {
+    ): Promise<Loading<BarMatch[]>> {
+        const search: URLSearchParams = this.buildSearch(offset, limit, orderBy, orderByDir, options);
 
+        return BarMatchApi.get().readList(`/api/match/search?${search.toString()}`, BarMatch.parse);
+    }
+
+    public static count(
+        offset: number = 0,
+        orderBy: string, orderByDir: string,
+        options: SearchOptions
+    ): Promise<Loading<number>> {
+        const search: URLSearchParams = this.buildSearch(offset, 1001, orderBy, orderByDir, options);
+
+        return BarMatchApi.get().readSingle(`/api/match/count?${search.toString()}`, (iter: any) => { return iter as number; });
+    }
+
+    private static buildSearch(
+        offset: number = 0, limit: number = 24,
+        orderBy: string, orderByDir: string,
+        options: SearchOptions
+    ) : URLSearchParams {
         const search: URLSearchParams = new URLSearchParams();
         search.set("offset", encodeURIComponent(offset));
         search.set("limit", encodeURIComponent(limit));
@@ -117,7 +136,7 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
             search.set("processingAction", options.processingAction ? "true" : "false");
         }
 
-        return BarMatchApi.get().readList(`/api/match/search?${search.toString()}`, BarMatch.parse);
+        return search;
     }
 
     public static recalculatePlayerStartSpots(gameID: string): Promise<Loading<void>> {

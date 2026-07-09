@@ -368,7 +368,22 @@
 
                     <div class="flex-grow-1"></div>
 
-                    <span class="text-center fetch-interval">Matches are fetched every 5 minutes. Only public PvP matches without any bots are included</span>
+                    <span class="text-center fetch-interval">
+                        <span v-if="recentCount.state == 'loaded'">
+                            Found
+                            <span v-if="recentCount.data == 1001">
+                                {{ 1000 | locale(0) }}+
+                            </span>
+
+                            <span v-else>
+                                {{ recentCount.data | locale(0) }}
+                            </span>
+
+                            matches.
+                        </span>
+                        
+                        Matches are fetched every 5 minutes. Only public PvP matches without any bots are included
+                    </span>
 
                     <div class="flex-grow-1"></div>
 
@@ -376,6 +391,7 @@
                         Older
                     </a>
                 </div>
+
             </div>
 
             <div v-else-if="recent.state == 'error'">
@@ -421,6 +437,7 @@
     import { SearchPlayer } from "model/SearchOptions";
 
     import "filters/MomentFilter";
+    import "filters/LocaleFilter";
 
     import Tribute, { TributeItem } from "tributejs";
 
@@ -491,7 +508,8 @@
 
                 offset: 0 as number,
                 limit: 24 as number,
-                recent: Loadable.idle() as Loading<BarMatch[]>
+                recent: Loadable.idle() as Loading<BarMatch[]>,
+                recentCount: Loadable.idle() as Loading<number>
             }
         },
 
@@ -683,6 +701,7 @@
                 this.search.use = true;
 
                 this.recent = Loadable.loading();
+                this.recentCount = Loadable.loading();
 
                 if (this.search.gameID != "") {
                     const reg: RegExpExecArray | null = this.gameIdRegex.exec(this.search.gameID);
@@ -701,6 +720,10 @@
                         }
                     }
                 }
+
+                BarMatchApi.count(this.offset, this.search.orderBy, this.search.orderByDir, this.searchOptions).then((value: Loading<number>) => {
+                    this.recentCount = value;
+                });
 
                 this.recent = await BarMatchApi.search(this.offset, 24, this.search.orderBy, this.search.orderByDir, this.searchOptions);
             },
@@ -843,7 +866,7 @@
                 if (this.search.users.length > 0) {
                     options.users = this.search.users.map(iter => { return { username: iter.username, userID: iter.userID }; });
                 }
-                if (this.search.players.length > 0) {
+                if (this.search.players && this.search.players.length > 0) {
                     options.players = [...this.search.players];
                 }
                 if (this.search.minOS != null && this.search.minOS != "" && this.search.minOS != undefined) {

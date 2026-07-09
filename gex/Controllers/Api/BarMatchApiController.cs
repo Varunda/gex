@@ -439,7 +439,6 @@ namespace gex.Controllers.Api {
                 };
             }).ToList() ?? [];
 
-            //parms.UserIDs = userIDs ?? [];
             parms.Players = players ?? [];
             if (userIDs != null) {
                 foreach (long userID in userIDs) {
@@ -472,6 +471,165 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
+        }
+
+        /// <summary>
+        ///     count (up to 1k) how many matches match a filter
+        /// </summary>
+        /// <param name="engine"></param>
+        /// <param name="gameVersion"></param>
+        /// <param name="map"></param>
+        /// <param name="startTimeAfter"></param>
+        /// <param name="startTimeBefore"></param>
+        /// <param name="durationMinimum"></param>
+        /// <param name="durationMaximum"></param>
+        /// <param name="ranked"></param>
+        /// <param name="gamemode"></param>
+        /// <param name="processingDownloaded"></param>
+        /// <param name="processingParsed"></param>
+        /// <param name="processingReplayed"></param>
+        /// <param name="processingAction"></param>
+        /// <param name="playerCountMinimum"></param>
+        /// <param name="playerCountMaximum"></param>
+        /// <param name="legionEnabled"></param>
+        /// <param name="poolID"></param>
+        /// <param name="gameSettings"></param>
+        /// <param name="userIDs"></param>
+        /// <param name="players"></param>
+        /// <param name="minimumOS"></param>
+        /// <param name="maximumOS"></param>
+        /// <param name="minimumAverageOS"></param>
+        /// <param name="maximumAverageOS"></param>
+        /// <param name="replayedAfter"></param>
+        /// <param name="replayedBefore"></param>
+        /// <param name="offset"></param>
+        /// <param name="orderBy"></param>
+        /// <param name="orderByDir"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        [HttpGet("count")]
+        public async Task<ApiResponse<int>> Count(
+            [FromQuery] string? engine = null,
+            [FromQuery] string? gameVersion = null,
+            [FromQuery] string? map = null,
+            [FromQuery] DateTime? startTimeAfter = null,
+            [FromQuery] DateTime? startTimeBefore = null,
+            [FromQuery] long? durationMinimum = null,
+            [FromQuery] long? durationMaximum = null,
+            [FromQuery] bool? ranked = null,
+            [FromQuery] byte? gamemode = null,
+            [FromQuery] bool? processingDownloaded = null,
+            [FromQuery] bool? processingParsed = null,
+            [FromQuery] bool? processingReplayed = null,
+            [FromQuery] bool? processingAction = null,
+            [FromQuery] int? playerCountMinimum = null,
+            [FromQuery] int? playerCountMaximum = null,
+            [FromQuery] bool? legionEnabled = null,
+            [FromQuery] long? poolID = null,
+            [FromQuery] List<string>? gameSettings = null,
+            [FromQuery] List<long>? userIDs = null,
+            [FromQuery] List<SearchPlayer>? players = null,
+            [FromQuery] double? minimumOS = null,
+            [FromQuery] double? maximumOS = null,
+            [FromQuery] double? minimumAverageOS = null,
+            [FromQuery] double? maximumAverageOS = null,
+            [FromQuery] DateTime? replayedAfter = null,
+            [FromQuery] DateTime? replayedBefore = null,
+
+            [FromQuery] int offset = 0,
+            [FromQuery] string orderBy = "start_time",
+            [FromQuery] string orderByDir = "desc",
+
+            CancellationToken cancel = default
+        ) {
+
+            if (offset < 0) {
+                return ApiBadRequest<int>($"{nameof(offset)} cannot be less than 0 (is {offset})");
+            }
+
+            if (string.IsNullOrEmpty(orderBy.Trim())) {
+                orderBy = "start_time";
+            }
+            OrderBy? order = BarMatchSearchParameters.ParseOrderBy(orderBy);
+            if (order == null) {
+                return ApiBadRequest<int>($"{nameof(orderBy)} can only be 'start_time'|'player_count'|'duration'");
+            }
+
+            if (string.IsNullOrEmpty(orderByDir.Trim())) {
+                orderByDir = "desc";
+            }
+            OrderByDirection? dir = BarMatchSearchParameters.ParseOrderByDirection(orderByDir);
+            if (dir == null) {
+                return ApiBadRequest<int>($"{nameof(orderByDir)} can only be 'asc'|'desc'");
+            }
+
+            if (gameSettings != null) {
+                foreach (string i in gameSettings) {
+                    string[] parts = i.Split(",");
+                    if (parts.Length != 3) {
+                        return ApiBadRequest<int>($"game setting '{i}' expected to have 3 commas, for key,value,operation");
+                    }
+                    if (parts[2] != "eq" && parts[2] != "ne" && parts[2] != "st" && parts[2] != "en" && parts[2] != "in") {
+                        return ApiBadRequest<int>($"3rd part of '{i}' must be 'eq'|'ne'|'st'|'en'|'in', unexpected '{parts[2]}'");
+                    }
+                }
+            }
+
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+
+            BarMatchSearchParameters parms = new();
+            parms.EngineVersion = engine;
+            parms.GameVersion = gameVersion;
+            parms.Map = map;
+            parms.StartTimeAfter = startTimeAfter;
+            parms.StartTimeBefore = startTimeBefore;
+            parms.DurationMinimum = durationMinimum;
+            parms.DurationMaximum = durationMaximum;
+            parms.Ranked = ranked;
+            parms.Gamemode = gamemode;
+            parms.PlayerCountMinimum = playerCountMinimum;
+            parms.PlayerCountMaximum = playerCountMaximum;
+            parms.ProcessingDownloaded = processingDownloaded;
+            parms.ProcessingParsed = processingParsed;
+            parms.ProcessingReplayed = processingReplayed;
+            parms.ProcessingAction = processingAction;
+            parms.LegionEnabled = legionEnabled;
+            parms.PoolID = poolID;
+
+            parms.GameSettings = gameSettings?.Select(iter => {
+                string[] parts = iter.Split(",");
+                if (parts.Length != 3) {
+                    throw new Exception($"validation failed above, expected {iter} to split into 3 parts based on comma");
+                }
+                return new SearchKeyValue() {
+                    Key = parts[0],
+                    Value = parts[1],
+                    Operation = parts[2]
+                };
+            }).ToList() ?? [];
+
+            parms.Players = players ?? [];
+            if (userIDs != null) {
+                foreach (long userID in userIDs) {
+                    parms.Players.Add(new SearchPlayer() {
+                        UserID = userID,
+                    });
+                }
+            }
+
+            parms.MinimumOS = minimumOS;
+            parms.MaximumOS = maximumOS;
+            parms.MinimumAverageOS = minimumAverageOS;
+            parms.MaximumAverageOS = maximumAverageOS;
+            parms.ReplayedAfter = replayedAfter;
+            parms.ReplayedBefore = replayedBefore;
+            parms.OrderBy = order;
+            parms.OrderByDirection = dir;
+
+            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, 1001, currentUser, cancel);
+
+            return ApiOk(matches.Count);
         }
 
         /// <summary>
