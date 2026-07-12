@@ -50,6 +50,11 @@
     -->
     <link rel="stylesheet" href="~/css/tribute-container.css" />
 
+    @if (ViewBag.HideIconAtlas != true)
+    {
+        <link rel="stylesheet" href="/image-proxy/UnitIconAtlas.css" />
+    }
+
     <meta property="og:url" content="https://gex.honu.pw" />
     <meta property="theme-color" content="#BF40BF" data-react-helmet="true" />
     <meta property="og:image" content="/img/logo0.png">

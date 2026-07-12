@@ -270,6 +270,9 @@ namespace gex.Services.BarApi {
             //TimeSpan processingTimeout = force == true ? TimeSpan.FromMilliseconds(match.DurationMs) : TimeSpan.FromMinutes(10);
 
             // if gex thinks the game will take longer to replay than is left in the timeout, it will kill the game early
+            if (force == true) {
+                timeout = TimeSpan.FromMilliseconds(match.DurationMs);
+            }
             int etaFailedCheck = 0;
             DateTime playbackStarted = DateTime.UtcNow;
             DateTime timeEnd = playbackStarted + timeout;

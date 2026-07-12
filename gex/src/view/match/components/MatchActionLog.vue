@@ -425,7 +425,8 @@
                     return this.createText(``);
                 }
 
-                const p = this.createText(`<img src="/image-proxy/UnitIcon?defName=${encodeURIComponent(unitDef.definitionName)}" height="16" title="Unit icon for ${unitDef.name}">`);
+                //const p = this.createText(`<img src="/image-proxy/UnitIcon?defName=${encodeURIComponent(unitDef.definitionName)}" height="16" title="Unit icon for ${unitDef.name}">`);
+                const p = this.createText(`<div class="bui bui-${unitDef.definitionName}" style="--size: 16" title="Unit icon for ${unitDef.name}"></div>`);
                 return p;
             },
 

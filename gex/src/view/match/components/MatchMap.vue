@@ -1413,6 +1413,18 @@
                             .style("stroke", "black")
                             .style("paint-order", "stroke");
 
+                        /*
+                        facGroup.append("image")
+                            .attr("x", this.toImgX(fac.position.x - fac.size.x))
+                            .attr("y", this.toImgZ(fac.position.z - fac.size.z))
+                            .attr("width", fac.size.x).attr("height", fac.size.z)
+                            .style("transform-box", "fill-box").style("transform-origin", "center")
+                            .style("transform", `rotate(${fac.position.rotation / Math.PI * 180}deg)`)
+                            .style("--size", Math.max(fac.size.x, fac.size.z))
+                            .style("--url", `url("/image-proxy/UnitIconAtlas?color=${player.colorInt}")`)
+                            .classed(`bui bui-${fac.factoryDefinitionName}`, true);
+                        */
+
                         facGroup.append("image")
                             .attr("x", this.toImgX(fac.position.x - fac.size.x))
                             .attr("y", this.toImgZ(fac.position.z - fac.size.z))
@@ -1605,6 +1617,15 @@
                     .style("stroke-width", "2px")
                     .style("stroke", "black")
                     .style("paint-order", "stroke");
+                
+                /*
+                facGroup.append("image")
+                    .attr("x", tx).attr("y", tz)
+                    .attr("width", sx).attr("height", sz)
+                    .style("--url", `url("/image-proxy/UnitIconAtlas?color=${playerColor}")`)
+                    .style("--size", sx)
+                    .classed(`bui bui-${defName}`, true);
+                */
 
                 facGroup.append("image")
                     .attr("x", tx).attr("y", tz)

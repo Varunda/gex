@@ -152,6 +152,11 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        public async Task<List<int>> GetUniqueColors(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<int>($"SELECT DISTINCT(color) FROM bar_match_player", cancel);
+        }
+
         public async Task UpdateStartSpotRole(StartSpotSideStartRoleOverride @override, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"

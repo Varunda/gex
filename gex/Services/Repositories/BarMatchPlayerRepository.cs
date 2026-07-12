@@ -18,6 +18,7 @@ namespace gex.Services.Repositories {
         private readonly IMemoryCache _Cache;
 
         private const string CACHE_KEY_ID = "Gex.MatchPlayers.{0}"; // {0} => game ID
+        private const string CACHE_KEY_UNIQUE_COLORS = "Gex.MatchPlayers.UniqueColors"; // game ID cannot contain these characters, no collision
 
         public BarMatchPlayerRepository(ILogger<BarMatchPlayerRepository> logger,
             BarMatchPlayerDb db, IMemoryCache cache) {
@@ -79,6 +80,18 @@ namespace gex.Services.Repositories {
 
         public Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
             return _Db.GetByUserID(userID, cancel);
+        }
+
+        public async Task<HashSet<int>> GetUniqueColors(CancellationToken cancel) {
+            if (_Cache.TryGetValue(CACHE_KEY_UNIQUE_COLORS, out HashSet<int>? colors) == false || colors == null) {
+                colors = new HashSet<int>(await _Db.GetUniqueColors(cancel));
+
+                _Cache.Set(CACHE_KEY_UNIQUE_COLORS, colors, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+                });
+            }
+
+            return colors;
         }
 
         public async Task Insert(BarMatchPlayer player) {

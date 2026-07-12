@@ -35,6 +35,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMapRotationRepository>();
             services.AddSingleton<MatchProcessingWebhookRepository>();
             services.AddSingleton<GameOutputRepository>();
+            services.AddSingleton<BarIconTypeRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();
