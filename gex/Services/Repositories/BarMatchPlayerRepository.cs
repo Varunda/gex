@@ -87,6 +87,11 @@ namespace gex.Services.Repositories {
             if (_Cache.TryGetValue(CACHE_KEY_UNIQUE_COLORS, out HashSet<int>? colors) == false || colors == null) {
                 colors = new HashSet<int>(await _Db.GetUniqueColors(cancel));
                 colors.AddRange(_LutColors);
+                // add the faction colors used in some places
+                colors.Add(0x487edb); // Armada
+                colors.Add(0xb93d32); // Cortex
+                colors.Add(0x93c034); // Legion
+                colors.Add(0xaaaaaa); // Random
 
                 _Cache.Set(CACHE_KEY_UNIQUE_COLORS, colors, new MemoryCacheEntryOptions() {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
