@@ -739,6 +739,18 @@
                 }
             },
 
+            drawMapSymmetry: function(): void {
+                if (this.svg == null) { return console.warn(`cannot draw map sym: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot draw map sym: root is null`); }
+
+                if (this.barMap.state != "loaded") {
+                    return;
+                }
+
+                //this.barMap.data.symmetryAxis
+
+            },
+
             getMapSym: function(): void {
 
                 if (this.barMap.state != "loaded") {

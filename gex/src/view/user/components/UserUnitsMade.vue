@@ -84,6 +84,18 @@
                     debug
                 </toggle-button>
             </div>
+
+            <div>
+                <label class="d-block">Show units unmade</label>
+
+                <toggle-button v-model="showUnmadeUnits">
+                    Unmade units
+                </toggle-button>
+
+                <toggle-button v-model="showUnmadeExtraUnits">
+                    Include extra units
+                </toggle-button>
+            </div>
         </div>
 
         <a-table v-if="showTable == true" :entries="unitsMade" :show-filters="true" default-sort-field="count" default-sort-order="desc" :paginate="true" :default-page-size="10" :overflow-wrap="true">
@@ -130,6 +142,15 @@
             </a-col>
         </a-table>
 
+        <div v-if="showUnmadeUnits == true">
+            <h4>Units that have not been made</h4>
+
+            <div v-for="unit in missingUnits" :key="unit.definitionName" class="d-inline-block btn btn-outline-light p-2 m-2">
+                <unit-icon :name="unit.definitionName" :size="24"></unit-icon>
+                {{ unit.displayName }} ({{ unit.definitionName }})
+            </div>
+        </div>
+
         <div class="mb-2">
             Last updated: {{ lastUpdated | moment }}. Show stats from {{ full.state != "idle" ? filtered.size : "all" }} matches
         </div>
@@ -142,10 +163,12 @@
 
     import { BarUser } from "model/BarUser";
     import { BarMatch } from "model/BarMatch";
-    import { BarUserUnitsMade } from "model/BarUserUnitsMade";
     import { GameUnitsCreated } from "model/GameUnitsCreated";
+    import { BarUnitName } from "model/BarUnitName";
+    import { ApiBarUnit } from "model/BarUnit";
 
     import { BarUserApi } from "api/BarUserApi";
+    import { BarUnitApi } from "api/BarUnitApi";
 
     import UnitIcon from "components/app/UnitIcon.vue";
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
@@ -155,12 +178,82 @@
     import "filters/MomentFilter";
 
     import ColorUtils from "util/Color";
+import { FactionUtil } from "util/Faction";
 
     type UnitsMade = {
         definitionName: string;
         unitName: string;
         map: string;
         count: number;
+    }
+
+    class UnitCategory {
+        public name: string = "";
+        public order: number = 0;
+        public units: ApiBarUnit[] = [];
+
+        public constructor(name: string, order: number) {
+            this.name = name;
+            this.order = order;
+        }
+    }
+
+    type CategoryType = "commander" | "factory" | "con" | "eco" | "bot" | "vehicle" | "air" | "sea" | "hover" | "defense" | "unknown";
+
+    class GroupedUnits {
+        public faction: string = "";
+        public factionID: number = 0;
+        public categoryMap: Map<string, ApiBarUnit[]> = new Map();
+        public categories: UnitCategory[] = [];
+        public units: ApiBarUnit[] = [];
+
+        public constructor(name: string, factionID: number) {
+            this.factionID = factionID;
+            this.faction = name;
+        }
+    }
+
+    // get all units that can be built from another unit, and any children of that unit (recursively)
+    // this is used to only show the units that with the default settings can be built
+    const generateBuildTree:(root: string, units: ApiBarUnit[]) => ApiBarUnit[] = (root, units) => {
+        const map: Map<string, ApiBarUnit> = new Map();
+        for (const unit of units) {
+            map.set(unit.definitionName, unit);
+        }
+
+        if (map.get(root) == undefined) {
+            throw `Units> missing root unit '${root}'`;
+        }
+
+        const queue: string[] = [root];
+        const found: Map<string, ApiBarUnit> = new Map();
+
+        found.set(root, map.get(root)!);
+
+        let iter: string | undefined = queue.shift();
+        while (iter != undefined) {
+            const unit: ApiBarUnit | undefined = map.get(iter);
+            if (unit == undefined) {
+                throw `Units> missing unit ${iter} from map`;
+            }
+
+            for (const opt of unit.unit.buildOptions) {
+                const optDef: ApiBarUnit | undefined = map.get(opt);
+                if (optDef == undefined) {
+                    console.warn(`Units> missing unit from build option [unit=${iter}] [opt=${opt}]`);
+                    continue;
+                }
+
+                if (found.has(opt) == false) {
+                    found.set(opt, optDef);
+                    queue.push(opt);
+                }
+            }
+
+            iter = queue.shift();
+        }
+
+        return Array.from(found.values());
     }
 
     export const UserUnitsMade = Vue.extend({
@@ -175,6 +268,8 @@
                 agg: Loadable.idle() as Loading<BarUser>,
 
                 range: "all_time" as "daily" | "weekly" | "monthly" | "all_time",
+
+                allUnits: Loadable.idle() as Loading<ApiBarUnit[]>,
 
                 filter: {
                     map: null as string | null,
@@ -192,6 +287,8 @@
 
                 showDebug: false as boolean,
                 showTable: true as boolean,
+                showUnmadeUnits: false as boolean,
+                showUnmadeExtraUnits: false as boolean,
             }
         },
 
@@ -199,6 +296,8 @@
             BarUserApi.getUnitsMadeByUserID(this.user.userID).then((value: Loading<BarUser>) => {
                 this.agg = value;
             });
+
+            this.loadAllUnits();
         },
 
         methods: {
@@ -255,10 +354,52 @@
                 }
 
                 this.filtered = map;
+            },
+
+            loadAllUnits: async function(): Promise<void> {
+                this.allUnits = Loadable.loading();
+                this.allUnits = await BarUnitApi.getAllDefinitions();
             }
+
         },
 
         computed: {
+
+            missingUnits: function(): ApiBarUnit[] {
+                if (this.allUnits.state != "loaded") {
+                    return [];
+                }
+
+                if (this.agg.state != "loaded") {
+                    return [];
+                }
+
+                const map: Map<string, ApiBarUnit> = new Map();
+
+                const includedUnits: ApiBarUnit[] = [];
+
+                if (this.showUnmadeExtraUnits == false) {
+                    includedUnits.push(...generateBuildTree("armcom", this.allUnits.data));
+                    includedUnits.push(...generateBuildTree("corcom", this.allUnits.data));
+                    includedUnits.push(...generateBuildTree("legcom", this.allUnits.data));
+                } else {
+                    includedUnits.push(...this.allUnits.data);
+                }
+
+                for (const unit of includedUnits) {
+                    map.set(unit.definitionName, unit);
+                }
+
+                for (const made of this.agg.data.unitsMade) {
+                    map.delete(made.definitionName);
+                }
+
+                const arr = Array.from(map.values()).sort((a, b) => {
+                    return a.displayName.localeCompare(b.displayName);
+                });
+
+                return arr;
+            },
 
             filterChanged: function(): boolean {
                 return this.filter.map != this.filter.oldMap || this.filter.gamemode != this.filter.oldGamemode;
