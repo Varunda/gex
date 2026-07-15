@@ -21,6 +21,8 @@ namespace gex.Services.Repositories {
         private const string CACHE_KEY_ID = "Gex.MatchPlayers.{0}"; // {0} => game ID
         private const string CACHE_KEY_UNIQUE_COLORS = "Gex.MatchPlayers.UniqueColors"; // game ID cannot contain these characters, no collision
 
+        private static readonly SemaphoreSlim _Lock = new(1, 1);
+
         public BarMatchPlayerRepository(ILogger<BarMatchPlayerRepository> logger,
             BarMatchPlayerDb db, IMemoryCache cache) {
 
@@ -84,7 +86,11 @@ namespace gex.Services.Repositories {
         }
 
         public async Task<HashSet<int>> GetUniqueColors(CancellationToken cancel) {
+            _Lock.Wait(cancel);
+
             if (_Cache.TryGetValue(CACHE_KEY_UNIQUE_COLORS, out HashSet<int>? colors) == false || colors == null) {
+                _Logger.LogDebug($"loading unique colors from DB");
+
                 colors = new HashSet<int>(await _Db.GetUniqueColors(cancel));
                 colors.AddRange(_LutColors);
                 // add the faction colors used in some places
@@ -97,6 +103,8 @@ namespace gex.Services.Repositories {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
                 });
             }
+
+            _Lock.Release();
 
             return colors;
         }

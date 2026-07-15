@@ -66,6 +66,16 @@
                     Com heatmap
                 </toggle-button>
 
+                <toggle-button v-model="map.buildingHeatmap" :disabled="!hasEvents">
+                    Building heatmap
+                </toggle-button>
+
+                <toggle-button v-model="map.showUnitPosition" :disabled="!hasEvents">
+                    Unit type pos
+                </toggle-button>
+            </div>
+
+            <div :class="{ 'd-none': !hasEvents, 'd-md-block': !hasEvents }" class="d-flex justify-content-lg-center flex-wrap" style="gap: 0.25rem;">
                 <toggle-button v-model="map.factories" :disabled="!hasEvents">
                     Factories
                 </toggle-button>
@@ -78,12 +88,8 @@
                     Static defense
                 </toggle-button>
 
-                <toggle-button v-model="map.buildingHeatmap" :disabled="!hasEvents">
-                    Building heatmap
-                </toggle-button>
-
-                <toggle-button v-model="map.showUnitPosition" :disabled="!hasEvents">
-                    Unit type pos
+                <toggle-button v-model="map.antiNuke" :disabled="!hasEvents">
+                    Anti-Nuke
                 </toggle-button>
             </div>
         </div>
@@ -370,6 +376,7 @@
                     radars: true as boolean,
                     staticDefense: true as boolean,
                     factories: true as boolean,
+                    antiNuke: true as boolean,
                     showUnitPosition: false as boolean,
                     mapStartSpots: false as boolean,
 
@@ -573,6 +580,7 @@
                 this.addPlayerStartingPositions();
                 this.addRadars();
                 this.addStaticDefense();
+                this.addAntiNuke();
 
                 /*
                 this.root.append("rect")
@@ -618,6 +626,7 @@
                 this.map.radars = false;
                 this.map.staticDefense = false;
                 this.map.factories = false;
+                this.map.antiNuke = false;
 
                 this.playback.playing = true;
                 this.playback.intervalId = setInterval(() => {
@@ -796,6 +805,7 @@
                 this.map.radars = false;
                 this.map.staticDefense = false;
                 this.map.factories = false;
+                this.map.antiNuke = false;
 
                 // if no unit defs are ticked to display, show them all by default
                 const toggledUnitDefs: UnitDefToggle[] = this.playback.selectedUnitDefs.filter(iter => iter.ticked == true);
@@ -1471,6 +1481,40 @@
             },
 
             /**
+             * add anti nuke and their ranges
+             */
+            addAntiNuke: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add antinuke: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add antinuke: root is null`); }
+
+                const defNames: string[] = [ "corfmd", "armfmd" ];
+
+                for (const ev of this.output.unitsCreated) {
+                    const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(ev.definitionID);
+                    if (unitDef == undefined) {
+                        console.warn(`MatchMap> missing unit definition [defID=${ev.definitionID}]`);
+                        continue;
+                    }
+
+                    if (unitDef.unitGroup != "antinuke" || unitDef.speed != 0) {
+                        continue;
+                    }
+
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == ev.teamID);
+                    if (player == undefined) {
+                        console.warn(`MatchMap> missing player ${ev.teamID} from unit created ${ev.unitID}`);
+                        continue;
+                    }
+
+                    const x: number = this.toImgX(ev.unitX - unitDef.sizeX * 2);
+                    const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
+
+                    const g = this.createHoverRange(`anti-nuke-${ev.unitID}`, ev.unitID, "map-anti-nuke", "#FFFF0022", ev.unitX - unitDef.sizeX / 2, ev.unitZ - unitDef.sizeZ / 2,
+                        2000, unitDef.sizeX, unitDef.sizeZ, player.hexColor, player.color, unitDef.definitionName, { });
+                }
+            },
+
+            /**
              * add static defense markers, along with range indicators and how many units killed
              */
             addStaticDefense: function(): void {
@@ -1784,7 +1828,6 @@
                         .style("pointer-events", "auto");
                 }
             },
-            // .classed("map-unit-death-heatmap")
 
             "map.deathHeatmap": function(): void {
                 if (this.map.deathHeatmap == false) {
@@ -1841,6 +1884,18 @@
                         .style("pointer-events", "none");
                 } else {
                     this.root?.selectAll("#match-map-start-position-data")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.antiNuke": function(): void {
+                if (this.map.antiNuke == false) {
+                    this.root?.selectAll(".map-anti-nuke")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-anti-nuke")
                         .style("opacity", "1")
                         .style("pointer-events", "auto");
                 }

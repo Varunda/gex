@@ -243,12 +243,6 @@
                 <div v-if="output.state == 'loaded'">
                     <match-map :match="match.data" :output="output.data" :screen-width="containerWidth" class="my-3"></match-map>
 
-                    <match-apm v-if="showApm" :match="match.data" :output="output.data" class="my-3"></match-apm>
-
-                    <div v-else-if="match.data.processing && match.data.processing.actionsParsed != null" class="text-muted border-top mt-3 pt-3">
-                        APM is not available, as this replay was simulated without collecting this data
-                    </div>
-
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
                         <div class="my-4">
@@ -260,10 +254,6 @@
                             <match-unit-graph :match="match.data" :output="output.data" class="my-4"></match-unit-graph>
                         </div>
                         -->
-
-                        <hr class="border">
-
-                        <match-opener :match="match.data" :output="output.data" :openers="computedData.opener" class="my-4"></match-opener>
 
                         <hr class="border">
 
@@ -331,6 +321,16 @@
                         <match-eco-stats :match="match.data" :output="output.data" :unit-stats="computedData.unitStats"
                             :unit-resources="computedData.unitResources" :merged="computedData.merged" :selected-entity="selectedEntityId" class="my-4">
                         </match-eco-stats>
+
+                        <hr class="border">
+
+                        <match-opener :match="match.data" :output="output.data" :openers="computedData.opener" class="my-4"></match-opener>
+
+                        <match-apm v-if="showApm" :match="match.data" :output="output.data" class="my-3"></match-apm>
+
+                        <div v-else-if="match.data.processing && match.data.processing.actionsParsed != null" class="text-muted border-top mt-3 pt-3">
+                            APM is not available, as this replay was simulated without collecting this data
+                        </div>
                     </div>
 
                     <match-chat :match="match.data" :show-mobile="showMobile" class="mb-5"></match-chat>
