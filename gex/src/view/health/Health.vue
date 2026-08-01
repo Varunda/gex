@@ -21,7 +21,7 @@
                         <thead>
                             <tr class="table-secondary">
                                 <th>service</th>
-                                <th>enabled</th>
+                                <th colspan="2">enabled</th>
                                 <th>last ran</th>
                                 <th>duration</th>
                                 <th>message</th>
@@ -29,17 +29,19 @@
                         </thead>
 
                         <tbody>
-                            <tr v-for="service in health.data.services" :key="service.name">
-                                <td>{{service.name}}</td>
-                                <td>
+                            <tr v-for="service in sortedServices" :key="service.name">
+                                <td>{{ service.name }}</td>
+                                <td :colspan="canManageServices == true ? 1 : 2">
                                     <span :class="service.enabled == true ? 'text-success' : 'text-warning'">
-                                        {{service.enabled}}
+                                        {{ service.enabled }}
                                     </span>
+                                </td>
+                                <td v-if="canManageServices == true">
                                     <span v-if="canManageServices" class="ms-3">
-                                        <button v-if="!service.enabled" class="btn btn-sm btn-success" @click="enableService(service.name)">
+                                        <button v-if="!service.enabled" class="btn btn-sm py-0 btn-success" @click="enableService(service.name)">
                                             Enable
                                         </button>
-                                        <button v-else-if="service.enabled" class="btn btn-sm btn-warning" @click="disableService(service.name)">
+                                        <button v-else-if="service.enabled" class="btn btn-sm py-0 btn-warning" @click="disableService(service.name)">
                                             Disable
                                         </button>
                                     </span>
@@ -203,7 +205,7 @@
     import Vue from "vue";
     import { Loadable, Loading } from "Loading";
 
-    import { AppHealth, AppHealthApi } from "api/AppHealthApi";
+    import { AppHealth, AppHealthApi, AppService } from "api/AppHealthApi";
 
     import "filters/MomentFilter";
     import "filters/TimeAgoFilter";
@@ -309,6 +311,21 @@ import { QueueApi } from "api/QueueApi";
 
             canManageServices: function(): boolean {
                 return AccountUtil.hasPermission("App.Account.Admin");
+            },
+
+            sortedServices: function(): AppService[] {
+                if (this.health.state != "loaded") {
+                    return [];
+                }
+
+                return [...this.health.data.services].sort((a, b) => {
+                    if (a.enabled == b.enabled) {
+                        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                    }
+
+                    // show enabled services on top
+                    return (b.enabled ? 1 : 0) - (a.enabled ? 1 : 0);
+                });
             }
 
         },
