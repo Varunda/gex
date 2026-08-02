@@ -42,6 +42,8 @@ namespace gex.Models.Event {
 
         public const string EXTRA_STATS = "extra_stat_update";
 
+        public const string UNIT_FINISHED = "unit_finished";
+
         public const string FACTORY_UNIT_CREATE = "factory_unit_created";
 
         public const string COMMANDER_POSITION_UPDATE = "commander_position_update";

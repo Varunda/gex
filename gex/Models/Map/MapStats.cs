@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using gex.Models.Map;
+using System.Collections.Generic;
 
 namespace gex.Models.MapStats {
 
@@ -17,6 +18,8 @@ namespace gex.Models.MapStats {
         public List<MapDailyPlays> DailyPlays { get; set; } = [];
 
         public List<MapStatsDailyUnitsMade> UnitsMade { get; set; } = [];
+
+        public List<MapPositionLeaderboardEntry> PositionLeaderboard { get; set; } = [];
 
     }
 }

@@ -47,5 +47,9 @@ namespace gex.Models.Event {
         [ColumnMapping("rotation")]
         public double Rotation { get; set; }
 
+        // this value doesn't come from the unit created event, it's populated from the unit_finished event
+        [ColumnMapping("completed")]
+        public long Completed { get; set; }
+
     }
 }

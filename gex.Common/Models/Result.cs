@@ -11,9 +11,16 @@ namespace gex.Common.Models {
         public Exception? Exception { get; private set; }
 
         private Result(T? value, E? err, bool success) {
+
             if (success == true && value == null) {
-                throw new NullReferenceException();
+                // if |T| allows nullable stuff, only throw if null and nullable isn't allowed
+                if (typeof(T) != typeof(string)
+                    || typeof(T).CustomAttributes.Any(iter => iter.AttributeType.Name == "NullableAttribute") == false) {
+
+                    throw new NullReferenceException();
+                }
             }
+
             if (success == false && err == null) {
                 throw new NullReferenceException();
             }

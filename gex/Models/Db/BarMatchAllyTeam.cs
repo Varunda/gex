@@ -12,5 +12,7 @@
 
         public Rectangle StartBox { get; set; } = Rectangle.Zero;
 
+        public double AverageSkill { get; set; }
+
     }
 }

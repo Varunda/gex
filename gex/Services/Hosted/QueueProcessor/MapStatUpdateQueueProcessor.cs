@@ -1,4 +1,5 @@
-﻿using gex.Models.Queues;
+﻿using gex.Models.Map;
+using gex.Models.Queues;
 using gex.Services.Db.Map;
 using gex.Services.Queues;
 using gex.Services.Repositories;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +18,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly MapStatsDb _MapStatsDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly MapStatsByFactionDb _FactionStatsDb;
-        private readonly MapStatsOpeningLabDb _OpeningLabDb;
+        private readonly MapStatsPositionLeaderboardDb _PositionLeaderboardDb;
+        private readonly StartSpotDataRepository _StartSpotDataRepository;
 
         /// <summary>
         ///		timeout for map updates, don't allow maps to update quicker than once every 5 minutes
@@ -28,13 +31,15 @@ namespace gex.Services.Hosted.QueueProcessor {
         public MapStatUpdateQueueProcessor(ILoggerFactory factory,
             BaseQueue<MapStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             MapStatsDb mapStatsDb, MapStatsStartSpotRepository startSpotRepo,
-            MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb)
+            MapStatsByFactionDb factionStatsDb, MapStatsPositionLeaderboardDb positionLeaderboardDb,
+            StartSpotDataRepository startSpotDataRepository)
         : base("map_stat_update_queue", factory, queue, serviceHealthMonitor) {
 
             _MapStatsDb = mapStatsDb;
             _StartSpotRepository = startSpotRepo;
             _FactionStatsDb = factionStatsDb;
-            _OpeningLabDb = openingLabDb;
+            _PositionLeaderboardDb = positionLeaderboardDb;
+            _StartSpotDataRepository = startSpotDataRepository;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(MapStatUpdateQueueEntry entry, CancellationToken cancel) {
@@ -49,6 +54,8 @@ namespace gex.Services.Hosted.QueueProcessor {
 
             _Logger.LogDebug($"updating map stats [mapFilename={entry.MapFilename}]");
 
+            // updating the units made and opening lab stats is done in MapStatsNeedsUpdatePeriodicService
+
             Stopwatch overAllTimer = Stopwatch.StartNew();
             Stopwatch timer = Stopwatch.StartNew();
             await _MapStatsDb.Generate(entry.MapFilename, cancel);
@@ -60,11 +67,30 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _FactionStatsDb.Generate(entry.MapFilename, cancel);
             long factionMs = timer.ElapsedMilliseconds; timer.Restart();
 
-            //await _OpeningLabDb.Generate(entry.MapFilename, cancel);
-            long openingLabMs = timer.ElapsedMilliseconds; timer.Restart();
+            StartSpotData? startData = await _StartSpotDataRepository.GetLatestByMapFilename(entry.MapFilename, cancel);
+            if (startData != null && startData.GetByTeamCount(2) != null) {
+                HashSet<string> positionLabels = [];
+
+                StartSpotConfiguration config = startData.GetByTeamCount(2)!;
+
+                foreach (StartSpotSide side in config.Sides) {
+                    foreach (StartSpotSideStart start in side.Starts) {
+                        positionLabels.Add(start.Role);
+                    }
+                }
+
+                foreach (string position in positionLabels) {
+                    Stopwatch posTimer = Stopwatch.StartNew();
+                    await _PositionLeaderboardDb.Generate(entry.MapFilename, position, cancel);
+                    _Logger.LogDebug($"generated position leaderboard data [map={entry.MapFilename}] [position={position}] "
+                        + $"[timer={posTimer.ElapsedMilliseconds}ms]");
+                }
+            }
+            long posLbMs = timer.ElapsedMilliseconds; timer.Restart();
 
             _Logger.LogInformation($"updated map stats [mapFilename={entry.MapFilename}] [timer={overAllTimer.ElapsedMilliseconds}ms] "
-                + $"[stats={statsMs}ms] [start spots={startMs}ms] [faction={factionMs}ms] [opening lab={openingLabMs}ms]");
+                + $"[stats={statsMs}ms] [start spots={startMs}ms] [faction={factionMs}ms] "
+                + $"[pos leaderboard={(startData == null ? "(skipped)" : $"{posLbMs}ms")}]");
 
             _LastUpdated[entry.MapFilename] = DateTime.UtcNow;
 

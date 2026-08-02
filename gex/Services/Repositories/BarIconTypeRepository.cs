@@ -26,6 +26,8 @@ namespace gex.Services.Repositories {
         private readonly IMemoryCache _Cache;
         private const string CACHE_KEY = "Gex.IconType.All";
 
+        private static Task<Result<Dictionary<string, string>, string>>? _PendingGetAll = null;
+
         public BarIconTypeRepository(ILogger<BarIconTypeRepository> logger,
             IMemoryCache cache, BarIconTypeParser parser) {
 
@@ -39,10 +41,28 @@ namespace gex.Services.Repositories {
                 return result;
             }
 
+            if (_PendingGetAll != null) {
+                _Logger.LogTrace($"bar icon GetAll is pending, returning the pending task instead");
+                return await _PendingGetAll;
+            }
+
+            _PendingGetAll = _GetAllWrapper(cancel);
+            Result<Dictionary<string, string>, string> ret = await _PendingGetAll;
+            _PendingGetAll = null;
+
+            return ret;
+        }
+
+        /// <summary>
+        ///     wrapper method that where the Task is stored when calling <see cref="GetAll(CancellationToken)"/>
+        /// </summary>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        private async Task<Result<Dictionary<string, string>, string>> _GetAllWrapper(CancellationToken cancel) {
             string url = "https://raw.githubusercontent.com/beyond-all-reason/Beyond-All-Reason/refs/heads/master/gamedata/icontypes.lua";
 
             HttpResponseMessage response = await _Http.GetAsync(url);
-            string body = await response.Content.ReadAsStringAsync();
+            string body = await response.Content.ReadAsStringAsync(cancel);
 
             if (response.StatusCode != HttpStatusCode.OK) {
                 _Logger.LogError($"failed to load icontypes [statusCode={response.StatusCode}] [response={body.Take(200)}]");

@@ -1,10 +1,14 @@
 ﻿using gex.Models;
 using gex.Models.Bar;
+using gex.Models.Map;
 using gex.Models.MapStats;
+using gex.Models.UserStats;
 using gex.Services.Db.Map;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,12 +27,15 @@ namespace gex.Controllers.Api {
         private readonly MapDailyPlaysDb _DailyPlaysDb;
         private readonly MapStatsDailyOpeningLabDb _DailyOpeningLabDb;
         private readonly MapStatsDailyUnitsMadeDb _DailyUnitsMadeDb;
+        private readonly MapStatsPositionLeaderboardDb _PositionLeaderboardDb;
+        private readonly BarUserRepository _UserRepository;
 
         public MapStatsApiController(ILogger<MapStatsApiController> logger,
             MapStatsDb mapStatsDb, BarMapRepository mapRepository,
             MapStatsByFactionDb factionStatsDb, MapStatsOpeningLabDb openingLabDb,
             MapStatsStartSpotRepository startSpotRepository, MapDailyPlaysDb dailyPlaysDb,
-            MapStatsDailyOpeningLabDb dailyOpeningLabDb, MapStatsDailyUnitsMadeDb dailyUnitsMadeDb) {
+            MapStatsDailyOpeningLabDb dailyOpeningLabDb, MapStatsDailyUnitsMadeDb dailyUnitsMadeDb,
+            MapStatsPositionLeaderboardDb positionLeaderboardDb, BarUserRepository userRepository) {
 
             _Logger = logger;
             _MapStatsDb = mapStatsDb;
@@ -39,6 +46,8 @@ namespace gex.Controllers.Api {
             _DailyPlaysDb = dailyPlaysDb;
             _DailyOpeningLabDb = dailyOpeningLabDb;
             _DailyUnitsMadeDb = dailyUnitsMadeDb;
+            _PositionLeaderboardDb = positionLeaderboardDb;
+            _UserRepository = userRepository;
         }
 
         /// <summary>
@@ -51,6 +60,7 @@ namespace gex.Controllers.Api {
         /// <param name="includeOpeningLabs">will lab opener stats be included? defaults to false</param>
         /// <param name="includeDailyPlays">will daily plays be included? defaults to false</param>
         /// <param name="includeUnitsMade">will <see cref="MapStats.UnitsMade"/> be populated? defaults to false</param>
+        /// <param name="includePositionLeaderboard">will <see cref="MapStats.PositionLeaderboard"/> be populated? defaults to false</param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///		the response will contain a <see cref="MapStats"/>, where each stat is populated
@@ -68,6 +78,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeOpeningLabs = false,
             [FromQuery] bool includeDailyPlays = false,
             [FromQuery] bool includeUnitsMade = false,
+            [FromQuery] bool includePositionLeaderboard = false,
             CancellationToken cancel = default
         ) {
 
@@ -101,6 +112,17 @@ namespace gex.Controllers.Api {
 
             if (includeUnitsMade == true) {
                 stats.UnitsMade = await _DailyUnitsMadeDb.GetByMap(mapFilename, cancel);
+            }
+
+            if (includePositionLeaderboard == true) {
+                stats.PositionLeaderboard = await _PositionLeaderboardDb.GetByMapFilename(mapFilename, cancel);
+
+                Dictionary<long, BarUser> users = (await _UserRepository.GetByIDs(stats.PositionLeaderboard.Select(iter => iter.UserID).Distinct(), cancel))
+                    .ToDictionary(iter => iter.UserID);
+
+                foreach (MapPositionLeaderboardEntry entry in stats.PositionLeaderboard) {
+                    entry.User = users.GetValueOrDefault(entry.UserID);
+                }
             }
 
             return ApiOk(stats);

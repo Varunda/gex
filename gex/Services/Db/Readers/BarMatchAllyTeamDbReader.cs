@@ -17,6 +17,7 @@ namespace gex.Services.Db.Readers {
             allyTeam.StartBox.Bottom = reader.GetFloat("start_box_bottom");
             allyTeam.StartBox.Left = reader.GetFloat("start_box_left");
             allyTeam.StartBox.Right = reader.GetFloat("start_box_right");
+            allyTeam.AverageSkill = reader.GetFloat("average_skill");
 
             return allyTeam;
         }

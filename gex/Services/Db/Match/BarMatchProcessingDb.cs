@@ -148,7 +148,8 @@ namespace gex.Services.Db.Match {
                         mp.game_id, 
                         mp.demofile_fetched, mp.demofile_parsed, mp.headless_ran, mp.actions_parsed,
                         mp.fetch_ms, mp.parse_ms, mp.replay_ms, mp.action_ms,
-                        GREATEST(1, priority - COALESCE(c.mod, 0::bigint)) ""priority""
+                        GREATEST(1, priority - COALESCE(c.mod, 0::bigint)) ""priority"",
+                        mp.features
                     FROM 
                         bar_match_processing mp
                         INNER JOIN bar_match m ON m.id = mp.game_id
@@ -190,7 +191,8 @@ namespace gex.Services.Db.Match {
                     mp.game_id, 
                     mp.demofile_fetched, mp.demofile_parsed, mp.headless_ran, mp.actions_parsed,
                     mp.fetch_ms, mp.parse_ms, mp.replay_ms, mp.action_ms,
-                    priority - COALESCE(c.mod, 0::bigint) ""priority""
+                    priority - COALESCE(c.mod, 0::bigint) ""priority"",
+                    mp.features
                 FROM 
                     bar_match_processing mp
                     INNER JOIN bar_match m ON m.id = mp.game_id

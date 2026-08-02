@@ -517,6 +517,8 @@
                 let t3made: boolean = false;
                 let firstAfus: boolean = false;
                 let vehicleSwap: boolean = !(this.match.players.length == 2 && this.match.allyTeams.length == 2); // only interesting for duels
+                let geoMade: boolean = false;
+                let ageoMade: boolean = false;
 
                 let botStart: boolean = false;
 
@@ -550,7 +552,7 @@
                             interest.push({
                                 frame: ev.frame,
                                 action: "Bot -> Vehicle swap",
-                                interest: 10
+                                interest: 8
                             });
                             vehicleSwap = true;
                         }
@@ -572,7 +574,7 @@
                             interest.push({
                                 frame: ev.frame,
                                 action: "T2 made",
-                                interest: 2
+                                interest: 10
                             });
                             t2made = true;
                         }
@@ -597,6 +599,28 @@
                                 interest: 5
                             });
                             firstAfus = true;
+                        }
+                    }
+
+                    if (geoMade == false) {
+                        if (def.name.indexOf("Geothermal") > -1 && def.unitGroup == "energy" && def.energyProduction < 800) {
+                            interest.push({
+                                frame: ev.frame,
+                                action: "Geo built",
+                                interest: 3
+                            });
+                            geoMade = true;
+                        }
+                    }
+
+                    if (ageoMade == false) {
+                        if (def.name.indexOf("Geothermal") > -1 && def.unitGroup == "energy" && def.energyProduction > 800) {
+                            interest.push({
+                                frame: ev.frame,
+                                action: "Adv. Geo built",
+                                interest: 4
+                            });
+                            ageoMade = true;
                         }
                     }
                 }

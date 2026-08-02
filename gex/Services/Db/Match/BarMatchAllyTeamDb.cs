@@ -33,10 +33,10 @@ namespace gex.Services.Db.Match {
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_ally_team (
                     game_id, ally_team_id, player_count, won,
-                    start_box_top, start_box_bottom, start_box_left, start_box_right
+                    start_box_top, start_box_bottom, start_box_left, start_box_right, average_skill
                 ) VALUES (
                     @GameID, @AllyTeamID, @PlayerCount, @Won,
-                    @StartBoxTop, @StartBoxBottom, @StartBoxLeft, @StartBoxRight
+                    @StartBoxTop, @StartBoxBottom, @StartBoxLeft, @StartBoxRight, @AverageSkill
                 );
             ");
 
@@ -48,6 +48,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("StartBoxBottom", allyTeam.StartBox.Bottom);
             cmd.AddParameter("StartBoxLeft", allyTeam.StartBox.Left);
             cmd.AddParameter("StartBoxRight", allyTeam.StartBox.Right);
+            cmd.AddParameter("AverageSkill", allyTeam.AverageSkill);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();

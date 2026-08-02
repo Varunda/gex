@@ -167,6 +167,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             await _UnitResourcesDb.InsertMany(game.Value.UnitResources, cancel);
             await _WindUpdateDb.InsertMany(game.Value.WindUpdates, cancel);
 
+            // get the unit def hash for this game
             if (game.Value.UnitDefinitions.Count > 0) {
                 string unitDefHash = game.Value.UnitDefinitions[0].Hash;
                 _Logger.LogDebug($"checking if unit def hash exists [gameID={entry.GameID}] [hash={unitDefHash}]");

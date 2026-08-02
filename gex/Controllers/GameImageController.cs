@@ -145,7 +145,7 @@ namespace gex.Controllers {
                 byte[] data = [];
                 if (System.IO.File.Exists(uncoloredPath)) {
                     _Logger.LogDebug($"have an uncolored icon, can use that one instead of fetching [defName={defName}] [color={color}]");
-                    data = await System.IO.File.ReadAllBytesAsync(uncoloredPath);
+                    data = await System.IO.File.ReadAllBytesAsync(uncoloredPath, cancel);
                 } else {
                     string overridePath = Path.Join(Environment.CurrentDirectory, "wwwroot", "img", "unit_icon_override");
                     string overrideIcon = Path.Join(overridePath, $"{defName}.png");
@@ -154,7 +154,7 @@ namespace gex.Controllers {
 
                     if (System.IO.File.Exists(overrideIcon) == true) {
                         _Logger.LogTrace($"unit icon for definition has override [defName={defName}] [path={overridePath}]");
-                        data = await System.IO.File.ReadAllBytesAsync(overrideIcon);
+                        data = await System.IO.File.ReadAllBytesAsync(overrideIcon, cancel);
                     } else {
 
                         // no override, get from icon type repo (GitHub)
@@ -174,7 +174,7 @@ namespace gex.Controllers {
                                 return StatusCode((int)iconRes.StatusCode);
                             }
 
-                            data = await iconRes.Content.ReadAsByteArrayAsync();
+                            data = await iconRes.Content.ReadAsByteArrayAsync(CancellationToken.None);
                         } else {
                             _Logger.LogWarning($"failed to find iconName from icontypes.lua [defName={defName}]");
                             return StatusCode(404);
@@ -188,7 +188,7 @@ namespace gex.Controllers {
                 }
 
                 _Logger.LogTrace($"saving icon [defName={defName}] [color={color}] [path={iconPath}]");
-                await System.IO.File.WriteAllBytesAsync(iconPath, data);
+                await System.IO.File.WriteAllBytesAsync(iconPath, data, CancellationToken.None);
             }
 
             byte[] img = await System.IO.File.ReadAllBytesAsync(iconPath, cancel);

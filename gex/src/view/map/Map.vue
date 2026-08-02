@@ -347,6 +347,11 @@
             <div v-if="recent.state == 'loaded'">
                 <match-list :matches="recent.data"></match-list>
             </div>
+
+            <div v-if="stats.state == 'loaded'">
+                <map-position-leaderboard :stats="stats.data"></map-position-leaderboard>
+            </div>
+
         </div>
 
         <div v-else-if="barMap.state == 'error'">
@@ -374,6 +379,7 @@
     import Collapsible from "components/Collapsible.vue";
 
     import MapDailyPlaysView from "./components/MapDailyPlaysView.vue";
+    import MapPositionLeaderboard from "./components/MapPositionLeaderboard.vue";
 
     import "filters/BarGamemodeFilter";
     import "filters/BarFactionFilter";
@@ -1106,7 +1112,7 @@
 
         components: {
             ApiError, MatchList, ToggleButton, Collapsible,
-            MapDailyPlaysView
+            MapDailyPlaysView, MapPositionLeaderboard
         }
     });
     export default MapView;

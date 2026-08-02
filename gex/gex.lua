@@ -445,6 +445,13 @@ function widget:UnitCreated(unitID, unitDefID, teamID)
     })
 end
 
+function widget:UnitFinished(unitID, unitDefID, teamID)
+    writeJson("unit_finished", {
+        { "unitID", unitID },
+        { "teamID", teamID }
+    })
+end
+
 function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDefID, attackerTeam, weaponDefID)
 
     if (commanders[unitID] ~= nil) then

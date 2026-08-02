@@ -76,7 +76,7 @@ namespace gex.Services.Db.Map {
             ))).ToList();
 
             if (openers.Count == 0) {
-                _Logger.LogDebug($"map has no opening labs for this entry [map={entry.MapFilename}] [gamemode={entry.Gamemode}] [day={entry.Day:u}]");
+                _Logger.LogDebug($"map has no units made for this entry [map={entry.MapFilename}] [gamemode={entry.Gamemode}] [day={entry.Day:u}]");
                 return;
             }
 

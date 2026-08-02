@@ -76,7 +76,7 @@
                     <tr v-for="unitDef in shownUnits" :key="unitDef.definitionID">
                         <td>
                             {{ unitDef.definitionID }}
-                            <img :src="'/image-proxy/UnitIcon?defName=' + unitDef.definitionName" width="24" height="24">
+                            <unit-icon :name="unitDef.definitionName" :size="24"></unit-icon>
                         </td>
                         <td>{{ unitDef.definitionName }}</td>
                         <td>{{ unitDef.name }}</td>
@@ -92,7 +92,7 @@
                 <table class="table table-sm">
                     <thead>
                         <tr>
-                            <th v-for="(key, index) in Object.keys(UnitDefs[0])" :key="key" :class="{ 'sticky-column': index == 0 }">
+                            <th v-for="(key, index) in definitionKeys" :key="key" :class="{ 'sticky-column': index <= 1 }">
                                 {{ key }}
                             </th>
                         </tr>
@@ -100,7 +100,7 @@
 
                     <tbody>
                         <tr v-for="unitDef in shownUnits" :key="unitDef.definitionID">
-                            <td v-for="(key, index) in Object.keys(unitDef)" :key="unitDef + '-' + key" :class="{ 'sticky-column': index == 0 }">
+                            <td v-for="(key, index) in definitionKeys" :key="unitDef + '-' + key" :class="{ 'sticky-column': index <= 1 }">
                                 {{ unitDef[key] }}
                             </td>
                         </tr>
@@ -128,6 +128,7 @@
 
     import Collapsible from "components/Collapsible.vue";
     import ToggleButton from "components/ToggleButton";
+    import UnitIcon from "components/app/UnitIcon.vue";
 
     import { GameEventUnitDef } from "model/GameEventUnitDef";
     import { GameOutput } from "model/GameOutput";
@@ -358,12 +359,19 @@
                     return this.UnitDefs;
                 }
                 return this.UnitDefs.filter(iter => this.seen.has(iter.definitionID));
+            },
+
+            definitionKeys: function(): string[] {
+                return Object.keys(this.UnitDefs[0]).filter(iter => {
+                    return iter != "hash";
+                });
             }
         },
 
         components: {
             Collapsible, ToggleButton,
-            DiffRow
+            DiffRow,
+            UnitIcon
         }
 
     });

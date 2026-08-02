@@ -979,6 +979,7 @@ namespace gex.Services.Parser {
                     allyTeam.Won = true;
                 }
                 allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
+                allyTeam.AverageSkill = match.Players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Average(iter => iter.Skill);
                 match.PlayerCount += allyTeam.PlayerCount;
             }
 

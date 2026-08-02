@@ -62,6 +62,7 @@ namespace gex.Services.Db {
             services.AddSingleton<UserUnitsMadeLeaderboardDb>();
 
             // map stats
+            services.AddSingleton<BarMapDb>();
             services.AddSingleton<MapStatsDb>();
             services.AddSingleton<MapStatsStartSpotDb>();
             services.AddSingleton<MapStatsByFactionDb>();
@@ -70,6 +71,9 @@ namespace gex.Services.Db {
             services.AddSingleton<MapStatsNeedsUpdateDb>();
             services.AddSingleton<MapStatsDailyOpeningLabDb>();
             services.AddSingleton<MapStatsDailyUnitsMadeDb>();
+            services.AddSingleton<MapStatsPositionLeaderboardDb>();
+
+            // map start spot data
             services.AddSingleton<StartSpotDataDb>();
             services.AddSingleton<StartSpotPositionDb>();
             services.AddSingleton<StartSpotConfigurationDb>();
@@ -78,7 +82,6 @@ namespace gex.Services.Db {
             services.AddSingleton<StartSpotSideStartRoleOverrideDb>();
 
             // other
-            services.AddSingleton<BarMapDb>();
             services.AddSingleton<GameVersionUsageDb>();
             services.AddSingleton<MapPriorityModDb>();
             services.AddSingleton<BarSkillLeaderboardDb>();
