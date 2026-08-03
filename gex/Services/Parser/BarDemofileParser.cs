@@ -360,7 +360,7 @@ namespace gex.Services.Parser {
                     msg.Size = packetReader.ReadByte();
                     msg.FromId = packetReader.ReadByte();
                     msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
-                    msg.Message = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+                    msg.Message = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
                     msg.GameID = match.ID;
                     msg.GameTimestamp = packet.GameTime;
 
@@ -530,7 +530,7 @@ namespace gex.Services.Parser {
 
                     if (drawType == BarMapDrawActionType.POINT) {
                         byte fromLua = packetReader.ReadByte();
-                        string label = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+                        string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
 
                         match.MapDraws.Add(new BarMatchMapDrawPoint() {
                             Action = "point",
@@ -587,7 +587,7 @@ namespace gex.Services.Parser {
 
                     if (drawType == BarMapDrawActionType.POINT) {
                         byte fromLua = packetReader.ReadByte();
-                        string label = Encoding.ASCII.GetString(packetReader.ReadUntilNull());
+                        string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
 
                         match.MapDraws.Add(new BarMatchMapDrawPoint() {
                             Action = "point",
@@ -979,7 +979,11 @@ namespace gex.Services.Parser {
                     allyTeam.Won = true;
                 }
                 allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
-                allyTeam.AverageSkill = match.Players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Average(iter => iter.Skill);
+                if (allyTeam.PlayerCount > 0) {
+                    allyTeam.AverageSkill = match.Players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Average(iter => iter.Skill);
+                } else {
+                    allyTeam.AverageSkill = 0;
+                }
                 match.PlayerCount += allyTeam.PlayerCount;
             }
 
