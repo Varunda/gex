@@ -87,6 +87,8 @@
         apm: number;
     }
 
+    let charts: Chart[] = [];
+
     export const MatchApm = Vue.extend({ 
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
@@ -95,7 +97,6 @@
 
         data: function() {
             return {
-                charts: [] as Chart[],
                 apms: new Map() as Map<number, ApmInterval[]>,
 
                 normalizedGraphs: true as boolean,
@@ -177,10 +178,10 @@
             },
 
             makeCharts: function(): void {
-                for (const chart of this.charts) {
+                for (const chart of charts) {
                     chart.destroy();
                 }
-                this.charts = [];
+                charts = [];
 
                 const labels: string[] = this.output.extraStats.map(iter => TimeUtils.duration(iter.frame / 30))
                     .filter((iter, idx, arr) => arr.indexOf(iter) == idx);
@@ -210,7 +211,7 @@
                         continue;
                     }
 
-                    this.charts.push(new Chart((elem as HTMLCanvasElement).getContext("2d")!, {
+                    charts.push(new Chart((elem as HTMLCanvasElement).getContext("2d")!, {
                         type: "line",
                         data: {
                             labels: labels,

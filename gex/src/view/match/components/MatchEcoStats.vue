@@ -5,7 +5,7 @@
             <div class="d-flex flex-wrap align-items-center mb-5" style="gap: 1rem; justify-content: space-evenly;">
 
                 <div>
-                    <template v-for="interest in interestingActions">
+                    <template v-for="interest in milestones">
                         <h2>{{ interest.frame / 30 | mduration }}</h2>
                         <h5>{{ interest.action }}</h5>
                     </template>
@@ -439,18 +439,16 @@
     import InfoHover from "components/InfoHover.vue";
     import UnitIcon from "components/app/UnitIcon.vue";
 
-    import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
     import MatchWindGraph from "./MatchWindGraph.vue";
 
     import { BarMatch } from "model/BarMatch";
-    import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { GameOutput } from "model/GameOutput";
-    import { GameEventUnitDef } from "model/GameEventUnitDef";
 
     import { UnitStats } from "../compute/UnitStatData";
     import MergedStats from "../compute/MergedStats";
     import { ResourceProductionData, ResourceProductionEntry } from "../compute/ResourceProductionData";
     import { FactoryData, PlayerFactories } from "../compute/FactoryData";
+    import { Milestone } from "../compute/Milestones";
 
     import "filters/LocaleFilter";
     import "filters/CompactFilter";
@@ -462,12 +460,6 @@
         energy: number,
         metal: number
     };
-
-    class InterestingEvent {
-        public frame: number = 0;
-        public interest: number = 0;
-        public action: string = "";
-    }
 
     export const MatchEcoStats = Vue.extend({
         props: {
@@ -481,7 +473,7 @@
 
         data: function() {
             return {
-                interestingActions: [] as InterestingEvent[],
+                milestones: [] as Milestone[],
 
                 factories: [] as PlayerFactories[],
 
@@ -498,134 +490,12 @@
 
             makeFactoryData: function(): void {
                 this.factories = [];
-
                 this.factories = PlayerFactories.compute(this.match, this.output);
             },
 
             makeInterstingActions: function(): void {
-                const allyTeamMapping: Map<number, number> = new Map();
-                for (const player of this.match.players) {
-                    allyTeamMapping.set(player.teamID, player.allyTeamID);
-                }
-
-                this.interestingActions = [];
-
-                const interest: InterestingEvent[] = [];
-
-                let t1made: boolean = false;
-                let t2made: boolean = false;
-                let t3made: boolean = false;
-                let firstAfus: boolean = false;
-                let vehicleSwap: boolean = !(this.match.players.length == 2 && this.match.allyTeams.length == 2); // only interesting for duels
-                let geoMade: boolean = false;
-                let ageoMade: boolean = false;
-
-                let botStart: boolean = false;
-
-                for (const ev of this.output.unitsCreated) {
-                    if (this.SelectedEntity.startsWith("team-")) {
-                        const teamID: number = Number.parseInt(this.SelectedEntity.split("-")[1]);
-                        if (ev.teamID != teamID) {
-                            continue;
-                        }
-                    } else if (this.SelectedEntity.startsWith("ally-team-")) {
-                        const allyTeamID: number = Number.parseInt(this.SelectedEntity.split("-")[2]);
-                        if (allyTeamMapping.get(ev.teamID) != allyTeamID) {
-                            continue;
-                        }
-                    } else {
-                        throw `unchecked SelectedEntity: ${this.SelectedEntity}`;
-                    }
-
-                    const def: GameEventUnitDef | undefined = this.output.unitDefinitions.get(ev.definitionID);
-                    if (def == undefined) {
-                        continue;
-                    }
-
-                    if (vehicleSwap == false && botStart == false) {
-                        if (def.isFactory == true && def.name == "Bot Lab" && def.unitGroup == "builder") {
-                            console.log(`MatchEcoStats> team ${ev.teamID} started bots`);
-                            botStart = true;
-                        }
-                    } else if (vehicleSwap == false && botStart == true) {
-                        if (def.isFactory == true && def.name == "Vehicle Plant" && def.unitGroup == "builder") {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "Bot -> Vehicle swap",
-                                interest: 8
-                            });
-                            vehicleSwap = true;
-                        }
-                    }
-
-                    if (t1made == false) {
-                        if (def.isFactory == true && def.isFactory == true && def.unitGroup == "builder") {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "T1 made",
-                                interest: 1
-                            });
-                            t1made = true;
-                        }
-                    }
-
-                    if (t2made == false) {
-                        if (def.isFactory == true && def.isFactory == true && def.unitGroup == "buildert2" && def.speed == 0) {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "T2 made",
-                                interest: 10
-                            });
-                            t2made = true;
-                        }
-                    }
-
-                    if (t3made == false) {
-                        if (def.isFactory == true && def.isFactory == true && def.unitGroup == "buildert3" && def.speed ==  0) {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "Gantry made",
-                                interest: 5
-                            });
-                            t3made = true;
-                        }
-                    }
-
-                    if (firstAfus == false) {
-                        if (def.energyProduction > 2000 && def.buildTime > 100000) {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "First AFUS",
-                                interest: 5
-                            });
-                            firstAfus = true;
-                        }
-                    }
-
-                    if (geoMade == false) {
-                        if (def.name.indexOf("Geothermal") > -1 && def.unitGroup == "energy" && def.energyProduction < 800) {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "Geo built",
-                                interest: 3
-                            });
-                            geoMade = true;
-                        }
-                    }
-
-                    if (ageoMade == false) {
-                        if (def.name.indexOf("Geothermal") > -1 && def.unitGroup == "energy" && def.energyProduction > 800) {
-                            interest.push({
-                                frame: ev.frame,
-                                action: "Adv. Geo built",
-                                interest: 4
-                            });
-                            ageoMade = true;
-                        }
-                    }
-                }
-
-                this.interestingActions = interest.sort((a, b) => b.interest - a.interest).slice(0, 2);
+                this.milestones = [];
+                this.milestones = Milestone.compute(this.match, this.output, this.SelectedEntity).slice(0, 2);
             },
 
             isBuilder: function(entry: ResourceProductionEntry): boolean {

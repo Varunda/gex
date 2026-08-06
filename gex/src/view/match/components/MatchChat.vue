@@ -29,6 +29,10 @@
                         <button class="btn btn-sm mb-2" :class="[ showPingLocation == true ? 'btn-primary' : 'btn-secondary' ]" @click.stop="showPingLocation = !showPingLocation">
                             Show map pings
                         </button>
+
+                        <toggle-button v-model="colorPlayerNames" class="btn-sm mb-2">
+                            Color player names
+                        </toggle-button>
                     </div>
 
                     <div style="max-height: 400px; overflow-y: scroll;">
@@ -42,7 +46,11 @@
                                 </div>
 
                                 <div>
-                                    {{ msg.message }}
+                                    <span v-if="msg.useHtml" v-html="msg.message">
+                                    </span>
+                                    <span v-else>
+                                        {{ msg.message }}
+                                    </span>
                                 </div>
 
                                 <div v-if="showPingLocation == true && msg.ping != undefined">
@@ -63,7 +71,12 @@
                                     <b :style="{ 'color': msg.playerColor }">{{ msg.from }}</b>
                                 </div>
                                 <div style="grid-column: 3;" class="my-2 ms-2">
-                                    {{ msg.message }}
+
+                                    <span v-if="msg.useHtml" v-html="msg.message">
+                                    </span>
+                                    <span v-else>
+                                        {{ msg.message }}
+                                    </span>
 
                                     <div v-if="showPingLocation == true && msg.ping != undefined">
                                         <match-chat-ping-map :match="match" :ping="msg.ping"></match-chat-ping-map>
@@ -83,6 +96,7 @@
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchMapDraw, BarMatchMapDrawPoint } from "model/BarMatchMapDraws";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
 
     import TimeUtils from "util/Time";
 
@@ -90,6 +104,8 @@
 
     import Collapsible from "components/Collapsible.vue";
     import ToggleButton from "components/ToggleButton";
+
+    import DOMPurify from "dompurify";
 
     type FullMessage = {
         id: number;
@@ -101,6 +117,7 @@
         message: string;
         playerColor: string;
         ping: BarMatchMapDrawPoint | undefined;
+        useHtml?: boolean;
     }
 
     export const MatchChat = Vue.extend({
@@ -114,6 +131,7 @@
                 show: false as boolean,
                 useStartTime: true as boolean,
                 showPingLocation: false as boolean,
+                colorPlayerNames: true as boolean
             }
         },
 
@@ -158,11 +176,41 @@
             },
             
             getPlayerColor: function(id: number): string {
-                return this.match.players.find(p => p.playerID == id)?.hexColor ?? "";
+                return (this.match.players.find(p => p.playerID == id)?.hexColor) ?? 
+                    ((this.match.spectators.find(p => p.playerID == id) != undefined) ? "#ffff00" : "");
+            },
+
+            colorAnyPlayerNames: function(msg: string): string {
+                msg = DOMPurify.sanitize(msg);
+                if (this.colorPlayerNames == false) {
+                    return msg;
+                }
+
+                for (const entry of this.nameColorMappings.entries()) {
+                    // vetur is wrong again, we use es2024, but it says not available, wrong!
+                    msg = msg.replaceAll(entry[0], `<span style="color: ${entry[1]}">${entry[0]}</span>`);
+                }
+
+                return msg;
             }
         },
 
         computed: {
+
+            nameColorMappings: function(): Map<string, string> {
+
+                const map: Map<string, string> = new Map();
+
+                for (const player of this.match.players) {
+                    map.set(player.username, player.hexColor);
+                }
+
+                for (const spec of this.match.spectators) {
+                    map.set(spec.username, "#ffff00");
+                }
+
+                return map;
+            },
 
             messages: function(): FullMessage[] {
                 const messages: FullMessage[] = this.match.chatMessages.map((iter, index) => {
@@ -184,8 +232,9 @@
                         playerColor: this.getPlayerColor(iter.fromId),
                         timestamp: TimeUtils.duration(timestamp),
                         gametime: iter.gameTimestamp,
-                        message: iter.message,
-                        ping: undefined
+                        message: iter.fromId == 255 ? this.colorAnyPlayerNames(iter.message) : iter.message,
+                        ping: undefined,
+                        useHtml: true
                     }
                 });
 
@@ -210,8 +259,28 @@
                         playerColor: this.getPlayerColor(point.playerID),
                         timestamp: TimeUtils.duration(timestamp),
                         gametime: point.gameTime,
-                        message: (point.label + ` (pinged at ${point.x}, ${point.z})`),
+                        message: `${point.label} (pinged at ${point.x}, ${point.z})`,
                         ping: point
+                    });
+                }
+
+                for (const teamDeath of this.match.teamDeaths) {
+                    const allyTeamID: number = this.getPlayerAllyTeamId(teamDeath.teamID);
+                    let timestamp: number = Math.max(0, (this.useStartTime == true) ? teamDeath.gameTime - this.match.startOffset : teamDeath.gameTime);
+
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamDeath.teamID);
+
+                    messages.push({
+                        id: messages.length + 1,
+                        from: "HOST",
+                        to: "Everyone",
+                        color: this.getIdColor(254),
+                        playerColor: this.getIdColor(254), 
+                        timestamp: TimeUtils.duration(timestamp),
+                        gametime: teamDeath.gameTime,
+                        message: `<span style="color: ${player?.hexColor ?? "#ffffff"}">${DOMPurify.sanitize(player?.username ?? "")}</span> resigned`,
+                        ping: undefined,
+                        useHtml: true
                     });
                 }
 
@@ -224,16 +293,23 @@
                         : playerLeft.reason == 2 ? `kicked`
                         : `<unchecked ${playerLeft.reason}>`
 
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.playerID == playerLeft.playerID);
+
+                    let name: string = this.match.players.find(iter => iter.playerID == playerLeft.playerID)?.username
+                        ?? this.match.spectators.find(iter => iter.playerID == playerLeft.playerID)?.username
+                        ?? `<missing player ${playerLeft.playerID}`;
+
                     messages.push({
                         id: messages.length + 1,
-                        from: this.getIdName(playerLeft.playerID),
-                        to: this.getIdName(254),
+                        from: "HOST",
+                        to: "Everyone",
                         color: this.getIdColor(254),
-                        playerColor: allyTeamID != -1 ? this.getPlayerColor(playerLeft.playerID) : this.getIdColor(253),
+                        playerColor: this.getIdColor(254),
                         timestamp: TimeUtils.duration(timestamp),
                         gametime: playerLeft.gameTime,
-                        message: `Left the game (Reason: ${reason})`,
-                        ping: undefined
+                        message: `<span style="color: ${player?.hexColor ?? "#ffff00"}">${DOMPurify.sanitize(name)}</span> left the game (Reason: ${reason})`,
+                        ping: undefined,
+                        useHtml: true
                     });
 
                 }

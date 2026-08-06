@@ -74,6 +74,10 @@
                             </div>
                         </div>
                     </div>
+
+                    <toggle-button v-model="showAnnotations">
+                        Show annotations
+                    </toggle-button>
                 </div>
 
                 <div style="height: 600px" class="flex-grow-1">
@@ -97,16 +101,20 @@
     import { GameEventTeamsStats } from "model/GameEventTeamStats";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { GameOutput } from "model/GameOutput";
 
     import MergedStats from "../compute/MergedStats";
+    import { Milestone } from "../compute/Milestones";
 
     import Chart, { ChartDataset, LegendItem, Plugin } from "chart.js/auto/auto.esm";
+    import Annotation from "chartjs-plugin-annotation";
+    //Chart.register(Annotation);
 
+    import ToggleButton from "components/ToggleButton";
     import InfoHover from "components/InfoHover.vue";
 
     import TimeUtils from "util/Time";
     import TableUtils from "util/Table";
-    import CompactUtils from "util/Compact";
 
     import EventBus from "EventBus";
 
@@ -152,6 +160,9 @@
             const items: LegendItem[] = chart.options.plugins?.legend?.labels?.generateLabels == undefined ? [] : chart.options.plugins.legend.labels.generateLabels(chart);
 
             items.forEach((iter) => {
+                if (iter.text == "") {
+                    return;
+                }
 
                 const li = document.createElement("li");
                 li.style.alignItems = "center";
@@ -367,6 +378,8 @@
         return Number.parseInt(datasetIdStr);
     }
 
+    let chart: Chart | null = null;
+
     // 2025-04-13 TODO: ok, how i handle the teams and ally teams is fucking awful
     //      the "team id" for an ally team is just the negative +1 (because ally teams have a 0)
     //      then in order to persist the changes in teams shown, the dataset id is hidden within the label,
@@ -376,14 +389,15 @@
         props: {
             stats: { type: Array as PropType<MergedStats[]>, required: true },
             match: { type: Object as PropType<BarMatch>, required: true },
+            output: { type: Object as PropType<GameOutput>, required: true },
             ShowMobile: { type: Boolean, required: true }
         },
 
         data: function() {
             return {
-                chart: null as Chart | null,
-
                 datasets: new Map() as Map<string, any>,
+
+                milestones: [] as Milestone[],
 
                 shownStats: new Set() as Set<number>,
                 validDatasetIds: new Set() as Set<number>,
@@ -393,6 +407,9 @@
                 showedStat: "armyValue" as StatKey, 
 
                 unitDefNameFilter: null as string | null,
+
+                showAnnotations: true as boolean,
+                annotations: {} as any,
 
                 unitGraph: {
                     showing: false as boolean,
@@ -431,13 +448,17 @@
                 this.makeDatasets();
                 this.showDataset("armyValue");
             });
+
+            for (const allyTeam of this.match.allyTeams) {
+                this.milestones.push(...Milestone.compute(this.match, this.output, `ally-team-${allyTeam.allyTeamID}`))
+            }
         },
 
         methods: {
             makeChart: function(): void {
-                if (this.chart != null) {
-                    this.chart.destroy();
-                    this.chart = null;
+                if (chart != null) {
+                    chart.destroy();
+                    chart = null;
                 }
 
                 const canvas: HTMLElement | null = document.getElementById("team-stats-chart");
@@ -450,18 +471,78 @@
                     return console.error(`TeamStatsChart> no 2d context?`);
                 }
 
-                this.chart = new Chart(ctx, {
+                const labelAlternatingState: Map<number, boolean> = new Map();
+
+                this.annotations = this.milestones.filter(iter => iter.interest > 1).map(iter => {
+                    const allyTeamID = Number.parseInt(iter.entity.split("-")[2]);
+                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.allyTeamID == allyTeamID);
+
+                    console.log(`TeamStatsChart> ally team ${allyTeamID} did ${iter.action} on frame ${iter.frame}/${iter.frame / 30}`);
+
+                    const altLabel: boolean = labelAlternatingState.get(allyTeamID) ?? false;
+                    labelAlternatingState.set(allyTeamID, !altLabel);
+
+                    return {
+                        type: "line",
+                        xMin: iter.frame,
+                        xMax: iter.frame,
+                        borderColor: player?.hexColor ?? "#ffffff",
+                        z: 10,
+                        enter: (ctx) => {
+                            ctx.element.options.z = 200;
+                            ctx.element.label.options.z = 300;
+                            return true;
+                        },
+                        leave: (ctx) => {
+                            ctx.element.options.z = 10;
+                            ctx.element.label.options.z = 100;
+                            return true;
+                        },
+                        label: {
+                            display: true,
+                            content: iter.action,
+                            font: {
+                                family: "Atkinson Hyperlegible",
+                                size: 14
+                            },
+                            yAdjust: (allyTeamID * 60) - 15 + (altLabel == true ? -30 : 0),
+                            z: 100,
+                            color: player?.hexColor ?? "#ffffff"
+                        }
+                    }
+                })
+
+                chart = new Chart(ctx, {
                     type: "line",
                     data: {
-                        labels: this.stats.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i).map(iter => `${TimeUtils.duration(iter / 30)}`),
-                        datasets: []
+                        //labels: this.stats.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i).map(iter => `${TimeUtils.duration(iter / 30)}`),
+                        labels: this.stats.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i),
+                        datasets: [{
+                            // add a hidden dataset used for the x axis ticks
+                            data: this.stats.map(iter => iter.frame).filter((v, i, arr) => arr.indexOf(v) == i).map(iter => {
+                                return {
+                                    x: iter,
+                                    y: 0
+                                }
+                            }),
+                            hidden: true,
+                            label: ""
+                        }]
                     },
                     options: {
                         scales: {
                             x: {
+                                type: "linear",
                                 reverse: false,
                                 ticks: {
+                                    stepSize: (30 * 15),
                                     color: "#fff",
+                                    callback: function(value, index, ticks) {
+                                        if (typeof(value) != "number") {
+                                            return value;
+                                        }
+                                        return TimeUtils.duration(value / 30);
+                                    }
                                 },
                                 grid: {
                                     color: "#666",
@@ -488,6 +569,11 @@
                                 mode: "index",
                                 position: "nearest",
                                 intersect: false,
+                                callbacks: {
+                                    title: function(ctx) {
+                                        return TimeUtils.duration((ctx.at(0)!.raw as any).x / 30)
+                                    }
+                                },
                                 external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx,
                                     TableUtils.defaultValueFormatter,
                                     (label: string): string => {
@@ -502,6 +588,11 @@
                                     filter: (item) => item.hidden != true
                                 },
                                 position: "right"
+                            },
+                            annotation: {
+                                annotations: {
+                                    ...this.annotations
+                                }
                             }
                         },
                         hover: {
@@ -509,17 +600,17 @@
                             intersect: false
                         }
                     },
-                    plugins: [ htmlLegendPlugin ]
+                    plugins: [ htmlLegendPlugin, Annotation ]
                 });
             },
 
             makeDatasets: function(): void {
-                if (this.chart == null) {
+                if (chart == null) {
                     console.log(`TeamStatsChart> chart is null, creating`);
                     this.makeChart();
                 }
 
-                if (this.chart == null) {
+                if (chart == null) {
                     throw `why is chart still null`;
                 }
 
@@ -581,7 +672,8 @@
                                 const d = values[i].value - prev.value;
                                 const dt = Math.max(1, values[i].frame - prev.frame);
 
-                                diff.push({ frame: dt, value: d / dt * 30 }); // 30 fps
+                                //diff.push({ frame: dt, value: d / dt * 30 }); // 30 fps
+                                diff.push({ frame: values[i].frame, value: d / dt * 30 }); // 30 fps
                                 prev = values[i];
                             }
                             values = diff;
@@ -596,7 +688,12 @@
                         //console.log(`TeamStatsChart> teamID ${teamID}, name ${team?.username}`);
 
                         const ds = {
-                            data: values.map(i => i.value),
+                            data: values.map(i => {
+                                return {
+                                    x: i.frame,
+                                    y: i.value
+                                }
+                            }),
                             label: (teamID >= 0 ? `${team?.username ?? `<missing ${teamID}>`}` : `Team ${teamIdFromAlly + 1}`) + `{#${teamID}}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
@@ -608,27 +705,27 @@
                         //console.log(`created dataset ${teamID}-${stat[0]}`);
                         this.datasets.set(`${teamID}-${stat[0]}`, ds);
 
-                        this.chart.data.datasets.push(ds);
+                        chart.data.datasets.push(ds);
                     }
                 }
             },
 
             showDataset: function(field: StatKey): void {
-                if (this.chart == null) {
+                if (chart == null) {
                     console.log(`TeamStatsChart> chart is null, creating`);
                     this.makeChart();
                 }
 
-                if (this.chart == null) {
+                if (chart == null) {
                     throw `why is chart still null`;
                 }
 
                 this.showedStat = field;
 
-                for (const i of this.chart.data.datasets) {
+                for (const i of chart.data.datasets) {
                     i.hidden = true;
                 }
-                this.chart.data.datasets.length = 0;
+                chart.data.datasets.length = 0;
 
                 const keys: Set<string> = new Set(Array.from(this.validDatasetIds.values()).map(iter => `${iter}-${field}`));
                 console.log("TeamStatsChart> keys to add:", keys);
@@ -651,9 +748,9 @@
                     const dataset: ChartDataset = iter[1];
                     console.log(`TeamStatsChart> adding dataset ${iter[0]} [datasetId=${datasetId}/${did}] [hidden=${!this.shownStats.has(did)}] [statName=${statName}]`);
                     dataset.hidden = !this.shownStats.has(did);
-                    this.chart.data.datasets.push(dataset);
+                    chart.data.datasets.push(dataset);
 
-                    this.chart.data.datasets.sort((a, b) => {
+                    chart.data.datasets.sort((a, b) => {
                         // a=ally team, b=ally team => smaller ally team
                         // a=ally team, b=team      => if b is in team a, then a>b, else b>a
                         // a=team,      b=ally team => if a is in team b, then b>a, else a>b
@@ -716,11 +813,16 @@
                     });
                 }
 
-                this.chart.update();
+                chart.update();
             },
         },
 
         computed: {
+
+            chart: function(): Chart | null {
+                return chart;
+            },
+
             statNames: function(): [StatKey, string][] {
                 return STATS;
             },
@@ -751,11 +853,25 @@
             perSecond: function(): void {
                 this.makeDatasets();
                 this.showDataset(this.showedStat);
+            },
+
+            showAnnotations: function(): void {
+                if (this.showAnnotations == true) {
+                    for (const anno of this.annotations) {
+                        anno.display = true;
+                    }
+                } else {
+                    for (const anno of this.annotations) {
+                        anno.display = false;
+                    }
+                }
+
+                chart?.update();
             }
         },
 
         components: {
-            Collapsible, InfoHover
+            Collapsible, InfoHover, ToggleButton
         }
     });
     export default TeamStatsChart;

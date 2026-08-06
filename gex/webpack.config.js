@@ -88,7 +88,6 @@ module.exports = {
         "vue": "Vue",
         "signalR": "signalR",
         "file-saver": "saveAs",
-        "chartjs-plugin-annotation": "chartjs-plugin-annotation",
         "bootstrap": "bootstrap"
     },
 

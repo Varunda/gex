@@ -246,7 +246,7 @@
                     <div v-if="match.data.processing && match.data.processing.actionsParsed != null">
 
                         <div class="my-4">
-                            <team-stats-chart :stats="computedData.merged" :match="match.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
+                            <team-stats-chart :stats="computedData.merged" :match="match.data" :output="output.data" :show-mobile="showMobile" class="my-4"></team-stats-chart>
                         </div>
 
                         <!--
@@ -564,7 +564,7 @@
                     this.containerWidth = mut.contentRect.width;
                     //this.containerHeight = mut.contentRect.height - 100;
                     this.containerHeight = mut.contentRect.height;
-                    console.log(`Match> parent container changed sized to: ${this.containerWidth}x${this.containerHeight}`);
+                    //console.log(`Match> parent container changed sized to: ${this.containerWidth}x${this.containerHeight}`);
 
                     this.showMobile = this.containerWidth <= 768;
                 }

@@ -43,6 +43,8 @@
     import "filters/LocaleFilter";
     import TimeUtils from "util/Time";
 
+    let chart: Chart | null = null;
+
     export const MatchWindGraph = Vue.extend({
         props: {
             updates: { type: Array as PropType<GameEventWindUpdate[]>, required: true },
@@ -51,8 +53,6 @@
 
         data: function() {
             return {
-                chart: null as null | Chart,
-
                 avg: 0 as number,
                 timeAtMin: 0 as number,
                 timeAtMax: 0 as number
@@ -100,12 +100,12 @@
                     return console.error(`MatchWindGraph> no 2d context?`);
                 }
 
-                if (this.chart != null) {
-                    this.chart.destroy();
-                    this.chart = null;
+                if (chart != null) {
+                    chart.destroy();
+                    chart = null;
                 }
 
-                this.chart = new Chart(ctx, {
+                chart = new Chart(ctx, {
                     type: "line",
                     data: {
                         labels: this.updates.map(iter => `${TimeUtils.duration(iter.frame / 30)}`),

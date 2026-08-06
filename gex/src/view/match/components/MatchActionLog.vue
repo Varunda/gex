@@ -17,6 +17,10 @@
                 <h5>Options</h5>
                 <toggle-button v-model="options.showDebug">Show debug</toggle-button>
                 <toggle-button v-model="options.showFrame">Show frame</toggle-button>
+                <toggle-button v-model="options.combineQuickBuilds">
+                    Combine short builds
+                    <info-hover text="Combine constructions of a unit/building that are under 10 seconds into 1 action"></info-hover>
+                </toggle-button>
 
                 <div class="d-inline border h-100 mx-2"></div>
 
@@ -147,14 +151,17 @@
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol, ARank, ATableType } from "components/ATable";
     import ToggleButton from "components/ToggleButton";
     import Collapsible from "components/Collapsible.vue";
+    import InfoHover from "components/InfoHover.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchSpectator } from "model/BarMatchSpectator";
     import { GameOutput } from "model/GameOutput";
     import { GameEventUnitDef } from "model/GameEventUnitDef";
 
     import LocaleUtil from "util/Locale";
     import "filters/MomentFilter";
+import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
 
     type LogPart = {
         html: string;
@@ -187,6 +194,7 @@
                     showDebug: false as boolean,
                     showFrame: false as boolean,
                     extraFilters: false as boolean,
+                    combineQuickBuilds: true as boolean,
                 },
 
                 filter: {
@@ -208,6 +216,7 @@
                 entries.push(...this.makeUnitCreated());
                 entries.push(...this.makeUnitKilled());
                 entries.push(...this.makeTeamsKilled());
+                entries.push(...this.makeUnitsShared());
                 entries.push(...this.makeWindUpdate());
                 entries.push(...this.makePlayerLeaves());
 
@@ -222,20 +231,64 @@
                 const entries: ActionLogEntry[] = [];
 
                 for (const ev of this.output.unitsCreated) {
-                    const entry: ActionLogEntry = {
-                        type: "unit_created",
-                        frame: ev.frame,
-                        event: ev,
-                        unitID: ev.unitID,
-                        teamID: ev.teamID,
-                        allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
-                        parts: [
-                            this.createPlayerName(ev.teamID),
-                            this.createText("created a"),
-                            this.createUnitIcon(ev.definitionID),
-                            this.createUnitName(ev.definitionID),
-                            this.createText(`at ${ev.unitX}, ${ev.unitZ}`)
-                        ]
+                    let entry: ActionLogEntry;
+
+                    if (ev.completed != 0) {
+                        const combine: boolean = this.options.combineQuickBuilds == true && (ev.completed - ev.frame) < (30 * 10);
+
+                        entry = {
+                            type: "unit_created",
+                            frame: ev.frame,
+                            event: ev,
+                            unitID: ev.unitID,
+                            teamID: ev.teamID,
+                            allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                            parts: [
+                                this.createPlayerName(ev.teamID),
+                                combine == true ? this.createText("built a") : this.createText("started constructing a"),
+                                this.createUnitIcon(ev.definitionID),
+                                this.createUnitName(ev.definitionID),
+                                this.createText(`at ${ev.unitX}, ${ev.unitZ}`),
+                            ]
+                        }
+
+                        const dur: LogPart= this.createText(`(took ${LocaleUtil.locale((ev.completed - ev.frame) / 30, 2)}s to build)`)
+
+                        if (combine == true) {
+                            entry.parts.push(dur);
+                        } else {
+                            entries.push({
+                                type: "unit_completed",
+                                frame: ev.completed,
+                                event: ev,
+                                unitID: ev.unitID,
+                                teamID: ev.teamID,
+                                allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                                parts: [
+                                    this.createPlayerName(ev.teamID),
+                                    this.createText("completed constructing a"),
+                                    this.createUnitIcon(ev.definitionID),
+                                    this.createUnitName(ev.definitionID),
+                                    dur
+                                ]
+                            });
+                        }
+                    } else {
+                        entry = {
+                            type: "unit_created",
+                            frame: ev.frame,
+                            event: ev,
+                            unitID: ev.unitID,
+                            teamID: ev.teamID,
+                            allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                            parts: [
+                                this.createPlayerName(ev.teamID),
+                                this.createText("created a"),
+                                this.createUnitIcon(ev.definitionID),
+                                this.createUnitName(ev.definitionID),
+                                this.createText(`at ${ev.unitX}, ${ev.unitZ}`)
+                            ]
+                        }
                     }
 
                     entries.push(entry);
@@ -318,6 +371,76 @@
                 return entries;
             },
 
+            makeUnitsShared: function(): ActionLogEntry[] {
+                const entries: ActionLogEntry[] = [];
+
+                let groupedEntries: GameEventUnitsGiven[] = [];
+                let previousEntry: GameEventUnitsGiven | null = null;
+
+                for (const ev of this.output.unitsGiven) {
+
+                    if (previousEntry != null && previousEntry.frame != ev.frame) {
+                        const entry: ActionLogEntry = {
+                            type: "unit_shared",
+                            frame: ev.frame,
+                            event: ev,
+                            teamID: ev.teamID,
+                            allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                            parts: [
+                                this.createPlayerName(ev.teamID),
+                                this.createText("shared"),
+                            ]
+                        };
+
+                        const map: Map<number, number> = new Map(); // <def ID, count>
+                        for (const iter of groupedEntries) {
+                            map.set(iter.definitionID, (map.get(iter.definitionID) ?? 0) + 1);
+                        }
+
+                        const mapEntries = Array.from(map.entries());
+                        for (let i = 0; i < mapEntries.length; ++i) {
+                            const iter = mapEntries[i];
+
+                            if (iter[1] == 1) {
+                                entry.parts.push(
+                                    this.createText("a"),
+                                    //this.createUnitIcon(iter[0]),
+                                    this.createUnitName(iter[0])
+                                );
+                            } else {
+                                entry.parts.push(
+                                    this.createText(`${iter[1]}`),
+                                    //this.createUnitIcon(iter[0]),
+                                    this.createUnitName(iter[0], true),
+                                );
+                            }
+
+                            if (i != mapEntries.length - 1) {
+                                entry.parts.push(
+                                    this.createText("and")
+                                )
+                            }
+                        }
+
+                        entry.parts.push(
+                            this.createText("to"),
+                            this.createPlayerName(ev.newTeamID)
+                        );
+
+                        entries.push(entry);
+
+                        groupedEntries = [ev];
+                    } else {
+                        groupedEntries.push(ev);
+                    }
+
+                    previousEntry = ev;
+
+                }
+
+                return entries;
+            },
+
             makeTeamsKilled: function(): ActionLogEntry[] {
                 const entries: ActionLogEntry[] = [];
 
@@ -361,12 +484,18 @@
 
             makePlayerLeaves: function(): ActionLogEntry[] {
                 return this.match.playerLeaves.map(iter => {
+                    const reason: string = iter.reason == 0 ? `connection lost`
+                        : iter.reason == 1 ? `quit`
+                        : iter.reason == 2 ? `kicked`
+                        : `<unchecked ${iter.reason}>`
+
                     return {
                         type: "player_left",
-                        frame: iter.gameTime / 30,
+                        frame: iter.gameTime * 30,
                         event: iter,
                         parts: [
-                            this.createText(`Player ${iter.playerID} left`)
+                            this.createPlayerName(iter.playerID),
+                            this.createText(`left the game (Reason: ${reason})`)
                         ]
                     }
                 });
@@ -396,26 +525,31 @@
 
             createPlayerName: function(teamID: number, possesive?: boolean): LogPart {
                 const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
+                const spec: BarMatchSpectator | undefined = this.match.spectators.find(iter => iter.playerID == teamID);
 
-                if (player == undefined) {
+                if (player == undefined && spec == undefined) {
                     return {
                         html: `&lt;missing team ${teamID}&gt;`
                     };
                 }
 
+                const userID: number = player?.userID ?? spec!.userID;
+                const color: string = player?.hexColor ?? "#ffff00";
+                const name: string = player?.username ?? spec!.username;
+
                 return {
-                    html: `<a href="/user/${player.userID}" style="color: ${player.hexColor}">${player.username}${(possesive == true ? "'s" : "")}</a>`
+                    html: `<a href="/user/${userID}" style="color: ${color}" target="blank" ref="nofollow">${name}${(possesive == true ? "'s" : "")}</a>`
                 };
             },
 
-            createUnitName: function(defID: number): LogPart {
+            createUnitName: function(defID: number, pluralize?: boolean): LogPart {
                 const unitDef: GameEventUnitDef | undefined = this.output.unitDefinitions.get(defID);
 
                 if (unitDef == undefined) {
                     return this.createText(`&lt;missing unit def ${defID}&gt;`);
                 }
 
-                return this.createText(`${unitDef.name}`);
+                return this.createText(`${unitDef.name}${pluralize == true ? "s" : ""}`);
             },
 
             createUnitIcon: function(defID: number, color?: number): LogPart {
@@ -470,7 +604,7 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            ToggleButton, Collapsible
+            ToggleButton, Collapsible, InfoHover
         }
     });
     export default MatchActionLog;

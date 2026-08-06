@@ -215,6 +215,7 @@ namespace gex.Services.Repositories {
                     proc.Features.Add("text_ping");
                     await _ProcessingRepository.Upsert(proc);
                 } else {
+                    match.MapDraws = [];
                     match.MapDraws.AddRange(await _TextPingDb.GetByGameID(gameID, cancel));
                 }
             }

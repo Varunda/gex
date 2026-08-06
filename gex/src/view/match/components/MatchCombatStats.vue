@@ -575,6 +575,10 @@
         `
     });
 
+    let chartMetalEff: Chart | null = null;
+    let chartDamage: Chart | null = null;
+    let chartExp: Chart | null = null;
+
     export const MatchCombatStats = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
@@ -587,11 +591,6 @@
         data: function() {
             return {
                 ecoData: [] as EcoKillEntry[],
-                chart: {
-                    metalEff: null as Chart | null,
-                    damage: null as Chart | null,
-                    exp: null as Chart | null
-                },
 
                 selectedRank: [] as UnitExpEntry[],
                 pickedRank: 0 as number
@@ -761,9 +760,9 @@
             },
 
             makeMetalEffChart: function(): void {
-                if (this.chart.metalEff != null) {
-                    this.chart.metalEff.destroy();
-                    this.chart.metalEff = null;
+                if (chartMetalEff != null) {
+                    chartMetalEff.destroy();
+                    chartMetalEff = null;
                 }
 
                 const canvas = document.getElementById("combat-metal-efficiency") as HTMLCanvasElement | null; 
@@ -771,7 +770,7 @@
                     throw `missing #combat-metal-efficiency`;
                 }
 
-                this.chart.metalEff = new Chart(canvas.getContext("2d")!, {
+                chartMetalEff = new Chart(canvas.getContext("2d")!, {
                     type: "bar",
                     data: {
                         labels: [ "Killed", "Lost" ],
@@ -823,9 +822,9 @@
             },
 
             makeDamageChart: function(): void {
-                if (this.chart.damage != null) {
-                    this.chart.damage.destroy();
-                    this.chart.damage = null;
+                if (chartDamage != null) {
+                    chartDamage.destroy();
+                    chartDamage = null;
                 }
 
                 const canvas = document.getElementById("combat-damage") as HTMLCanvasElement | null; 
@@ -833,7 +832,7 @@
                     throw `missing #combat-damage`;
                 }
 
-                this.chart.damage = new Chart(canvas.getContext("2d")!, {
+                chartDamage = new Chart(canvas.getContext("2d")!, {
                     type: "bar",
                     data: {
                         labels: [ "Dealt", "Taken" ],
@@ -888,9 +887,9 @@
             },
 
             makeExpChart: function(): void {
-                if (this.chart.exp != null) {
-                    this.chart.exp.destroy();
-                    this.chart.exp = null;
+                if (chartExp != null) {
+                    chartExp.destroy();
+                    chartExp = null;
                 }
 
                 if (this.showUnitExp == false) {
@@ -918,7 +917,7 @@
 
                 console.log("ranks", ranks);
 
-                this.chart.exp = new Chart(canvas.getContext("2d")!, {
+                chartExp = new Chart(canvas.getContext("2d")!, {
                     type: "bar",
                     data: {
                         labels: ranks.map((iter, index) => index + 1),
