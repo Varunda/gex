@@ -73,7 +73,7 @@ namespace gex.Services.Db.Map {
                     mp.user_id, m.map_name, mp.start_spot_label
                 HAVING
                     count(*) > 50
-                ORDER BY 3 desc
+                ORDER BY 4 desc
                 LIMIT 200;
 
                 COMMIT TRANSACTION;
