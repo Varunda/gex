@@ -16,18 +16,23 @@ export class Milestone {
 
         const interest: Milestone[] = [];
 
+        let firstLab: GameEventUnitDef | null = null;
+
         let t1made: boolean = false;
         let t2made: boolean = false;
         let t3made: boolean = false;
         let firstAfus: boolean = false;
-        let vehicleSwap: boolean = !(match.players.length == 2 && match.allyTeams.length == 2); // only interesting for duels
+
         let geoMade: boolean = false;
         let ageoMade: boolean = false;
+
+         // only interesting for duels
+        let vehicleSwap: boolean = !(match.players.length == 2 && match.allyTeams.length == 2);
+        let airMade: boolean = !(match.players.length == 2 && match.allyTeams.length == 2);
 
         let botStart: boolean = false;
 
         for (const ev of output.unitsCreated) {
-
             if (output.hasUnitCompleted == true && ev.completed == 0) {
                 continue;
             }
@@ -51,19 +56,29 @@ export class Milestone {
                 continue;
             }
 
-            if (vehicleSwap == false && botStart == false) {
-                if (def.isFactory == true && def.name == "Bot Lab" && def.unitGroup == "builder") {
-                    botStart = true;
-                }
-            } else if (vehicleSwap == false && botStart == true) {
-                if (def.isFactory == true && def.name == "Vehicle Plant" && def.unitGroup == "builder") {
+            if (firstLab == null && def.isFactory == true && def.unitGroup == "builder" && def.speed == 0) {
+                firstLab = def;
+            }
+
+            if (def.isFactory == true && def.name == "Vehicle Plant" && def.unitGroup == "builder" && (firstLab?.name.indexOf("Bot") ?? 0) > -1 && vehicleSwap == false) {
+                interest.push({
+                    entity: entity,
+                    frame: ev.completed || ev.frame,
+                    action: "Bot -> Vehicle swap",
+                    interest: 8
+                });
+                vehicleSwap = true;
+            }
+
+            if (airMade == false) {
+                if (def.isFactory == true && def.unitGroup == "builder" && def.speed == 0 && def.name.indexOf("Air") > -1) {
                     interest.push({
                         entity: entity,
                         frame: ev.completed || ev.frame,
-                        action: "Bot -> Vehicle swap",
-                        interest: 8
-                    });
-                    vehicleSwap = true;
+                        action: "Air made",
+                        interest: 4
+                    })
+                    airMade = true;
                 }
             }
 
