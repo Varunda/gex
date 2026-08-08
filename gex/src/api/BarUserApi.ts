@@ -49,8 +49,16 @@ export class BarUserApi extends ApiWrapper<BarUser> {
         return BarUserApi.get().readSingle(`/api/user/${userID}/skill-changes`, BarUserSkillChanges.parse);
     }
 
-    public static getInteractions(userID: number): Promise<Loading<BarUserInteractions[]>> {
-        return BarUserApi.get().readList(`/api/user/${userID}/interactions`, BarUserInteractions.parse);
+    public static getInteractions(userID: number, gamesAfter: Date | null, gamesBefore: Date | null): Promise<Loading<BarUserInteractions[]>> {
+        const query: URLSearchParams = new URLSearchParams();
+        if (gamesAfter != null) {
+            query.set("gamesAfter", gamesAfter.toISOString());
+        }
+        if (gamesBefore != null) {
+            query.set("gamesBefore", gamesBefore.toISOString());
+        }
+
+        return BarUserApi.get().readList(`/api/user/${userID}/interactions?${query.toString()}`, BarUserInteractions.parse);
     }
 
     public static search(text: string, searchPreviousNames: boolean = false, includeSkill: boolean = true): Promise<Loading<UserSearchResult[]>> {

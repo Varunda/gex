@@ -378,6 +378,15 @@
         return Number.parseInt(datasetIdStr);
     }
 
+    const getDatasetLabelFromId = (id: number): string => {
+        if (id < 0) {
+            return `ally-team-${(-1 * id) - 1}`;
+        } else {
+            return `team-${id}`;
+        }
+        return "";
+    };
+
     let chart: Chart | null = null;
 
     // 2025-04-13 TODO: ok, how i handle the teams and ally teams is fucking awful
@@ -410,6 +419,7 @@
 
                 showAnnotations: true as boolean,
                 annotations: {} as any,
+                annotationIdMap: new Map() as Map<string, string>,
 
                 unitGraph: {
                     showing: false as boolean,
@@ -421,18 +431,52 @@
         mounted: function(): void {
 
             EventBus.$on("enable-dataset-id", (datasetId: number) => {
-                console.log(`TeamStatsChart> enable-dataset-id ${datasetId}`);
+                console.log(`TeamStatsChart> enable-dataset-id ${datasetId} ${getDatasetLabelFromId(datasetId)}`);
                 this.shownStats.add(datasetId);
+
+
+                const datasetLabel: string = getDatasetLabelFromId(datasetId);
+                for (const entry of this.annotationIdMap) {
+                    if (entry[0].startsWith(datasetLabel + "-") == false) {
+                        continue;
+                    }
+
+                    for (const anno of this.annotations) {
+                        if (anno.id == entry[1]) {
+                            console.log(`TeamStatsChart> enabling annotation ${entry[0]}/${entry[1]} ${anno.id}`);
+                            anno.display = true;
+                        }
+                    }
+                }
+
+                this.updateAnnotationYAdjust();
             });
 
             EventBus.$on("disable-dataset-id", (datasetId: any) => {
-                console.log(`TeamStatsChart> diable-dataset-id ${datasetId}`);
+                console.log(`TeamStatsChart> disable-dataset-id ${datasetId} ${getDatasetLabelFromId(datasetId)}`);
                 this.shownStats.delete(datasetId);
+
+                const datasetLabel: string = getDatasetLabelFromId(datasetId);
+                for (const entry of this.annotationIdMap) {
+                    if (entry[0].startsWith(datasetLabel + "-") == false) {
+                        continue;
+                    }
+
+                    for (const anno of this.annotations) {
+                        if (anno.id == entry[1]) {
+                            console.log(`TeamStatsChart> disabling annotation ${entry[0]}/${entry[1]} ${anno.id}`);
+                            anno.display = false;
+                        }
+                    }
+                }
+
+                this.updateAnnotationYAdjust();
             });
 
+            // by default, if the game isn't a 1v1, only show the team aggregate stats
+            const largestTeam: number = Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
+
             this.$nextTick(() => {
-                // by default, if the game isn't a 1v1, only show the team aggregate stats
-                const largestTeam: number = Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
                 if (largestTeam == 1) {
                     this.shownStats = new Set(this.teamIds);
                     this.validDatasetIds = new Set(this.teamIds);
@@ -449,8 +493,14 @@
                 this.showDataset("armyValue");
             });
 
-            for (const allyTeam of this.match.allyTeams) {
-                this.milestones.push(...Milestone.compute(this.match, this.output, `ally-team-${allyTeam.allyTeamID}`))
+            for (const team of this.match.players) {
+                this.milestones.push(...Milestone.compute(this.match, this.output, `team-${team.teamID}`));
+            }
+
+            if (largestTeam != 1) {
+                for (const allyTeam of this.match.allyTeams) {
+                    this.milestones.push(...Milestone.compute(this.match, this.output, `ally-team-${allyTeam.allyTeamID}`));
+                }
             }
         },
 
@@ -473,29 +523,51 @@
 
                 const labelAlternatingState: Map<number, boolean> = new Map();
 
-                this.annotations = this.milestones.filter(iter => iter.interest > 1).map(iter => {
-                    const allyTeamID = Number.parseInt(iter.entity.split("-")[2]);
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.allyTeamID == allyTeamID);
+                this.annotations = this.milestones.sort((a, b) => {
+                    return a.frame - b.frame;
+                }).filter(iter => iter.interest > 1).map(iter => {
 
-                    console.log(`TeamStatsChart> ally team ${allyTeamID} did ${iter.action} on frame ${iter.frame}/${iter.frame / 30}`);
+                    let color: string = "#ffffff";
+                    let yAdjust: number = 0;
 
-                    const altLabel: boolean = labelAlternatingState.get(allyTeamID) ?? false;
-                    labelAlternatingState.set(allyTeamID, !altLabel);
+                    if (iter.entity.startsWith("ally-team-")) {
+                        const allyTeamID = Number.parseInt(iter.entity.split("-")[2]);
+                        const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.allyTeamID == allyTeamID);
+                        color = player?.hexColor ?? "#ffffff";
+
+                        const altLabel: boolean = labelAlternatingState.get(allyTeamID) ?? false;
+                        labelAlternatingState.set(allyTeamID, !altLabel);
+
+                        yAdjust = (allyTeamID * 64) - 16 + (altLabel == true ? -32 : 0);
+                    } else if (iter.entity.startsWith("team-")) {
+                        const teamID = Number.parseInt(iter.entity.split("-")[1]);
+                        const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
+                        color = player?.hexColor ?? "#ffffff";
+                    }
+                    //console.log(`TeamStatsChart> ally team ${allyTeamID} did ${iter.action} on frame ${iter.frame}/${iter.frame / 30} (alt=${altLabel}) (adjust=${yAdjust})`);
+
+                    const id: string = `${iter.entity}-${iter.action.replaceAll(" ", "_")}`;
+                    this.annotationIdMap.set(id, `${this.annotationIdMap.size}`);
 
                     return {
+                        id: id,
                         type: "line",
                         xMin: iter.frame,
                         xMax: iter.frame,
-                        borderColor: player?.hexColor ?? "#ffffff",
+                        display: this.isDuel || (iter.entity.startsWith("ally-team-")),
+
+                        borderColor: color,
                         z: 10,
-                        enter: (ctx) => {
+                        enter: (ctx: any) => {
                             ctx.element.options.z = 200;
                             ctx.element.label.options.z = 300;
+                            ctx.element.label.options.borderColor = "#ffffff";
                             return true;
                         },
-                        leave: (ctx) => {
+                        leave: (ctx: any) => {
                             ctx.element.options.z = 10;
                             ctx.element.label.options.z = 100;
+                            ctx.element.label.options.borderColor = "#666666";
                             return true;
                         },
                         label: {
@@ -505,12 +577,14 @@
                                 family: "Atkinson Hyperlegible",
                                 size: 14
                             },
-                            yAdjust: (allyTeamID * 60) - 15 + (altLabel == true ? -30 : 0),
+                            borderColor: "#666666",
+                            borderWidth: 1,
+                            yAdjust: yAdjust,
                             z: 100,
-                            color: player?.hexColor ?? "#ffffff"
+                            color: color
                         }
                     }
-                })
+                });
 
                 chart = new Chart(ctx, {
                     type: "line",
@@ -571,7 +645,7 @@
                                 intersect: false,
                                 callbacks: {
                                     title: function(ctx) {
-                                        return TimeUtils.duration((ctx.at(0)!.raw as any).x / 30)
+                                        return TimeUtils.duration((ctx.at(0)!.raw as any).x / 30);
                                     }
                                 },
                                 external: (ctx) => TableUtils.chart("team-stats-chart-tooltip", ctx,
@@ -815,6 +889,17 @@
 
                 chart.update();
             },
+
+            updateAnnotationYAdjust: function(): void {
+                const enabled: any[] = this.annotations.filter((iter: any) => iter.display == true);
+
+                for (let i = 0; i < enabled.length; ++ i) {
+                    const anno = enabled[i];
+                    anno.label.yAdjust = ((i % 8) * 32) - 128;
+                }
+
+                chart?.update();
+            }
         },
 
         computed: {
@@ -846,6 +931,11 @@
 
             datasetIds: function(): number[] {
                 return [...this.teamIds, ...this.allyTeamIdsAsDatasetIds];
+            },
+
+            isDuel: function(): boolean {
+                const largestTeam: number = Math.max(...this.match.allyTeams.map(iter => iter.playerCount));
+                return largestTeam == 1;
             }
         },
 

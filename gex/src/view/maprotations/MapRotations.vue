@@ -35,7 +35,7 @@
 
                     <h6 class="d-inline-block">
                         Command to set this rotation:
-                        <code>rotationtype map;{{ rotation.name }}</code>
+                        <code>!rotationtype map;{{ rotation.name }}</code>
                     </h6>
                 </h3>
 

@@ -267,6 +267,12 @@ namespace gex.Controllers.Api {
         ///     get the <see cref="ApiBarUserInteractions"/> of a <see cref="BarUser"/>
         /// </summary>
         /// <param name="userID"><see cref="BarUser.UserID"/> of the <see cref="BarUser"/> to get the interactions of</param>
+        /// <param name="gamesAfter">
+        ///     if provided, will only include games after this timestamp
+        /// </param>
+        /// <param name="gamesBefore">
+        ///     if provided, will only include games before this timestamp
+        /// </param>
         /// <param name="cancel">cancellation token</param>
         /// <response code="200">
         ///     the response will contain a list of <see cref="ApiBarUserInteractions"/> for the user, broken into gamemodes,
@@ -276,13 +282,27 @@ namespace gex.Controllers.Api {
         ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
         /// </response>
         [HttpGet("{userID}/interactions")]
-        public async Task<ApiResponse<List<ApiBarUserInteractions>>> GetUserInteractions(long userID, CancellationToken cancel = default) {
+        public async Task<ApiResponse<List<ApiBarUserInteractions>>> GetUserInteractions(
+            long userID,
+            [FromQuery] DateTime? gamesAfter = null,
+            [FromQuery] DateTime? gamesBefore = null,
+            CancellationToken cancel = default
+        ) {
             BarUser? user = await _UserRepository.GetByID(userID, cancel);
             if (user == null) {
                 return ApiNoContent<List<ApiBarUserInteractions>>();
             }
 
             List<BarMatch> matches = await _MatchRepository.GetByUserID(userID, cancel);
+            if (gamesAfter != null || gamesBefore != null) {
+                matches = matches.Where(iter => {
+                    return (
+                        (gamesAfter == null || iter.StartTime > gamesAfter.Value)
+                        && (gamesBefore == null || iter.StartTime <= gamesBefore.Value)
+                    );
+                }).ToList();
+            }
+
             Dictionary<string, BarMatch> matchDict = matches.ToDictionary(iter => iter.ID);
 
             List<BarMatchPlayer> players = await _MatchPlayerRepository.GetByUserID(userID, cancel);
@@ -310,7 +330,6 @@ namespace gex.Controllers.Api {
             Dictionary<string, BarUserInteractions> ints = [];
 
             foreach (BarMatchPlayer p in players) {
-
                 BarMatch? match = matchDict.GetValueOrDefault(p.GameID);
                 if (match == null) {
                     _Logger.LogWarning($"missing match for interactions [gameID={p.GameID}] [userID={userID}]");

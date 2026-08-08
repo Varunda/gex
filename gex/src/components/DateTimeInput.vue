@@ -1,6 +1,6 @@
 ﻿<template>
     <div class="input-group">
-        <input type="datetime-local" :value="str" @input="handleInput" class="form-control" />
+        <input type="datetime-local" :value="str" @input="handleInput" class="form-control" @change="handleInput" @blur="handleInput" />
         <button v-if="AllowNull" class="btn btn-secondary" title="clear date" @click="updateValue(null)">&times;</button>
     </div>
 </template>
@@ -39,6 +39,7 @@
 
             handleInput: function(ev: any): void {
                 const target: HTMLInputElement = ev.target;
+                console.log(`DateTimeInput> ${target.value}`);
                 this.updateValue(target.value);
             },
 
