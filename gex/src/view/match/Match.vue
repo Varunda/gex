@@ -99,9 +99,18 @@
                             </span>
                         </h2>
 
-                        <div>
+                        <div class="border-top pt-3">
                             <h4>
-                                View on <a :href="'https://www.beyondallreason.info/replays?gameId=' + gameID">Beyond All Reason website</a>
+                                View on:
+                            </h4>
+
+                            <h4>
+                                <a class="border px-2 rounded" :href="'https://www.beyondallreason.info/replays?gameId=' + gameID" target="_blank" ref="nofollow">Beyond All Reason website</a>
+
+                                <a v-if="teiBattleId != 0 && Number.isNaN(teiBattleId) == false" class="border rounded px-2" 
+                                    :href="'https://server4.beyondallreason.info/battle/' + teiBattleId" target="_blank" ref="nofollow">
+                                    Teiserver
+                                </a>
                             </h4>
                         </div>
                     </div>
@@ -1025,6 +1034,14 @@
 
             isBadGameVersion: function(): boolean {
                 return this.match.state == "loaded" && this.match.data.isBadGameVersion;
+            },
+
+            teiBattleId: function(): number {
+                if (this.match.state != "loaded") {
+                    return 0;
+                }
+
+                return Number.parseInt(this.match.data.hostSettings.server_match_id);
             }
         },
 

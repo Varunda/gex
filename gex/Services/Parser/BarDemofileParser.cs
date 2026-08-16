@@ -999,7 +999,8 @@ namespace gex.Services.Parser {
                 byte spadsGamemode = BarGamemode.GetByPlayers(spadsTeamCount, spadsTeamSize);
                 match.WrongSkillValues = match.Gamemode != spadsGamemode;
                 if (match.WrongSkillValues == true) {
-                    _Logger.LogInformation($"got demofile with wrong skill values [gameID={match.ID}] [gamemode={match.Gamemode}] [spads={spadsGamemode}]");
+                    _Logger.LogInformation($"got demofile with wrong skill values "
+                        + $"[gameID={match.ID}] [gamemode={match.Gamemode}] [spads={spadsGamemode}] [spads team count={spadsTeamCount}] [spads team size={spadsTeamSize}]");
                 }
             } else {
                 _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");

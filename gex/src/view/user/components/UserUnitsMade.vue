@@ -178,7 +178,6 @@
     import "filters/MomentFilter";
 
     import ColorUtils from "util/Color";
-import { FactionUtil } from "util/Faction";
 
     type UnitsMade = {
         definitionName: string;
@@ -293,6 +292,7 @@ import { FactionUtil } from "util/Faction";
         },
 
         mounted: function(): void {
+            this.agg = Loadable.loading();
             BarUserApi.getUnitsMadeByUserID(this.user.userID).then((value: Loading<BarUser>) => {
                 this.agg = value;
             });

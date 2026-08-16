@@ -48,6 +48,9 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return true;
             }
 
+            // if a match is in the wrong gamemode here, it doesn't actually matter, as Gex is providing the Gamemode value,
+            // so ONLY the skill values are incorrect
+            // this is fine, as skill isn't used anywhere on this page
             matches = matches.Where(iter => iter.Map == entry.Map && iter.Gamemode == entry.Gamemode).ToList();
             if (matches.Count == 0) {
                 if (entry.MaybeNone == false) {
@@ -65,10 +68,6 @@ namespace gex.Services.Hosted.QueueProcessor {
             // for each match, check if there was a winning ally team (else it was a tie), then check
             //      what ally team the player was on, and if they won or not
             foreach (BarMatch match in matches) {
-                if (match.WrongSkillValues == true) {
-                    continue;
-                }
-
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);
 
                 // tie check, if no teams won, then it's a tie. no need to load players then!

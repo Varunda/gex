@@ -58,7 +58,7 @@
                         {{ entry.lossCount }}
                     </span>
                     <span>
-                        ({{ entry.winCount / Math.max(1, entry.playCount) * 100 | locale(0) }}%)
+                        ({{ entry.winCount / Math.max(1, entry.winCount + entry.lossCount) * 100 | locale(0) }}%)
                     </span>
                 </a-body>
             </a-col>

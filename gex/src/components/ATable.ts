@@ -373,7 +373,17 @@ export const ATable = Vue.extend({
             }
 
             if (this.entries.state == "idle") {
+                tbody.push(createElement("tr", [
+                    createElement("td", {
+                        attrs: {
+                            "colspan": `${this.nodes.columns.length}`
+                        }
+                    }, [
+                        "loadable is idle. this is probably an error if a user can see this"
+                    ])
+                ]));
 
+                this.$emit("rerender", Loadable.idle());
             } else if (this.entries.state == "loading") {
                 tbody.push(createElement("tr", [
                     createElement("td", {

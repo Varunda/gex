@@ -11,7 +11,9 @@ export type GroupedFactionGamemode = {
     cortex: GroupedFaction | null;
     legion: GroupedFaction | null;
     random: GroupedFaction | null;
+    count: number;
     sum: GroupedFaction;
     averageSkillDiff: number;
     averageSkill: number;
+    wrongSkillCount: number;
 }

@@ -46,6 +46,10 @@
                 <span v-else>
                     {{ -1 * faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> above this user
                 </span>
+
+                <span v-if="faction.wrongSkillCount > 0" class="text-muted">
+                    (Excluding {{ faction.wrongSkillCount }} matches due to the demofiles containing the wrong skill values)
+                </span>
             </span>
         </div>
     </div>
@@ -127,8 +131,14 @@
                 const skill: Map<number, number> = new Map();
                 const count: Map<number, number> = new Map();
                 const diff: Map<number, number> = new Map();
+                const wrongSkill: Map<number, number> = new Map();
 
                 for (const match of this.matches) {
+                    if (match.wrongSkillValues == true) {
+                        wrongSkill.set(match.gamemode, (wrongSkill.get(match.gamemode) ?? 0) + 1);
+                        continue;
+                    }
+
                     if (skill.has(match.gamemode) == false) {
                         skill.set(match.gamemode, 0);
                         count.set(match.gamemode, 0);
@@ -211,9 +221,11 @@
                         cortex: iter[1].find(iter => iter.faction == FactionUtil.CORTEX) ?? null,
                         legion: iter[1].find(iter => iter.faction == FactionUtil.LEGION) ?? null,
                         random: iter[1].find(iter => iter.faction == FactionUtil.RANDOM) ?? null,
+                        count: c,
                         sum: sum,
                         averageSkill: (skill.get(iter[0]) ?? 0) / Math.max(1, c),
-                        averageSkillDiff: (diff.get(iter[0]) ?? 0)
+                        averageSkillDiff: (diff.get(iter[0]) ?? 0),
+                        wrongSkillCount: wrongSkill.get(iter[0]) ?? 0
                     }
                 }).sort((a, b) => {
                     return b.sum.playCount - a.sum.playCount;

@@ -40,6 +40,12 @@ namespace gex.Common.Code.Constants {
             };
         }
 
+        /// <summary>
+        ///     get the <see cref="BarGamemode"/> based on the number of teams and how many players are in each time
+        /// </summary>
+        /// <param name="teamCount">number of teams</param>
+        /// <param name="teamSize">size of teams</param>
+        /// <returns></returns>
         public static byte GetByPlayers(int teamCount, int teamSize) {
             if (teamCount == 2 && teamSize == 1) {
                 return BarGamemode.DUEL;

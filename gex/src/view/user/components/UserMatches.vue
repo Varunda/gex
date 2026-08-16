@@ -132,6 +132,9 @@
                 </a-header>
 
                 <a-body v-slot="entry">
+                    <span v-if="entry.wrongSkillValues == true" class="bi bi-exclamation-octagon-fill text-warning"
+                        title="This match contains the wrong skill values for this gamemode">
+                    </span>
                     <user-match-rating-cell :user-id="user.userID" :match="entry"></user-match-rating-cell>
                 </a-body>
             </a-col>
@@ -150,7 +153,8 @@
                                     title="This match is for a bad version and cannot be processed"></span>
 
                                 <span v-else-if="entry.processing == null || entry.processing.actionsParsed == null" class="bi bi-cone text-warning"
-                                    title="This match has not been fully processed!"></span>
+                                    title="This match has not been fully processed!">
+                                </span>
                             </span>
                         </a>
 

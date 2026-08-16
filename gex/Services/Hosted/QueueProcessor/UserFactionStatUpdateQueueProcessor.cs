@@ -49,6 +49,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return true;
             }
 
+            // no filter for WrongSkillValues is needed, as the skill value from the matches is not used
             matches = matches.Where(iter => iter.Gamemode == entry.Gamemode).ToList();
             if (matches.Count == 0) {
                 if (entry.MaybeNone == false) {
@@ -65,10 +66,6 @@ namespace gex.Services.Hosted.QueueProcessor {
             // for each match, check if there was a winning ally team (else it was a tie), then check
             //      what ally team the player was on, and if they won or not
             foreach (BarMatch match in matches) {
-                if (match.WrongSkillValues == true) {
-                    continue;
-                }
-
                 List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(match.ID, cancel);
                 BarMatchPlayer? player = players.FirstOrDefault(iter => iter.UserID == entry.UserID);
 

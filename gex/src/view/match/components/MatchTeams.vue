@@ -242,9 +242,31 @@
                 });
             },
 
+            spadsTeamCount: function(): number {
+                const v: any = this.match.spadsSettings.nbteams;
+                if (typeof(v) == "number") {
+                    return v;
+                } else if (typeof(v) == "string") {
+                    return Number.parseInt(v);
+                } else {
+                    throw `unchecked type of value: ${typeof(v)}`;
+                }
+            },
+
+            spadsTeamSize: function(): number {
+                const v: any = this.match.spadsSettings.teamsize;
+                if (typeof(v) == "number") {
+                    return v;
+                } else if (typeof(v) == "string") {
+                    return Number.parseInt(v);
+                } else {
+                    throw `unchecked type of value: ${typeof(v)}`;
+                }
+            },
+
             providedSkillGamemode: function(): number {
-                const teamCount: number = this.match.spadsSettings.nbteams;
-                const teamSize: number = this.match.spadsSettings.teamsize;
+                const teamCount: number = this.spadsTeamCount;
+                const teamSize: number = this.spadsTeamSize;
 
                 if (teamCount == 2 && teamSize == 1) {
                     return GamemodeUtil.DUEL;

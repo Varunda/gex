@@ -128,6 +128,16 @@ namespace gex.Services.Util {
                 why += $"water is lava; ";
             }
 
+            if (match.GameSettings.GetString("zombies", "disabled") != "disabled") {
+                priority += 40;
+                why += $"zombies enabled; ";
+            }
+
+            if (match.GameSettings.GetString("scavunitsforplayers", "0") == "1") {
+                priority += 10;
+                why += $"extra units on; ";
+            }
+
             if (priority < -1) {
                 _Logger.LogWarning($"found a negative priority after calculating priority! assuming a wrap-around occured "
                     + $"[gameID={match.ID}] [priority={priority}] [why={why}]");
