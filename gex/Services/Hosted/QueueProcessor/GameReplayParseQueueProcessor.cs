@@ -214,6 +214,8 @@ namespace gex.Services.Hosted.QueueProcessor {
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.Priority = priority;
+            processing.ReplayParsed = DateTime.UtcNow;
+            processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
             await _ProcessingRepository.Upsert(processing);
 
             if (_InstanceOptions.Value.EnableWebhooks == true && entry.SkipWebhook == false) {
