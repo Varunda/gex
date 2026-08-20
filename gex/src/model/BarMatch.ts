@@ -11,6 +11,7 @@ import { BarMatchTeamDeath } from "./BarMatchTeamDeath";
 import { BarPlayerCommand } from "./BarPlayerCommand";
 import { BarMatchPlayerLeft } from "./BarMatchPlayerLeft";
 import { HeadlessRunStatus } from "./HeadlessRunStatus";
+import { BarMatchTeam } from "./BarMatchTeam";
 
 export class BarMatch {
     public id: string = "";
@@ -33,6 +34,7 @@ export class BarMatch {
     public mapSettings: any = {};
     public spadsSettings: any = {};
 
+    public teams: BarMatchTeam[] = [];
     public allyTeams: BarMatchAllyTeam[] = [];
     public players: BarMatchPlayer[] = [];
     public spectators: BarMatchSpectator[] = [];
@@ -57,6 +59,20 @@ export class BarMatch {
     public matchPoolIsHidden: boolean = false;
 
     public static parse(elem: any): BarMatch {
+        const players: BarMatchPlayer[] = (elem.players.map((iter: any) => BarMatchPlayer.parse(iter)) as BarMatchPlayer[]).sort((a, b) => a.playerID - b.playerID);
+        const teams: BarMatchTeam[] = (elem.teams.map((iter: any) => BarMatchTeam.parse(iter)) as BarMatchTeam[]).sort((a, b) => a.teamID - b.teamID);
+        for (const team of teams) {
+            const teamPlayers: BarMatchPlayer[] = players.filter(iter => iter.teamID == team.teamID);
+
+            if (teamPlayers.length == 0) {
+                team.name = "<no players?>";
+            } else if (teamPlayers.length == 1) {
+                team.name = teamPlayers[0].username;
+            } else if (teamPlayers.length > 1) {
+                team.name = teamPlayers.map(iter => iter.username).join(" + ");
+            }
+        }
+
         return {
             ...elem,
             startTime: new Date(elem.startTime),
@@ -69,7 +85,8 @@ export class BarMatch {
             spadsSettings: elem.spadsSettings,
 
             allyTeams: (elem.allyTeams.map((iter: any) => BarMatchAllyTeam.parse(iter)) as BarMatchAllyTeam[]).sort((a, b) => a.allyTeamID - b.allyTeamID),
-            players: (elem.players.map((iter: any) => BarMatchPlayer.parse(iter)) as BarMatchPlayer[]).sort((a, b) => a.playerID - b.playerID),
+            teams: teams,
+            players: players,
             spectators: (elem.spectators.map((iter: any) => BarMatchSpectator.parse(iter)) as BarMatchSpectator[]).sort((a, b) => a.username.localeCompare(b.username)),
             chatMessages: elem.chatMessages.map((iter: any) => BarMatchChatMessage.parse(iter)),
             teamDeaths: elem.teamDeaths.map((iter: any) => BarMatchTeamDeath.parse(iter)),

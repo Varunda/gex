@@ -22,8 +22,8 @@ namespace gex.Tests.Util {
             DbHelper dbHelper = new DbHelper(
                 logger: new TestLogger<DbHelper>(log),
                 config: new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>() {
-                    { "ConnectionStrings:gex", container.GetConnectionString() },
-                    { "ConnectionStrings:event", container.GetConnectionString() },
+                    { "ConnectionStrings:gex", container.GetConnectionString() + ";Include Error Detail=true" },
+                    { "ConnectionStrings:event", container.GetConnectionString() + ";Include Error Detail=true" },
                 }).Build()
             );
 

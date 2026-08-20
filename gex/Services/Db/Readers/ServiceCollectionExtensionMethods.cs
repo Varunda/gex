@@ -13,6 +13,7 @@ namespace gex.Services.Db.Readers {
             services.AddSingleton<IDataReader<BarMatchPlayer>, BarMatchPlayerDbReader>();
             services.AddSingleton<IDataReader<BarMatchSpectator>, BarMatchSpectatorDbReader>();
             services.AddSingleton<IDataReader<BarMatchChatMessage>, BarMatchChatMessageDbReader>();
+            services.AddSingleton<IDataReader<BarMatchTeam>, BarMatchTeamDbReader>();
         }
 
     }

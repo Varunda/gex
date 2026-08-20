@@ -13,8 +13,6 @@ namespace gex.Models.Map {
     [DapperColumnsMapped]
     public class StartSpotData {
 
-        private const float PLAYER_START_SPOT_MAX_DISTANCE = 300f * 300f;
-
         [ColumnMapping("map_filename")]
         public string MapFilename { get; set; } = "";
 

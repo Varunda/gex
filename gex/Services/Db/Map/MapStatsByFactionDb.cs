@@ -46,10 +46,10 @@ namespace gex.Services.Db.Map {
 					m.map_name ""map_file_name"",
 					m.gamemode ""gamemode"",
 					CASE
-						WHEN p.faction = 'Armada' THEN 1
-						WHEN p.faction = 'Cortex' THEN 2 
-						WHEN p.faction = 'Legion' THEN 3
-						WHEN p.faction = 'Random' THEN 4
+						WHEN t.faction = 'Armada' THEN 1
+						WHEN t.faction = 'Cortex' THEN 2 
+						WHEN t.faction = 'Legion' THEN 3
+						WHEN t.faction = 'Random' THEN 4
 					END ""faction"",
 					
 					NOW() at time zone 'utc' ""timestamp"",
@@ -67,12 +67,12 @@ namespace gex.Services.Db.Map {
 					count(*) filter (where m.start_time >= (NOW() at time zone 'utc' - '1 day'::interval) AND at.won = true) ""win_count_day""
 				FROM
 					bar_match m
-					LEFT JOIN bar_match_player p ON p.game_id = m.id
-					LEFT JOIN bar_match_ally_team at ON p.ally_team_id = at.ally_team_id AND p.game_id = at.game_id
+					INNER JOIN bar_match_team t ON t.game_id = m.id
+					INNER JOIN bar_match_ally_team at ON t.ally_team_id = at.ally_team_id AND t.game_id = at.game_id
 				WHERE
 					m.map_name = @MapFileName
 					AND m.gamemode <> 0
-				GROUP BY m.map_name, m.gamemode, p.faction;
+				GROUP BY m.map_name, m.gamemode, t.faction;
 
 				COMMIT TRANSACTION;
 			", cancel);

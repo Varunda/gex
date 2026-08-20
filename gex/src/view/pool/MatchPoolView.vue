@@ -302,6 +302,7 @@
     import ColorUtils from "util/Color";
 
     import "filters/LocaleFilter";
+import { BarMatchTeam } from "model/BarMatchTeam";
 
     type MapStats = {
         mapName: string;
@@ -472,9 +473,9 @@
                     ++stat.plays;
 
                     for (const allyTeam of match.allyTeams) {
-                        const players: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
+                        const teams: BarMatchTeam[] = match.teams.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
 
-                        for (const p of players) {
+                        for (const p of teams) {
                             const addWin: number = allyTeam.won ? 1 : 0;
                             if (p.faction == "Cortex") {
                                 ++stat.cortexPlays;
@@ -530,57 +531,61 @@
                 for (const match of this.matches.data) {
 
                     for (const allyTeam of match.allyTeams) {
-                        const players: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
+                        const teams: BarMatchTeam[] = match.teams.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
 
-                        for (const p of players) {
-                            const stat: PlayerStats = map.get(p.userID) ?? {
-                                userID: p.userID,
-                                username: p.username,
-                                plays: 0,
-                                wins: 0,
-                                factionPref: "",
-                                flag: undefined,
-                                cortexPlays: 0,
-                                cortexWins: 0,
-                                armadaPlays: 0,
-                                armadaWins: 0,
-                                randomPlays: 0,
-                                randomWins: 0,
-                                legionPlays: 0,
-                                legionWins: 0,
-                                durations: [],
-                                averageDurationMs: 0
-                            };
+                        for (const t of teams) {
 
-                            if (stat.plays == 0) {
-                                const u: BarUser | undefined = userDict.get(p.userID);
-                                if (u == undefined) {
-                                    console.warn(`MatchPoolView> missing userDict entry for user [userID=${p.userID}]`);
-                                } else {
-                                    stat.flag = u.countryCode ?? undefined;
+                            const players: BarMatchPlayer[] = match.players.filter(iter => iter.teamID == t.teamID);
+                            for (const p of players) {
+                                const stat: PlayerStats = map.get(p.userID) ?? {
+                                    userID: p.userID,
+                                    username: p.username,
+                                    plays: 0,
+                                    wins: 0,
+                                    factionPref: "",
+                                    flag: undefined,
+                                    cortexPlays: 0,
+                                    cortexWins: 0,
+                                    armadaPlays: 0,
+                                    armadaWins: 0,
+                                    randomPlays: 0,
+                                    randomWins: 0,
+                                    legionPlays: 0,
+                                    legionWins: 0,
+                                    durations: [],
+                                    averageDurationMs: 0
+                                };
+
+                                if (stat.plays == 0) {
+                                    const u: BarUser | undefined = userDict.get(p.userID);
+                                    if (u == undefined) {
+                                        console.warn(`MatchPoolView> missing userDict entry for user [userID=${p.userID}]`);
+                                    } else {
+                                        stat.flag = u.countryCode ?? undefined;
+                                    }
                                 }
-                            }
 
-                            stat.durations.push(match.durationMs);
-                            ++stat.plays;
-                            const addWin: number = (allyTeam.won == true) ? 1 : 0;
-                            if (p.faction == "Cortex") {
-                                ++stat.cortexPlays;
-                                stat.cortexWins += addWin;
-                            } else if (p.faction == "Armada") {
-                                ++stat.armadaPlays;
-                                stat.armadaWins += addWin;
-                            } else if (p.faction == "Legion") {
-                                ++stat.legionPlays;
-                                stat.legionWins += addWin;
-                            } else if (p.faction == "Random") {
-                                ++stat.randomPlays;
-                                stat.randomWins += addWin;
-                            } else {
-                                console.warn(`MatchPoolView> unhandled faction '${p.faction}' from player ${p.username} in game ${match.id}`);
-                            }
+                                stat.durations.push(match.durationMs);
+                                ++stat.plays;
+                                const addWin: number = (allyTeam.won == true) ? 1 : 0;
+                                if (t.faction == "Cortex") {
+                                    ++stat.cortexPlays;
+                                    stat.cortexWins += addWin;
+                                } else if (t.faction == "Armada") {
+                                    ++stat.armadaPlays;
+                                    stat.armadaWins += addWin;
+                                } else if (t.faction == "Legion") {
+                                    ++stat.legionPlays;
+                                    stat.legionWins += addWin;
+                                } else if (t.faction == "Random") {
+                                    ++stat.randomPlays;
+                                    stat.randomWins += addWin;
+                                } else {
+                                    console.warn(`MatchPoolView> unhandled faction '${t.faction}' from player ${t.name} in game ${match.id}`);
+                                }
 
-                            map.set(p.userID, stat);
+                                map.set(p.userID, stat);
+                            }
                         }
                     }
                 }

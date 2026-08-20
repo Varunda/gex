@@ -24,7 +24,7 @@
                                         <div class="tile-team"
                                             :style="getTeamPanelStyle(match, allyTeam)">
 
-                                            <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
+                                            <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.playerID" :title="player.username"
                                                 :style="{
                                                     'text-shadow': '1px 1px 1px #000000',
                                                     'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
@@ -301,7 +301,7 @@
             },
 
             getAllyTeamColor: function(match: BarMatch, allyTeam: BarMatchAllyTeam): string {
-                return match.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
+                return match.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
             },
 
             getMatchMaxPlayers: function(match: BarMatch): number {

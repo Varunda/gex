@@ -4,12 +4,12 @@ import * as d3z from "d3-zoom";
 import "d3-contour";
 import "d3-color";
 
-import { BarMatchPlayer } from "model/BarMatchPlayer";
+import { BarMatchTeam } from "model/BarMatchTeam";
 
 onmessage = (ev) => {
 
     const deathLocations: [number, number][] = ev.data[0];
-    const player: BarMatchPlayer = ev.data[1];
+    const team: BarMatchTeam = ev.data[1];
     const imgW: number = ev.data[2];
     const imgH: number = ev.data[3];
     const mapW: number = ev.data[4];
@@ -24,5 +24,5 @@ onmessage = (ev) => {
     function toImgX(x: number): number { return x / mapW * imgW; };
     function toImgZ(z: number): number { return z / mapH * imgH; };
 
-    postMessage([heatmap, player]);
+    postMessage([heatmap, team]);
 };

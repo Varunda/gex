@@ -24,6 +24,7 @@ namespace gex.Services.Repositories {
         private readonly ILogger<BarMatchRepository> _Logger;
         private readonly BarMatchDb _MatchDb;
 
+        private readonly BarMatchTeamDb _TeamDb;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
@@ -48,10 +49,11 @@ namespace gex.Services.Repositories {
             BarMatchDb matchDb, IMemoryCache cache,
             BarMatchAllyTeamDb allyTeamDb, BarMatchChatMessageDb chatMessageDb,
             BarMatchSpectatorDb spectatorDb, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerRepository playerRepository, 
+            BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerRepository playerRepository,
             BarMatchProcessingRepository processingRepository, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, MatchPoolRepository matchPoolRepository,
-            MatchPoolEntryDb matchPoolEntryDb, BarMatchTextPingDb textPingDb) { 
+            MatchPoolEntryDb matchPoolEntryDb, BarMatchTextPingDb textPingDb,
+            BarMatchTeamDb teamDb) {
 
             _Logger = logger;
             _MatchDb = matchDb;
@@ -68,6 +70,7 @@ namespace gex.Services.Repositories {
             _MatchPoolRepository = matchPoolRepository;
             _MatchPoolEntryDb = matchPoolEntryDb;
             _TextPingDb = textPingDb;
+            _TeamDb = teamDb;
         }
 
         public async Task<BarMatch?> GetByID(string gameID, CancellationToken cancel) {
@@ -87,10 +90,10 @@ namespace gex.Services.Repositories {
         /// <summary>
         ///     build a <see cref="BarMatch"/>, loading all the options a user might be interested in
         /// </summary>
-        /// <param name="gameID"></param>
-        /// <param name="options"></param>
-        /// <param name="currentUser"></param>
-        /// <param name="cancel"></param>
+        /// <param name="gameID">ID of the <see cref="BarMatch"/> to load and build</param>
+        /// <param name="options">options used to control what fields in the returned <see cref="BarMatch"/> are populated</param>
+        /// <param name="currentUser">the user making the request. used to check for match pool privacy. pass null to skip this check</param>
+        /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         public async Task<Result<BarMatch?, string>> BuildMatch(string gameID,
@@ -119,7 +122,7 @@ namespace gex.Services.Repositories {
                         MatchPool allowedPool = await _MatchPoolRepository.GetByID(entry.PoolID, cancel)
                             ?? throw new Exception($"failsafe tripped, if canView is true, then how is this pool null?");
                         if (allowedPool.HideUntil != null) {
-                            match.MatchPoolIsHidden = DateTime.UtcNow > allowedPool.HideUntil;
+                            match.MatchPoolIsHidden = DateTime.UtcNow < allowedPool.HideUntil;
                         }
                         break;
                     }
@@ -128,6 +131,24 @@ namespace gex.Services.Repositories {
                 if (canView == false) {
                     return "no permission to view this match";
                 }
+            }
+
+            if (proc != null && proc.Features.Contains("teams") == false) {
+                _Logger.LogDebug($"match is missing teams feature, fixing [gameID={gameID}]");
+                Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions(), cancel);
+                if (fromDemofile.IsOk == false) {
+                    _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                    Debug.Fail("failed to parse demofile");
+                    return $"failed to parse demofile for match [error={fromDemofile.Error}]";
+                }
+
+                foreach (BarMatchTeam team in fromDemofile.Value.Teams) {
+                    await _TeamDb.Insert(team, cancel);
+                }
+            }
+
+            if (options.IncludeTeams == true) {
+                match.Teams = await _TeamDb.GetByGameID(gameID, cancel);
             }
 
             if (options.IncludeAllyTeams == true) {
@@ -159,6 +180,7 @@ namespace gex.Services.Repositories {
                     Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions(), cancel);
                     if (fromDemofile.IsOk == false) {
                         _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                        Debug.Fail("failed to parse demofile");
                         return $"failed to parse demofile for match [error={fromDemofile.Error}]";
                     }
 
@@ -188,6 +210,7 @@ namespace gex.Services.Repositories {
 
                     if (fromDemofile.IsOk == false) {
                         _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                        Debug.Fail("failed to parse demofile");
                         return $"failed to parse demofile for match [error={fromDemofile.Error}]";
                     }
 
@@ -235,6 +258,7 @@ namespace gex.Services.Repositories {
                 }, cancel);
                 if (fromDemofile.IsOk == false) {
                     _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                    Debug.Fail("failed to parse demofile");
                     return $"failed to parse demofile for match [error={fromDemofile.Error}]";
                 }
 
@@ -391,6 +415,7 @@ namespace gex.Services.Repositories {
         }
 
         public class BuildOptions {
+            public bool IncludeTeams { get; set; } = false;
             public bool IncludeAllyTeams { get; set; } = false;
             public bool IncludePlayers { get; set; } = false;
             public bool IncludeChat { get; set; } = false;

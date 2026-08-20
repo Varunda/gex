@@ -20,13 +20,14 @@ namespace gex.Services.Migrations {
         private readonly BarMapRepository _MapRepository;
         private readonly BarMatchDb _MatchDb;
         private readonly BarMatchPlayerDb _MatchPlayerDb;
+        private readonly BarMatchTeamDb _TeamDb;
         private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
 
         public BarMatchPlayerStartSpotMigration(ILogger<BarMatchPlayerStartSpotMigration> logger,
             BarMapRepository mapRepository, BarMatchDb matchDb,
             BarMatchPlayerDb matchPlayerDb, StartSpotDataRepository startSpotDataRepository,
-            BarMatchAllyTeamDb matchAllyTeamDb) {
+            BarMatchAllyTeamDb matchAllyTeamDb, BarMatchTeamDb teamDb) {
 
             _Logger = logger;
             _MapRepository = mapRepository;
@@ -34,6 +35,7 @@ namespace gex.Services.Migrations {
             _MatchPlayerDb = matchPlayerDb;
             _StartSpotDataRepository = startSpotDataRepository;
             _MatchAllyTeamDb = matchAllyTeamDb;
+            _TeamDb = teamDb;
         }
 
         /// <summary>
@@ -48,6 +50,8 @@ namespace gex.Services.Migrations {
                 _Logger.LogDebug($"fixing player start for map [map={map.FileName}]");
                 await FixMap(map, cancel);
             }
+
+            _Logger.LogInformation($"done fixing all player start spot data in all maps");
         }
 
         /// <summary>
@@ -59,6 +63,12 @@ namespace gex.Services.Migrations {
         public async Task FixMap(BarMap map, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
+
+            StartSpotData? data = await _StartSpotDataRepository.GetLatestByMapFilename(map.FileName, cancel);
+            if (data == null) {
+                _Logger.LogInformation($"cannot fix match players for map, start position data is null [map={map.FileName}]");
+                return;
+            }
 
             long parseStartSpotsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
@@ -77,6 +87,16 @@ namespace gex.Services.Migrations {
             }
             long playerDbMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+            List<BarMatchTeam> teams = await _TeamDb.GetByGameIDs(matches.Select(iter => iter.ID), cancel);
+            Dictionary<string, List<BarMatchTeam>> teamDict = [];
+            foreach (BarMatchTeam team in teams) {
+                if (teamDict.ContainsKey(team.GameID) == false) {
+                    teamDict.Add(team.GameID, new List<BarMatchTeam>());
+                }
+
+                teamDict.GetValueOrDefault(team.GameID)!.Add(team);
+            }
+
             List<BarMatchAllyTeam> allyTeams = await _MatchAllyTeamDb.GetByGameIDs(matches.Select(iter => iter.ID), cancel);
             Dictionary<string, List<BarMatchAllyTeam>> allyTeamDict = [];
             foreach (BarMatchAllyTeam at in allyTeams) {
@@ -88,16 +108,11 @@ namespace gex.Services.Migrations {
             }
 
             foreach (BarMatch match in matches) {
-                List<BarMatchPlayer> matchPlayers = playerDict.GetValueOrDefault(match.ID) ?? [];
+                match.Players = playerDict.GetValueOrDefault(match.ID) ?? [];
                 match.AllyTeams = allyTeamDict.GetValueOrDefault(match.ID) ?? [];
+                match.Teams = teamDict.GetValueOrDefault(match.ID) ?? [];
 
-                StartSpotData? data = await _StartSpotDataRepository.GetLatestByMapFilename(map.FileName, cancel);
-                if (data == null) {
-                    _Logger.LogWarning($"cannot fix match players for map, start position data is null [map={map.FileName}]");
-                    return;
-                }
-
-                await FixMatch(match, matchPlayers, data, cancel);
+                await FixMatch(match, data, cancel);
             }
 
             long updateMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
@@ -110,21 +125,20 @@ namespace gex.Services.Migrations {
         ///     fix the player start spot data of a single match
         /// </summary>
         /// <param name="match"></param>
-        /// <param name="players"></param>
         /// <param name="data"></param>
         /// <param name="cancel"></param>
         /// <returns></returns>
-        public async Task FixMatch(BarMatch match, List<BarMatchPlayer> players, StartSpotData data, CancellationToken cancel) {
-            if (players.Count == 0) {
-                _Logger.LogWarning($"missing players for match [gameID={match.ID}]");
+        public async Task FixMatch(BarMatch match, StartSpotData data, CancellationToken cancel) {
+            if (match.Teams.Count == 0) {
+                _Logger.LogWarning($"missing teams for match [gameID={match.ID}]");
                 return;
             }
 
             int missing = 0;
             int found = 0;
 
-            foreach (BarMatchPlayer player in players) {
-                StartSpotSideStart? nearestSpot = data.GetNearestStartSpot(match.AllyTeams.Count, player.StartingPosition.X, player.StartingPosition.Z);
+            foreach (BarMatchTeam team in match.Teams) {
+                StartSpotSideStart? nearestSpot = data.GetNearestStartSpot(match.AllyTeams.Count, team.StartingPosition.X, team.StartingPosition.Z);
 
                 if (nearestSpot == null) {
                     ++missing;
@@ -133,10 +147,10 @@ namespace gex.Services.Migrations {
 
                 ++found;
 
-                player.StartSpot = nearestSpot.SpawnPoint;
-                player.StartSpotLabel = nearestSpot.Role;
+                team.StartSpot = nearestSpot.SpawnPoint;
+                team.StartSpotLabel = nearestSpot.Role;
 
-                await _MatchPlayerDb.UpdateStartSpot(player, cancel);
+                await _TeamDb.UpdateStartSpot(team, cancel);
             }
         }
 

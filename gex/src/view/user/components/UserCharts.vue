@@ -199,11 +199,13 @@
 
                     const matchPlayer: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
                     if (matchPlayer == undefined) {
+                        debugger;
                         throw `UserInfo> user ${this.user.userID} was not found in match ${match.id}: ${match.players.map(iter => `${iter.username}/${iter.userID}`).join(", ")}`;
                     }
 
                     const allyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(iter => iter.allyTeamID == matchPlayer.allyTeamID);
                     if (allyTeam == undefined) {
+                        debugger;
                         throw `UserInfo> user ${this.user.userID} on ally team ${matchPlayer.allyTeamID} was not found in match ${match.id}: ${match.allyTeams.map(iter => iter.allyTeamID).join(", ")}`;
                     }
 

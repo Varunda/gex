@@ -37,6 +37,7 @@
     import { Loading, Loadable } from "Loading";
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
+    import InfoHover from "components/InfoHover.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarUser } from "model/BarUser";
@@ -66,6 +67,7 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
+            InfoHover
         }
     });
     export default UserPreviousNames;

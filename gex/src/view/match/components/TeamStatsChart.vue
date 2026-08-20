@@ -98,10 +98,9 @@
 
     import Collapsible from "components/Collapsible.vue";
 
-    import { GameEventTeamsStats } from "model/GameEventTeamStats";
     import { BarMatch } from "model/BarMatch";
-    import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { GameOutput } from "model/GameOutput";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import MergedStats from "../compute/MergedStats";
     import { Milestone } from "../compute/Milestones";
@@ -532,8 +531,8 @@
 
                     if (iter.entity.startsWith("ally-team-")) {
                         const allyTeamID = Number.parseInt(iter.entity.split("-")[2]);
-                        const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.allyTeamID == allyTeamID);
-                        color = player?.hexColor ?? "#ffffff";
+                        const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.allyTeamID == allyTeamID);
+                        color = team?.hexColor ?? "#ffffff";
 
                         const altLabel: boolean = labelAlternatingState.get(allyTeamID) ?? false;
                         labelAlternatingState.set(allyTeamID, !altLabel);
@@ -541,8 +540,8 @@
                         yAdjust = (allyTeamID * 64) - 16 + (altLabel == true ? -32 : 0);
                     } else if (iter.entity.startsWith("team-")) {
                         const teamID = Number.parseInt(iter.entity.split("-")[1]);
-                        const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
-                        color = player?.hexColor ?? "#ffffff";
+                        const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == teamID);
+                        color = team?.hexColor ?? "#ffffff";
                     }
                     //console.log(`TeamStatsChart> ally team ${allyTeamID} did ${iter.action} on frame ${iter.frame}/${iter.frame / 30} (alt=${altLabel}) (adjust=${yAdjust})`);
 
@@ -755,9 +754,9 @@
 
                         const teamIdFromAlly: number = -1 * (teamID + 1);
 
-                        const team: BarMatchPlayer | undefined = (teamID >= 0) 
-                            ? this.match.players.find(iter => iter.teamID == teamID)
-                            : this.match.players.find(iter => iter.allyTeamID == teamIdFromAlly);
+                        const team: BarMatchTeam | undefined = (teamID >= 0) 
+                            ? this.match.teams.find(iter => iter.teamID == teamID)
+                            : this.match.teams.find(iter => iter.allyTeamID == teamIdFromAlly);
 
                         //console.log(`TeamStatsChart> teamID ${teamID}, name ${team?.username}`);
 
@@ -768,7 +767,7 @@
                                     y: i.value
                                 }
                             }),
-                            label: (teamID >= 0 ? `${team?.username ?? `<missing ${teamID}>`}` : `Team ${teamIdFromAlly + 1}`) + `{#${teamID}}`,
+                            label: (teamID >= 0 ? `${team?.name ?? `<missing ${teamID}>`}` : `Team ${teamIdFromAlly + 1}`) + `{#${teamID}}`,
                             borderColor: team?.hexColor ?? "#333333",
                             backgroundColor: team?.hexColor ?? "#333333",
                             fill: false,

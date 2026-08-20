@@ -50,6 +50,7 @@ namespace gex.Tests.Services.Repository {
         [DataRow("2025.06.06_map_draw_test.sdfz")]
         [DataRow("BAR105_1821.sdfz")]
         [DataRow("2025.06.19_IndexOutOfRange.sdfz")]
+        [DataRow("2026.07.04_QuantumMode.sdfz")]
         public async Task testAsync(string file) {
             TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
 
@@ -72,7 +73,26 @@ namespace gex.Tests.Services.Repository {
             }
 
             Assert.IsTrue(output.IsOk);
-            logger.LogInformation($"engine: {output.Value.Engine}, game: {output.Value.GameVersion}");
+
+            Assert.IsNotNull(output.Value);
+
+            BarMatch match = output.Value;
+            Assert.IsTrue(match.Teams.Count > 0);
+            Assert.IsTrue(match.Players.Count > 0);
+            Assert.IsTrue(match.AllyTeams.Count > 0);
+            Assert.AreEqual(match.Players.Count, match.PlayerCount, $"PlayerCount is {match.PlayerCount}, had {match.Players.Count} players");
+
+            // some of the demofiles used have AI players
+            Assert.IsTrue((match.Players.Count + match.AiPlayers.Count) >= match.Teams.Count, $"player count {match.Players.Count}, ai count {match.AiPlayers.Count}, team count {match.Teams.Count}");
+
+            foreach (BarMatchAllyTeam at in match.AllyTeams) {
+                int playerCount = match.Players.Count(iter => iter.AllyTeamID == at.AllyTeamID);
+                Assert.AreEqual(playerCount, at.PlayerCount);
+            }
+
+            foreach (BarMatchPlayer player in match.Players) {
+                Assert.IsNotNull(match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID), $"missing team {player.TeamID} for player {player.PlayerID}");
+            }
         }
 
         /// <summary>
@@ -219,10 +239,14 @@ namespace gex.Tests.Services.Repository {
 
             Assert.IsTrue(output.IsOk);
 
-            Assert.AreEqual("cetme", output.Value.Players[13].Name);
-            Assert.AreEqual(1161.8618, output.Value.Players[13].StartingPosition.X, 0.01);
-            Assert.AreEqual(220.4636, output.Value.Players[13].StartingPosition.Y, 0.01);
-            Assert.AreEqual(1968.3596, output.Value.Players[13].StartingPosition.Z, 0.01);
+            Assert.AreEqual("cetme", output.Value.Players[8].Name);
+            Assert.AreEqual(10, output.Value.Players[8].TeamID);
+            BarMatchTeam? team = output.Value.Teams.FirstOrDefault(iter => iter.TeamID == 10);
+            Assert.IsNotNull(team);
+
+            Assert.AreEqual(1161.8618, team.StartingPosition.X, 0.01);
+            Assert.AreEqual(220.4636, team.StartingPosition.Y, 0.01);
+            Assert.AreEqual(1968.3596, team.StartingPosition.Z, 0.01);
         }
 
         [TestMethod]
@@ -264,7 +288,93 @@ namespace gex.Tests.Services.Repository {
             Assert.AreEqual(11212, match.Spectators[21].UserID);
             Assert.AreEqual("Arastais", match.Spectators[21].Name);
             Assert.IsTrue(match.Spectators[21].UserIDCanBeWrong);
+        }
 
+        /// <summary>
+        ///     test the quantum mode (multiple players per team)
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task Test_QuantumMode() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/2026.07.04_QuantumMode.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("2144826a169387cee01499f2922c384b", match.ID);
+
+            Assert.AreEqual(2, match.Teams.Count);
+            Assert.AreEqual(4, match.Players.Count);
+            Assert.AreEqual(2, match.AllyTeams.Count);
+
+            BarMatchTeam? team0 = match.Teams.FirstOrDefault(iter => iter.TeamID == 0);
+            Assert.IsNotNull(team0);
+            Assert.AreEqual(0, team0.TeamID);
+            Assert.AreEqual("Cortex", team0.Faction);
+            Assert.AreEqual(0, team0.AllyTeamID);
+            Assert.AreEqual(737011, team0.Color);
+            Assert.AreEqual(0, team0.TeamLeaderID);
+            Assert.AreEqual(431.33707, team0.StartingPosition.X, 0.01);
+            Assert.AreEqual(441.54395, team0.StartingPosition.Y, 0.01);
+            Assert.AreEqual(4498.0337, team0.StartingPosition.Z, 0.01);
+
+            BarMatchTeam? team1 = match.Teams.FirstOrDefault(iter => iter.TeamID == 1);
+            Assert.IsNotNull(team1);
+            Assert.AreEqual(1, team1.TeamID);
+            Assert.AreEqual("Cortex", team1.Faction);
+            Assert.AreEqual(1, team1.AllyTeamID);
+            Assert.AreEqual(2, team1.TeamLeaderID);
+            Assert.AreEqual(16715781, team1.Color);
+            Assert.AreEqual(8779.077, team1.StartingPosition.X, 0.01);
+            Assert.AreEqual(441.50745, team1.StartingPosition.Y, 0.01);
+            Assert.AreEqual(1639.8398, team1.StartingPosition.Z, 0.01);
+
+            BarMatchPlayer? player0 = match.Players.FirstOrDefault(iter => iter.PlayerID == 0);
+            Assert.IsNotNull(player0);
+            Assert.AreEqual(0, player0.PlayerID);
+            Assert.AreEqual(0, player0.TeamID);
+            Assert.AreEqual(0, player0.AllyTeamID);
+
+            BarMatchPlayer? player1 = match.Players.FirstOrDefault(iter => iter.PlayerID == 1);
+            Assert.IsNotNull(player1);
+            Assert.AreEqual(1, player1.PlayerID);
+            Assert.AreEqual(0, player1.TeamID);
+            Assert.AreEqual(0, player1.AllyTeamID);
+
+            BarMatchPlayer? player2 = match.Players.FirstOrDefault(iter => iter.PlayerID == 2);
+            Assert.IsNotNull(player2);
+            Assert.AreEqual(2, player2.PlayerID);
+            Assert.AreEqual(1, player2.TeamID);
+            Assert.AreEqual(1, player2.AllyTeamID);
+
+            BarMatchPlayer? player3 = match.Players.FirstOrDefault(iter => iter.PlayerID == 3);
+            Assert.IsNotNull(player3);
+            Assert.AreEqual(3, player3.PlayerID);
+            Assert.AreEqual(1, player3.TeamID);
+            Assert.AreEqual(1, player3.AllyTeamID);
+
+            BarMatchAllyTeam? allyTeam0 = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == 0);
+            Assert.IsNotNull(allyTeam0);
+            Assert.AreEqual(0, allyTeam0.AllyTeamID);
+            Assert.AreEqual(2, allyTeam0.PlayerCount);
+
+            BarMatchAllyTeam? allyTeam1 = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == 1);
+            Assert.IsNotNull(allyTeam1);
+            Assert.AreEqual(1, allyTeam1.AllyTeamID);
+            Assert.AreEqual(2, allyTeam1.PlayerCount);
         }
 
         /// <summary>

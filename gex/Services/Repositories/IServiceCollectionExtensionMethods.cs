@@ -12,6 +12,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarMatchPlayerRepository>();
             services.AddSingleton<BarMapRepository>();
             services.AddSingleton<BarMatchProcessingRepository>();
+            services.AddSingleton<BarMatchTeamRepository>();
             services.AddSingleton<HeadlessRunStatusRepository>();
 
             services.AddSingleton<AppPermissionRepository>();

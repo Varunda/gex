@@ -33,17 +33,11 @@ namespace gex.Services.Db.Match {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_player (
-                    game_id, player_id, user_id, user_name, team_id, ally_team_id, faction,
-                    starting_position_x, starting_position_y, starting_position_z,
-                    skill, skill_uncertainty,
-                    color, handicap,
-                    start_spot, start_spot_label
+                    game_id, player_id, user_id, user_name, team_id, ally_team_id,
+                    skill, skill_uncertainty
                 ) VALUES (
-                    @GameID, @PlayerID, @UserID, @Username, @TeamID, @AllyTeamID, @Faction,
-                    @StartingPositionX, @StartingPositionY, @StartingPositionZ, 
-                    @Skill, @SkillUncertainty,
-                    @Color, @Handicap,
-                    @StartSpot, @StartSpotLabel
+                    @GameID, @PlayerID, @UserID, @Username, @TeamID, @AllyTeamID,
+                    @Skill, @SkillUncertainty
                 );
             ");
 
@@ -53,50 +47,24 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("Username", player.Name);
             cmd.AddParameter("TeamID", player.TeamID);
             cmd.AddParameter("AllyTeamID", player.AllyTeamID);
-            cmd.AddParameter("Faction", player.Faction);
-            cmd.AddParameter("StartingPositionX", player.StartingPosition.X);
-            cmd.AddParameter("StartingPositionY", player.StartingPosition.Y);
-            cmd.AddParameter("StartingPositionZ", player.StartingPosition.Z);
             cmd.AddParameter("Skill", player.Skill);
             cmd.AddParameter("SkillUncertainty", player.SkillUncertainty);
-            cmd.AddParameter("Color", player.Color);
-            cmd.AddParameter("Handicap", player.Handicap);
-            cmd.AddParameter("StartSpot", player.StartSpot);
-            cmd.AddParameter("StartSpotLabel", player.StartSpotLabel);
             await cmd.PrepareAsync();
 
             await cmd.ExecuteNonQueryAsync();
             await conn.CloseAsync();
         }
 
-        public async Task UpdateStartSpot(BarMatchPlayer player, CancellationToken cancel) {
-            if (string.IsNullOrWhiteSpace(player.GameID) == true) {
-                throw new ArgumentException($"missing {nameof(BarMatchPlayer.GameID)}");
-            }
-
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
-                UPDATE bar_match_player
-                    SET start_spot = @StartSpot,
-                        start_spot_label = @StartSpotLabel
-                    WHERE
-                        game_id = @GameID
-                        AND player_id = @PlayerID;
-            ", cancel);
-
-            cmd.AddParameter("StartSpot", player.StartSpot);
-            cmd.AddParameter("StartSpotLabel", player.StartSpotLabel);
-            cmd.AddParameter("GameID", player.GameID);
-            cmd.AddParameter("PlayerID", player.PlayerID);
-            await cmd.PrepareAsync(cancel);
-
-            await cmd.ExecuteNonQueryAsync(cancel);
-            await conn.CloseAsync();
-
-        }
-
         public async Task<List<BarMatchPlayer>> GetByGameID(string gameID, CancellationToken cancel) {
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMatchPlayer>(
+                @"SELECT * FROM bar_match_player WHERE game_id = @GameID",
+                new {
+                    GameID = gameID 
+                },
+                cancel
+            );
+            /*
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 SELECT *
                     FROM bar_match_player
@@ -110,6 +78,7 @@ namespace gex.Services.Db.Match {
             await conn.CloseAsync();
 
             return players;
+            */
         }
 
         /// <summary>
@@ -150,37 +119,6 @@ namespace gex.Services.Db.Match {
             await conn.CloseAsync();
 
             return players;
-        }
-
-        public async Task<List<int>> GetUniqueColors(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            return await conn.QueryListAsync<int>($"SELECT DISTINCT(color) FROM bar_match_player", cancel);
-        }
-
-        public async Task UpdateStartSpotRole(StartSpotSideStartRoleOverride @override, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
-                WITH matches AS (
-					SELECT id
-					FROM bar_match m
-					WHERE m.map_name = @MapFilename
-						AND m.start_spot_version = @Version
-				)
-				UPDATE bar_match_player
-                    SET start_spot_label = @Role
-                WHERE
-                    game_id IN (select id from matches)
-					AND start_spot = @Position;
-            ", cancel);
-
-            cmd.AddParameter("MapFilename", @override.MapFilename);
-            cmd.AddParameter("Role", @override.Role);
-            cmd.AddParameter("Version", @override.Version);
-            cmd.AddParameter("Position", @override.Position);
-            await cmd.PrepareAsync(cancel);
-
-            await cmd.ExecuteNonQueryAsync(cancel);
-            await conn.CloseAsync();
         }
 
         public async Task DeleteByGameID(string gameID) {

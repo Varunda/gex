@@ -43,7 +43,7 @@
     import "filters/LocaleFilter";
     import TimeUtils from "util/Time";
 
-    let chart: Chart | null = null;
+    let windChart: Chart | null = null;
 
     export const MatchWindGraph = Vue.extend({
         props: {
@@ -69,7 +69,6 @@
         methods: {
 
             calcNumbers: function(): void {
-
                 for (const ev of this.updates) {
                     if (ev.frame == 0) {
                         continue;
@@ -90,6 +89,8 @@
             },
 
             makeGraph: function(): void {
+                console.log(`MatchWindGraph> making windChart`);
+
                 const canvas: HTMLElement | null = document.getElementById("wind-over-time-graph");
                 if (canvas == null) {
                     return console.error(`MatchWindGraph> missing #wind-over-time-graph`);
@@ -100,12 +101,12 @@
                     return console.error(`MatchWindGraph> no 2d context?`);
                 }
 
-                if (chart != null) {
-                    chart.destroy();
-                    chart = null;
+                if (windChart != null) {
+                    windChart.destroy();
+                    windChart = null;
                 }
 
-                chart = new Chart(ctx, {
+                windChart = new Chart(ctx, {
                     type: "line",
                     data: {
                         labels: this.updates.map(iter => `${TimeUtils.duration(iter.frame / 30)}`),
@@ -154,6 +155,8 @@
                     },
 
                 });
+
+                console.log(`MatchWindGraph> made graph ${windChart}`);
             }
 
         },
@@ -162,5 +165,7 @@
 
         }
     });
+
+    (window as any).windChart = windChart;
     export default MatchWindGraph;
 </script>

@@ -14,5 +14,15 @@ namespace gex.Models.Queues {
         /// </summary>
         public bool ForceForward { get; set; }
 
+        /// <summary>
+        ///     will the entry not re-generate map and user stats when reparsed? useful for mass re-parsing
+        /// </summary>
+        public bool SkipStatUpdates { get; set; } = false;
+
+        /// <summary>
+        ///     will the entry when parsed not be sent thru any webhooks? useful for mass re-parsing
+        /// </summary>
+        public bool SkipWebhook { get; set; } = false;
+
     }
 }

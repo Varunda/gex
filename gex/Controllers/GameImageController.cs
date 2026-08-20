@@ -35,6 +35,7 @@ namespace gex.Controllers {
         private readonly BarMapRepository _MapRepository;
         private readonly MapImageRepository _MapImageRepository;
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMatchTeamRepository _TeamRepository;
         private readonly BarIconTypeRepository _IconTypeRepository;
         private readonly IGithubDownloadRepository _GithubDownloader;
         private readonly IMemoryCache _Cache;
@@ -54,7 +55,7 @@ namespace gex.Controllers {
             IOptions<FileStorageOptions> options, IMemoryCache cache,
             BarMapRepository mapRepository, MapImageRepository mapImageRepository,
             BarIconTypeRepository iconTypeRepository, IGithubDownloadRepository githubDownloader,
-            BarMatchPlayerRepository playerRepository) {
+            BarMatchPlayerRepository playerRepository, BarMatchTeamRepository teamRepository) {
 
             _Logger = logger;
 
@@ -65,6 +66,7 @@ namespace gex.Controllers {
             _IconTypeRepository = iconTypeRepository;
             _GithubDownloader = githubDownloader;
             _PlayerRepository = playerRepository;
+            _TeamRepository = teamRepository;
         }
 
         /// <summary>
@@ -125,7 +127,7 @@ namespace gex.Controllers {
             CancellationToken cancel = default
         ) {
 
-            if (color != null && (await _PlayerRepository.GetUniqueColors(cancel)).Contains(color.Value) == false) {
+            if (color != null && (await _TeamRepository.GetUniqueColors(cancel)).Contains(color.Value) == false) {
                 color = null;
             }
 
@@ -209,7 +211,7 @@ namespace gex.Controllers {
         /// <returns></returns>
         [ResponseCache(Duration = 60 * 60 * 24, VaryByQueryKeys = ["color"])] // 24 hours
         public async Task<IActionResult> UnitIconAtlas([FromQuery] int? color, CancellationToken cancel = default) {
-            if (color != null && (await _PlayerRepository.GetUniqueColors(cancel)).Contains(color.Value) == false) {
+            if (color != null && (await _TeamRepository.GetUniqueColors(cancel)).Contains(color.Value) == false) {
                 color = null;
             }
 

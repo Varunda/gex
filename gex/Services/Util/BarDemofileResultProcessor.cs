@@ -18,6 +18,7 @@ using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.JsonDiffPatch;
@@ -45,10 +46,8 @@ namespace gex.Services.Util {
         private readonly BarMatchTextPingDb _TextPingDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotDataParser _StartSpotDataParser;
-        private readonly BarMatchDb _MatchDb;
-
-        private readonly BaseQueue<UserMapStatUpdateQueueEntry> _MapStatUpdateQueue;
-        private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
+        private readonly BarMatchTeamRepository _TeamRepository;
+        private readonly BarMatchProcessingRepository _MatchProcessingRepository;
 
         public BarDemofileResultProcessor(ILogger<BarDemofileResultProcessor> logger,
             BarMatchRepository matchRepository, BarReplayDb replayDb,
@@ -56,12 +55,10 @@ namespace gex.Services.Util {
             BarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository barMapRepository, BarUserRepository userRepository,
             BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
-            MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
-            BaseQueue<HeadlessRunQueueEntry> headlessRunQueue, BaseQueue<UserMapStatUpdateQueueEntry> mapStatUpdateQueue,
-            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, BarMatchTeamDeathDb teamDeathDb,
-            StartSpotDataRepository startSpotDataRepository, StartSpotDataParser startSpotDataParser,
-            BarMatchDb matchDb, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb) {
+            BarMatchTeamDeathDb teamDeathDb, StartSpotDataRepository startSpotDataRepository,
+            StartSpotDataParser startSpotDataParser, BarMatchPlayerLeftDb playerLeftDb,
+            BarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository,
+            BarMatchProcessingRepository matchProcessingRepository) {
 
             _Logger = logger;
 
@@ -75,14 +72,13 @@ namespace gex.Services.Util {
             _UserRepository = userRepository;
             _UserSkillDb = userSkillDb;
             _GameVersionUsageDb = gameVersionUsageDb;
-            _MapStatUpdateQueue = mapStatUpdateQueue;
-            _FactionStatUpdateQueue = factionStatUpdateQueue;
             _TeamDeathDb = teamDeathDb;
             _StartSpotDataRepository = startSpotDataRepository;
             _StartSpotDataParser = startSpotDataParser;
-            _MatchDb = matchDb;
             _PlayerLeftDb = playerLeftDb;
             _TextPingDb = textPingDb;
+            _TeamRepository = teamRepository;
+            _MatchProcessingRepository = matchProcessingRepository;
         }
 
         public async Task Process(BarMatch match, CancellationToken cancel) {
@@ -128,7 +124,7 @@ namespace gex.Services.Util {
             // pick the start spot data that'll be used for this match
             StartSpotData? pickedStartSpotData = null;
             if (startSpotData == null) {
-                if (newStartSpotData != null) {
+                if (newStartSpotData != null && string.IsNullOrWhiteSpace(newStartSpotData.MapFilename) == false) {
                     newStartSpotData = await _StartSpotDataRepository.Insert(newStartSpotData, cancel);
                     _Logger.LogDebug($"inserting new start spot data due to missing [map={match.MapName}] [gameID={match.ID}] [version={newStartSpotData.Version}]");
                     Debug.Assert(newStartSpotData.Version > 0);
@@ -168,15 +164,21 @@ namespace gex.Services.Util {
             }
             long insertAllyTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-            // players
-            foreach (BarMatchPlayer player in match.Players) {
+            // teams
+            foreach (BarMatchTeam team in match.Teams) {
                 if (pickedStartSpotData != null) {
-                    StartSpotSideStart? startSpot = pickedStartSpotData.GetNearestStartSpot(match.AllyTeams.Count, player.StartingPosition.X, player.StartingPosition.Z);
+                    StartSpotSideStart? startSpot = pickedStartSpotData.GetNearestStartSpot(match.AllyTeams.Count, team.StartingPosition.X, team.StartingPosition.Z);
 
-                    player.StartSpot = startSpot?.SpawnPoint;
-                    player.StartSpotLabel = startSpot?.Role;
+                    team.StartSpot = startSpot?.SpawnPoint;
+                    team.StartSpotLabel = startSpot?.Role;
                 }
 
+                await _TeamRepository.Insert(team, cancel);
+            }
+            long insertTeamsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+            // players
+            foreach (BarMatchPlayer player in match.Players) {
                 await _PlayerRepository.Insert(player);
             }
             long insertPlayersMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
@@ -224,6 +226,14 @@ namespace gex.Services.Util {
                 await _TextPingDb.Insert(point, cancel);
             }
 
+            BarMatchProcessing? processing = await _MatchProcessingRepository.GetByGameID(match.ID, cancel)
+                ?? throw new InvalidOperationException($"a {nameof(BarMatchProcessing)} must exist for {match.ID} at this point");
+
+            processing.Features.Add("teams");
+            processing.Features.Add("player_left");
+            processing.Features.Add("text_ping");
+            await _MatchProcessingRepository.Upsert(processing);
+
             await _MatchRepository.Insert(match, cancel);
             long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
@@ -234,18 +244,6 @@ namespace gex.Services.Util {
             bool saidWrongSkillValues = false;
             foreach (BarMatchPlayer player in match.Players) {
                 try {
-                    _MapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
-                        UserID = player.UserID,
-                        Map = match.Map,
-                        Gamemode = match.Gamemode
-                    });
-
-                    _FactionStatUpdateQueue.Queue(new UserFactionStatUpdateQueueEntry() {
-                        UserID = player.UserID,
-                        Faction = BarFaction.GetId(player.Faction),
-                        Gamemode = match.Gamemode
-                    });
-
                     await _UserRepository.Upsert(player.UserID, new BarUser() {
                         UserID = player.UserID,
                         Username = player.Name,
@@ -275,7 +273,6 @@ namespace gex.Services.Util {
                 Version = match.GameVersion,
                 LastUsed = match.StartTime
             }, cancel);
-
         }
 
         /// <summary>
@@ -292,8 +289,8 @@ namespace gex.Services.Util {
         private (bool valid, int found, int missing) _CheckStartSpotValidity(BarMatch match, StartSpotData data) {
             int foundSpot = 0;
             int missingSpot = 0;
-            foreach (BarMatchPlayer player in match.Players) {
-                StartSpotSideStart? startSpot = data.GetNearestStartSpot(match.AllyTeams.Count, player.StartingPosition.X, player.StartingPosition.Z);
+            foreach (BarMatchTeam team in match.Teams) {
+                StartSpotSideStart? startSpot = data.GetNearestStartSpot(match.AllyTeams.Count, team.StartingPosition.X, team.StartingPosition.Z);
                 if (startSpot != null) {
                     ++foundSpot;
                 } else {

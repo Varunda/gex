@@ -21,12 +21,14 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMatchTeamDb _TeamDb;
         private readonly BarUserFactionStatsDb _FactionStatsDb;
 
         public UserFactionStatUpdateQueueProcessor(ILoggerFactory factory,
             BaseQueue<UserFactionStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
-            BarMatchPlayerRepository playerRepository, BarUserFactionStatsDb factionStatsDb)
+            BarMatchPlayerRepository playerRepository, BarUserFactionStatsDb factionStatsDb,
+            BarMatchTeamDb teamDb)
 
         : base("user_faction_stat_update_queue", factory, queue, serviceHealthMonitor) {
 
@@ -34,6 +36,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _AllyTeamDb = allyTeamDb;
             _PlayerRepository = playerRepository;
             _FactionStatsDb = factionStatsDb;
+            _TeamDb = teamDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(UserFactionStatUpdateQueueEntry entry, CancellationToken cancel) {
@@ -74,7 +77,17 @@ namespace gex.Services.Hosted.QueueProcessor {
                     continue;
                 }
 
-                if (player.Faction != facName) {
+                List<BarMatchTeam> teams = await _TeamDb.GetByGameID(match.ID, cancel);
+                BarMatchTeam? team = teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                if (team == null) {
+                    // skip for matches where teams aren't present
+                    if (teams.Count > 0) {
+                        _Logger.LogWarning($"missing player's team from game [gameID={match.ID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]");
+                    }
+                    continue;
+                }
+
+                if (team.Faction != facName) {
                     continue;
                 }
 

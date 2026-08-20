@@ -169,7 +169,8 @@ namespace gex.Services.BarApi {
 
                         GameEventUnitCreated? uc = pendingUnitFinished.GetValueOrDefault(e.UnitID);
                         if (uc == null) {
-                            Debug.Fail($"pendingUnitFinished is missing unit that was created? [unitID={e.UnitID}] [frame={frame}]");
+                            // this can happen with quick start
+                            //Debug.Fail($"pendingUnitFinished is missing unit that was created? [unitID={e.UnitID}] [frame={frame}]");
                         } else {
                             uc.Completed = frame;
                         }

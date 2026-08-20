@@ -4,11 +4,11 @@ import * as d3z from "d3-zoom";
 import "d3-contour";
 import "d3-color";
 
-import { BarMatchPlayer } from "model/BarMatchPlayer";
+import { BarMatchTeam } from "model/BarMatchTeam";
 
 onmessage = (ev) => {
     const locs: [number, number][] = ev.data[0];
-    const player: BarMatchPlayer = ev.data[1]
+    const team: BarMatchTeam = ev.data[1]
     const imgW: number = ev.data[2];
     const imgH: number = ev.data[3];
     const mapW: number = ev.data[4];
@@ -27,5 +27,5 @@ onmessage = (ev) => {
 
     console.timeEnd(`match-map: building headmap density`);
 
-    postMessage([heatmap, player]);
+    postMessage([heatmap, team]);
 };

@@ -47,14 +47,14 @@ namespace gex.Services.Db.Map {
 						m.map_name,
 						m.gamemode,
 						NOW() at time zone 'utc',
-						128 * TRUNC(p.starting_position_x / 128),
-						128 * TRUNC(p.starting_position_z / 128),
+						128 * TRUNC(t.starting_position_x / 128),
+						128 * TRUNC(t.starting_position_z / 128),
 						count(*),
 						count(*) filter (where at.won = true) 
 					FROM 
 						bar_match m
-						LEFT JOIN bar_match_player p ON p.game_id = m.id
-						LEFT JOIN bar_match_ally_team at ON p.ally_team_id = at.ally_team_id AND p.game_id = at.game_id
+						INNER JOIN bar_match_team t ON t.game_id = m.id
+						INNER JOIN bar_match_ally_team at ON t.ally_team_id = at.ally_team_id AND t.game_id = at.game_id
 					WHERE 
 						m.map_name = @MapFileName
 						AND m.gamemode <> 0

@@ -106,6 +106,7 @@
     import ToggleButton from "components/ToggleButton";
 
     import DOMPurify from "dompurify";
+import { BarMatchTeam } from "model/BarMatchTeam.js";
 
     type FullMessage = {
         id: number;
@@ -165,7 +166,7 @@
                 } else if (id == 253) {
                     return "#ffff00";
                 } else if (id == 252) {
-                    return this.match.players.find(at => at.allyTeamID == allyTeamID)?.hexColor ?? "#00ff00";
+                    return this.match.teams.find(at => at.allyTeamID == allyTeamID)?.hexColor ?? "#00ff00";
                 } else {
                     return "#aaaaaa";
                 }
@@ -176,8 +177,13 @@
             },
             
             getPlayerColor: function(id: number): string {
-                return (this.match.players.find(p => p.playerID == id)?.hexColor) ?? 
-                    ((this.match.spectators.find(p => p.playerID == id) != undefined) ? "#ffff00" : "");
+                const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.playerID == id);
+                if (player != undefined) {
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == player.teamID);
+                    return team?.hexColor ?? "";
+                }
+
+                return (this.match.spectators.find(p => p.playerID == id) != undefined) ? "#ffff00" : "";
             },
 
             colorAnyPlayerNames: function(msg: string): string {
@@ -201,8 +207,8 @@
 
                 const map: Map<string, string> = new Map();
 
-                for (const player of this.match.players) {
-                    map.set(player.username, player.hexColor);
+                for (const team of this.match.teams) {
+                    map.set(team.name, team.hexColor);
                 }
 
                 for (const spec of this.match.spectators) {
@@ -268,7 +274,7 @@
                     const allyTeamID: number = this.getPlayerAllyTeamId(teamDeath.teamID);
                     let timestamp: number = Math.max(0, (this.useStartTime == true) ? teamDeath.gameTime - this.match.startOffset : teamDeath.gameTime);
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamDeath.teamID);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == teamDeath.teamID);
 
                     messages.push({
                         id: messages.length + 1,
@@ -278,7 +284,7 @@
                         playerColor: this.getIdColor(254), 
                         timestamp: TimeUtils.duration(timestamp),
                         gametime: teamDeath.gameTime,
-                        message: `<span style="color: ${player?.hexColor ?? "#ffffff"}">${DOMPurify.sanitize(player?.username ?? "")}</span> resigned`,
+                        message: `<span style="color: ${team?.hexColor ?? "#ffffff"}">${DOMPurify.sanitize(team?.name ?? "")}</span> resigned`,
                         ping: undefined,
                         useHtml: true
                     });
@@ -294,6 +300,7 @@
                         : `<unchecked ${playerLeft.reason}>`
 
                     const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.playerID == playerLeft.playerID);
+                    const team: BarMatchTeam | undefined = player == undefined ? undefined : this.match.teams.find(iter => iter.teamID == player.teamID);
 
                     let name: string = this.match.players.find(iter => iter.playerID == playerLeft.playerID)?.username
                         ?? this.match.spectators.find(iter => iter.playerID == playerLeft.playerID)?.username
@@ -307,7 +314,7 @@
                         playerColor: this.getIdColor(254),
                         timestamp: TimeUtils.duration(timestamp),
                         gametime: playerLeft.gameTime,
-                        message: `<span style="color: ${player?.hexColor ?? "#ffff00"}">${DOMPurify.sanitize(name)}</span> left the game (Reason: ${reason})`,
+                        message: `<span style="color: ${team?.hexColor ?? "#ffff00"}">${DOMPurify.sanitize(name)}</span> left the game (Reason: ${reason})`,
                         ping: undefined,
                         useHtml: true
                     });

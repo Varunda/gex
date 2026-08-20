@@ -1,4 +1,5 @@
-﻿using gex.Common.Models;
+﻿using gex.Common.Code.Constants;
+using gex.Common.Models;
 using gex.Common.Models.Options;
 using gex.Models.Bar;
 using gex.Models.Db;
@@ -28,6 +29,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarReplayDb _ReplayDb;
         private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
+        private readonly BarMatchTeamRepository _MatchTeamRepository;
         private readonly BarMatchSpectatorDb _MatchSpectatorDb;
         private readonly BarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
@@ -66,7 +68,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
             BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerLeftDb playerLeftDb,
             BarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
-            BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions)
+            BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions,
+            BarMatchTeamRepository matchTeamRepository)
         : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -93,6 +96,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _FocusUserOptions = focusUserOptions;
             _WebhookQueue = webhookQueue;
             _InstanceOptions = instanceOptions;
+            _MatchTeamRepository = matchTeamRepository;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -119,20 +123,6 @@ namespace gex.Services.Hosted.QueueProcessor {
                 List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(entry.GameID, cancel);
                 runHeadless |= players.Count <= 6;
             } else {
-                if (entry.Force == true) {
-                    Stopwatch delTimer = Stopwatch.StartNew();
-                    _Logger.LogInformation($"deleting database data due to forced run [gameID={entry.GameID}]");
-                    await _MatchAllyTeamDb.DeleteByGameID(entry.GameID);
-                    await _PlayerRepository.DeleteByGameID(entry.GameID);
-                    await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
-                    await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
-                    await _TeamDeathDb.DeleteByGameID(entry.GameID);
-                    await _PlayerLeftDb.DeleteByGameID(entry.GameID);
-                    await _TextPingDb.DeleteByGameID(entry.GameID);
-                    await _MatchRepository.Delete(entry.GameID);
-                    _Logger.LogDebug($"deleting previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
-                }
-
                 string replayPath = Path.Join(_Options.Value.ReplayLocation, replay.FileName);
                 if (File.Exists(replayPath) == false) {
                     _Logger.LogError($"missing replay file [gameID={entry.GameID}] [path={replayPath}]");
@@ -149,7 +139,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
 
                 Result<BarMatch, string> match = await _Parser.Parse(replay.FileName, file, new DemofileParserOptions() {
-                    IncludeMapDraws = true
+                    IncludeMapDraws = true,
                 }, cancel);
                 long parseReplayMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
@@ -160,6 +150,22 @@ namespace gex.Services.Hosted.QueueProcessor {
                     return false;
                 }
 
+                // only delete old data if the demofile was parsed correctly
+                if (entry.Force == true) {
+                    Stopwatch delTimer = Stopwatch.StartNew();
+                    _Logger.LogInformation($"deleting database data due to forced run [gameID={entry.GameID}]");
+                    await _MatchAllyTeamDb.DeleteByGameID(entry.GameID);
+                    await _PlayerRepository.DeleteByGameID(entry.GameID);
+                    await _MatchSpectatorDb.DeleteByGameID(entry.GameID);
+                    await _MatchChatMessageDb.DeleteByGameID(entry.GameID);
+                    await _TeamDeathDb.DeleteByGameID(entry.GameID);
+                    await _MatchTeamRepository.DeleteByGameID(entry.GameID);
+                    await _PlayerLeftDb.DeleteByGameID(entry.GameID);
+                    await _TextPingDb.DeleteByGameID(entry.GameID);
+                    await _MatchRepository.Delete(entry.GameID);
+                    _Logger.LogDebug($"deleted previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
+                }
+
                 BarMatch parsed = match.Value;
                 parsed.MapName = replay.MapName;
 
@@ -167,6 +173,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 priority = await _PriorityCalculator.Calculate(parsed, cancel);
                 runHeadless |= (priority == -1);
 
+                // if focus user mode is active, ensure only matches with the focused user are included
                 if (_FocusUserOptions.Value.Enabled == true) {
                     BarMatchPlayer? found = parsed.Players.FirstOrDefault(iter => _FocusUserOptions.Value.UserIDs.Contains(iter.UserID));
                     if (found == null && entry.Force == false) {
@@ -179,22 +186,37 @@ namespace gex.Services.Hosted.QueueProcessor {
                     priority = 2; // not at 1 so people users can still prio if needed
                 }
 
-                _MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
-                    MapFilename = parsed.MapName
-                });
+                if (entry.SkipStatUpdates == false) {
+                    _MapStatUpdateQueue.Queue(new MapStatUpdateQueueEntry() {
+                        MapFilename = parsed.MapName
+                    });
+
+                    foreach (BarMatchPlayer player in parsed.Players) {
+                        _UserMapStatUpdateQueue.Queue(new UserMapStatUpdateQueueEntry() {
+                            UserID = player.UserID,
+                            Map = parsed.Map,
+                            Gamemode = parsed.Gamemode
+                        });
+
+                        BarMatchTeam? team = parsed.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                        if (team != null) {
+                            _FactionStatUpdateQueue.Queue(new UserFactionStatUpdateQueueEntry() {
+                                UserID = player.UserID,
+                                Faction = BarFaction.GetId(team.Faction),
+                                Gamemode = parsed.Gamemode
+                            });
+                        }
+                    }
+                }
             }
 
             BarMatchProcessing processing = await _ProcessingRepository.GetByGameID(entry.GameID, cancel)
                 ?? throw new Exception($"missing expected {nameof(BarMatchProcessing)} {entry.GameID}");
 
             processing.Priority = priority;
-            processing.ReplayParsed = DateTime.UtcNow;
-            processing.ReplayParsedMs = (int)timer.ElapsedMilliseconds;
-            processing.Features.Add("player_left");
-            processing.Features.Add("text_ping");
             await _ProcessingRepository.Upsert(processing);
 
-            if (_InstanceOptions.Value.EnableWebhooks == true) {
+            if (_InstanceOptions.Value.EnableWebhooks == true && entry.SkipWebhook == false) {
                 _WebhookQueue.Queue(MatchProcessingWebhookQueueEntry.Parsed(entry.GameID));
             }
 

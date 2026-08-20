@@ -24,7 +24,7 @@ export class FactoryData {
     public destroyedAt: number | null = null;
 }
 
-export class PlayerFactories {
+export class TeamFactories {
     public name: string = "";
     public teamID: number = 0;
     public id: string = "";
@@ -32,7 +32,7 @@ export class PlayerFactories {
     public colorInt: number = 0;
     public factories: FactoryData[] = [];
 
-    public static compute(match: BarMatch, output: GameOutput): PlayerFactories[] {
+    public static compute(match: BarMatch, output: GameOutput): TeamFactories[] {
 
         const map: Map<number, FactoryData> = new Map();
 
@@ -100,26 +100,26 @@ export class PlayerFactories {
 
         const facs: FactoryData[] = Array.from(map.values());
 
-        let pf: PlayerFactories[] = [];
-        for (const player of match.players) {
-            const iter: PlayerFactories = new PlayerFactories();
-            iter.id = `team-${player.teamID}`;
-            iter.teamID = player.teamID;
-            iter.name = player.username;
-            iter.color = player.hexColor;
-            iter.colorInt = player.color;
-            iter.factories = facs.filter(iter => iter.teamID == player.teamID);
+        let pf: TeamFactories[] = [];
+        for (const team of match.teams) {
+            const iter: TeamFactories = new TeamFactories();
+            iter.id = `team-${team.teamID}`;
+            iter.teamID = team.teamID;
+            iter.name = team.name;
+            iter.color = team.hexColor;
+            iter.colorInt = team.color;
+            iter.factories = facs.filter(iter => iter.teamID == team.teamID);
 
             pf.push(iter);
         }
 
         for (const allyTeam of match.allyTeams) {
             const teamIds: Set<number> = new Set(match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID).map(iter => iter.teamID));
-            const iter: PlayerFactories = new PlayerFactories();
+            const iter: TeamFactories = new TeamFactories();
             iter.id = `ally-team-${allyTeam.allyTeamID}`;
             iter.name = `Team ${allyTeam.allyTeamID + 1}`;
-            iter.color = match.players.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.hexColor ?? "#333333";
-            iter.colorInt = match.players.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.color ?? 0;
+            iter.color = match.teams.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.hexColor ?? "#333333";
+            iter.colorInt = match.teams.find(iter => allyTeam.allyTeamID == iter.allyTeamID)?.color ?? 0;
             iter.factories = facs.filter(iter => teamIds.has(iter.teamID));
 
             pf.push(iter);

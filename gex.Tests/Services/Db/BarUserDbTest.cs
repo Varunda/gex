@@ -32,6 +32,7 @@ namespace gex.Tests.Services.Db {
             BarUser? user = await db.GetByID(1, cts.Token);
             Assert.IsNull(user);
 
+            // create new user
             await db.Upsert(1, new BarUser() {
                 UserID = 1,
                 Username = "test",
@@ -39,12 +40,14 @@ namespace gex.Tests.Services.Db {
                 LastUpdated = DateTime.UtcNow,
             }, cts.Token);
 
+            // ensure new user has info
             user = await db.GetByID(1, cts.Token);
             Assert.IsNotNull(user);
             Assert.AreEqual(1, user.UserID);
             Assert.AreEqual("test", user.Username);
             Assert.IsNull(user.CountryCode);
 
+            // perform upsert with a CountryCode
             await db.Upsert(1, new BarUser() {
                 UserID = 1,
                 Username = "test",
@@ -52,12 +55,14 @@ namespace gex.Tests.Services.Db {
                 LastUpdated = DateTime.UtcNow,
             }, cts.Token);
 
+            // ensure user has new CountryCode
             user = await db.GetByID(1, cts.Token);
             Assert.IsNotNull(user);
             Assert.AreEqual(1, user.UserID);
             Assert.AreEqual("test", user.Username);
             Assert.AreEqual("moon", user.CountryCode);
 
+            // upsert with a null CountryCode
             await db.Upsert(1, new BarUser() {
                 UserID = 1,
                 Username = "test",
@@ -65,6 +70,7 @@ namespace gex.Tests.Services.Db {
                 LastUpdated = DateTime.UtcNow,
             }, cts.Token);
 
+            // ensure user still has CountryCode despite the update having a null CountryCode
             user = await db.GetByID(1, cts.Token);
             Assert.IsNotNull(user);
             Assert.AreEqual(1, user.UserID);

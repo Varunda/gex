@@ -39,6 +39,7 @@ namespace gex.Controllers.Api {
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly BarMatchTeamRepository _TeamRepository;
         private readonly BarMatchChatMessageDb _ChatMessageDb;
         private readonly BarMatchSpectatorDb _SpectatorDb;
         private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
@@ -70,7 +71,7 @@ namespace gex.Controllers.Api {
             BadGameVersionRepository badGameVersionRepository, MatchPoolRepository matchPoolRepository,
             MatchPoolEntryDb matchPoolEntryDb, StartSpotDataRepository startSpotDataRepository,
             BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb) {
+            BarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -95,6 +96,7 @@ namespace gex.Controllers.Api {
             _PlayerStartSpotMigration = playerStartSpotMigration;
             _PlayerLeftDb = playerLeftDb;
             _TextPingDb = textPingDb;
+            _TeamRepository = teamRepository;
         }
 
         /// <summary>
@@ -109,6 +111,7 @@ namespace gex.Controllers.Api {
         /// </remarks>
         /// <param name="cancel">cancel token</param>
         /// <param name="gameID">ID of the game</param>
+        /// <param name="includeTeams">will <see cref="BarMatch.Teams"/> be populated? defaults to false</param>
         /// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated? defaults to false</param>
         /// <param name="includePlayers">will <see cref="BarMatch.Players"/> be populated? defaults to false</param>
         /// <param name="includeChat">will <see cref="BarMatch.ChatMessages"/> be populated? defaults to false</param>
@@ -138,6 +141,7 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpGet("{gameID}")]
         public async Task<ApiResponse<ApiMatch>> GetMatch(string gameID,
+            [FromQuery] bool includeTeams = false,
             [FromQuery] bool includeAllyTeams = false,
             [FromQuery] bool includePlayers = false,
             [FromQuery] bool includeChat = false,
@@ -151,6 +155,7 @@ namespace gex.Controllers.Api {
             CancellationToken cancel = default
         ) {
             Result<BarMatch?, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
+                IncludeTeams = includeTeams,
                 IncludeAllyTeams = includeAllyTeams,
                 IncludePlayers = includePlayers,
                 IncludeChat = includeChat,
@@ -460,6 +465,7 @@ namespace gex.Controllers.Api {
             List<ApiMatch> ret = [];
             List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, currentUser, cancel);
             foreach (BarMatch m in matches) {
+                m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
 
@@ -664,6 +670,7 @@ namespace gex.Controllers.Api {
 
             List<ApiMatch> ret = [];
             foreach (BarMatch m in matches) {
+                m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
                 m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
 
@@ -719,6 +726,10 @@ namespace gex.Controllers.Api {
         [Authorize]
         [PermissionNeeded(AppPermission.GEX_DEV)]
         public async Task<ApiResponse> RecalculatePlayerStartSpots(string gameID, CancellationToken cancel = default) {
+
+            AppAccount currentUser = await _CurrentUser.Get(cancel)
+                ?? throw new InvalidOperationException($"how is current user null");
+
             BarMatch? match = await _MatchRepository.GetByID(gameID, cancel);
             if (match == null) {
                 return ApiNotFound($"{nameof(BarMatch)} {gameID}");
@@ -733,8 +744,22 @@ namespace gex.Controllers.Api {
                 return ApiInternalError($"no {nameof(StartSpotData)} for map {match.MapName} and version {match.StartSpotVersion} exists!");
             }
 
+            Result<BarMatch?, string> ret = await _MatchRepository.BuildMatch(match.ID, new BarMatchRepository.BuildOptions() {
+                IncludeAllyTeams = true,
+                IncludePlayers = true,
+                IncludeTeams = true
+            }, currentUser, cancel);
+
+            if (ret.IsOk == false) {
+                return ApiInternalError($"failed to build match: {ret.Error}");
+            }
+
+            if (ret.Value == null) {
+                throw new InvalidOperationException($"match is not supposed to be null here");
+            }
+
             _Logger.LogInformation($"recalculating player start spots for match [gameID={match.ID}] [map={match.MapName}] [version={data.Version}]");
-            await _PlayerStartSpotMigration.FixMatch(match, match.Players, data, cancel);
+            await _PlayerStartSpotMigration.FixMatch(ret.Value, data, cancel);
 
             return ApiOk();
         }

@@ -23,7 +23,7 @@
                 <div v-if="viewMode == 'list'">
                     <div v-for="player in sorted" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
                         <h3 :style="{ 'color': player.color }">
-                            {{ player.playerName }}
+                            {{ player.name }}
                             ({{ player.playerFaction }})
                         </h3>
 
@@ -65,7 +65,7 @@
                 <div v-else-if="viewMode == 'pic'">
                     <div v-for="player in sorted" :key="player.teamID" :style="playerStyle(player.color)" class="mb-3 p-2">
                         <h3 :style="{ 'color': player.color }">
-                            {{ player.playerName }}
+                            {{ player.name }}
                             ({{ player.playerFaction }})
                         </h3>
 
@@ -163,7 +163,7 @@
     import { BarMatch } from "model/BarMatch";
     import { GameOutput } from "model/GameOutput";
 
-    import { PlayerOpener } from "../compute/PlayerOpenerData";
+    import { TeamOpener } from "../compute/PlayerOpenerData";
 
     import "filters/MomentFilter";
     import "filters/CompactUnitNameFilter";
@@ -172,7 +172,7 @@
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
             output: { type: Object as PropType<GameOutput>, required: true },
-            openers: { type: Array as PropType<PlayerOpener[]>, required: true }
+            openers: { type: Array as PropType<TeamOpener[]>, required: true }
         },
 
         data: function() {
@@ -204,7 +204,7 @@
         },
 
         computed: {
-            sorted: function(): PlayerOpener[] {
+            sorted: function(): TeamOpener[] {
                 return [...this.openers].sort((a, b) => {
                     return a.teamID - b.teamID;
                 });

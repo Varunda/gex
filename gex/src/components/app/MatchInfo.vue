@@ -271,7 +271,7 @@
             },
 
             getAllyTeamColor: function(match: BarMatch, allyTeam: BarMatchAllyTeam): string {
-                return match.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
+                return match.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`;
             },
 
             getMatchMaxPlayers: function(match: BarMatch): number {

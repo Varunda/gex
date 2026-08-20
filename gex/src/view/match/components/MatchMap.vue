@@ -175,10 +175,10 @@
                     <label>Shown players</label>
 
                     <div v-if="true || match.players.length == 2">
-                        <button v-for="player in match.players" :key="player.teamID" class="btn btn-sm me-3" @click="toggleSelectedTeam(player.teamID)"
-                            :class="[ playback.selectedTeams.indexOf(player.teamID) == -1 ? 'btn-secondary' : 'btn-primary' ]">
+                        <button v-for="team in match.teams" :key="team.teamID" class="btn btn-sm me-3" @click="toggleSelectedTeam(team.teamID)"
+                            :class="[ playback.selectedTeams.indexOf(team.teamID) == -1 ? 'btn-secondary' : 'btn-primary' ]">
 
-                            {{ player.username }}
+                            {{ team.name }}
                         </button>
                     </div>
 
@@ -291,16 +291,16 @@
     import { BarMatchApi } from "api/BarMatchApi";
 
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchTeam } from "model/BarMatchTeam";
     import { GameOutput } from "model/GameOutput";
     import { BarMap, StartPosition } from "model/BarMap";
     import { SearchResult } from "model/SearchResult";
-
     import { GameEventUnitDef } from "model/GameEventUnitDef";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { GameEventUnitPosition } from "model/GameEventUnitPosition";
 
     import { CommanderData } from "../compute/ComputeCommanderData";
-    import { FactoryData, PlayerFactories } from "../compute/FactoryData";
+    import { FactoryData, TeamFactories } from "../compute/FactoryData";
     import { UnitPositionFrame } from "../compute/UnitPositionFrame";
 
     import AccountUtil from "util/Account";
@@ -346,7 +346,7 @@
 
                 computedData: {
                     commander: [] as CommanderData[],
-                    factories: [] as PlayerFactories[],
+                    factories: [] as TeamFactories[],
                     position: [] as UnitPositionFrame[]
                 },
 
@@ -492,7 +492,7 @@
                     }
 
                     this.computedData.commander = CommanderData.compute(this.output, this.match);
-                    this.computedData.factories = PlayerFactories.compute(this.match, this.output);
+                    this.computedData.factories = TeamFactories.compute(this.match, this.output);
                     this.computedData.position = UnitPositionFrame.compute(this.match, this.output);
 
                     if (this.mapH == 0 || this.mapW == 0) {
@@ -693,7 +693,7 @@
                     .attr("id", "unit-pos-root");
 
                 for (const pos of unitPos) {
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == pos.teamID);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == pos.teamID);
 
                     const defId: number | undefined = this.unitIdToDefId.get(pos.unitID);
 
@@ -725,7 +725,7 @@
                             .classed(`unit-pos-team-${pos.teamID}`, true)
                             .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .on("mouseenter", (ev: any) => {
-                                this.showTooltip(`${player?.username}'s ${unitDef?.name ?? `<missing def ${defId}>`}`);
+                                this.showTooltip(`${team?.name}'s ${unitDef?.name ?? `<missing def ${defId}>`}`);
                             })
                             .on("mousemove", (ev: any) => {
                                 this.moveTooltip(ev);
@@ -738,7 +738,7 @@
                             .classed("strat-icon", true)
                             .attr("width", sizePx).attr("height", sizePx)
                             .style("transform-box", "fill-box").style("transform-origin", "center")
-                            .attr("href", `/image-proxy/UnitIcon?defName=${unitDef.definitionName}&color=${player?.color ?? 0}`);
+                            .attr("href", `/image-proxy/UnitIcon?defName=${unitDef.definitionName}&color=${team?.color ?? 0}`);
 
                     } else if (unitDef.speed == 0) {
                         g.append("rect")
@@ -750,7 +750,7 @@
                             .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .attr("x", this.toImgX(pos.x)).attr("y", this.toImgZ(pos.z))
                             .attr("width", `${sizePx}px`).attr("height", `${sizePx}px`)
-                            .style("fill", player?.hexColor ?? `#333333`)
+                            .style("fill", team?.hexColor ?? `#333333`)
                             .style("paint-order", "stroke")
                             .style("stroke", "black").style("stroke-width", "2px")
                             .on("mouseenter", (ev: any) => {
@@ -772,7 +772,7 @@
                             .classed(`unit-pos-def-${unitDef.definitionName}`, true)
                             .attr("cx", ux + (sizePx / 2)).attr("cy", uz + (sizePx / 2))
                             .attr("r", `${sizePx / 2}px`)
-                            .style("fill", player?.hexColor ?? `#333333`)
+                            .style("fill", team?.hexColor ?? `#333333`)
                             .style("paint-order", "stroke")
                             .style("stroke", "black").style("stroke-width", "1px")
                             .on("mouseenter", (ev: any) => {
@@ -900,45 +900,45 @@
 
                 console.log(`MatchMap> adding starting dots for ${this.match.players.length} players`);
 
-                for (const player of this.match.players) {
+                for (const team of this.match.teams) {
                     this.root.append("circle")
-                        .attr("cx", `${player.startingPosition.x / this.mapW * this.imgW}px`)
-                        .attr("cy", `${player.startingPosition.z / this.mapH * this.imgH}px`)
+                        .attr("cx", `${team.startingPosition.x / this.mapW * this.imgW}px`)
+                        .attr("cy", `${team.startingPosition.z / this.mapH * this.imgH}px`)
                         .attr("r", "10px")
                         .classed("map-starting-position", true)
                         .style("pointer-events", "none")
-                        .style("fill", player.hexColor)
+                        .style("fill", team.hexColor)
                         .style("stroke", "#000000")
                         .style("stroke-width", "1px")
                         .style("paint-order", "fill stroke");
 
-                    const rightSide: boolean = (player.startingPosition.x / this.mapW) > 0.5;
+                    const rightSide: boolean = (team.startingPosition.x / this.mapW) > 0.5;
                     const offset: number = rightSide ? -16 : 16;
 
                     this.root.append("text")
-                        .attr("x", (this.toImgX(player.startingPosition.x)) + offset)
-                        .attr("y", this.toImgZ(player.startingPosition.z))
+                        .attr("x", (this.toImgX(team.startingPosition.x)) + offset)
+                        .attr("y", this.toImgZ(team.startingPosition.z))
                         .classed("map-starting-position", true)
-                        .style("fill", player.hexColor)
+                        .style("fill", team.hexColor)
                         .style("text-anchor", rightSide ? "end" : "start")
                         .style("font-size", "1.3rem")
                         .style("paint-order", "stroke")
                         .style("stroke", "black").style("stroke-width", "2px")
                         .style("pointer-events", "none")
-                        .text(player.username);
+                        .text(team.name);
 
-                    if (player.startSpotLabel != null) {
+                    if (team.startSpotLabel != null) {
                         this.root.append("text")
-                            .attr("x", (this.toImgX(player.startingPosition.x)) + offset)
-                            .attr("y", (this.toImgZ(player.startingPosition.z)) + 20)
+                            .attr("x", (this.toImgX(team.startingPosition.x)) + offset)
+                            .attr("y", (this.toImgZ(team.startingPosition.z)) + 20)
                             .classed("map-starting-position", true)
-                            .style("fill", player.hexColor)
+                            .style("fill", team.hexColor)
                             .style("text-anchor", rightSide ? "end" : "start")
                             .style("font-size", "1.2rem")
                             .style("paint-order", "stroke")
                             .style("stroke", "black").style("stroke-width", "2px")
                             .style("pointer-events", "none")
-                            .text(`(${player.startSpotLabel})`);
+                            .text(`(${team.startSpotLabel})`);
                     }
                 }
             },
@@ -1008,8 +1008,8 @@
                 if (this.root == null) { return console.warn(`cannot add starting box: root is null`); }
 
                 for (const allyTeam of this.match.allyTeams) {
-                    const firstPlayer: BarMatchPlayer | undefined = this.match.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID);
-                    console.log(`MatchMap> allyTeam ${allyTeam.allyTeamID} first player name ${firstPlayer?.username} is ${firstPlayer?.hexColor} at ${JSON.stringify(allyTeam.startBox)}`);
+                    const firstTeam: BarMatchTeam | undefined = this.match.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID);
+                    console.log(`MatchMap> allyTeam ${allyTeam.allyTeamID} first team name ${firstTeam?.name} is ${firstTeam?.hexColor} at ${JSON.stringify(allyTeam.startBox)}`);
 
                     this.root.append("rect")
                         .attr("x", `${allyTeam.startBox.left * 100}%`)
@@ -1020,7 +1020,7 @@
                         .style("pointer-events", "none")
                         .style("opacity", this.map.startingBox == true ? "1" : "0")
                         .attr("id", `map-starting-box-${allyTeam.allyTeamID}`)
-                        .style("fill", (firstPlayer?.hexColor ?? "#333333") + "33");
+                        .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
                 }
             },
 
@@ -1043,7 +1043,7 @@
                         .style("opacity", this.map.commanderPositions == true ? "1" : "0")
                         .classed("commander-updates", true)
 
-                    const color: string = "#" + (this.match.players.find(iter => iter.teamID == update.teamID)?.color.toString(16).padStart(6, "0") ?? `ffffff`);
+                    const color: string = "#" + (this.match.teams.find(iter => iter.teamID == update.teamID)?.color.toString(16).padStart(6, "0") ?? `ffffff`);
                     let path: string = ``;
 
                     update.positions.sort((a, b) => { return a.frame - b.frame; });
@@ -1137,9 +1137,9 @@
                     const u = g.append("g")
                         .attr("id", `unit-def-movement-${unitID}`);
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == positions[0].teamID);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == positions[0].teamID);
 
-                    const color: string = "#" + (player?.color.toString(16).padStart(6, "0") ?? `ffffff`);
+                    const color: string = "#" + (team?.color.toString(16).padStart(6, "0") ?? `ffffff`);
                     let path: string = ``;
 
                     positions.sort((a, b) => { return a.frame - b.frame; });
@@ -1159,7 +1159,7 @@
                             .style("stroke-width", "1px")
                             .style("paint-order", "fill stroke")
                             .on("mouseenter", (ev: any) => {
-                                this.showTooltip(`${player?.username ?? "&lt;missing player&gt;"}'s ${ud.disambiguatedName} was here at ${TimeUtils.duration(iter.frame / 30)}`);
+                                this.showTooltip(`${team?.name ?? "&lt;missing player&gt;"}'s ${ud.disambiguatedName} was here at ${TimeUtils.duration(iter.frame / 30)}`);
                             })
                             .on("mousemove", (ev: any) => {
                                 this.moveTooltip(ev);
@@ -1214,14 +1214,14 @@
 
                 const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/UnitDeathHeatmap/view.js`));
 
-                for (const player of this.match.players) {
-                    const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => iter.teamID == player.teamID).filter(iter => {
+                for (const team of this.match.teams) {
+                    const deathLocations: [number, number][] = this.output.unitsKilled.filter(iter => iter.teamID == team.teamID).filter(iter => {
                         return iter.frame < (teamDiedAt.get(iter.teamID) ?? Number.MAX_VALUE);
                     }).map(iter => {
                         return [iter.killedX, iter.killedZ];
                     });
 
-                    worker.postMessage([deathLocations, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                    worker.postMessage([deathLocations, team, this.imgW, this.imgH, this.mapW, this.mapH]);
                 }
 
                 worker.onmessage = (ev) => {
@@ -1230,14 +1230,14 @@
                     }
 
                     const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
-                    const player: BarMatchPlayer = ev.data[1];
+                    const team: BarMatchTeam = ev.data[1];
 
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolate(0, 30);
 
                     this.roots.unitDeatHeatmap.append("g")
-                        .attr("id", `map-unit-death-heatmap-${player.teamID}`)
+                        .attr("id", `map-unit-death-heatmap-${team.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
                         .enter()
@@ -1247,7 +1247,7 @@
                             .style("opacity", this.map.deathHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
-                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                                return `${team.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
                 };
             },
@@ -1263,8 +1263,8 @@
 
                 const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/CommanderHeatmap/view.js`));
 
-                for (const player of this.match.players) {
-                    const playerCom = this.computedData.commander.find(iter => iter.teamID == player.teamID);
+                for (const team of this.match.teams) {
+                    const playerCom = this.computedData.commander.find(iter => iter.teamID == team.teamID);
                     if (!playerCom) {
                         continue;
                     }
@@ -1273,7 +1273,7 @@
                         return [iter.x, iter.z];
                     });
 
-                    worker.postMessage([locs, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                    worker.postMessage([locs, team, this.imgW, this.imgH, this.mapW, this.mapH]);
                 }
 
                 worker.onmessage = (ev) => {
@@ -1282,14 +1282,14 @@
                     }
 
                     const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
-                    const player: BarMatchPlayer = ev.data[1];
+                    const team: BarMatchTeam = ev.data[1];
 
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolate(0, 30);
 
                     this.roots.commanderHeatmap.append("g")
-                        .attr("id", `map-commander-position-heatmap-${player.teamID}`)
+                        .attr("id", `map-commander-position-heatmap-${team.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
                         .enter()
@@ -1299,7 +1299,7 @@
                             .style("opacity", this.map.commanderHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
-                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                                return `${team.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
                 };
             },
@@ -1322,14 +1322,14 @@
 
                 const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/BuildingHeatmap/view.js`));
 
-                for (const player of this.match.players) {
+                for (const team of this.match.teams) {
                     const locs: [number, number][] = this.output.unitsCreated.filter(iter => {
-                        return iter.teamID == player.teamID && buildingUnitDefIds.has(iter.definitionID);
+                        return iter.teamID == team.teamID && buildingUnitDefIds.has(iter.definitionID);
                     }).map(iter => {
                         return [iter.unitX, iter.unitZ];
                     });
 
-                    worker.postMessage([locs, player, this.imgW, this.imgH, this.mapW, this.mapH]);
+                    worker.postMessage([locs, team, this.imgW, this.imgH, this.mapW, this.mapH]);
                 }
                 
                 worker.onmessage = (ev: any) => {
@@ -1338,13 +1338,13 @@
                     }
 
                     const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
-                    const player: BarMatchPlayer = ev.data[1];
+                    const team: BarMatchTeam = ev.data[1];
                     const max: number = Math.max(...heatmap.map(iter => iter.value));
 
                     const lerp = d3.interpolateBasisClosed([5, 10, 30, 40]);
 
                     this.roots.buildingHeatmap.append("g")
-                        .attr("id", `map-building-heatmap-${player.teamID}`)
+                        .attr("id", `map-building-heatmap-${team.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
                         .enter()
@@ -1354,7 +1354,7 @@
                             .style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
-                                return `${player.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                                return `${team.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
                             });
                 };
             },
@@ -1465,9 +1465,9 @@
                         continue;
                     }
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == ev.teamID);
-                    if (player == undefined) {
-                        console.warn(`MatchMap> missing player ${ev.teamID} from unit created ${ev.unitID}`);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == ev.teamID);
+                    if (team == undefined) {
+                        console.warn(`MatchMap> missing team ${ev.teamID} from unit created ${ev.unitID}`);
                         continue;
                     }
 
@@ -1475,7 +1475,7 @@
                     //const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
 
                     this.createHoverRange(`radar-range-${ev.unitID}`, ev.unitID, "map-radar", "#00FF0044", ev.unitX - unitDef.sizeX / 2, ev.unitZ - unitDef.sizeZ / 2,
-                        unitDef.radarDistance, unitDef.sizeX, unitDef.sizeZ, player.hexColor, player.color, unitDef.definitionName);
+                        unitDef.radarDistance, unitDef.sizeX, unitDef.sizeZ, team.hexColor, team.color, unitDef.definitionName);
                 }
 
             },
@@ -1500,8 +1500,8 @@
                         continue;
                     }
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == ev.teamID);
-                    if (player == undefined) {
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == ev.teamID);
+                    if (team == undefined) {
                         console.warn(`MatchMap> missing player ${ev.teamID} from unit created ${ev.unitID}`);
                         continue;
                     }
@@ -1510,7 +1510,7 @@
                     const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
 
                     const g = this.createHoverRange(`anti-nuke-${ev.unitID}`, ev.unitID, "map-anti-nuke", "#FFFF0022", ev.unitX - unitDef.sizeX / 2, ev.unitZ - unitDef.sizeZ / 2,
-                        2000, unitDef.sizeX, unitDef.sizeZ, player.hexColor, player.color, unitDef.definitionName, { });
+                        2000, unitDef.sizeX, unitDef.sizeZ, team.hexColor, team.color, unitDef.definitionName, { });
                 }
             },
 
@@ -1532,9 +1532,9 @@
                         continue;
                     }
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == ev.teamID);
-                    if (player == undefined) {
-                        console.warn(`MatchMap> missing player ${ev.teamID} from unit created ${ev.unitID}`);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == ev.teamID);
+                    if (team == undefined) {
+                        console.warn(`MatchMap> missing team ${ev.teamID} from unit created ${ev.unitID}`);
                         continue;
                     }
 
@@ -1542,7 +1542,7 @@
                     const z: number = this.toImgZ(ev.unitZ - unitDef.sizeZ * 2);
 
                     const g = this.createHoverRange(`static-defense-${ev.unitID}`, ev.unitID, "map-static-defense", "#FF000022", ev.unitX - unitDef.sizeX / 2, ev.unitZ - unitDef.sizeZ / 2,
-                        unitDef.attackRange, unitDef.sizeX, unitDef.sizeZ, player.hexColor, player.color, unitDef.definitionName, {
+                        unitDef.attackRange, unitDef.sizeX, unitDef.sizeZ, team.hexColor, team.color, unitDef.definitionName, {
                             mouseenter: (ev: any) => {
                                 const unitID: number = Number.parseInt(ev.target.dataset.unitId);
                                 //console.log(`moused over static defense ${unitID}`);

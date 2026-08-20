@@ -138,6 +138,7 @@
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { BarUserMapStats } from "model/BarUserMapStats";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import { MapApi } from "api/MapApi";
     import { MapStatsApi } from "api/map_stats/MapStatsApi";
@@ -230,14 +231,21 @@
                     for (const match of matches) {
                         const player: BarMatchPlayer | undefined = match.players.find(i => i.userID == this.user.userID);
                         if (player == undefined) {
+                            console.warn(`UserMaps> missing user in match [match=${match.id}] [userID=${this.user.userID}]`);
                             continue;
                         }
 
-                        if (player.startSpotLabel == null) {
+                        const team: BarMatchTeam | undefined = match.teams.find(iter => iter.teamID == player.teamID);
+                        if (team == undefined) {
+                            console.warn(`UserMaps> missing team of user in match [match=${match.id}] [teamID=${player.teamID}]`);
                             continue;
                         }
 
-                        positionCount.set(player.startSpotLabel, (positionCount.get(player.startSpotLabel) ?? 0) + 1);
+                        if (team.startSpotLabel == null) {
+                            continue;
+                        }
+
+                        positionCount.set(team.startSpotLabel, (positionCount.get(team.startSpotLabel) ?? 0) + 1);
                     }
 
                     let favPos: string | null = null;

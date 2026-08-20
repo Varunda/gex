@@ -13,22 +13,22 @@
             <div class="p-2 text-center">Peak</div>
             <div class="grid-bottom-4"></div>
 
-            <template v-for="player in match.players">
+            <template v-for="team in match.teams">
 
-                <div class="p-2" style="text-shadow: 1px 1px 1px #000000" :style="{ color: player.hexColor }">
-                    {{ player.username }}
+                <div class="p-2" style="text-shadow: 1px 1px 1px #000000" :style="{ color: team.hexColor }">
+                    {{ team.name }}
                 </div>
 
                 <div class="p-2 text-center">
-                    {{ avgApm(player.teamID) }}
+                    {{ avgApm(team.teamID) }}
                 </div>
 
                 <div class="p-2 text-center">
-                    {{ peakApm(player.teamID) }}
+                    {{ peakApm(team.teamID) }}
                 </div>
 
                 <div style="height: 50px" class="grid-column-start apm-graph">
-                    <canvas :id="'player-apm-' + player.playerID" height="50"></canvas>
+                    <canvas :id="'team-apm-' + team.teamID" height="50"></canvas>
                 </div>
 
                 <div class="border mb-2"></div>
@@ -72,6 +72,7 @@
     import { GameOutput } from "model/GameOutput";
     import { GameEventExtraStatsUpdate } from "model/GameEventExtraStatsUpdate";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import Collapsible from "components/Collapsible.vue";
     import ToggleButton from "components/ToggleButton";
@@ -200,11 +201,11 @@
                     const teamID: number = entry[0];
                     const apm: ApmInterval[] = entry[1];
 
-                    const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
+                    const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == teamID);
 
                     const playerMax: number = Math.max(...apm.map(iter => iter.apm));
 
-                    const id: string = `player-apm-${teamID}`;
+                    const id: string = `team-apm-${teamID}`;
                     const elem: HTMLElement | null = document.getElementById(id);
                     if (elem == null) {
                         console.error(`MatchApm> missing #${id}`);
@@ -219,7 +220,7 @@
                                 {
                                     data: apm.map(iter => iter.apm),
                                     fill: true,
-                                    backgroundColor: this.usePlayerColors == true ? (`${player?.hexColor ?? "#ffffff"}aa`) : "#ffffffaa",
+                                    backgroundColor: this.usePlayerColors == true ? (`${team?.hexColor ?? "#ffffff"}aa`) : "#ffffffaa",
                                     pointRadius: 0,
                                     tension: 0.3
                                 }

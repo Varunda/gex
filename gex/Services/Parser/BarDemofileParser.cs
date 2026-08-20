@@ -90,7 +90,7 @@ namespace gex.Services.Parser {
                 ArrayPool<byte>.Shared.Return(buffer);
             }
             byte[] data = output.ToArray();
-            _Logger.LogDebug($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
+            _Logger.LogTrace($"decompressed demofile [duration={timer.ElapsedMilliseconds}ms] [input size={demofile.Length}] [output size={data.Length}]");
 
             return await ReadBytes(filename, data, options, cancel);
         }
@@ -158,8 +158,6 @@ namespace gex.Services.Parser {
 
             match.OfflineGame = game.NullableString("hostip") == "127.0.0.1";
 
-            Dictionary<int, BarMatchPlayer> players = []; // <teamID, player>
-
             // i hate the c sharp json api actually, can't do anything with it
             Dictionary<string, string> hostSettings = new Dictionary<string, string>();
             foreach (JsonProperty iter in game.EnumerateObject()) {
@@ -172,14 +170,26 @@ namespace gex.Services.Parser {
                     if (iter.Name.StartsWith("team")) {
                         // team colors are set via LUA_MSG with AutoColors:
                         int teamID = int.Parse(iter.Name.Split("team")[1]);
-                        BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
-                        player.TeamID = teamID;
-                        player.GameID = match.ID;
-                        player.AllyTeamID = iter.Value.GetRequiredInt32("allyteam");
-                        player.Handicap = iter.Value.GetDecimal("handicap", 0m);
-                        player.Faction = iter.Value.GetRequiredString("side");
 
-                        players[player.TeamID] = player;
+                        BarMatchTeam team = new();
+                        team.GameID = match.ID;
+                        team.TeamID = teamID;
+                        team.AllyTeamID = iter.Value.GetRequiredInt32("allyteam");
+                        team.TeamLeaderID = iter.Value.GetRequiredInt32("teamleader");
+                        team.Faction = iter.Value.GetRequiredString("side");
+                        team.Handicap = iter.Value.GetFloat("handicap", 0f);
+
+                        // rgbcolor=0.63922 0.78039 0.12157;
+                        string color = iter.Value.GetRequiredString("rgbcolor");
+                        string[] colors = color.Split(" ");
+
+                        byte r = (byte)(float.Parse(colors[0].Trim()) * 255);
+                        byte g = (byte)(float.Parse(colors[1].Trim()) * 255);
+                        byte b = (byte)(float.Parse(colors[2].Trim()) * 255);
+
+                        team.Color = (r << 16) | (g << 8) | (b << 0);
+
+                        match.Teams.Add(team);
                     }
 
                     // ally team parsing
@@ -206,7 +216,7 @@ namespace gex.Services.Parser {
 
                         if (iter.Value.NullableString("spectator") == null && match.OfflineGame == true) {
                             int teamID = iter.Value.GetRequiredInt32("team");
-                            BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
+                            BarMatchPlayer player = new();
                             player.TeamID = teamID;
                             player.GameID = match.ID;
                             player.PlayerID = int.Parse(iter.Name.Split("player")[1]);
@@ -215,8 +225,7 @@ namespace gex.Services.Parser {
                             player.SkillUncertainty = 0d;
                             player.Skill = 0d;
 
-                            players[player.TeamID] = player;
-
+                            match.Players.Add(player);
                         } else {
                             if (iter.Value.GetRequiredString("spectator") == "1") {
                                 if (iter.Value.GetChild("accountid") == null) {
@@ -232,7 +241,7 @@ namespace gex.Services.Parser {
                                 }
                             } else {
                                 int teamID = iter.Value.GetRequiredInt32("team");
-                                BarMatchPlayer player = players.GetValueOrDefault(teamID) ?? new BarMatchPlayer();
+                                BarMatchPlayer player = new();
                                 player.TeamID = teamID;
                                 player.GameID = match.ID;
                                 player.PlayerID = int.Parse(iter.Name.Split("player")[1]);
@@ -242,7 +251,7 @@ namespace gex.Services.Parser {
                                 player.Skill = double.Parse(iter.Value.GetProperty("skill").GetString()!.Replace("[", "").Replace("]", "")); // remove the [] around the skill
                                 player.CountryCode = iter.Value.GetProperty("countrycode").GetString();
 
-                                players[player.TeamID] = player;
+                                match.Players.Add(player);
                             }
                         }
                     } else if (iter.Name.StartsWith("ai")) {
@@ -309,10 +318,10 @@ namespace gex.Services.Parser {
             //  is will have changed, and that is handled entirely within the game (would need to sim to get data)
             bool startBoxesShuffled = match.GameSettings.GetString("teamffa_start_boxes_shuffle", "0") == "1"
                 && match.AllyTeams.Count > 2
-                && match.AllyTeams.FirstOrDefault(iter => players.Values.Where(i2 => i2.AllyTeamID == iter.AllyTeamID).Count() > 1) != null;
+                && match.AllyTeams.FirstOrDefault(iter => match.Players.Where(i2 => i2.AllyTeamID == iter.AllyTeamID).Count() > 1) != null;
 
             if (startBoxesShuffled == true) {
-                _Logger.LogInformation($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
+                _Logger.LogDebug($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
             }
 
             int packetCount = 0;
@@ -654,14 +663,14 @@ namespace gex.Services.Parser {
                             break;
                         }
 
-                        BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-                        if (player == null) {
+                        BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
+                        if (team == null) {
                             _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
                             break;
                         }
 
                         if (startBoxesShuffled == true) {
-                            player.StartingPosition = new Vector3() {
+                            team.StartingPosition = new Vector3() {
                                 X = x,
                                 Y = y,
                                 Z = z
@@ -669,9 +678,9 @@ namespace gex.Services.Parser {
                             break;
                         }
 
-                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == player.AllyTeamID);
+                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == team.AllyTeamID);
                         if (at == null) {
-                            _Logger.LogWarning($"cannot set start position, ally team does not exist [allyTeamID={player.AllyTeamID}] [gameID={header.GameID}]");
+                            _Logger.LogWarning($"cannot set start position, ally team does not exist [gameID={header.GameID}] [allyTeamID={team.AllyTeamID}]");
                             break;
                         }
 
@@ -683,7 +692,7 @@ namespace gex.Services.Parser {
                         };
 
                         if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
-                            if ((readyState == 3 || readyState == 1) && player.StartingPosition == Vector3.Zero) {
+                            if ((readyState == 3 || readyState == 1) && team.StartingPosition == Vector3.Zero) {
                                 _Logger.LogWarning($"player start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
                                     + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
                             } else {
@@ -693,7 +702,7 @@ namespace gex.Services.Parser {
                             }
                         }
 
-                        player.StartingPosition = new Vector3() {
+                        team.StartingPosition = new Vector3() {
                             X = x,
                             Y = y,
                             Z = z
@@ -743,9 +752,9 @@ namespace gex.Services.Parser {
                             byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
                             byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
 
-                            BarMatchPlayer? player = players.GetValueOrDefault(teamID);
-                            if (player != null) {
-                                player.Color = (r << 16) | (g << 8) | b;
+                            BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
+                            if (team != null) {
+                                team.Color = (r << 16) | (g << 8) | b;
                             }
                         }
                     }
@@ -759,20 +768,26 @@ namespace gex.Services.Parser {
                         if (defName == null) {
                             _Logger.LogWarning($"missing unit definition in changeStartUnit! [gameID={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
                         } else {
-                            BarMatchPlayer? player = players.GetValueOrDefault(playerNum);
-                            if (player != null) {
-                                if (defName == "armcom") {
-                                    player.Faction = "Armada";
-                                } else if (defName == "corcom") {
-                                    player.Faction = "Cortex";
-                                } else if (defName == "legcom") {
-                                    player.Faction = "Legion";
-                                } else if (defName == "dummycom") {
-                                    player.Faction = "Random";
-                                } else {
-                                    _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+                            // TODO: is playerNum here the player ID or the team ID?
+                            BarMatchPlayer? player = match.Players.FirstOrDefault(iter => iter.PlayerID == playerNum);
+                            if (player == null) {
+                                _Logger.LogError($"cannot changeStartUnit: missing player [gameID={header.GameID}] [playerNum={playerNum}]");
+                            } else {
+                                BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                                if (team != null) {
+                                    if (defName == "armcom") {
+                                        team.Faction = "Armada";
+                                    } else if (defName == "corcom") {
+                                        team.Faction = "Cortex";
+                                    } else if (defName == "legcom") {
+                                        team.Faction = "Legion";
+                                    } else if (defName == "dummycom") {
+                                        team.Faction = "Random";
+                                    } else {
+                                        _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+                                    }
+                                    _Logger.LogTrace($"team changed factions [playerNum={playerNum}] [faction={team.Faction}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
                                 }
-                                _Logger.LogTrace($"player changed factions [playerNum={playerNum}] [faction={player.Faction}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
                             }
                         }
 
@@ -887,7 +902,7 @@ namespace gex.Services.Parser {
 
                 // QUIT (3)
                 else if (packet.PacketType == BarPacketType.QUIT) {
-                    _Logger.LogDebug($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
+                    _Logger.LogTrace($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
                     break;
                 }
             }
@@ -898,7 +913,7 @@ namespace gex.Services.Parser {
                 return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
             }
 
-            _Logger.LogDebug($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
+            _Logger.LogTrace($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
             match.DurationFrameCount = maxFrame;
 
             // player stat parsing
@@ -973,7 +988,16 @@ namespace gex.Services.Parser {
 
             demofile.TeamStatistics = teamStats;
 
-            match.Players = players.Values.ToList();
+            foreach (BarMatchPlayer player in match.Players) {
+                BarMatchTeam? playerTeam = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                if (playerTeam == null) {
+                    Debug.Fail($"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]");
+                    return $"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]";
+                }
+
+                player.AllyTeamID = playerTeam.AllyTeamID;
+            }
+
             foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
                 if (winningAllyTeams.Contains((byte)allyTeam.AllyTeamID)) {
                     allyTeam.Won = true;

@@ -23,21 +23,18 @@ namespace gex.Controllers.Api {
         private readonly ILogger<MapApiController> _Logger;
         private readonly BarMapRepository _MapRepository;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
-        private readonly StartSpotSideStartRoleOverrideDb _OverrideDb;
-        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
+        private readonly BarMatchTeamRepository _TeamRepository;
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
 
         public MapApiController(ILogger<MapApiController> logger,
             BarMapRepository mapRepository, StartSpotDataRepository startSpotDataRepository,
-            StartSpotSideStartRoleOverrideDb overrideDb, BarMatchPlayerRepository matchPlayerRepository,
-            BarMatchPlayerStartSpotMigration playerStartSpotMigration) {
+            BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchTeamRepository teamRepository) {
 
             _Logger = logger;
             _MapRepository = mapRepository;
             _StartSpotDataRepository = startSpotDataRepository;
-            _OverrideDb = overrideDb;
-            _MatchPlayerRepository = matchPlayerRepository;
             _PlayerStartSpotMigration = playerStartSpotMigration;
+            _TeamRepository = teamRepository;
         }
 
         /// <summary>
@@ -122,7 +119,7 @@ namespace gex.Controllers.Api {
             _Logger.LogInformation($"created override for position [map={mapFilename}] [version={version}] [position={position}] [role={role}]");
 
             Stopwatch timer = Stopwatch.StartNew();
-            await _MatchPlayerRepository.UpdateStartSpotRole(@override, cancel);
+            await _TeamRepository.UpdateStartSpotRole(@override, cancel);
             _Logger.LogInformation($"updated start spot role names [mapFilename={mapFilename}] [version={version}] "
                 + $"[position={position}] [role={role}] [timer={timer.ElapsedMilliseconds}ms]");
 

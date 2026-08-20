@@ -200,6 +200,7 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import "filters/BarGamemodeFilter";
 
@@ -285,7 +286,9 @@
                     return 1;
                 }
 
-                return FactionUtil.getValue(player.faction);
+                const team: BarMatchTeam | undefined = match.teams.find(iter => iter.teamID == player.teamID);
+
+                return FactionUtil.getValue((team?.faction) ?? "Armada");
             },
 
             outcome: function(match: BarMatch): string {
@@ -314,7 +317,13 @@
                     return null;
                 }
 
-                return player.startSpotLabel;
+                const team: BarMatchTeam | undefined = match.teams.find(iter => iter.teamID == player.teamID);
+                if (team == undefined) {
+                    console.warn(`UserMatches> missing team for player [gameID=${match.id}] [playerID=${player.playerID}] [teamID=${player.teamID}]`);
+                    return null;
+                }
+
+                return team.startSpotLabel;
             }
         },
 

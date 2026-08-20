@@ -48,7 +48,7 @@ namespace gex.Services.Db.Map {
                 ) SELECT
                     mp.user_id,
                     m.map_name,
-                    mp.start_spot_label,
+                    t.start_spot_label,
 
                     (
                         count(*) filter (WHERE at.won = true)
@@ -62,15 +62,16 @@ namespace gex.Services.Db.Map {
                     NOW() at time zone 'utc'
                 FROM
                     bar_match_player mp
+                    INNER JOIN bar_match_team t ON t.game_id = mp.game_id
                     INNER JOIN bar_match m ON mp.game_id = m.id
                     INNER JOIN bar_match_ally_team at ON at.game_id = mp.game_id AND mp.ally_team_id = at.ally_team_id
                     INNER JOIN bar_match_ally_team enemy_at ON enemy_at.game_id = m.id AND mp.ally_team_id <> enemy_at.ally_team_id
                 WHERE
                     m.gamemode = 3
                     AND m.map_name = @MapFilename
-                    AND mp.start_spot_label = @PositionLabel
+                    AND t.start_spot_label = @PositionLabel
                 GROUP BY
-                    mp.user_id, m.map_name, mp.start_spot_label
+                    mp.user_id, m.map_name, t.start_spot_label
                 HAVING
                     count(*) > 50
                 ORDER BY 4 desc

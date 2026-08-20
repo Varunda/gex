@@ -49,6 +49,8 @@ namespace gex.Models.Db {
 
         public JsonElement Restrictions { get; set; } = default;
 
+        public List<BarMatchTeam> Teams { get; set; } = [];
+
         public List<BarMatchAllyTeam> AllyTeams { get; set; } = [];
 
         public List<BarMatchPlayer> Players { get; set; } = [];

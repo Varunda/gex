@@ -38,11 +38,11 @@
                         <span class="visually-hidden">toggle dropdown</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li v-for="player in match.players" :key="player.teamID">
-                            <a class="dropdown-item" :style="{ 'color': player.hexColor, 'user-select': 'none' }" @click.stop="toggleFilterPlayer($event)">
-                                <input class="form-check-input" type="checkbox" :id="'action-log-filter-player-' + player.teamID" :data-team-id="player.teamID">
-                                <label class="form-check-label w-100" :for="'action-log-filter-player-' + player.teamID">
-                                    {{ player.username }}
+                        <li v-for="team in match.teams" :key="team.teamID">
+                            <a class="dropdown-item" :style="{ 'color': team.hexColor, 'user-select': 'none' }" @click.stop="toggleFilterPlayer($event)">
+                                <input class="form-check-input" type="checkbox" :id="'action-log-filter-team-' + team.teamID" :data-team-id="team.teamID">
+                                <label class="form-check-label w-100" :for="'action-log-filter-team-' + team.teamID">
+                                    {{ team.name }}
                                 </label>
                             </a>
                         </li>
@@ -154,14 +154,15 @@
     import InfoHover from "components/InfoHover.vue";
 
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchTeam } from "model/BarMatchTeam";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchSpectator } from "model/BarMatchSpectator";
     import { GameOutput } from "model/GameOutput";
     import { GameEventUnitDef } from "model/GameEventUnitDef";
+    import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
 
     import LocaleUtil from "util/Locale";
     import "filters/MomentFilter";
-import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
 
     type LogPart = {
         html: string;
@@ -242,7 +243,7 @@ import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
                             event: ev,
                             unitID: ev.unitID,
                             teamID: ev.teamID,
-                            allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                            allyTeamID: this.match.teams.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                             parts: [
                                 this.createPlayerName(ev.teamID),
                                 combine == true ? this.createText("built a") : this.createText("started constructing a"),
@@ -263,7 +264,7 @@ import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
                                 event: ev,
                                 unitID: ev.unitID,
                                 teamID: ev.teamID,
-                                allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                                allyTeamID: this.match.teams.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                                 parts: [
                                     this.createPlayerName(ev.teamID),
                                     this.createText("completed constructing a"),
@@ -280,7 +281,7 @@ import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
                             event: ev,
                             unitID: ev.unitID,
                             teamID: ev.teamID,
-                            allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                            allyTeamID: this.match.teams.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                             parts: [
                                 this.createPlayerName(ev.teamID),
                                 this.createText("created a"),
@@ -307,7 +308,7 @@ import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
                         event: ev,
                         unitID: ev.unitID,
                         teamID: ev.teamID,
-                        allyTeamID: this.match.players.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
+                        allyTeamID: this.match.teams.find(iter => iter.teamID == ev.teamID)?.allyTeamID,
                         parts: [
                             this.createPlayerName(ev.teamID, true),
                             this.createUnitIcon(ev.definitionID),
@@ -524,21 +525,32 @@ import { GameEventUnitsGiven } from "model/GameEventUnitsGiven";
             },
 
             createPlayerName: function(teamID: number, possesive?: boolean): LogPart {
-                const player: BarMatchPlayer | undefined = this.match.players.find(iter => iter.teamID == teamID);
+                const team: BarMatchTeam | undefined = this.match.teams.find(iter => iter.teamID == teamID);
                 const spec: BarMatchSpectator | undefined = this.match.spectators.find(iter => iter.playerID == teamID);
 
-                if (player == undefined && spec == undefined) {
+                if (team == undefined && spec == undefined) {
                     return {
                         html: `&lt;missing team ${teamID}&gt;`
                     };
                 }
 
-                const userID: number = player?.userID ?? spec!.userID;
-                const color: string = player?.hexColor ?? "#ffff00";
-                const name: string = player?.username ?? spec!.username;
+                const players: BarMatchPlayer[] = this.match.players.filter(iter => iter.teamID == teamID);
+
+                let html: string = "";
+                if (team != undefined && players.length > 1) {
+                    html += `<span style="color: ${team.hexColor}">Quantum team ${teamID + 1} (`;
+                    html += players.map(iter => `<a href="/user/${iter.userID}" target="blank" ref="nofollow">${iter.username}</a>`).join(" + ");
+                    html += `)${(possesive == true ? "'s" : "")}</span>`;
+                } else {
+                    const player: BarMatchPlayer | undefined = players[0];
+                    const userID: number = player?.userID ?? spec!.userID;
+                    const color: string = team?.hexColor ?? "#ffff00";
+                    const name: string = player?.username ?? spec!.username;
+                    html += `<a href="/user/${userID}" style="color: ${color}" target="blank" ref="nofollow">${name}${(possesive == true ? "'s" : "")}</a>`;
+                }
 
                 return {
-                    html: `<a href="/user/${userID}" style="color: ${color}" target="blank" ref="nofollow">${name}${(possesive == true ? "'s" : "")}</a>`
+                    html: html
                 };
             },
 

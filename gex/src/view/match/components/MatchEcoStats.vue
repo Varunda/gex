@@ -447,7 +447,7 @@
     import { UnitStats } from "../compute/UnitStatData";
     import MergedStats from "../compute/MergedStats";
     import { ResourceProductionData, ResourceProductionEntry } from "../compute/ResourceProductionData";
-    import { FactoryData, PlayerFactories } from "../compute/FactoryData";
+    import { FactoryData, TeamFactories } from "../compute/FactoryData";
     import { Milestone } from "../compute/Milestones";
 
     import "filters/LocaleFilter";
@@ -475,7 +475,7 @@
             return {
                 milestones: [] as Milestone[],
 
-                factories: [] as PlayerFactories[],
+                factories: [] as TeamFactories[],
 
                 debug: false as boolean
             }
@@ -490,7 +490,7 @@
 
             makeFactoryData: function(): void {
                 this.factories = [];
-                this.factories = PlayerFactories.compute(this.match, this.output);
+                this.factories = TeamFactories.compute(this.match, this.output);
             },
 
             makeInterstingActions: function(): void {
@@ -593,7 +593,7 @@
             },
 
             highestProductionFactory: function(): FactoryData | undefined {
-                const fac: PlayerFactories | undefined = this.factories.find(iter => iter.id == this.SelectedEntity);
+                const fac: TeamFactories | undefined = this.factories.find(iter => iter.id == this.SelectedEntity);
                 if (fac == undefined || fac.factories.length == 0) {
                     return undefined;
                 }

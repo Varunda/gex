@@ -356,6 +356,7 @@ namespace gex {
             // migrations
             services.AddSingleton<BarMatchPlayerStartSpotMigration>();
             services.AddSingleton<StartSpotDataMigration>();
+            services.AddSingleton<BarMatchTeamPlayerMigration>();
 
             // Hosted services
             services.AddHostedService<DbCreatorStartupService>(); // Have first to ensure DBs exist

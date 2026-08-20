@@ -774,7 +774,7 @@ end
 -- be aware that these arent exclusively user actioned commands
 function widget:UnitCommand(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions, cmdTag)
 	-- limit to 1 action per gameframe
-	if not teamAddedActionFrame[teamID] and totalTeamActions[teamID] and not ignoreUnitDefs[unitID] then
+	if not teamAddedActionFrame[teamID] and totalTeamActions[teamID] and not ignoreUnitDefs[unitDefID] then
 		if not ignoreUnits[unitID] and not spGetUnitIsBeingBuilt(unitID) then	-- believe it or not but unitcreated can come after AllowCommand (with nocost at least)
 			totalTeamActions[teamID] = totalTeamActions[teamID] + 1
 			teamAddedActionFrame[teamID] = true

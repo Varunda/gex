@@ -2,7 +2,7 @@
     <div :style="{ 'border': '3px solid ' + player.color }" class="rounded">
         <div class="text-center">
             <span :style="{ 'color': player.color }" class="fs-4">
-                {{ player.playerName }}
+                {{ player.name }}
             </span>
         </div>
 
@@ -32,12 +32,12 @@
 
     import { BarMatch } from "model/BarMatch";
     import { BarMap } from "model/BarMap";
-    import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
     import { GameOutput } from "model/GameOutput";
     import { GameEventUnitCreated } from "model/GameEventUnitCreated";
     import { GameEventUnitDef } from "model/GameEventUnitDef";
 
-    import { PlayerOpener } from "../compute/PlayerOpenerData";
+    import { TeamOpener } from "../compute/PlayerOpenerData";
 
     import "filters/MomentFilter";
     import "filters/CompactUnitNameFilter";
@@ -46,7 +46,7 @@
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
             output: { type: Object as PropType<GameOutput>, required: true },
-            player: { type: Object as PropType<PlayerOpener>, required: true }
+            player: { type: Object as PropType<TeamOpener>, required: true }
         },
 
         data: function() {
@@ -328,12 +328,12 @@
 
         computed: {
 
-            matchPlayer: function(): BarMatchPlayer {
-                return this.match.players.find(iter => iter.teamID == this.player.teamID)!;
+            matchTeam: function(): BarMatchTeam {
+                return this.match.teams.find(iter => iter.teamID == this.player.teamID)!;
             },
 
             startSpot: function(): { x: number, y: number, z: number } {
-                return this.matchPlayer.startingPosition;
+                return this.matchTeam.startingPosition;
             },
 
             mapUrl: function(): string {

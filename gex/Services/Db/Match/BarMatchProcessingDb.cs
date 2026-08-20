@@ -254,5 +254,20 @@ namespace gex.Services.Db.Match {
             );
         }
 
+        public async Task<List<BarMatchProcessing>> NeedsTeamsReparse(CancellationToken cancel) {
+            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarMatchProcessing>(@"
+                    SELECT p.*
+                    FROM bar_match_processing p
+						INNER JOIN bar_match m ON p.game_id = m.id
+                    WHERE p.demofile_parsed IS NOT NULL
+                        AND (p.features IS NULL OR p.features NOT LIKE '%teams%')
+                    ORDER BY p.demofile_parsed DESC
+                    LIMIT 1000;
+                ",
+                cancel
+            );
+        }
+
     }
 }

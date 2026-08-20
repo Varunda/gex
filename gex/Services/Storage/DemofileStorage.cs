@@ -24,7 +24,7 @@ namespace gex.Services.Storage {
         public async Task<Result<byte[], string>> GetDemofileByFilename(string filename, CancellationToken cancel) {
             string replayPath = Path.Join(_Options.Value.ReplayLocation, filename);
             if (File.Exists(replayPath) == false) {
-                return $"missing demofile at '{replayPath}";
+                return $"missing demofile at '{replayPath}'";
             }
 
             FileInfo fi = new(replayPath);

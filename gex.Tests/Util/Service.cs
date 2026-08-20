@@ -2,6 +2,7 @@
 using gex.Common.Services.Bar;
 using gex.Services.BarApi;
 using gex.Services.Db;
+using gex.Services.Db.Readers;
 using gex.Services.Metrics;
 using gex.Services.Parser;
 using gex.Services.Repositories;
@@ -39,6 +40,7 @@ namespace gex.Tests.Util {
             services.AddDatabasesServices();
             services.AddUtilServices();
             services.AddGexRepositories();
+            services.AddAppDatabaseReadersServices();
 
             return services;
         }

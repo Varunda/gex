@@ -135,5 +135,9 @@ namespace gex.Services.Repositories {
             return _ProcessingDb.NeedsUnitPositionCompression(cancel);
         }
 
+        public Task<List<BarMatchProcessing>> NeedsTeamsReparse(CancellationToken cancel) {
+            return _ProcessingDb.NeedsTeamsReparse(cancel);
+        }
+
     }
 }

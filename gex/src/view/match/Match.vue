@@ -370,7 +370,7 @@
 
                 <small v-if="match.data.processing != null" class="text-muted">
                     Features:
-                    <span v-for="f in match.data.processing.features">
+                    <span v-for="f in match.data.processing.features" :key="f">
                         <code class="me-2">{{ f }}</code>
                     </span>
                 </small>
@@ -471,7 +471,7 @@
     import { HeadlessRunQueueEntry } from "model/queue/HeadlessRunQueueEntry";
     import { BarMatchProcessing } from "model/BarMatchProcessing";
 
-    import { PlayerOpener } from "./compute/PlayerOpenerData";
+    import { TeamOpener } from "./compute/PlayerOpenerData";
     import { UnitStats } from "./compute/UnitStatData";
     import { ResourceProductionData } from "./compute/ResourceProductionData";
     import MergedStats from "./compute/MergedStats";
@@ -523,7 +523,7 @@
                 selectedEntityId: "team-0" as string,
 
                 computedData: {
-                    opener: [] as PlayerOpener[],
+                    opener: [] as TeamOpener[],
                     unitStats: [] as UnitStats[],
                     unitResources: [] as ResourceProductionData[],
                     merged: [] as MergedStats[]
@@ -706,7 +706,7 @@
                     this.unitIdToDefId.set(ev.unitID, ev.definitionID);
                 }
 
-                this.computedData.opener = PlayerOpener.compute(this.match.data, this.output.data);
+                this.computedData.opener = TeamOpener.compute(this.match.data, this.output.data);
                 this.computedData.unitStats = UnitStats.compute(this.output.data, this.match.data);
                 this.computedData.unitResources = ResourceProductionData.compute(this.match.data, this.output.data);
                 this.computedData.merged = MergedStats.compute(this.match.data, this.output.data);
@@ -896,6 +896,15 @@
                 return this.match.data.allyTeams.length > 2 && Math.max(...this.match.data.allyTeams.map(iter => iter.playerCount)) == 1;
             },
 
+            isQuantum: function(): boolean {
+                if (this.match.state != "loaded") {
+                    return false;
+                }
+
+                const match: BarMatch = this.match.data;
+                return match.teams.filter(iter => match.players.filter(i2 => i2.teamID == iter.teamID).length > 1).length > 1;
+            },
+
             selectedEntity: function(): StatEntity | null {
                 return this.statEntities.find(iter => iter.id == this.selectedEntityId) || null;
             },
@@ -985,31 +994,35 @@
                 }
 
                 const entities: StatEntity[] = [];
-                if (this.match.data.players.length <= 2) {
-                    for (const player of this.match.data.players) {
+                if (this.match.data.teams.length <= 2) {
+                    for (const team of this.match.data.teams) {
+                        const players: BarMatchPlayer[] = this.match.data.players.filter(iter => iter.teamID == team.teamID);
+
                         entities.push({
-                            id: `team-${player.teamID}`,
-                            color: player.hexColor,
-                            name: player.username
+                            id: `team-${team.teamID}`,
+                            color: team.hexColor,
+                            name: players.map(iter => iter.username).join(" + ")
                         });
                     }
                 } else {
                     for (const allyTeam of this.match.data.allyTeams) {
                         entities.push({
                             id: `ally-team-${allyTeam.allyTeamID}`,
-                            color: this.match.data.players.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`,
+                            color: this.match.data.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID)?.hexColor ?? `#333333`,
                             name: `Team ${allyTeam.allyTeamID + 1}`
                         });
 
-                        for (const player of this.match.data.players) {
-                            if (player.allyTeamID != allyTeam.allyTeamID) {
+                        for (const team of this.match.data.teams) {
+                            if (team.allyTeamID != allyTeam.allyTeamID) {
                                 continue;
                             }
 
+                            const players: BarMatchPlayer[] = this.match.data.players.filter(iter => iter.teamID == team.teamID);
+
                             entities.push({
-                                id: `team-${player.teamID}`,
-                                color: player.hexColor,
-                                name: player.username
+                                id: `team-${team.teamID}`,
+                                color: team.hexColor,
+                                name: players.map(iter => iter.username).join(" + ")
                             });
                         }
 

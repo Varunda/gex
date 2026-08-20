@@ -83,6 +83,8 @@
 
     import { BarUser } from "model/BarUser";
     import { BarMatch } from "model/BarMatch";
+    import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import "filters/MomentFilter";
     import "filters/LocaleFilter";
@@ -133,9 +135,15 @@
                         continue;
                     }
 
-                    const player = match.players.find(iter => iter.userID == this.user.userID);
+                    const player: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
                     if (player == undefined) {
                         console.warn(`UserMapView> missing player in match [match=${match.id}] [user=${this.user.userID}]`)
+                        continue;
+                    }
+
+                    const team: BarMatchTeam | undefined = match.teams.find(iter => iter.teamID == player.teamID);
+                    if (team == undefined) {
+                        console.warn(`UserMapView> missing team in match [match=${match.id}] [teamID=${player.teamID}]`);
                         continue;
                     }
 
@@ -145,9 +153,9 @@
                         }
                     }
 
-                    const posWin: MapPositionWinRate = map.get(player.startSpotLabel ?? "<unknown>") ?? {
+                    const posWin: MapPositionWinRate = map.get(team.startSpotLabel ?? "<unknown>") ?? {
                         map: this.map,
-                        position: player.startSpotLabel ?? "<unknown>",
+                        position: team.startSpotLabel ?? "<unknown>",
                         total: 0,
                         wins: 0,
                     };

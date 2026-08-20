@@ -52,6 +52,7 @@ namespace gex.Code.Discord {
         public BarUserFactionStatsDb _FactionStatsDb { set; private get; } = default!;
         public BarMatchRepository _MatchRepository { set; private get; } = default!;
         public BarMatchPlayerRepository _PlayerRepository { set; private get; } = default!;
+        public BarMatchTeamDb _TeamDb { set; private get; } = default!;
         public BarMatchAllyTeamDb _AllyTeamDb { set; private get; } = default!;
         public DiscordBarUserLinkDb _LinkDb { set; private get; } = default!;
         public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
@@ -223,7 +224,7 @@ namespace gex.Code.Discord {
                 // only show teams if the game has started
                 if (founder?.InGame == false) {
                     foreach (LobbyBattleStatusClient client in userBattle.BattleStatus.Clients) {
-                        embed.Description += $"{client.Username} - `[{client.Skill}]`\n";
+                        embed.Description += $"{client.Username.EscapeDiscordCharacters()} - `[{client.Skill}]`\n";
                     }
                     embed.Description += "\n";
                     break;
@@ -258,7 +259,7 @@ namespace gex.Code.Discord {
                 foreach (KeyValuePair<int, List<LobbyBattleStatusClient>> iter in allyTeams.OrderBy(iter => iter.Key)) {
                     embed.Description += $"**Team {iter.Key}**\n";
                     foreach (LobbyBattleStatusClient client in iter.Value.OrderByDescending(iter => iter.Skill)) {
-                        embed.Description += $"{client.Username.Replace("_", "\\_")} - `[{client.Skill:F2}]`\n";
+                        embed.Description += $"{client.Username.EscapeDiscordCharacters()} - `[{client.Skill:F2}]`\n";
                     }
                     embed.Description += "\n";
                 }
@@ -929,7 +930,7 @@ namespace gex.Code.Discord {
             DiscordSubscriptionMatchProcessed? sub = subs.FirstOrDefault(iter => iter.UserID == user.UserID);
             if (sub != null) {
                 embed.Title = $"Error! Subscription already exists";
-                embed.Description = $"A subscription for this Discord account already exists for {user.Username}";
+                embed.Description = $"A subscription for this Discord account already exists for {user.Username.EscapeDiscordCharacters()}";
                 embed.Color = DiscordColor.Red;
 
                 await ctx.EditResponseEmbed(embed);
@@ -944,7 +945,8 @@ namespace gex.Code.Discord {
             await _SubscriptionDb.Insert(sub, cancel);
 
             embed.Title = "Success!";
-            embed.Description = $"Successfully subscribed to `{user.Username}`\nWhenever Gex fully replays a game with this player in it, a message will be sent";
+            embed.Description = $"Successfully subscribed to `{user.Username.EscapeDiscordCharacters()}`\n"
+                + $"Whenever Gex fully replays a game with this player in it, a message will be sent";
             embed.Color = DiscordColor.Green;
             builder.AddEmbed(embed);
             await ctx.EditResponseAsync(builder);
@@ -1227,7 +1229,7 @@ namespace gex.Code.Discord {
 
             string oldestMatch = $"{(await _MatchRepository.GetOldestMatch(cancel))?.StartTime.GetDiscordTimestamp("D") ?? "no matches in DB??"}";
             embed.Description = $"-# Only includes public PvP games since {oldestMatch}\n\n";
-            embed.Title = $"Player lookup: `{user.Username}`";
+            embed.Title = $"Player lookup: `{user.Username.EscapeDiscordCharacters()}`";
             embed.Url = $"https://{_Instance.GetHost()}/user/{user.UserID}";
             embed.Color = DiscordColor.Green;
 
@@ -1373,6 +1375,7 @@ namespace gex.Code.Discord {
             List<BarMatchPlayer> players = await _PlayerRepository.GetByGameID(match.ID, cancel);
             List<BarMatchAllyTeam> allyTeams = (await _AllyTeamDb.GetByGameID(match.ID, cancel))
                 .OrderBy(iter => iter.AllyTeamID).ToList();
+            List<BarMatchTeam> teams = await _TeamDb.GetByGameID(match.ID, cancel);
 
             embed.Description += $"**Map**: {match.Map}\n";
             embed.Description += $"**Start time**: {match.StartTime.GetDiscordFullTimestamp()}\n";
@@ -1392,7 +1395,15 @@ namespace gex.Code.Discord {
                 if (match.Gamemode == BarGamemode.FFA) {
                     embed.Description += $"**Team {allyTeam.AllyTeamID + 1}** - ";
                     foreach (BarMatchPlayer p in teamPlayers) {
-                        embed.Description += $"{_GetEmoji(p.Faction.ToLower())}";
+                        BarMatchTeam? team = teams.FirstOrDefault(iter => iter.TeamID == p.TeamID);
+
+                        if (team != null) {
+                            embed.Description += $"{_GetEmoji(team.Faction.ToLower())}";
+                        } else {
+                            _Logger.LogWarning($"missing team of player [gameID={match.ID}] [playerID={p.PlayerID}] [teamID={p.TeamID}]");
+                            Debug.Fail($"missing team of player");
+                        }
+
                         if (p.UserID == focusedUser) {
                             embed.Description += $" **{p.Name.EscapeDiscordCharacters()}** ";
                         } else {
@@ -1412,7 +1423,15 @@ namespace gex.Code.Discord {
 
                     if (teamPlayers.Count <= 8) {
                         foreach (BarMatchPlayer p in teamPlayers) {
-                            embed.Description += $"{_GetEmoji(p.Faction.ToLower())}";
+                            BarMatchTeam? team = teams.FirstOrDefault(iter => iter.TeamID == p.TeamID);
+
+                            if (team != null) {
+                                embed.Description += $"{_GetEmoji(team.Faction.ToLower())}";
+                            } else {
+                                _Logger.LogWarning($"missing team of player [gameID={match.ID}] [playerID={p.PlayerID}] [teamID={p.TeamID}]");
+                                Debug.Fail($"missing team of player");
+                            }
+
                             if (p.UserID == focusedUser) {
                                 embed.Description += $" **{p.Name.EscapeDiscordCharacters()}** ";
                             } else {
@@ -1463,7 +1482,7 @@ namespace gex.Code.Discord {
                 if (players.Count != 2) {
                     title = $"ERROR: expected 2 players, got {players.Count} instead";
                 } else {
-                    title = $"{players[0].Name} v {players[1].Name}";
+                    title = $"{players[0].Name.EscapeDiscordCharacters()} v {players[1].Name.EscapeDiscordCharacters()}";
                 }
             } else {
                 List<BarMatchAllyTeam> allyTeams = await _AllyTeamDb.GetByGameID(match.ID, cancel);

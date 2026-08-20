@@ -31,6 +31,7 @@ namespace gex.Models.Api {
             MapSettings = match.MapSettings;
             SpadsSettings = match.SpadsSettings;
             Restrictions = match.Restrictions;
+            Teams = match.Teams;
             AllyTeams = match.AllyTeams;
             Players = match.Players;
             Spectators = match.Spectators;
@@ -91,6 +92,8 @@ namespace gex.Models.Api {
         public JsonElement Restrictions { get; set; } = default;
 
         public List<BarMatchAllyTeam> AllyTeams { get; set; } = [];
+
+        public List<BarMatchTeam> Teams { get; set; } = [];
 
         public List<BarMatchPlayer> Players { get; set; } = [];
 

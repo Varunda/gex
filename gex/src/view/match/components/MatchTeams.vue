@@ -17,6 +17,14 @@
                 start spot version: {{ match.startSpotVersion }}
             </div>
 
+            <div v-if="isQuantum" class="alert alert-info text-center">
+                <b>Quantum mode enabled</b>
+                <br>
+                <span>
+                    Quantum mode was turned on for this match, allowing multiple players to control one army
+                </span>
+            </div>
+
             <div v-if="isFunkyTeams == false">
                 <div class="teams">
                     <div class="team" v-for="allyTeam in allyTeamsSorted" :key="allyTeam.allyTeamID">
@@ -31,12 +39,16 @@
                                 <span v-else-if="showWinner == true && allyTeam.won" class="ph-fill ph-trophy text-warning"
                                     title="This team won the match!">
                                 </span>
+
+                                <span v-if="showDebug">
+                                    at ID {{ allyTeam.allyTeamID }}
+                                </span>
                             </h4>
                         </div>
                         
                         <div class="players">
-                            <template v-for="(player, index) in playersByTeam(allyTeam.allyTeamID)"> 
-                                <match-player-item :player="player" :key="index" :show-debug="showDebug" />
+                            <template v-for="(team, index) in getTeamsByAllyTeam(allyTeam.allyTeamID)"> 
+                                <match-team-entry :key="index" :players="getPlayersOfTeam(team.teamID)" :team="team" :show-debug="showDebug" />
                             </template>
                         </div>
                     </div>
@@ -64,7 +76,7 @@
                     <tbody>
                         <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <match-player-item v-if="index <= allyTeam.playerCount" :player="playersByTeam(allyTeam.allyTeamID)[index - 1]" :show-debug="showDebug" />
+                                <match-player-item v-if="index <= allyTeam.playerCount" :player="getPlayersByAllyTeam(allyTeam.allyTeamID)[index - 1]" :show-debug="showDebug" />
                                 <span v-else>
                                     <!-- uneven team placeholder -->
                                 </span>
@@ -156,13 +168,15 @@
     import Collapsible from "components/Collapsible.vue";
     import ToggleButton from "components/ToggleButton";
 
-    import MatchPlayerItem from "./MatchPlayerItem.vue";
+    import MatchTeamEntry from "./MatchTeamEntry.vue";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import { GamemodeUtil } from "util/Gamemode";
+    import { MatchUtil } from "util/MatchUtil";
 
     type GroupedPlayers = {
         allyTeamID: number,
@@ -184,11 +198,19 @@
 
         methods: {
             allyTeamColor: function(allyTeamID: number): string {
-                return this.match.players.find(iter => iter.allyTeamID == allyTeamID)?.hexColor ?? `#333333`;
+                return this.match.teams.find(iter => iter.allyTeamID == allyTeamID)?.hexColor ?? `#333333`;
             },
 
-            playersByTeam: function(allyTeamID: number): BarMatchPlayer[] {
+            getPlayersByAllyTeam: function(allyTeamID: number): BarMatchPlayer[] {
                 return [...this.match.players.filter(iter => iter.allyTeamID == allyTeamID)].sort((a, b) => b.skill - a.skill);
+            },
+
+            getPlayersOfTeam: function(teamID: number): BarMatchPlayer[] {
+                return MatchUtil.getPlayersOfTeam(this.match, teamID);
+            },
+
+            getTeamsByAllyTeam: function(allyTeamID: number): BarMatchTeam[] {
+                return [...this.match.teams.filter(iter => iter.allyTeamID == allyTeamID)].sort((a, b) => a.teamID - b.teamID);
             },
 
             getTeamNameStyle(allyTeam: BarMatchAllyTeam) {
@@ -231,6 +253,10 @@
 
             isFunkyTeams: function(): boolean {
                 return this.maxTeamSize > 8;
+            },
+
+            isQuantum: function(): boolean {
+                return MatchUtil.isQuantumMode(this.match);
             },
 
             playersByAllyTeam: function(): GroupedPlayers[] {
@@ -286,7 +312,7 @@
 
         components: {
             Collapsible,
-            MatchPlayerItem, ToggleButton
+            MatchTeamEntry, ToggleButton
         }
     });
     export default MatchTeams;

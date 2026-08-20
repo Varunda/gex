@@ -39,7 +39,7 @@ export class CommanderData {
 
         const arr: CommanderData[] = Array.from(map.values());
         for (const i of arr) {
-            i.name = match.players.find(iter => iter.teamID == i.teamID)?.username ?? `<missing ${i.teamID}>`;
+            i.name = match.teams.find(iter => iter.teamID == i.teamID)?.name ?? `<missing ${i.teamID}>`;
         }
 
         return Array.from(map.values());

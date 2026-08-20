@@ -17,12 +17,14 @@ namespace gex.Code.Commands {
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
         private readonly BarMapRepository _MapRepository;
         private readonly StartSpotDataMigration _StartSpotDataMigration;
+        private readonly BarMatchTeamPlayerMigration _TeamPlayerMigration;
 
         public MigrationCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<MigrationCommand>>();
             _PlayerStartSpotMigration = services.GetRequiredService<BarMatchPlayerStartSpotMigration>();
             _MapRepository = services.GetRequiredService<BarMapRepository>();
             _StartSpotDataMigration = services.GetRequiredService<StartSpotDataMigration>();
+            _TeamPlayerMigration = services.GetRequiredService<BarMatchTeamPlayerMigration>();
         }
 
         public Task PlayerStartSpotFixAll() {
@@ -67,6 +69,21 @@ namespace gex.Code.Commands {
                     _Logger.LogInformation($"ran start spot data migration");
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to run start spot data migration");
+                }
+            }).Start();
+
+            return Task.CompletedTask;
+        }
+
+        public Task StartTeamsFix() {
+            _Logger.LogInformation($"starting task to fix teams and players");
+
+            new Task(async () => {
+                try {
+                    using CancellationTokenSource cts = new(TimeSpan.FromHours(8));
+                    await _TeamPlayerMigration.FixAll(cts.Token);
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to fix teams//players");
                 }
             }).Start();
 

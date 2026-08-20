@@ -1,5 +1,6 @@
 import { BarMatch } from "model/BarMatch";
 import { BarMatchPlayer } from "model/BarMatchPlayer";
+import { BarMatchTeam } from "model/BarMatchTeam";
 import { GameEventUnitDef } from "model/GameEventUnitDef";
 import { GameOutput } from "model/GameOutput";
 
@@ -11,18 +12,22 @@ export class OpenerEntry {
     public firstFrame: number = 0;
 }
 
-export class PlayerOpener {
+const OPENER_IGNORED_UNITS: string[] = [
+    "cor_leftshoulder_nationwars_us"
+];
+
+export class TeamOpener {
 
     public teamID: number = 0;
-    public playerName: string = "";
+    public name: string = "";
     public color: string = "";
     public buildings: OpenerEntry[] = [];
     public units: OpenerEntry[] = [];
     public playerFaction: string = "";
 
-    public static compute(match: BarMatch, output: GameOutput): PlayerOpener[] {
+    public static compute(match: BarMatch, output: GameOutput): TeamOpener[] {
 
-        const map: Map<number, PlayerOpener> = new Map();
+        const map: Map<number, TeamOpener> = new Map();
 
         let eventsLookedAt: number = 0;
         const maxEventsToLookAt: number = match.players.length * 40;
@@ -38,11 +43,11 @@ export class PlayerOpener {
                 continue;
             }
 
-            const entry: PlayerOpener = map.get(teamID) ?? {
+            const entry: TeamOpener = map.get(teamID) ?? {
                 teamID: teamID,
                 buildings: [],
                 units: [],
-                playerName: "",
+                name: "",
                 color: "",
                 playerFaction: ""
             };
@@ -50,6 +55,9 @@ export class PlayerOpener {
             const def: GameEventUnitDef | undefined = output.unitDefinitions.get(ev.definitionID);
             if (def == undefined) {
                 console.warn(`PlayerOpenerData> missing unit def [unitDefID=${ev.definitionID}]`);
+                continue;
+            }
+            if (OPENER_IGNORED_UNITS.indexOf(def.definitionName) > -1) {
                 continue;
             }
 
@@ -104,11 +112,11 @@ export class PlayerOpener {
             }
         }
 
-        map.forEach((opener: PlayerOpener, teamID: number) => {
-            const p: BarMatchPlayer | undefined = match.players.find(iter => iter.teamID == teamID);
-            opener.playerName = p?.username ?? `<missing team ${teamID}>`;
-            opener.color = p?.hexColor ?? "#000000";
-            opener.playerFaction = p?.faction ?? `<unknown>`;
+        map.forEach((opener: TeamOpener, teamID: number) => {
+            const t: BarMatchTeam | undefined = match.teams.find(iter => iter.teamID == teamID);
+            opener.name = t?.name ?? `<missing team ${teamID}>`;
+            opener.color = t?.hexColor ?? "#000000";
+            opener.playerFaction = t?.faction ?? `<unknown>`;
         });
 
         return Array.from(map.values());
