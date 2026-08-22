@@ -1006,7 +1006,7 @@
     import { UnitStats } from "view/match/compute/UnitStatData";
     import MergedStats from "view/match/compute/MergedStats";
     import { UnitPositionFrame } from "view/match/compute/UnitPositionFrame";
-    import { FactoryData, PlayerFactories } from "view/match/compute/FactoryData";
+    import { FactoryData, TeamFactories } from "view/match/compute/FactoryData";
 
     import CompactUtils from "util/Compact";
     import { MapUtil } from "util/MapUtil";
@@ -1491,7 +1491,7 @@
                         ...match.players.filter(iter => match.pickedAllyTeams.indexOf(iter.allyTeamID) > -1).map(iter => iter.teamID)
                     ]);
 
-                    const pfs: PlayerFactories[] = PlayerFactories.compute(match, output);
+                    const pfs: TeamFactories[] = TeamFactories.compute(match, output);
                     for (const pf of pfs) {
                         if (interestedTeamIds.has(pf.teamID) == false) {
                             continue;
