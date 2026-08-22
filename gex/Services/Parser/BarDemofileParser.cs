@@ -98,6 +98,11 @@ namespace gex.Services.Parser {
         private async Task<Result<BarMatch, string>> ReadBytes(string filename, byte[] data, DemofileParserOptions options, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
+
+            if (data.Length == 0) {
+                return $"got a empty file (data is length 0)";
+            }
+
             ByteArrayReader reader = new(data);
 
             Demofile demofile = new();
