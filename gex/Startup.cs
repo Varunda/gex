@@ -199,12 +199,6 @@ namespace gex {
                         // map the returned JSON from Discord to auth claims
                         options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
                         options.ClaimActions.MapJsonKey(ClaimTypes.Name, "username");
-                        options.ClaimActions.MapCustomJson("urn:discord:avatar:url",
-                            user => string.Format(CultureInfo.InvariantCulture, "https://cdn.discordapp.com/avatars/{0}/{1}.{2}",
-                            user.GetString("id"),
-                            user.GetString("avatar"),
-                            user.GetString("avatar")!.StartsWith("a_") ? "gif" : "png")
-                        );
 
                         options.Scope.Add("identify");
                     });
