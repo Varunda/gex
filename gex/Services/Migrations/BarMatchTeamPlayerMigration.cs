@@ -51,25 +51,14 @@ namespace gex.Services.Migrations {
 
                 Stopwatch timer = Stopwatch.StartNew();
                 foreach (BarMatchProcessing proc in pending) {
-                    /*
-                    _ParseQueue.Queue(new GameReplayParseQueueEntry() {
-                        GameID = proc.GameID,
-                        Force = true,
-                        ForceForward = false,
-                        SkipStatUpdates = true,
-                        SkipWebhook = true,
-                    });
-                    */
-                    await FixGame(proc.GameID, cancel);
+                    try {
+                        await FixGame(proc.GameID, cancel);
+                    } catch (Exception ex) {
+                        _Logger.LogError(ex, $"failed to fix game [gameID={proc.GameID}]");
+                    }
                 }
 
                 _Logger.LogDebug($"completed batch [timer={timer.ElapsedMilliseconds}ms] [timePer={(pending.Count / (float)timer.ElapsedMilliseconds):F3}ms]");
-
-                /*
-                while (_ParseQueue.Count() > 0) {
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancel);
-                }
-                */
             } while (pending.Count > 0);
 
             _Logger.LogInformation($"done");
