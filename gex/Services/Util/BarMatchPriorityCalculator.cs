@@ -20,6 +20,13 @@ namespace gex.Services.Util {
             "tweakdefs1", "tweakdefs2", "tweakdefs3",
             "tweakdefs4", "tweakdefs5", "tweakdefs5",
             "tweakdefs7", "tweakdefs8", "tweakdefs9",
+            "tweakdefs10", "tweakdefs11", "tweakdefs12",
+            "tweakdefs13", "tweakdefs14", "tweakdefs15",
+            "tweakdefs16", "tweakdefs17", "tweakdefs18",
+            "tweakdefs19", "tweakdefs20", "tweakdefs21",
+            "tweakdefs22", "tweakdefs22", "tweakdefs24",
+            "tweakdefs25", "tweakdefs26", "tweakdefs27",
+            "tweakdefs28", "tweakdefs29", "tweakdefs30",
         ];
 
         public BarMatchPriorityCalculator(ILogger<BarMatchPriorityCalculator> logger,
@@ -59,7 +66,7 @@ namespace gex.Services.Util {
             }
 
             // de-prio longer games (+4 prior per minute over 30)
-            if (isLongGame == true) {
+            if (match.DurationFrameCount >= (30 * 60 * 30)) {
                 short minutesOver = (short)((match.DurationFrameCount - (30 * 60 * 30)) / (30 * 60));
                 priority += (short)(minutesOver * 4);
                 why += $"long game ({minutesOver} mins over 30); ";
@@ -88,7 +95,7 @@ namespace gex.Services.Util {
                     if (exempt != null) {
                         why += $"tweaked defs '{tweakName}' ('{exempt}' is exempt!); ";
                     } else {
-                        priority += 40;
+                        priority += 30;
                         why += $"tweaked defs '{tweakName}'; ";
                     }
 
