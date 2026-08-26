@@ -1,6 +1,8 @@
-﻿using gex.Common.Code.Constants;
+﻿using gex.Code.ExtensionMethods;
+using gex.Common.Code.Constants;
 using gex.Common.Models;
 using gex.Models;
+using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Services.Db;
 using gex.Services.Db.Account;
@@ -8,12 +10,14 @@ using gex.Services.Db.Match;
 using gex.Services.Migrations;
 using gex.Services.Parser;
 using gex.Services.Storage;
+using gex.Services.Util;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +41,7 @@ namespace gex.Services.Repositories {
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
         private readonly BarMatchTextPingDb _TextPingDb;
+        private readonly PolygonStartboxUtil _PolygonStartboxUtil;
 
         private readonly IMemoryCache _Cache;
         private const string CACHE_KEY_ID = "Gex.Match.ID.{0}"; // {0} => game ID
@@ -53,7 +58,7 @@ namespace gex.Services.Repositories {
             BarMatchProcessingRepository processingRepository, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, MatchPoolRepository matchPoolRepository,
             MatchPoolEntryDb matchPoolEntryDb, BarMatchTextPingDb textPingDb,
-            BarMatchTeamDb teamDb) {
+            BarMatchTeamDb teamDb, PolygonStartboxUtil polygonStartboxUtil) {
 
             _Logger = logger;
             _MatchDb = matchDb;
@@ -71,6 +76,7 @@ namespace gex.Services.Repositories {
             _MatchPoolEntryDb = matchPoolEntryDb;
             _TextPingDb = textPingDb;
             _TeamDb = teamDb;
+            _PolygonStartboxUtil = polygonStartboxUtil;
         }
 
         public async Task<BarMatch?> GetByID(string gameID, CancellationToken cancel) {
@@ -275,6 +281,42 @@ namespace gex.Services.Repositories {
                 }
             }
 
+            if (options.IncludeStartRegionData == true) {
+                do {
+                    JsonElement? value = match.GameSettings.GetChild("mapmetadata_startboxes_set");
+                    if (value == null || value.Value.ValueKind == JsonValueKind.Undefined || value.Value.ValueKind == JsonValueKind.Null) {
+                        break;
+                    }
+
+                    if (value.Value.ValueKind != JsonValueKind.String) {
+                        _Logger.LogWarning($"unexpected valuekind for mapmetadata_startboxes_set [gameID={match.ID}] [valueking={value.Value.ValueKind}]");
+                        break;
+                    }
+
+                    Result<PolygonStartbox, string> region = _PolygonStartboxUtil.Parse(value.Value.GetString() ?? "");
+                    if (region.IsOk == false) {
+                        _Logger.LogWarning($"failed to parse mapmetadata_startboxes_set [gameID={match.ID}] [error={region.Error}]");
+                        break;
+                    }
+
+                    match.StartRegionData = new List<StartRegionData>();
+
+                    PolygonStartbox boxes = region.Value;
+
+                    foreach (PolygonStartbox.Side side in boxes.Sides) {
+                        List<PolygonStartboxUtil.Pair> verts = _PolygonStartboxUtil.TessellateRing(side.Anchors);
+
+                        StartRegionData startRegion = new();
+                        startRegion.AllyTeamID = side.Index;
+                        startRegion.Regions = [ new StartRegion() {
+                            Vertices = verts
+                        }];
+
+                        match.StartRegionData.Add(startRegion);
+                    }
+                } while (false);
+            }
+
             return match;
         }
 
@@ -414,6 +456,9 @@ namespace gex.Services.Repositories {
             return _MatchDb.Delete(gameID);
         }
 
+        /// <summary>
+        ///     options used when calling <see cref="BuildMatch(string, BuildOptions, AppAccount?, CancellationToken)"/>
+        /// </summary>
         public class BuildOptions {
             public bool IncludeTeams { get; set; } = false;
             public bool IncludeAllyTeams { get; set; } = false;
@@ -426,6 +471,7 @@ namespace gex.Services.Repositories {
             public bool IncludeLabeledPings { get; set; } = false;
             public bool IncludeCommands { get; set; } = false;
             public bool IncludeSelfDCommands { get; set; } = false;
+            public bool IncludeStartRegionData { get; set; } = false;
         }
 
         private async Task<Result<BarMatch, string>> _Parse(BarMatch match, DemofileParserOptions options, CancellationToken cancel) {

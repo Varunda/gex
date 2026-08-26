@@ -104,5 +104,7 @@ namespace gex.Models.Db {
         /// </summary>
         public bool MatchPoolIsHidden { get; set; }
 
+        public List<StartRegionData>? StartRegionData { get; set; } = null;
+
     }
 }

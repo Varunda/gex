@@ -44,9 +44,9 @@
                         Overview
                     </a>
                 </li>
-                <li class="nav-item" @click="selectTab('faction')">
-                    <a class="nav-link border" :class=" [ selectedTab == 'faction' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
-                        Faction stats
+                <li class="nav-item" @click="selectTab('gamemodes')">
+                    <a class="nav-link border" :class=" [ selectedTab == 'gamemodes' ? 'bg-light text-dark fw-bold border-bottom-0' : 'text-light' ]">
+                        Gamemode stats
                     </a>
                 </li>
                 <li class="nav-item" @click="selectTab('charts')">
@@ -109,7 +109,7 @@
     import UserInteractions from "./components/UserInteractions.vue";
     import UserCharts from "./components/UserCharts.vue";
     import UserOverview from "./components/UserOverview.vue";
-    import UserFactionStats from "./components/UserFactionStats.vue";
+    import UserGamemodeStats from "./components/UserGamemodeStats.vue";
     import UserMaps from "./components/UserMaps.vue";
     import UserPreviousNames from "./components/UserPreviousNames.vue";
 
@@ -176,8 +176,8 @@
 
                 if (this.selectedTab == "overview") {
                     this.selectedComponent = "UserOverview";
-                } else if (this.selectedTab == "faction") {
-                    this.selectedComponent = "UserFactionStats";
+                } else if (this.selectedTab == "faction" || this.selectedTab == "gamemodes") {
+                    this.selectedComponent = "UserGamemodeStats";
                 } else if (this.selectedTab == "matches") {
                     this.selectedComponent = "UserMatches";
                 } else if (this.selectedTab == "encounters") {
@@ -243,7 +243,7 @@
             GexMenu, InfoHover, ApiError, ToggleButton, Busy,
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
             UserHeader, UserMatches, UserInfo, UserUnitsMade, UserInteractions,
-            UserCharts, UserOverview, UserFactionStats, UserMaps, UserPreviousNames,
+            UserCharts, UserOverview, UserGamemodeStats, UserMaps, UserPreviousNames,
         }
     });
     export default User;

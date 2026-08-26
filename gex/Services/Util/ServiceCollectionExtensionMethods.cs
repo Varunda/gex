@@ -13,6 +13,7 @@ namespace gex.Services.Util {
             services.AddSingleton<MapSymmetryUtil>();
             services.AddSingleton<SafeZLib>();
             services.AddSingleton<EnginePathUtil>();
+            services.AddSingleton<PolygonStartboxUtil>();
         }
 
     }

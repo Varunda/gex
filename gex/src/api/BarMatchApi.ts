@@ -9,7 +9,8 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
 
     public static getByID(gameID: string): Promise<Loading<BarMatch>> {
         return BarMatchApi.get().readSingle(
-            `/api/match/${gameID}?includeTeams=true&includePlayers=true&includeAllyTeams=true&includeSpectators=true&includeChat=true&includeTeamDeaths=true&includeLabeledPings=true&includePlayerLeaves=true`,
+            `/api/match/${gameID}?includeTeams=true&includePlayers=true&includeAllyTeams=true&includeSpectators=true`
+            + `&includeChat=true&includeTeamDeaths=true&includeLabeledPings=true&includePlayerLeaves=true&includeStartRegionData=true`,
             BarMatch.parse
         );
     }

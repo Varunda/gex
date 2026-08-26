@@ -305,6 +305,7 @@
 
     import AccountUtil from "util/Account";
     import Toaster from "Toaster";
+import { StartRegionVertex } from "model/StartRegionData";
 
     // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
@@ -1007,21 +1008,83 @@
                 if (this.svg == null) { return console.warn(`cannot add starting box: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add starting box: root is null`); }
 
-                for (const allyTeam of this.match.allyTeams) {
-                    const firstTeam: BarMatchTeam | undefined = this.match.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID);
-                    console.log(`MatchMap> allyTeam ${allyTeam.allyTeamID} first team name ${firstTeam?.name} is ${firstTeam?.hexColor} at ${JSON.stringify(allyTeam.startBox)}`);
+                if (false && this.match.startRegionData != null) {
 
-                    this.root.append("rect")
-                        .attr("x", `${allyTeam.startBox.left * 100}%`)
-                        .attr("y", `${allyTeam.startBox.top * 100}%`)
-                        .attr("width", `${(allyTeam.startBox.right - allyTeam.startBox.left) * 100}%`)
-                        .attr("height", `${(allyTeam.startBox.bottom - allyTeam.startBox.top) * 100}%`)
-                        .classed("map-starting-box", true)
-                        .style("pointer-events", "none")
-                        .style("opacity", this.map.startingBox == true ? "1" : "0")
-                        .attr("id", `map-starting-box-${allyTeam.allyTeamID}`)
-                        .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+                    if (this.match.mapData == null) {
+                        return console.warn(`cannot add starting box: mapData is null`);
+                    }
+
+                    const scaleX: number = this.match.mapData.width / 200;
+                    const scaleZ: number = this.match.mapData.height / 200;
+
+                    const depair = (vert: StartRegionVertex): string => {
+                        return `${vert.x / 200 * this.imgW} ${vert.z / 200 * this.imgH}`;
+                    }
+
+                    for (const startRegion of this.match.startRegionData) {
+                        const firstTeam: BarMatchTeam | undefined = this.match.teams.find(iter => iter.allyTeamID == startRegion.allyTeamID);
+                        console.log(`MatchMap> allyTeam ${startRegion.allyTeamID} first team name ${firstTeam?.name} is ${firstTeam?.hexColor}`);
+
+                        for (const region of startRegion.regions) {
+                            if (region.vertices.length == 0) {
+                                console.warn(`MatchMap> have region with no verts [allyTeamID=${startRegion.allyTeamID}]`);
+                                continue;
+                            }
+
+                            let path: string = `M ${depair(region.vertices[0])}\n`;
+
+                            this.root.append("circle")
+                                .attr("cx", region.vertices[0].x / 200 * this.imgW)
+                                .attr("cy", region.vertices[0].z / 200 * this.imgH)
+                                .attr("r", "3px")
+                                .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+
+                            for (let i = 1; i < region.vertices.length; ++i) {
+                                path += `L${depair(region.vertices[i])}\n`;
+
+                                this.root.append("circle")
+                                    .attr("cx", region.vertices[i].x / 200 * this.imgW)
+                                    .attr("cy", region.vertices[i].z / 200 * this.imgH)
+                                    .attr("r", "3px")
+                                    .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+
+                                this.root.append("text")
+                                    .attr("x", region.vertices[i].x / 200 * this.imgW)
+                                    .attr("y", region.vertices[i].z / 200 * this.imgH)
+                                    .style("stroke", (firstTeam?.hexColor ?? "#333333") + "33")
+                                    .text(`${i}`);
+
+                            }
+
+                            console.log(path);
+
+                            this.root.append("path")
+                                .attr("d", path)
+                                .classed("map-starting-box", true)
+                                .style("pointer-events", "none")
+                                .style("opacity", this.map.startingBox == true ? "1" : "0")
+                                .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+                        }
+                    }
+                } else {
+                    for (const allyTeam of this.match.allyTeams) {
+                        const firstTeam: BarMatchTeam | undefined = this.match.teams.find(iter => iter.allyTeamID == allyTeam.allyTeamID);
+                        console.log(`MatchMap> allyTeam ${allyTeam.allyTeamID} first team name ${firstTeam?.name} is ${firstTeam?.hexColor} at ${JSON.stringify(allyTeam.startBox)}`);
+
+                        this.root.append("rect")
+                            .attr("x", `${allyTeam.startBox.left * 100}%`)
+                            .attr("y", `${allyTeam.startBox.top * 100}%`)
+                            .attr("width", `${(allyTeam.startBox.right - allyTeam.startBox.left) * 100}%`)
+                            .attr("height", `${(allyTeam.startBox.bottom - allyTeam.startBox.top) * 100}%`)
+                            .classed("map-starting-box", true)
+                            .style("pointer-events", "none")
+                            .style("opacity", this.map.startingBox == true ? "1" : "0")
+                            .attr("id", `map-starting-box-${allyTeam.allyTeamID}`)
+                            .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+                    }
+
                 }
+
             },
 
             /**

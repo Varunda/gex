@@ -99,7 +99,6 @@ namespace gex {
                 }
 
                 try {
-                    //await _Host.RunConsoleAsync();
                     await _Host.RunAsync(stopSource.Token);
                 } catch (Exception ex) {
                     if (logger != null) {

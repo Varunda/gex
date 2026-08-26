@@ -50,6 +50,7 @@ namespace gex.Models.Api {
             MatchPoolEntryNote = match.MatchPoolEntryNote;
             MatchPoolIsHidden = match.MatchPoolIsHidden;
             StartSpotVersion = match.StartSpotVersion;
+            StartRegionData = match.StartRegionData;
         }
 
         public string ID { get; set; } = "";
@@ -134,6 +135,8 @@ namespace gex.Models.Api {
         public string? MatchPoolEntryNote { get; set; }
 
         public bool MatchPoolIsHidden { get; set; }
+
+        public List<StartRegionData>? StartRegionData { get; set; } = null;
 
     }
 }

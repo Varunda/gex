@@ -128,6 +128,7 @@ namespace gex.Controllers.Api {
         ///     will <see cref="BarMatch.Commands"/> be populated with Self-D commands? defaults to false.
         ///     if <paramref name="includeCommands"/>> is <c>true</c>, then this parameter is ignored (as it is a subset of the data)
         /// </param>
+        /// <param name="includeStartRegionData">will <see cref="BarMatch.StartRegionData"/> be populated? defaults to false</param>
         /// <response code="200">
         ///     the reponse will contain the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>,
         ///     populating any of the fields with the parameters
@@ -152,6 +153,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeLabeledPings = false,
             [FromQuery] bool includeCommands = false,
             [FromQuery] bool includeSelfDCommands = false,
+            [FromQuery] bool includeStartRegionData = false,
             CancellationToken cancel = default
         ) {
             Result<BarMatch?, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
@@ -166,6 +168,7 @@ namespace gex.Controllers.Api {
                 IncludeLabeledPings = includeLabeledPings,
                 IncludeCommands = includeCommands,
                 IncludeSelfDCommands = includeSelfDCommands,
+                IncludeStartRegionData = includeStartRegionData,
             }, await _CurrentUser.Get(cancel), cancel);
 
             if (result.IsOk == false) {

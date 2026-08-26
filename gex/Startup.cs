@@ -340,12 +340,10 @@ namespace gex {
             services.AddGexParsers();
             services.AddSingleton<LuaRunner>();
             services.AddStorageServices();
+            services.AddUtilServices();
 
             // util
             services.AddSingleton<PathEnvironmentService>();
-            services.AddSingleton<BarMatchTitleUtilService>();
-            services.AddSingleton<ApmCalculatorUtil>();
-            services.AddSingleton<MapSymmetryUtil>();
 
             // migrations
             services.AddSingleton<BarMatchPlayerStartSpotMigration>();
@@ -359,8 +357,6 @@ namespace gex {
             services.AddPeriodicServices(); // periodic run services
             services.AddBackgroundServices();
             services.AddGexMetrics();
-            services.AddSingleton<BarMatchPriorityCalculator>();
-            services.AddSingleton<BarDemofileResultProcessor>();
             services.AddLobbyServices(enabled: Configuration.GetValue<bool>("Spring:Enabled"));
 
             if (Configuration.GetValue<bool>("Discord:Enabled") == true) {

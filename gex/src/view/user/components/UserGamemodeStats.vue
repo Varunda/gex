@@ -1,57 +1,12 @@
 <template>
     <div>
         <h2 class="wt-header border-0">
-            Faction stats
+            Gamemode stats
         </h2>
 
-        <div v-for="faction in groupedFactionData" :key="faction.gamemode" class="mb-3">
-            <div class="wt-header mb-0" style="white-space: nowrap; text-wrap: wrap;">
-                <h5 class="ms-2 d-inline-block mb-0">
-                    <strong>
-                        {{ faction.gamemode | gamemode }}
-                    </strong>
-                </h5>
-
-                <wbr/>
-
-                <h6 class="d-inline-block mb-0">
-                    {{ faction.sum.winCount / faction.sum.playCount * 100 | locale(0) }}% win rate over {{ faction.sum.playCount }} games
-                </h6>
-            </div>
-
-            <table class="table table-sm mb-1">
-                <thead>
-                    <tr class="table-active">
-                        <th class="ps-2">Faction</th>
-                        <th>Plays</th>
-                        <th>Wins</th>
-                        <th>Win %</th>
-                    </tr>
-                </thead>
-                
-                <tbody>
-                    <tr v-if="faction.armada" is="FactionStatsRow" :data="faction.armada" :faction="1"></tr>
-                    <tr v-if="faction.cortex" is="FactionStatsRow" :data="faction.cortex" :faction="2"></tr>
-                    <tr v-if="faction.legion" is="FactionStatsRow" :data="faction.legion" :faction="3"></tr>
-                    <tr v-if="faction.random" is="FactionStatsRow" :data="faction.random" :faction="4"></tr>
-                    <tr class="table-active" is="FactionStatsRow" :data="faction.sum" :faction="0"></tr>
-                </tbody>
-            </table>
-
-            <span class="text-muted">
-                Average opponent skill is 
-                <span v-if="faction.averageSkillDiff > 0">
-                    {{ faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> below this user
-                </span>
-                <span v-else>
-                    {{ -1 * faction.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> above this user
-                </span>
-
-                <span v-if="faction.wrongSkillCount > 0" class="text-muted">
-                    (Excluding {{ faction.wrongSkillCount }} matches due to the demofiles containing the wrong skill values)
-                </span>
-            </span>
-        </div>
+        <user-gamemode-stat-view v-for="gamemode in groupedFactionData"
+            :key="gamemode.gamemode" :gamemode="gamemode" :user="user" :matches="matches">
+        </user-gamemode-stat-view>
     </div>
     
 </template>
@@ -69,46 +24,9 @@
     import "filters/BarGamemodeFilter";
 
     import { FactionUtil } from "util/Faction";
-    import { GamemodeUtil } from "util/Gamemode";
-    import ColorUtils from "util/Color";
-    import TimeUtils from "util/Time";
 
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
-
-    const FactionStatsRow = Vue.extend({
-        props: {
-            faction: { type: Number, required: true },
-            data: { type: Object as PropType<GroupedFaction>, required: false }
-        },
-
-        template: `
-            <tr>
-                <td>
-                    <span v-if="faction == 0" class="ps-2"><b>Total</b></span>
-                    <img v-else-if="faction == 1" src="/img/armada.png" width="24" title="icon for armada">
-                    <img v-else-if="faction == 2" src="/img/cortex.png" width="24" title="icon for cortex">
-                    <img v-else-if="faction == 3" src="/img/legion.png" width="24" title="icon for legion">
-                    <img v-else-if="faction == 4" src="/img/random.png" width="24" title="icon for random">
-                    <span v-else>
-                        unchecked faction {{ faction }}
-                    </span>
-                    <span v-if="faction != 0">
-                        {{ faction | faction }}
-                    </span>
-                </td>
-                <template v-if="data == null">
-                    <td class="text-muted">--</td>
-                    <td class="text-muted">--</td>
-                    <td class="text-muted">--</td>
-                </template>
-                <template v-else>
-                    <td>{{ data.playCount | locale(0) }}</td>
-                    <td>{{ data.winCount | locale(0) }}
-                    <td>{{ data.winCount / data.playCount * 100 | locale(0) }}%</td>
-                </template>
-            </tr>
-        `
-    });
+    import UserGamemodeStatView from "./UserGamemodeStatView.vue";
 
     export const UserFactionStats = Vue.extend({
         props: {
@@ -235,8 +153,7 @@
         },
 
         components: {
-            FactionStatsRow
-
+            UserGamemodeStatView
         }
     });
     export default UserFactionStats;
