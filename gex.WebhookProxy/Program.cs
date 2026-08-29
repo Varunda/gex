@@ -4,6 +4,7 @@ using gex.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -58,9 +59,8 @@ namespace gex.WebhookProxy {
                 }
 
                 try {
+                    Stopwatch timer = Stopwatch.StartNew();
                     string target = targetValue.First()!;
-
-                    logger.LogInformation($"proxying webhook [target={target}]"); 
 
                     using MemoryStream sr = new();
                     await httpContext.Request.Body.CopyToAsync(sr);
@@ -73,6 +73,8 @@ namespace gex.WebhookProxy {
 
                     using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
                     await http.SendAsync(req, cts.Token);
+
+                    logger.LogInformation($"proxyied webhook [target={target}] [timer={timer.ElapsedMilliseconds}ms] [size={body.Length}]"); 
                 } catch (Exception ex) {
                     logger.LogError(ex, $"failed to send webhook to target [target={targetValue}]");
                     return Results.InternalServerError(ex.Message);
