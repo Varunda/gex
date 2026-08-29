@@ -6,6 +6,7 @@ using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Util;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,6 +32,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarMatchRepository _MatchRepository;
         private readonly GameOutputRepository _OutputRepository;
         private readonly IOptions<MatchProcessingWebhookOptions> _Options;
+        private readonly MatchProcessingWebhookUtil _WebhookUtil;
 
         private static HttpClient _Http = new HttpClient();
 
@@ -42,7 +44,8 @@ namespace gex.Services.Hosted.QueueProcessor {
         public MatchProcessingWebhookQueueProcessor(ILoggerFactory factory,
             BaseQueue<MatchProcessingWebhookQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             MatchProcessingWebhookRepository webhookRepository, BarMatchRepository matchRepository,
-            GameOutputRepository outputRepository, IOptions<MatchProcessingWebhookOptions> options)
+            GameOutputRepository outputRepository, IOptions<MatchProcessingWebhookOptions> options,
+            MatchProcessingWebhookUtil webhookUtil)
         : base("match_processing_webhook_queue", factory, queue, serviceHealthMonitor) {
 
             _WebhookRepository = webhookRepository;
@@ -62,10 +65,11 @@ namespace gex.Services.Hosted.QueueProcessor {
                     throw new ArgumentException($"MatchProcessingWebhook.ProxySecret cannot be empty if a proxy is given");
                 }
             }
+
+            _WebhookUtil = webhookUtil;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(MatchProcessingWebhookQueueEntry entry, CancellationToken cancel) {
-
             _Logger.LogDebug($"processing webhook type [gameID={entry.GameID}] [type={entry.Type}]");
 
             List<MatchProcessingWebhook> webhooks = await _WebhookRepository.GetAll(cancel);
@@ -73,66 +77,20 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return false;
             }
 
-            Result<Maybe<BarMatch>, string> built = await _MatchRepository.BuildMatch(entry.GameID, new BarMatchRepository.BuildOptions() {
-                IncludeAllyTeams = true,
-                IncludePlayers = true,
-            }, null, cancel);
-            if (built.IsOk == false) {
-                _Logger.LogError($"failed to build match [gameID={entry.GameID}] [error={built.Error}]");
-                return true;
-            }
+            Result<JsonObject, string> root = await _WebhookUtil.BuildBody(entry.GameID,
+                includeOutput: entry.Type == MatchProcessingWebhookQueueEntry.REPLAYED, cancel);
 
-            if (built.Value.Has() == false) {
-                _Logger.LogWarning($"missing match to send webhook for [gameID={entry.GameID}]");
+            if (root.IsOk == false) {
+                _Logger.LogError($"failed to build body for webhook [error={root.Error}] [gameID={entry.GameID}] [type={entry.Type}]");
                 return false;
             }
 
-            JsonSerializerOptions opts = new();
-            opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-
-            BarMatch match = built.Value.Get();
-
-            JsonNode json = JsonSerializer.SerializeToNode(match, opts)!;
-
-            JsonObject root = JsonSerializer.Deserialize<JsonObject>("{}")!;
-            root.Add("match", json);
-
             // for webhooks that want games that are replayed, but without events, give those a different JsonObject
             JsonObject rootNoEvents = JsonSerializer.Deserialize<JsonObject>("{}")!;
-            if (entry.Type == MatchProcessingWebhookQueueEntry.REPLAYED) {
-                rootNoEvents.Add("match", json.DeepClone());
-
-                Result<GameOutput?, string> result = await _OutputRepository.Build(entry.GameID, new GameOutputRepository.BuildOptions() {
-                    IncludeCommanderPositionUpdates = true,
-                    IncludeExtraStats = true,
-                    IncludeFactoryUnitCreate = true,
-                    IncludeTeamDiedEvents = true,
-                    IncludeTeamStats = true,
-                    IncludeTransportLoads = true,
-                    IncludeTransportUnloads = true,
-                    IncludeUnitDamage = true,
-                    IncludeUnitDefs = true,
-                    IncludeUnitPosition = true,
-                    IncludeUnitResources = true,
-                    IncludeUnitsCreated = true,
-                    IncludeUnitsGiven = true,
-                    IncludeUnitsKilled = true,
-                    IncludeUnitsTaken = true,
-                    IncludeWindUpdates = true,
-                }, null, cancel);
-
-                if (result.IsOk == false) {
-                    _Logger.LogError($"failed to load game output [gameID={entry.GameID}] [error={result.Error}]");
-                    return true;
-                }
-
-                if (result.Value == null) {
-                    _Logger.LogError($"missing game output [gameID={entry.GameID}]");
-                    Debug.Fail("huh");
-                    return true;
-                }
-
-                root.Add("output", JsonSerializer.SerializeToNode(result.Value, opts));
+            if (root.Value.TryGetPropertyValue("match", out JsonNode? matchNode) == true && matchNode != null) {
+                rootNoEvents.Add("match", matchNode.DeepClone());
+            } else {
+                _Logger.LogError($"failed to get 'match' property from root JSON to add to rootNoEvents");
             }
 
             foreach (MatchProcessingWebhook webhook in webhooks) {
@@ -140,35 +98,10 @@ namespace gex.Services.Hosted.QueueProcessor {
                     continue;
                 }
 
-                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                JsonObject json = (entry.Type == MatchProcessingWebhookQueueEntry.REPLAYED && webhook.IncludeEvents == false)
+                    ? rootNoEvents : root.Value;
 
-                try {
-                    HttpRequestMessage req = new(HttpMethod.Post, webhook.Url);
-                    req.Headers.Authorization = new AuthenticationHeaderValue("SharedSecret", webhook.SharedSecret);
-
-                    if (entry.Type == MatchProcessingWebhookQueueEntry.REPLAYED && webhook.IncludeEvents == false) {
-                        req.Content = JsonContent.Create(rootNoEvents);
-                    } else {
-                        req.Content = JsonContent.Create(root);
-                    }
-
-                    if (_Options.Value.Proxy != null) {
-                        req.RequestUri = new Uri(_Options.Value.Proxy + $"?Target={HttpUtility.UrlEncode(webhook.Url)}");
-                        req.Headers.TryAddWithoutValidation("ProxySecret", _Options.Value.ProxySecret);
-                    }
-
-                    HttpResponseMessage response = await _Http.SendAsync(req, cancel);
-                    if (_Options.Value.Proxy != null) {
-                        if (response.StatusCode != System.Net.HttpStatusCode.OK) {
-                            string body = await response.Content.ReadAsStringAsync(cancel);
-                            _Logger.LogWarning($"got non-200 response code [statusCode={response.StatusCode}] [body={body.Truncate(100)}]");
-                        }
-                    }
-
-                    _Logger.LogDebug($"sent POST request [url={webhook.Url}{(_Options.Value.ProxySecret != null ? " (proxied)":"")}] [type={entry.Type}]");
-                } catch (Exception ex) {
-                    _Logger.LogWarning($"failed to send webhook to url [exception={ex.Message}] [url={webhook.Url}]");
-                }
+                await _WebhookUtil.SendToWebhook(webhook, json, cancel);
             }
 
             return true;

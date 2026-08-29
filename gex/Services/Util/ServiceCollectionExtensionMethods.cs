@@ -14,6 +14,7 @@ namespace gex.Services.Util {
             services.AddSingleton<SafeZLib>();
             services.AddSingleton<EnginePathUtil>();
             services.AddSingleton<PolygonStartboxUtil>();
+            services.AddSingleton<MatchProcessingWebhookUtil>();
         }
 
     }

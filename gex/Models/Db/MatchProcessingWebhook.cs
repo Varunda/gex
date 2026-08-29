@@ -25,5 +25,8 @@ namespace gex.Models.Db {
         [ColumnMapping("ip")]
         public string IP { get; set; } = "";
 
+        [ColumnMapping("user_id")]
+        public long UserID { get; set; }
+
     }
 }

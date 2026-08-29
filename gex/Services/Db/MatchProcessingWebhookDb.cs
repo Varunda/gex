@@ -2,6 +2,7 @@
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,14 +42,19 @@ namespace gex.Services.Db {
         }
 
         public async Task Upsert(MatchProcessingWebhook webhook, CancellationToken cancel) {
+            if (webhook.UserID == default) {
+                throw new ArgumentException($"UserID cannot be default value (0)");
+            }
+
             using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO match_processing_webhook (
-                    url, type, shared_secret, include_events, timestamp, ip
+                    url, type, shared_secret, include_events, timestamp, ip, user_id
                 ) VALUES (
-                    @Url, @Type, @SharedSecret, @IncludeEvents, NOW() at time zone 'utc', @IP
+                    @Url, @Type, @SharedSecret, @IncludeEvents, NOW() at time zone 'utc', @IP, @UserID
                 ) ON CONFLICT (url, type) DO UPDATE SET
                     include_events = @IncludeEvents,
+                    shared_secret = @SharedSecret,
                     timestamp = NOW() at time zone 'utc'
             ");
 
@@ -57,6 +63,7 @@ namespace gex.Services.Db {
             cmd.AddParameter("SharedSecret", webhook.SharedSecret);
             cmd.AddParameter("IncludeEvents", webhook.IncludeEvents);
             cmd.AddParameter("IP", webhook.IP);
+            cmd.AddParameter("UserID", webhook.UserID);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);
