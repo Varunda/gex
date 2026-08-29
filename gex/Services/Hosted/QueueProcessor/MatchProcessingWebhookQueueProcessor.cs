@@ -1,11 +1,14 @@
-﻿using gex.Common.Models;
+﻿using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models;
 using gex.Models.Db;
 using gex.Models.Event;
+using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
@@ -18,6 +21,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace gex.Services.Hosted.QueueProcessor {
 
@@ -26,6 +30,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly MatchProcessingWebhookRepository _WebhookRepository;
         private readonly BarMatchRepository _MatchRepository;
         private readonly GameOutputRepository _OutputRepository;
+        private readonly IOptions<MatchProcessingWebhookOptions> _Options;
 
         private static HttpClient _Http = new HttpClient();
 
@@ -37,12 +42,26 @@ namespace gex.Services.Hosted.QueueProcessor {
         public MatchProcessingWebhookQueueProcessor(ILoggerFactory factory,
             BaseQueue<MatchProcessingWebhookQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             MatchProcessingWebhookRepository webhookRepository, BarMatchRepository matchRepository,
-            GameOutputRepository outputRepository)
+            GameOutputRepository outputRepository, IOptions<MatchProcessingWebhookOptions> options)
         : base("match_processing_webhook_queue", factory, queue, serviceHealthMonitor) {
 
             _WebhookRepository = webhookRepository;
             _MatchRepository = matchRepository;
             _OutputRepository = outputRepository;
+            _Options = options;
+
+            if (_Options.Value.Proxy != null) {
+                try {
+                    Uri uri = new(_Options.Value.Proxy);
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to validate proxy URL as a valid URL [proxy={_Options.Value.Proxy}]");
+                    throw;
+                }
+
+                if (string.IsNullOrWhiteSpace(_Options.Value.ProxySecret) == true) {
+                    throw new ArgumentException($"MatchProcessingWebhook.ProxySecret cannot be empty if a proxy is given");
+                }
+            }
         }
 
         protected override async Task<bool> _ProcessQueueEntry(MatchProcessingWebhookQueueEntry entry, CancellationToken cancel) {
@@ -54,7 +73,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return false;
             }
 
-            Result<BarMatch?, string> built = await _MatchRepository.BuildMatch(entry.GameID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> built = await _MatchRepository.BuildMatch(entry.GameID, new BarMatchRepository.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludePlayers = true,
             }, null, cancel);
@@ -63,15 +82,15 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return true;
             }
 
-            if (built.Value == null) {
+            if (built.Value.Has() == false) {
                 _Logger.LogWarning($"missing match to send webhook for [gameID={entry.GameID}]");
                 return false;
             }
 
-            JsonSerializerOptions opts = new JsonSerializerOptions();
+            JsonSerializerOptions opts = new();
             opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-            BarMatch match = built.Value;
+            BarMatch match = built.Value.Get();
 
             JsonNode json = JsonSerializer.SerializeToNode(match, opts)!;
 
@@ -133,9 +152,20 @@ namespace gex.Services.Hosted.QueueProcessor {
                         req.Content = JsonContent.Create(root);
                     }
 
-                    await _Http.SendAsync(req, cancel);
+                    if (_Options.Value.Proxy != null) {
+                        req.RequestUri = new Uri(_Options.Value.Proxy + $"?Target={HttpUtility.UrlEncode(webhook.Url)}");
+                        req.Headers.TryAddWithoutValidation("ProxySecret", _Options.Value.ProxySecret);
+                    }
 
-                    _Logger.LogDebug($"sent POST request [url={webhook.Url}] [type={entry.Type}]");
+                    HttpResponseMessage response = await _Http.SendAsync(req, cancel);
+                    if (_Options.Value.Proxy != null) {
+                        if (response.StatusCode != System.Net.HttpStatusCode.OK) {
+                            string body = await response.Content.ReadAsStringAsync(cancel);
+                            _Logger.LogWarning($"got non-200 response code [statusCode={response.StatusCode}] [body={body.Truncate(100)}]");
+                        }
+                    }
+
+                    _Logger.LogDebug($"sent POST request [url={webhook.Url}{(_Options.Value.ProxySecret != null ? " (proxied)":"")}] [type={entry.Type}]");
                 } catch (Exception ex) {
                     _Logger.LogWarning($"failed to send webhook to url [exception={ex.Message}] [url={webhook.Url}]");
                 }

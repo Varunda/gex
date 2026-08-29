@@ -318,6 +318,7 @@ namespace gex {
             services.Configure<SpringLobbyOptions>(Configuration.GetSection("Spring"));
             services.Configure<GitHubOptions>(Configuration.GetSection("GitHub"));
             services.Configure<FocusPlayerModeOptions>(Configuration.GetSection("FocusPlayerMode"));
+            services.Configure<MatchProcessingWebhookOptions>(Configuration.GetSection("MatchProcessingWebhook"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 
