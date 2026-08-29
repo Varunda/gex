@@ -230,7 +230,7 @@
                 const includeEvents: boolean = type == "replayed" && this.newWebhook.type.split("-")[1] == "events";
 
                 const res: Loading<void> = await MatchProcessingWebhookApi
-                    .create(this.newWebhook.url, this.newWebhook.type, includeEvents, this.newWebhook.sharedSecret);
+                    .create(this.newWebhook.url, type, includeEvents, this.newWebhook.sharedSecret);
 
                 if (res.state == "loaded") {
                     Toaster.add("Success", "successfully created new webhook", "success");
