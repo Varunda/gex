@@ -14,8 +14,10 @@ namespace gex.Common.Models {
 
             if (success == true && value == null) {
                 // if |T| allows nullable stuff, only throw if null and nullable isn't allowed
-                if (typeof(T) != typeof(string)
-                    || typeof(T).CustomAttributes.Any(iter => iter.AttributeType.Name == "NullableAttribute") == false) {
+                if (//typeof(T) != typeof(string)
+                    (typeof(T).IsValueType == false || Nullable.GetUnderlyingType(typeof(T)) == null)
+                    && (typeof(T).CustomAttributes.Any(iter => iter.AttributeType.Name == "NullableAttribute") == false)
+                ) {
 
                     throw new NullReferenceException();
                 }

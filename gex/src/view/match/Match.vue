@@ -724,6 +724,24 @@
             },
 
             loadPriorityIndex: async function(): Promise<void> {
+                const health: Loading<AppHealth> = await AppHealthApi.getHealth();
+                if (health.state == "loaded") {
+                    const queue: ServiceQueueCount | undefined = health.data.queues.find((iter) => iter.queueName == "headless_run_queue");
+                    if (queue == undefined) {
+                        this.queue.processingTime = null;
+                        return;
+                    }
+
+                    if (health.data.services.find((iter) => iter.name == "priority_headless_runner")?.enabled == false) {
+                        console.log(`Match> priority_headless_runner is disabled, existing queue`);
+                        this.queue.show = false;
+                        this.queue.index = -1;
+                        return;
+                    }
+
+                    this.queue.processingTime = queue.median;
+                }
+
                 const prioList: Loading<BarMatchProcessing[]> = await BarMatchProcessingApi.getPriorityList();
                 if (prioList.state != "loaded") {
                     console.error(`Match> when loading prio list, expected 'loaded', got ${prioList.state} instead`);
@@ -739,7 +757,9 @@
 
                 this.queue.show = true;
                 this.queue.wasInQueue = true;
+            },
 
+            loadQueuePosition: async function(): Promise<void> {
                 const health: Loading<AppHealth> = await AppHealthApi.getHealth();
                 if (health.state == "loaded") {
                     const queue: ServiceQueueCount | undefined = health.data.queues.find((iter) => iter.queueName == "headless_run_queue");
@@ -748,11 +768,18 @@
                         return;
                     }
 
+                    if (queue.enabled == false) {
+                        console.log(`Match> headless_run_queue is disabled`);
+                        this.queue.show = false;
+                        this.queue.wasInQueue = true;
+                        this.queue.index = -1;
+                        return;
+                    }
+
+
                     this.queue.processingTime = queue.median;
                 }
-            },
 
-            loadQueuePosition: async function(): Promise<void> {
                 this.queue.data = await QueueApi.getHeadlessQueue();
                 if (this.queue.data.state != "loaded") {
                     return;
@@ -767,17 +794,6 @@
 
                 this.queue.show = true;
                 this.queue.wasInQueue = true;
-
-                const health: Loading<AppHealth> = await AppHealthApi.getHealth();
-                if (health.state == "loaded") {
-                    const queue: ServiceQueueCount | undefined = health.data.queues.find((iter) => iter.queueName == "headless_run_queue");
-                    if (queue == undefined) {
-                        this.queue.processingTime = null;
-                        return;
-                    }
-
-                    this.queue.processingTime = queue.median;
-                }
             },
 
             makeSignalRConnection: async function(): Promise<void> {

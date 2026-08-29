@@ -156,7 +156,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeStartRegionData = false,
             CancellationToken cancel = default
         ) {
-            Result<BarMatch?, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
                 IncludeTeams = includeTeams,
                 IncludeAllyTeams = includeAllyTeams,
                 IncludePlayers = includePlayers,
@@ -175,11 +175,11 @@ namespace gex.Controllers.Api {
                 return ApiInternalError<ApiMatch>($"failed to build match");
             }
 
-            if (result.Value == null) {
+            if (result.Value.Has() == false) {
                 return ApiNoContent<ApiMatch>();
             }
 
-            BarMatch match = result.Value;
+            BarMatch match = result.Value.Get();
 
             ApiMatch ret = new(match);
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
@@ -747,7 +747,7 @@ namespace gex.Controllers.Api {
                 return ApiInternalError($"no {nameof(StartSpotData)} for map {match.MapName} and version {match.StartSpotVersion} exists!");
             }
 
-            Result<BarMatch?, string> ret = await _MatchRepository.BuildMatch(match.ID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await _MatchRepository.BuildMatch(match.ID, new BarMatchRepository.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludePlayers = true,
                 IncludeTeams = true
@@ -757,12 +757,12 @@ namespace gex.Controllers.Api {
                 return ApiInternalError($"failed to build match: {ret.Error}");
             }
 
-            if (ret.Value == null) {
+            if (ret.Value.Has() == false) {
                 throw new InvalidOperationException($"match is not supposed to be null here");
             }
 
             _Logger.LogInformation($"recalculating player start spots for match [gameID={match.ID}] [map={match.MapName}] [version={data.Version}]");
-            await _PlayerStartSpotMigration.FixMatch(ret.Value, data, cancel);
+            await _PlayerStartSpotMigration.FixMatch(ret.Value.Get(), data, cancel);
 
             return ApiOk();
         }

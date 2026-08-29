@@ -26,6 +26,7 @@ export class ServiceQueueCount {
     public min: number | null = null;
     public max: number | null = null;
     public median: number | null = null;
+    public enabled: boolean = true;
 }
 
 export class AppHealthApi extends ApiWrapper<AppHealth> {

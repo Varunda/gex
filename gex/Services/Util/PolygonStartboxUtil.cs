@@ -2,6 +2,7 @@
 using gex.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Models.Bar;
+using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers.Text;
@@ -183,6 +184,41 @@ namespace gex.Services.Util {
         }
 
         /// <summary>
+        ///     get a polygon startbox from a <see cref="BarMatch"/>. first the game setting <code>mapmetadata_startbox_override</code>
+        ///     is used, then <code>mapmetadata_startbox_set</code> if not found
+        /// </summary>
+        /// <param name="match">match that contains the game settings used to parse the polygon startbox from</param>
+        /// <returns></returns>
+        public Result<Maybe<PolygonStartbox>, string> GetFromMatch(BarMatch match) {
+            JsonElement? value = match.GameSettings.GetChild("mapmetadata_startboxes_override");
+            if (value == null || IsValidMapDataElement(value) == false) {
+                value = match.GameSettings.GetChild("mapmetadata_startboxes_set");
+
+                if (value == null || IsValidMapDataElement(value) == false) {
+                    return Result<Maybe<PolygonStartbox>, string>.Ok(Maybe<PolygonStartbox>.None());
+                }
+            }
+
+            if (value.Value.ValueKind != JsonValueKind.String) {
+                _Logger.LogWarning($"unexpected valuekind for mapmetadata_startboxes_set [gameID={match.ID}] [valuekind={value.Value.ValueKind}]");
+                return Result<Maybe<PolygonStartbox>, string>.Ok(Maybe<PolygonStartbox>.None());
+            }
+
+            Result<PolygonStartbox, string> parsed = Parse(value.Value.GetString()!);
+            if (parsed.IsOk) {
+                return Maybe<PolygonStartbox>.Some(parsed.Value);
+            }
+            return Result<Maybe<PolygonStartbox>, string>.Err(parsed.Error);
+        }
+
+        private static bool IsValidMapDataElement(JsonElement? elem) {
+            return elem != null
+                && elem.Value.ValueKind == JsonValueKind.String
+                && elem.Value.GetString() != null
+                && elem.Value.GetString() != "";
+        }
+
+        /// <summary>
         ///     check if a point is within a polygon defines by a list of vertices
         /// </summary>
         /// <param name="verts">list of verticies. implied that the list vertex joins to the first one</param>
@@ -274,7 +310,7 @@ namespace gex.Services.Util {
 
                 (double A3x, double A3z) = (p2.X, p2.Z);
                 if (t3 - t2 > 1e-9) {
-                    (A3x, A3z) = BgLerp(tt, p2.X, p2.Z, p3.Z, p3.Z, t2, t3);
+                    (A3x, A3z) = BgLerp(tt, p2.X, p2.Z, p3.X, p3.Z, t2, t3);
                 }
 
                 (double B1x, double B1z) = BgLerp(tt, A1x, A1z, A2x, A2z, t0, t2);

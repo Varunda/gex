@@ -102,13 +102,13 @@ namespace gex.Services.Repositories {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<Result<BarMatch?, string>> BuildMatch(string gameID,
+        public async Task<Result<Maybe<BarMatch>, string>> BuildMatch(string gameID,
             BuildOptions options, AppAccount? currentUser,
             CancellationToken cancel
         ) {
             BarMatch? match = await GetByID(gameID, cancel);
             if (match == null) {
-                return Result<BarMatch?, string>.Ok(null);
+                return Maybe<BarMatch>.None();
             }
 
             BarMatchProcessing? proc = await _ProcessingRepository.GetByGameID(gameID, cancel);
@@ -281,27 +281,15 @@ namespace gex.Services.Repositories {
                 }
             }
 
+            // start region data
             if (options.IncludeStartRegionData == true) {
-                do {
-                    JsonElement? value = match.GameSettings.GetChild("mapmetadata_startboxes_set");
-                    if (value == null || value.Value.ValueKind == JsonValueKind.Undefined || value.Value.ValueKind == JsonValueKind.Null) {
-                        break;
-                    }
-
-                    if (value.Value.ValueKind != JsonValueKind.String) {
-                        _Logger.LogWarning($"unexpected valuekind for mapmetadata_startboxes_set [gameID={match.ID}] [valueking={value.Value.ValueKind}]");
-                        break;
-                    }
-
-                    Result<PolygonStartbox, string> region = _PolygonStartboxUtil.Parse(value.Value.GetString() ?? "");
-                    if (region.IsOk == false) {
-                        _Logger.LogWarning($"failed to parse mapmetadata_startboxes_set [gameID={match.ID}] [error={region.Error}]");
-                        break;
-                    }
-
+                Result<Maybe<PolygonStartbox>, string> region = _PolygonStartboxUtil.GetFromMatch(match);
+                if (region.IsOk == false) {
+                    _Logger.LogError($"failed to parse polygon start region [gameID={match.ID}] [error={region.Error}]");
+                } else if (region.Value.Has() == true) {
                     match.StartRegionData = new List<StartRegionData>();
 
-                    PolygonStartbox boxes = region.Value;
+                    PolygonStartbox boxes = region.Value.Get();
 
                     foreach (PolygonStartbox.Side side in boxes.Sides) {
                         List<PolygonStartboxUtil.Pair> verts = _PolygonStartboxUtil.TessellateRing(side.Anchors);
@@ -314,10 +302,10 @@ namespace gex.Services.Repositories {
 
                         match.StartRegionData.Add(startRegion);
                     }
-                } while (false);
+                }
             }
 
-            return match;
+            return Maybe<BarMatch>.Some(match);
         }
 
         /// <summary>

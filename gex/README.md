@@ -35,7 +35,6 @@ NOTE: use ^C or type `.close` into the console window to properly close the game
 
 ## other notes
 
-
 ### user focus mode
 
 this option in `env.json` tells Gex to ignore all games unless they contain one of the user IDs provided.
@@ -60,3 +59,9 @@ discord:
 dotnet user-jwts create --name discord --claim name=$DISCORD_ID --valid-for=720d
 ```
 
+### webhooks
+
+Gex can be configured to send POST requests to servers when a match is parsed or replayed.
+Gex can also optionally send these to a proxy server, to avoid leaking the IP of the Gex host if wanted
+
+see the `gex.WebhookProxy` project as an example implementation of this

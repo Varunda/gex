@@ -70,7 +70,7 @@ namespace gex.Tests.Services.Util {
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
 
-            Result<BarMatch?, string> ret = await matchRepository.BuildMatch(output.Value.ID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch(output.Value.ID, new BarMatchRepository.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,
@@ -87,9 +87,9 @@ namespace gex.Tests.Services.Util {
             }, null, CancellationToken.None);
 
             Assert.IsTrue(ret.IsOk, $"error: {ret.Error}");
-            Assert.IsNotNull(ret.Value);
+            Assert.IsTrue(ret.Value.Has());
 
-            BarMatch match = ret.Value;
+            BarMatch match = ret.Value.Get();
             Assert.AreEqual(output.Value.ID, match.ID);
         }
 
@@ -120,7 +120,7 @@ namespace gex.Tests.Services.Util {
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
 
-            Result<BarMatch?, string> ret = await matchRepository.BuildMatch("c5d0cb673d1c101091ba9c25b84d7a69", new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch("c5d0cb673d1c101091ba9c25b84d7a69", new BarMatchRepository.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,
@@ -137,9 +137,10 @@ namespace gex.Tests.Services.Util {
             }, null, CancellationToken.None);
 
             Assert.IsTrue(ret.IsOk, $"error: {ret.Error}");
-            Assert.IsNotNull(ret.Value);
+            Assert.IsTrue(ret.Value.Has());
+            Assert.IsNotNull(ret.Value.Get());
 
-            BarMatch match = ret.Value;
+            BarMatch match = ret.Value.Get();
             Assert.AreEqual("c5d0cb673d1c101091ba9c25b84d7a69", match.ID);
             Assert.AreEqual(29.66f, match.MaxOS);
             Assert.AreEqual(24.735f, match.AverageOS);
@@ -243,7 +244,7 @@ namespace gex.Tests.Services.Util {
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
 
-            Result<BarMatch?, string> ret = await matchRepository.BuildMatch("2144826a169387cee01499f2922c384b", new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch("2144826a169387cee01499f2922c384b", new BarMatchRepository.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,
@@ -260,9 +261,10 @@ namespace gex.Tests.Services.Util {
             }, null, CancellationToken.None);
 
             Assert.IsTrue(ret.IsOk, $"error: {ret.Error}");
+            Assert.IsTrue(ret.Value.Has());
             Assert.IsNotNull(ret.Value);
 
-            BarMatch match = ret.Value;
+            BarMatch match = ret.Value.Get();
             Assert.AreEqual("2144826a169387cee01499f2922c384b", match.ID);
             Assert.AreEqual(60.5f, match.MaxOS, 0.01);
             Assert.AreEqual(49.9625f, match.AverageOS, 0.01);

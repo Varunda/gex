@@ -7,6 +7,10 @@
             <toggle-button v-model="debug" class="btn-sm">
                 debug
             </toggle-button>
+
+            <button v-if="debug == true" class="btn btn-primary" @click="drawMap">
+                Redraw
+            </button>
         </h2>
 
         <div class="d-flex justify-content-lg-center mb-4 flex-wrap" style="gap: 0.5rem;">
@@ -281,7 +285,6 @@
     import "filters/MomentFilter";
 
     import TimeUtils from "util/Time";
-    import ColorUtils, { RGB } from "util/Color";
 
     import ToggleButton from "components/ToggleButton";
     import InfoHover from "components/InfoHover.vue";
@@ -294,10 +297,9 @@
     import { BarMatchTeam } from "model/BarMatchTeam";
     import { GameOutput } from "model/GameOutput";
     import { BarMap, StartPosition } from "model/BarMap";
-    import { SearchResult } from "model/SearchResult";
     import { GameEventUnitDef } from "model/GameEventUnitDef";
-    import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { GameEventUnitPosition } from "model/GameEventUnitPosition";
+    import { StartRegionVertex } from "model/StartRegionData";
 
     import { CommanderData } from "../compute/ComputeCommanderData";
     import { FactoryData, TeamFactories } from "../compute/FactoryData";
@@ -305,7 +307,6 @@
 
     import AccountUtil from "util/Account";
     import Toaster from "Toaster";
-import { StartRegionVertex } from "model/StartRegionData";
 
     // 2025-04-17: yeah, this is some good quality code that i love to touch. i can't wait for the next time i want to update the map again!
 
@@ -1008,14 +1009,13 @@ import { StartRegionVertex } from "model/StartRegionData";
                 if (this.svg == null) { return console.warn(`cannot add starting box: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add starting box: root is null`); }
 
-                if (false && this.match.startRegionData != null) {
+                if (this.match.startRegionData != null) {
 
                     if (this.match.mapData == null) {
                         return console.warn(`cannot add starting box: mapData is null`);
                     }
 
-                    const scaleX: number = this.match.mapData.width / 200;
-                    const scaleZ: number = this.match.mapData.height / 200;
+                    console.log(`MatchMap> using start region data to display start area`);
 
                     const depair = (vert: StartRegionVertex): string => {
                         return `${vert.x / 200 * this.imgW} ${vert.z / 200 * this.imgH}`;
@@ -1031,39 +1031,49 @@ import { StartRegionVertex } from "model/StartRegionData";
                                 continue;
                             }
 
-                            let path: string = `M ${depair(region.vertices[0])}\n`;
+                            // 2 verts means it's a rectangle
+                            if (region.vertices.length == 2) {
+                                console.log(`MatchMap> displaying region as a rect`);
 
-                            this.root.append("circle")
-                                .attr("cx", region.vertices[0].x / 200 * this.imgW)
-                                .attr("cy", region.vertices[0].z / 200 * this.imgH)
-                                .attr("r", "3px")
-                                .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
-
-                            for (let i = 1; i < region.vertices.length; ++i) {
-                                path += `L${depair(region.vertices[i])}\n`;
-
-                                this.root.append("circle")
-                                    .attr("cx", region.vertices[i].x / 200 * this.imgW)
-                                    .attr("cy", region.vertices[i].z / 200 * this.imgH)
-                                    .attr("r", "3px")
+                                this.root.append("rect")
+                                    .attr("x", `${region.vertices[0].x / 200 * this.imgW}`)
+                                    .attr("y", `${region.vertices[0].z / 200 * this.imgH}`)
+                                    .attr("width", `${(region.vertices[1].x - region.vertices[0].x) / 200 * this.imgW}`)
+                                    .attr("height", `${(region.vertices[1].z - region.vertices[0].z) / 200 * this.imgW}`)
+                                    .classed("map-starting-box", true)
+                                    .style("pointer-events", "none")
+                                    .style("opacity", this.map.startingBox == true ? "1" : "0")
                                     .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+                            } else {
+                                let path: string = `M ${depair(region.vertices[0])}\n`;
 
-                                this.root.append("text")
-                                    .attr("x", region.vertices[i].x / 200 * this.imgW)
-                                    .attr("y", region.vertices[i].z / 200 * this.imgH)
-                                    .style("stroke", (firstTeam?.hexColor ?? "#333333") + "33")
-                                    .text(`${i}`);
+                                for (let i = 1; i < region.vertices.length; ++i) {
+                                    path += `L${depair(region.vertices[i])}\n`;
+                                }
 
+                                this.root.append("path")
+                                    .attr("d", path)
+                                    .classed("map-starting-box", true)
+                                    .style("pointer-events", "none")
+                                    .style("opacity", this.map.startingBox == true ? "1" : "0")
+                                    .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
                             }
 
-                            console.log(path);
+                            if (this.debug == true) {
+                                for (let i = 0; i < region.vertices.length; ++i) {
+                                    this.root.append("circle")
+                                        .attr("cx", region.vertices[i].x / 200 * this.imgW)
+                                        .attr("cy", region.vertices[i].z / 200 * this.imgH)
+                                        .attr("r", "3px")
+                                        .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
 
-                            this.root.append("path")
-                                .attr("d", path)
-                                .classed("map-starting-box", true)
-                                .style("pointer-events", "none")
-                                .style("opacity", this.map.startingBox == true ? "1" : "0")
-                                .style("fill", (firstTeam?.hexColor ?? "#333333") + "33");
+                                    this.root.append("text")
+                                        .attr("x", region.vertices[i].x / 200 * this.imgW)
+                                        .attr("y", region.vertices[i].z / 200 * this.imgH)
+                                        .style("stroke", (firstTeam?.hexColor ?? "#333333") + "33")
+                                        .text(`${i}`);
+                                }
+                            }
                         }
                     }
                 } else {

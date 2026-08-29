@@ -24,6 +24,7 @@ using gex.Services.Repositories;
 using gex.Models;
 using gex.Models.UserStats;
 using System.Numerics;
+using gex.Services.Util;
 
 namespace gex.Services.Parser {
 
@@ -37,15 +38,17 @@ namespace gex.Services.Parser {
         private readonly LuaCommandParser _CommandParser;
         private readonly BarMapRepository _MapRepository;
         private readonly BarUserRepository _UserRepository;
+        private readonly PolygonStartboxUtil _PolygonStartboxUtil;
 
         public BarDemofileParser(ILogger<BarDemofileParser> logger,
             LuaCommandParser commandParser, BarMapRepository mapRepository,
-            BarUserRepository userRepository) {
+            BarUserRepository userRepository, PolygonStartboxUtil polygonStartboxUtil) {
 
             _Logger = logger;
             _CommandParser = commandParser;
             _MapRepository = mapRepository;
             _UserRepository = userRepository;
+            _PolygonStartboxUtil = polygonStartboxUtil;
         }
 
         /// <summary>
@@ -327,6 +330,35 @@ namespace gex.Services.Parser {
 
             if (startBoxesShuffled == true) {
                 _Logger.LogDebug($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
+            }
+
+            // parse polygon start data
+            Result<Maybe<PolygonStartbox>, string> polygonStartBox = _PolygonStartboxUtil.GetFromMatch(match);
+            if (polygonStartBox.IsOk == true && polygonStartBox.Value.Has()) {
+                PolygonStartbox startbox = polygonStartBox.Value.Get();
+
+                foreach (PolygonStartbox.Side side in startbox.Sides) {
+                    if (side.Anchors.Count == 2) {
+                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == side.Index);
+                        if (at == null) {
+                            _Logger.LogWarning($"missing ally team for startbox side [gameID={match.ID}] [index={side.Index}]");
+                            continue;
+                        }
+
+                        // divided by 200 as the anchors are in 0.5% of total dimension
+                        at.StartBox = new Rectangle() {
+                            Left = (float)side.Anchors[0].X / 200f,
+                            Right = (float)side.Anchors[1].X / 200f,
+
+                            // why isn't bottom the 0th elem? top left is (0, 0), not bottom left
+                            Top = (float)side.Anchors[0].Z / 200f,
+                            Bottom = (float)side.Anchors[1].Z / 200f,
+                        };
+
+                        _Logger.LogTrace($"updated allyteam startbox with polygon region data [gameID={match.ID}] [allyTeamID={side.Index}]"
+                            + $" [rect (lrtb)={at.StartBox.Left},{at.StartBox.Right},{at.StartBox.Top},{at.StartBox.Bottom}]");
+                    }
+                }
             }
 
             int packetCount = 0;
@@ -698,7 +730,7 @@ namespace gex.Services.Parser {
 
                         if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
                             if ((readyState == 3 || readyState == 1) && team.StartingPosition == Vector3.Zero) {
-                                _Logger.LogWarning($"player start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
+                                _Logger.LogWarning($"team start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
                                     + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
                             } else {
                                 _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}]"

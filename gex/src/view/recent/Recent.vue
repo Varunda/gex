@@ -254,7 +254,7 @@
                     </thead>
 
                     <tbody>
-                        <tr v-if="search.players.length == 0">
+                        <tr v-if="search.players == undefined || search.players.length == 0">
                             <td colspan="5" class="text-muted">
                                 No player filters added
                             </td>
@@ -540,6 +540,7 @@
                 blob.orderByDir ??= "desc";
                 blob.gameSettings ??= [];
                 blob.users ??= [];
+                blob.players ??= [];
                 this.search = blob;
                 this.performSearch();
             } else {
