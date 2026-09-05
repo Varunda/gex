@@ -1,11 +1,13 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Util;
 using gex.Models.Db;
-using gex.Models.Map;
 using gex.Services.Parser;
 using gex.Services.Repositories;
-using gex.Services.Util;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers.Text;
@@ -61,14 +63,14 @@ namespace gex.Services.Migrations {
                 // get the latest match that has a start pos data set in the game settings
                 List<BarMatch> matches = await _MatchRepository.Search(new BarMatchSearchParameters() {
                     Map = map.Name,
-                    GameSettings = [ new SearchKeyValue() {
+                    GameSettings = [ new MatchSearchKeyValue() {
                         Key = "mapmetadata_startpos",
                         Operation = "ne",
                         Value = ""
                     }],
                     OrderBy = OrderBy.START_TIME,
                     OrderByDirection = OrderByDirection.DESC
-                }, offset: 0, limit: 1, currentUser: null, cancel: cancel);
+                }, offset: 0, limit: 1, currentUserID: null, cancel: cancel);
 
                 long dbMs = timer.ElapsedMilliseconds; timer.Restart();
 

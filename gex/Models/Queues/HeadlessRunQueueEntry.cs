@@ -1,4 +1,4 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
 
 namespace gex.Models.Queues {
 

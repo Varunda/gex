@@ -135,16 +135,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.16.0" />
+    <PackageReference Include="Magick.NET.Core" Version="14.16.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.7" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.7" />
     <PackageReference Include="coverlet.collector" Version="3.1.0" />
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	<RuntimeHostConfigurationOption Include="System.Runtime.LegacyExceptionHandling" Value="true" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\gex.Common\gex.Common.csproj" />
+    <ProjectReference Include="..\gex.Coven\gex.Coven.csproj" />
     <ProjectReference Include="..\gex\gex.csproj" />
   </ItemGroup>
 

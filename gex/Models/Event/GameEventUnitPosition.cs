@@ -1,5 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Common.Code;
 using System;
 
 namespace gex.Models.Event {

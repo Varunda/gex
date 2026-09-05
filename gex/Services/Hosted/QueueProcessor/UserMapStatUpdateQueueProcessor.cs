@@ -1,10 +1,11 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repository.Match;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Queues;
-using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -18,15 +19,14 @@ namespace gex.Services.Hosted.QueueProcessor {
     public class UserMapStatUpdateQueueProcessor : BaseQueueProcessor<UserMapStatUpdateQueueEntry> {
 
         private readonly BarMatchRepository _MatchRepository;
-        private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly IBarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarUserMapStatsDb _MapStatsDb;
 
         public UserMapStatUpdateQueueProcessor(ILoggerFactory factory,
             BaseQueue<UserMapStatUpdateQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             BarMatchRepository matchRepository, BarUserMapStatsDb mapStatsDb,
-            BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository)
-
+            IBarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository)
         : base("user_map_stats_update", factory, queue, serviceHealthMonitor) {
 
             _MatchRepository = matchRepository;

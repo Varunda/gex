@@ -1,4 +1,5 @@
 ﻿using gex.Common.Services;
+using gex.Common.Services.Util;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Util {
@@ -15,6 +16,7 @@ namespace gex.Services.Util {
             services.AddSingleton<EnginePathUtil>();
             services.AddSingleton<PolygonStartboxUtil>();
             services.AddSingleton<MatchProcessingWebhookUtil>();
+            services.AddSingleton<IBarMatchBuilderUtil, GexBarMatchBuilderUtil>();
         }
 
     }

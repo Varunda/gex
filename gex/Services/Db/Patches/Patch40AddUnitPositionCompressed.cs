@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
 using System.Data.Common;
 using System.Threading.Tasks;
 
@@ -10,8 +10,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add unit_position_compressed to bar_match_processing";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE bar_match_processing
                     ADD COLUMN IF NOT EXISTS unit_position_compressed boolean NOT NULL DEFAULT false;
             ");

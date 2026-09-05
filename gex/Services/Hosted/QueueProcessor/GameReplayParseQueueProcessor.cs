@@ -1,14 +1,18 @@
 ﻿using gex.Common.Code.Constants;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
+using gex.Common.Models.Match;
 using gex.Common.Models.Options;
-using gex.Models.Bar;
-using gex.Models.Db;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
-using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Util;
@@ -28,19 +32,16 @@ namespace gex.Services.Hosted.QueueProcessor {
 
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarReplayDb _ReplayDb;
-        private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
+        private readonly IBarMatchAllyTeamDb _MatchAllyTeamDb;
         private readonly BarMatchTeamRepository _MatchTeamRepository;
-        private readonly BarMatchSpectatorDb _MatchSpectatorDb;
-        private readonly BarMatchChatMessageDb _MatchChatMessageDb;
+        private readonly IBarMatchSpectatorDb _MatchSpectatorDb;
+        private readonly IBarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
-        private readonly BarMapRepository _BarMapRepository;
-        private readonly BarUserRepository _UserRepository;
-        private readonly MapPriorityModDb _MapPriorityModDb;
         private readonly BarMatchPriorityCalculator _PriorityCalculator;
         private readonly BarDemofileResultProcessor _ResultProcessor;
-        private readonly BarMatchTeamDeathDb _TeamDeathDb;
-        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
-        private readonly BarMatchTextPingDb _TextPingDb;
+        private readonly IBarMatchTeamDeathDb _TeamDeathDb;
+        private readonly IBarMatchPlayerLeftDb _PlayerLeftDb;
+        private readonly IBarMatchTextPingDb _TextPingDb;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -58,16 +59,14 @@ namespace gex.Services.Hosted.QueueProcessor {
             BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
             BarMatchProcessingRepository processingRepository, IOptions<FileStorageOptions> options,
             BarDemofileParser parser, BaseQueue<HeadlessRunQueueEntry> headlessRunQueue,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb matchAllyTeamDb,
-            BarMatchSpectatorDb matchSpectatorDb, BarMatchChatMessageDb matchChatMessageDb,
-            BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
-            BarReplayDb replayDb, BarUserRepository userRepository,
+            BarMatchRepository matchRepository, IBarMatchAllyTeamDb matchAllyTeamDb,
+            IBarMatchSpectatorDb matchSpectatorDb, IBarMatchChatMessageDb matchChatMessageDb,
+            BarMatchPlayerRepository playerRepository, BarReplayDb replayDb,
             BaseQueue<UserMapStatUpdateQueueEntry> userMapStatUpdateQueue,
-            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, GameVersionUsageDb gameVersionUsageDb,
-            MapPriorityModDb mapPriorityModDb, BarMatchPriorityCalculator priorityCalculator,
+            BaseQueue<UserFactionStatUpdateQueueEntry> factionStatUpdateQueue, BarMatchPriorityCalculator priorityCalculator,
             BarDemofileResultProcessor resultProcessor, BaseQueue<MapStatUpdateQueueEntry> mapStatUpdateQueue,
-            BarMatchTeamDeathDb teamDeathDb, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
+            IBarMatchTeamDeathDb teamDeathDb, IBarMatchPlayerLeftDb playerLeftDb,
+            IBarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
             BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions,
             BarMatchTeamRepository matchTeamRepository)
         : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
@@ -81,12 +80,9 @@ namespace gex.Services.Hosted.QueueProcessor {
             _MatchSpectatorDb = matchSpectatorDb;
             _MatchChatMessageDb = matchChatMessageDb;
             _PlayerRepository = playerRepository;
-            _BarMapRepository = barMapRepository;
             _ReplayDb = replayDb;
-            _UserRepository = userRepository;
             _UserMapStatUpdateQueue = userMapStatUpdateQueue;
             _FactionStatUpdateQueue = factionStatUpdateQueue;
-            _MapPriorityModDb = mapPriorityModDb;
             _PriorityCalculator = priorityCalculator;
             _ResultProcessor = resultProcessor;
             _MapStatUpdateQueue = mapStatUpdateQueue;

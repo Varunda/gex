@@ -1,0 +1,58 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:gex.Coven.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:controls="using:gex.Coven.Controls"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="gex.Coven.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/icon-32x32.png"
+        Title="gex.Coven">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+	<Grid Margin="5" RowDefinitions="Auto, *" Name="Root">
+		<Border Background="Gray" CornerRadius="10">
+			<TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center" FontFamily="{StaticResource Font}"></TextBlock>
+		</Border>
+
+		<ScrollViewer Grid.Row="1">
+
+			<TableView ItemsSource="{Binding Matches}">
+				<TableView.Columns>
+					<TableViewColumn Header="When">
+						<TableViewColumn.CellTemplate>
+							<DataTemplate>
+								<controls:DateTimeView When="{Binding StartTime}"></controls:DateTimeView>
+							</DataTemplate>
+						</TableViewColumn.CellTemplate>
+					</TableViewColumn>
+
+					<TableViewColumn Header="Map" Binding="{Binding Map}"/>
+
+					<TableViewColumn Header="Gamemode" Binding="{Binding Gamemode}"/>
+
+					<TableViewColumn Header="Duration" Binding="{Binding Duration}"/>
+
+					<TableViewColumn Header="View">
+						<TableViewColumn.CellTemplate>
+							<DataTemplate>
+								<Button Content="View"
+										Command="{Binding #Root.((vm:MainViewModel)DataContext).OpenCommand}"
+										CommandParameter="{Binding GameID}">
+								</Button>
+							</DataTemplate>
+						</TableViewColumn.CellTemplate>
+					</TableViewColumn>
+				</TableView.Columns>
+				
+			</TableView>
+		</ScrollViewer>
+	</Grid>
+
+</Window>

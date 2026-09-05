@@ -1,5 +1,6 @@
-using gex.Models;
-using gex.Models.Db;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db;
+using gex.Models.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Db.Readers {

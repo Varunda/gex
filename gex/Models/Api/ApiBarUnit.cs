@@ -1,4 +1,4 @@
-﻿using gex.Models.Bar;
+﻿using gex.Common.Models.Bar;
 using System.Collections.Generic;
 
 namespace gex.Models.Api {

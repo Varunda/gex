@@ -4,6 +4,8 @@ using gex.Services.Db;
 using gex.Services.Db.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,10 +1,12 @@
 ﻿using gex.Code;
+using gex.Common.Services.Db;
 using gex.Models;
 using gex.Models.Internal;
-using gex.Services.Db;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Controllers.Api {
@@ -32,8 +34,8 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpGet("db-timeout")]
         public async Task<ApiResponse<int>> DbTimeout() {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 SELECT pg_sleep(10);
             ");
 

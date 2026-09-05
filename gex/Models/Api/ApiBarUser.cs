@@ -1,4 +1,4 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.User;
 using gex.Models.Event;
 using gex.Models.UserStats;
 using System;

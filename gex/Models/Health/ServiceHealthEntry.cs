@@ -1,6 +1,6 @@
 using System;
 
-namespace gex.Models {
+namespace gex.Models.Health {
 
     /// <summary>
     ///     Represents meta information about a long running service 

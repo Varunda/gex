@@ -1,4 +1,5 @@
-﻿using gex.Services.BarApi;
+﻿using gex.Common.Services.Parser;
+using gex.Services.BarApi;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace gex.Services.Parser {

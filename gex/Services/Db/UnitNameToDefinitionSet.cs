@@ -1,5 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Common.Code;
 using System.Collections.Generic;
 
 namespace gex.Services.Db {

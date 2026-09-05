@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.MapStats;
+using gex.Common.Services.Db;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +30,7 @@ namespace gex.Services.Db.Map {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MapStatsByGamemode>> GetByMap(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsByGamemode>(
                 "SELECT * FROM map_stats WHERE map_file_name = @MapFileName ORDER BY gamemode ASC;",
                 new { MapFileName = mapFilename },
@@ -37,8 +40,8 @@ namespace gex.Services.Db.Map {
 
         public async Task Generate(string mapFilename, CancellationToken cancel) {
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats WHERE map_file_name = @MapFileName;

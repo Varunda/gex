@@ -1,11 +1,13 @@
 ﻿using gex.Common.Models;
-using gex.Models.Db;
+using gex.Common.Models.Match;
+using gex.Common.Models.User;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Storage;
 using gex.Models.Queues;
-using gex.Models.UserStats;
 using gex.Services.Db.UserStats;
-using gex.Services.Parser;
 using gex.Services.Queues;
-using gex.Services.Repositories;
 using gex.Services.Storage;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;

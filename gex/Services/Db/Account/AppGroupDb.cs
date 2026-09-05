@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +26,7 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task<List<AppGroup>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QueryListAsync<AppGroup>(
                 "SELECT * from app_group",
                 cancellationToken: cancel
@@ -31,7 +34,7 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task<AppGroup?> GetByID(long groupID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QuerySingleAsync<AppGroup>(
                 "SELECT * FROM app_group WHERE id = @ID",
                 new { ID = groupID },
@@ -40,8 +43,8 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task<long> Insert(AppGroup group, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO app_group (
                     name, hex_color
                 ) VALUES (
@@ -63,8 +66,8 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task<long> Upsert(AppGroup group, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO app_group (
                     name, hex_color
                 ) VALUES (

@@ -1,21 +1,27 @@
 ﻿using gex.Code;
 using gex.Common.Code.Constants;
 using gex.Common.Models;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Storage;
+using gex.Common.Services.Util;
 using gex.Models;
 using gex.Models.Api;
 using gex.Models.Db;
 using gex.Models.Internal;
-using gex.Models.Map;
 using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Account;
 using gex.Services.Db.Match;
 using gex.Services.Db.Patches;
 using gex.Services.Migrations;
-using gex.Services.Parser;
 using gex.Services.Repositories;
 using gex.Services.Storage;
-using gex.Services.Util;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,65 +44,50 @@ namespace gex.Controllers.Api {
 
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMapRepository _BarMapRepository;
-        private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly IBarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchTeamRepository _TeamRepository;
-        private readonly BarMatchChatMessageDb _ChatMessageDb;
-        private readonly BarMatchSpectatorDb _SpectatorDb;
-        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
-        private readonly BarMatchTeamDeathDb _TeamDeathDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMatchProcessingRepository _ProcessingRepository;
-        private readonly BarMatchProcessingPriorityDb _ProcessingPriorityDb;
+        private readonly IBarMatchProcessingPriorityDb _ProcessingPriorityDb;
         private readonly HeadlessRunStatusRepository _HeadlessRunStatusRepository;
         private readonly AppAccountDbStore _AccountDb;
         private readonly GameOutputStorage _GameOutputStorage;
         private readonly BarDemofileParser _DemofileParser;
         private readonly DemofileStorage _DemofileStorage;
         private readonly BadGameVersionRepository _BadGameVersionRepository;
-        private readonly MatchPoolRepository _MatchPoolRepository;
-        private readonly MatchPoolEntryDb _MatchPoolEntryDb;
-        private readonly BarMatchTextPingDb _TextPingDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
+        private readonly IBarMatchBuilderUtil _MatchBuilder;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
-            BarMatchRepository matchRepository, BarMatchAllyTeamDb allyTeamDb,
-            BarMatchChatMessageDb chatMessageDb, BarMatchSpectatorDb spectatorDb,
+            BarMatchRepository matchRepository, IBarMatchAllyTeamDb allyTeamDb,
             BarMatchPlayerRepository playerRepository, BarMapRepository barMapRepository,
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
-            AppAccountDbStore accountDb, BarMatchTeamDeathDb teamDeathDb,
-            BarMatchProcessingPriorityDb processingPriorityDb, ICurrentAccount currentUser,
-            GameOutputStorage gameOutputStorage, BarDemofileParser demofileParser,
-            DemofileStorage demofileStorage, ApmCalculatorUtil apmCalculator,
-            BadGameVersionRepository badGameVersionRepository, MatchPoolRepository matchPoolRepository,
-            MatchPoolEntryDb matchPoolEntryDb, StartSpotDataRepository startSpotDataRepository,
-            BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository) {
+            AppAccountDbStore accountDb, IBarMatchProcessingPriorityDb processingPriorityDb,
+            ICurrentAccount currentUser, GameOutputStorage gameOutputStorage,
+            BarDemofileParser demofileParser, DemofileStorage demofileStorage, 
+            BadGameVersionRepository badGameVersionRepository, StartSpotDataRepository startSpotDataRepository,
+            BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchTeamRepository teamRepository,
+            IBarMatchBuilderUtil matchBuilder) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
             _BarMapRepository = barMapRepository;
             _AllyTeamDb = allyTeamDb;
-            _ChatMessageDb = chatMessageDb;
-            _SpectatorDb = spectatorDb;
             _PlayerRepository = playerRepository;
             _ProcessingRepository = processingRepository;
             _HeadlessRunStatusRepository = headlessRunStatusRepository;
             _AccountDb = accountDb;
-            _TeamDeathDb = teamDeathDb;
             _ProcessingPriorityDb = processingPriorityDb;
             _CurrentUser = currentUser;
             _GameOutputStorage = gameOutputStorage;
             _DemofileParser = demofileParser;
             _DemofileStorage = demofileStorage;
             _BadGameVersionRepository = badGameVersionRepository;
-            _MatchPoolRepository = matchPoolRepository;
-            _MatchPoolEntryDb = matchPoolEntryDb;
             _StartSpotDataRepository = startSpotDataRepository;
             _PlayerStartSpotMigration = playerStartSpotMigration;
-            _PlayerLeftDb = playerLeftDb;
-            _TextPingDb = textPingDb;
             _TeamRepository = teamRepository;
+            _MatchBuilder = matchBuilder;
         }
 
         /// <summary>
@@ -156,7 +147,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeStartRegionData = false,
             CancellationToken cancel = default
         ) {
-            Result<Maybe<BarMatch>, string> result = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> result = await _MatchBuilder.BuildMatch(gameID, new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeTeams = includeTeams,
                 IncludeAllyTeams = includeAllyTeams,
                 IncludePlayers = includePlayers,
@@ -169,7 +160,7 @@ namespace gex.Controllers.Api {
                 IncludeCommands = includeCommands,
                 IncludeSelfDCommands = includeSelfDCommands,
                 IncludeStartRegionData = includeStartRegionData,
-            }, await _CurrentUser.Get(cancel), cancel);
+            }, (await _CurrentUser.Get(cancel))?.ID, cancel);
 
             if (result.IsOk == false) {
                 return ApiInternalError<ApiMatch>($"failed to build match");
@@ -440,7 +431,7 @@ namespace gex.Controllers.Api {
                 if (parts.Length != 3) {
                     throw new Exception($"validation failed above, expected {iter} to split into 3 parts based on comma");
                 }
-                return new SearchKeyValue() {
+                return new MatchSearchKeyValue() {
                     Key = parts[0],
                     Value = parts[1],
                     Operation = parts[2]
@@ -466,7 +457,7 @@ namespace gex.Controllers.Api {
             parms.OrderByDirection = dir;
 
             List<ApiMatch> ret = [];
-            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, currentUser, cancel);
+            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, currentUser?.ID, cancel);
             foreach (BarMatch m in matches) {
                 m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
                 m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
@@ -611,7 +602,7 @@ namespace gex.Controllers.Api {
                 if (parts.Length != 3) {
                     throw new Exception($"validation failed above, expected {iter} to split into 3 parts based on comma");
                 }
-                return new SearchKeyValue() {
+                return new MatchSearchKeyValue() {
                     Key = parts[0],
                     Value = parts[1],
                     Operation = parts[2]
@@ -636,7 +627,7 @@ namespace gex.Controllers.Api {
             parms.OrderBy = order;
             parms.OrderByDirection = dir;
 
-            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, 1001, currentUser, cancel);
+            List<BarMatch> matches = await _MatchRepository.Search(parms, offset, 1001, currentUser?.ID, cancel);
 
             return ApiOk(matches.Count);
         }
@@ -661,7 +652,7 @@ namespace gex.Controllers.Api {
             List<BarMatch> matches = [];
             int offset = 0;
             while (true) {
-                List<BarMatch> iter = await _MatchRepository.Search(searchParameters, offset, 1000, currentUser, cancel);
+                List<BarMatch> iter = await _MatchRepository.Search(searchParameters, offset, 1000, currentUser?.ID, cancel);
 
                 matches.AddRange(iter);
                 offset += 1000;
@@ -747,11 +738,11 @@ namespace gex.Controllers.Api {
                 return ApiInternalError($"no {nameof(StartSpotData)} for map {match.MapName} and version {match.StartSpotVersion} exists!");
             }
 
-            Result<Maybe<BarMatch>, string> ret = await _MatchRepository.BuildMatch(match.ID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await _MatchBuilder.BuildMatch(match.ID, new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludePlayers = true,
                 IncludeTeams = true
-            }, currentUser, cancel);
+            }, currentUser.ID, cancel);
 
             if (ret.IsOk == false) {
                 return ApiInternalError($"failed to build match: {ret.Error}");

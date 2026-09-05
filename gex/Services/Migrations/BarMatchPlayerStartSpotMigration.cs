@@ -1,7 +1,8 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
-using gex.Models.Db;
-using gex.Models.Map;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repository;
 using gex.Services.Db.Match;
 using gex.Services.Parser;
 using gex.Services.Repositories;
@@ -18,16 +19,16 @@ namespace gex.Services.Migrations {
 
         private readonly ILogger<BarMatchPlayerStartSpotMigration> _Logger;
         private readonly BarMapRepository _MapRepository;
-        private readonly BarMatchDb _MatchDb;
-        private readonly BarMatchPlayerDb _MatchPlayerDb;
-        private readonly BarMatchTeamDb _TeamDb;
-        private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
+        private readonly IBarMatchDb _MatchDb;
+        private readonly IBarMatchPlayerDb _MatchPlayerDb;
+        private readonly IBarMatchTeamDb _TeamDb;
+        private readonly IBarMatchAllyTeamDb _MatchAllyTeamDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
 
         public BarMatchPlayerStartSpotMigration(ILogger<BarMatchPlayerStartSpotMigration> logger,
-            BarMapRepository mapRepository, BarMatchDb matchDb,
-            BarMatchPlayerDb matchPlayerDb, StartSpotDataRepository startSpotDataRepository,
-            BarMatchAllyTeamDb matchAllyTeamDb, BarMatchTeamDb teamDb) {
+            BarMapRepository mapRepository, IBarMatchDb matchDb,
+            IBarMatchPlayerDb matchPlayerDb, StartSpotDataRepository startSpotDataRepository,
+            IBarMatchAllyTeamDb matchAllyTeamDb, IBarMatchTeamDb teamDb) {
 
             _Logger = logger;
             _MapRepository = mapRepository;

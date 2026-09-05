@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lua;
 using Lua.Standard;
-using gex.Code.ExtensionMethods;
+using gex.Common.Code.ExtensionMethods;
 
 namespace gex.Services {
 

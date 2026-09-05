@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -10,8 +13,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add player_id to bar_match_spectator";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE bar_match_spectator
                     ADD COLUMN IF NOT EXISTS player_id int NOT NULL DEFAULT 0;
             ");

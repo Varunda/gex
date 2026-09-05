@@ -1,4 +1,5 @@
-﻿using gex.Models.UserStats;
+﻿using gex.Common.Models.User;
+using gex.Models.UserStats;
 
 namespace gex.Models.Api {
 

@@ -1,5 +1,5 @@
 ﻿using gex.Models.Db;
-using gex.Models.MapStats;
+using gex.Models.Map;
 using gex.Services.Db.Map;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;

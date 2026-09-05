@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
-using gex.Services.Util;
+using gex.Common.Models.Map;
+using gex.Common.Services.Util;
 using gex.Tests.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

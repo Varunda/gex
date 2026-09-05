@@ -1,5 +1,5 @@
 ﻿using DSharpPlus.SlashCommands;
-using gex.Models;
+using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;

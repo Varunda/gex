@@ -1,7 +1,8 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
-using gex.Models.Db;
-using gex.Models.UserStats;
+using gex.Common.Code;
+using gex.Common.Models.Match;
+using gex.Common.Models.User;
 using gex.Services.Repositories;
 using System;
 

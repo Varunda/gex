@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.Map;
+using gex.Common.Models.Map;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -17,7 +20,7 @@ namespace gex.Services.Db.Map {
 
         }
 
-        protected override void InsertSetup(NpgsqlCommand cmd, StartSpotData inst) {
+        protected override void InsertSetup(DbCommand cmd, StartSpotData inst) {
             cmd.CommandText = @"
                 INSERT INTO start_spot_data (
                     map_filename, version, timestamp, min_timestamp, raw, max_timestamp
@@ -34,8 +37,8 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task UpdateMaxTimestamp(StartSpotData data, DateTime timestamp, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 UPDATE start_spot_data
                     SET max_timestamp = @MaxTimestamp
                     WHERE map_filename = @MapFilename

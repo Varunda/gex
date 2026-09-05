@@ -1,10 +1,14 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace gex.Services.Db.Map {
 
@@ -21,7 +25,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<MapPositionLeaderboardEntry>> GetByMapFilename(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapPositionLeaderboardEntry>(
                 @"SELECT * FROM map_position_leaderboard_entry WHERE map_filename = @MapFilename",
                 new {
@@ -32,9 +36,9 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task Generate(string mapFilename, string positionLabel, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 BEGIN TRANSACTION;
 
                 DELETE FROM map_position_leaderboard_entry
@@ -84,8 +88,13 @@ namespace gex.Services.Db.Map {
             cmd.AddParameter("PositionLabel", positionLabel);
             await cmd.PrepareAsync(cancel);
 
-            await cmd.ExecuteNonQueryAsync(cancel);
-            await conn.CloseAsync();
+            try {
+                await cmd.ExecuteNonQueryAsync(cancel);
+            } catch (TimeoutException) {
+                _Logger.LogError($"timeout when generated map stat position leaderboard [map={mapFilename}] [position={positionLabel}]");
+            } finally {
+                await conn.CloseAsync();
+            }
         }
 
     }

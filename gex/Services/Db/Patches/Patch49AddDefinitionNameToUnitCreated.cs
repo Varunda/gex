@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Razor.Language.Intermediate;
+﻿using gex.Common.Services.Db;
+using Microsoft.AspNetCore.Razor.Language.Intermediate;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -10,8 +13,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add definition_name to game_event_unit_created";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE game_event_unit_created
                     ADD COLUMN IF NOT EXISTS definition_name varchar NOT NULL DEFAULT '';
             ");

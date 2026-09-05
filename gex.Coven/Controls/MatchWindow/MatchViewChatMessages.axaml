@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:match="using:gex.Coven.ViewModels.Match"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:common="using:gex.Common.Models"
+             xmlns:controls="using:gex.Coven.Controls.MatchWindow"
+             x:Class="gex.Coven.Controls.MatchWindow.MatchViewChatMessages"
+             x:Name="root">
+
+    <ScrollViewer MaxHeight="600">
+        <TableView ItemsSource="{Binding #root.Messages.Messages}" x:DataType="match:BarMatchChatMessageViewModel">
+            <TableView.Columns>
+                <TableViewColumn Header="When" Binding="{Binding Timestamp}" Width="Auto"/>
+
+                <TableViewColumn Header="From" Width="Auto">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Source}" Foreground="{Binding SourceColor}"></TextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <TableViewColumn Header="To" Width="Auto">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Target}" Foreground="{Binding TargetColor}"></TextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <TableViewColumn Header="Message" Binding="{Binding Message}" Width="1*"/>
+            </TableView.Columns>
+        </TableView>
+    </ScrollViewer>
+</UserControl>

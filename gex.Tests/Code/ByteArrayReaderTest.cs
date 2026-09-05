@@ -1,4 +1,4 @@
-﻿using gex.Code;
+﻿using gex.Common.Code;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace gex.Tests.Code {

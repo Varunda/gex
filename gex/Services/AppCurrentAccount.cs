@@ -1,6 +1,6 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
-using gex.Models;
+using gex.Models.Internal;
 using gex.Services.Db.Account;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

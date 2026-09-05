@@ -1,25 +1,22 @@
-﻿using gex.Code.ExtensionMethods;
-using gex.Common.Code.Constants;
+﻿using gex.Common.Code.Constants;
+using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Common.Models.User;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
 using gex.Models.Db;
-using gex.Models.Map;
-using gex.Models.Queues;
-using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Parser;
-using gex.Services.Queues;
 using gex.Services.Repositories;
-using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.JsonDiffPatch;
 using System.Text.Json.Nodes;
@@ -32,38 +29,36 @@ namespace gex.Services.Util {
 
         private readonly ILogger<BarDemofileResultProcessor> _Logger;
         private readonly BarMatchRepository _MatchRepository;
-        private readonly BarReplayDb _ReplayDb;
-        private readonly BarMatchAllyTeamDb _MatchAllyTeamDb;
-        private readonly BarMatchSpectatorDb _MatchSpectatorDb;
-        private readonly BarMatchChatMessageDb _MatchChatMessageDb;
+        private readonly IBarMatchAllyTeamDb _MatchAllyTeamDb;
+        private readonly IBarMatchSpectatorDb _MatchSpectatorDb;
+        private readonly IBarMatchChatMessageDb _MatchChatMessageDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _BarMapRepository;
         private readonly BarUserRepository _UserRepository;
         private readonly BarUserSkillDb _UserSkillDb;
         private readonly GameVersionUsageDb _GameVersionUsageDb;
-        private readonly BarMatchTeamDeathDb _TeamDeathDb;
-        private readonly BarMatchPlayerLeftDb _PlayerLeftDb;
-        private readonly BarMatchTextPingDb _TextPingDb;
+        private readonly IBarMatchTeamDeathDb _TeamDeathDb;
+        private readonly IBarMatchPlayerLeftDb _PlayerLeftDb;
+        private readonly IBarMatchTextPingDb _TextPingDb;
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotDataParser _StartSpotDataParser;
         private readonly BarMatchTeamRepository _TeamRepository;
         private readonly BarMatchProcessingRepository _MatchProcessingRepository;
 
         public BarDemofileResultProcessor(ILogger<BarDemofileResultProcessor> logger,
-            BarMatchRepository matchRepository, BarReplayDb replayDb,
-            BarMatchAllyTeamDb matchAllyTeamDb, BarMatchSpectatorDb matchSpectatorDb,
-            BarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
+            BarMatchRepository matchRepository, 
+            IBarMatchAllyTeamDb matchAllyTeamDb, IBarMatchSpectatorDb matchSpectatorDb,
+            IBarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository barMapRepository, BarUserRepository userRepository,
             BarUserSkillDb userSkillDb, GameVersionUsageDb gameVersionUsageDb,
-            BarMatchTeamDeathDb teamDeathDb, StartSpotDataRepository startSpotDataRepository,
-            StartSpotDataParser startSpotDataParser, BarMatchPlayerLeftDb playerLeftDb,
-            BarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository,
+            IBarMatchTeamDeathDb teamDeathDb, StartSpotDataRepository startSpotDataRepository,
+            StartSpotDataParser startSpotDataParser, IBarMatchPlayerLeftDb playerLeftDb,
+            IBarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository,
             BarMatchProcessingRepository matchProcessingRepository) {
 
             _Logger = logger;
 
             _MatchRepository = matchRepository;
-            _ReplayDb = replayDb;
             _MatchAllyTeamDb = matchAllyTeamDb;
             _MatchSpectatorDb = matchSpectatorDb;
             _MatchChatMessageDb = matchChatMessageDb;

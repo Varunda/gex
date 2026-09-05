@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
-using gex.Models.Db;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db {
@@ -27,8 +30,8 @@ namespace gex.Services.Db {
                 throw new System.Exception($"missing Hash from entry");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO game_id_to_unit_def_hash (
                     game_id, hash
                 ) VALUES (
@@ -46,7 +49,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<GameIdToUnitDefHash?> GetByGameID(string gameID) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
             GameIdToUnitDefHash? entry = await conn.QueryFirstOrDefaultAsync<GameIdToUnitDefHash?>(
                 "SELECT * FROM game_id_to_unit_def_hash WHERE game_id = @GameID",

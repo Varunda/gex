@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,8 +12,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add bar_match_map_draw_point";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 CREATE TABLE IF NOT EXISTS bar_match_map_draw_point (
                     game_id varchar NOT NULL,
                     player_id smallint NOT NULL,

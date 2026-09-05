@@ -1,8 +1,11 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using gex.Models.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -39,7 +42,7 @@ namespace gex.Services.Db {
                 conds.Add("uum.gamemode = ANY(@Gamemodes)");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
             string query = @$"
                 WITH top_units AS (

@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +24,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<GameUnitsCreated>> GetByGameID(string gameID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
             return await conn.QueryListAsync<GameUnitsCreated>(
                 "SELECT * FROM game_units_created WHERE game_id = @GameID",
                 new { GameID = gameID },
@@ -30,7 +33,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<GameUnitsCreated>> GetByUserID(long userID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
             return await conn.QueryListAsync<GameUnitsCreated>(
                 "SELECT * FROM game_units_created WHERE user_id = @UserID",
                 new { UserID = userID },
@@ -39,7 +42,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<GameUnitsCreated>> GetAggregateByUserID(long userID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
             return await conn.QueryListAsync<GameUnitsCreated>(
                 @"
                     SELECT 
@@ -67,8 +70,8 @@ namespace gex.Services.Db.Event {
         public async Task Generate(string gameID, CancellationToken cancel) {
             _Logger.LogDebug($"generating game units created [gameID={gameID}]");
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO game_units_created (
                     game_id, team_id, user_id, definition_name, count, timestamp
                 ) SELECT
@@ -93,8 +96,8 @@ namespace gex.Services.Db.Event {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public async Task DeleteByGameID(string gameID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM game_units_created
                     WHERE game_id = @GameID;
             ");
@@ -114,8 +117,8 @@ namespace gex.Services.Db.Event {
         public async Task GenerateAllMissing(CancellationToken cancel) {
             _Logger.LogDebug($"generating game_units_created data for all games without one");
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 WITH missing_games AS (
                     SELECT m.id
                     FROM bar_match m

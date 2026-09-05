@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,8 +12,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add user search index to bar_user";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
 				CREATE INDEX IF NOT EXISTS idx_bar_user_username ON bar_user (lower(username));
 			");
 

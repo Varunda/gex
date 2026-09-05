@@ -1,12 +1,14 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Match;
 using gex.Common.Models.Options;
+using gex.Common.Models.User;
 using gex.Common.Services;
 using gex.Common.Services.Bar;
-using gex.Models.Db;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repository;
 using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Metrics;
-using gex.Services.Parser;
 using gex.Services.Repositories;
 using gex.Services.Util;
 using gex.Tests.Util;
@@ -263,7 +265,7 @@ namespace gex.Tests.Services.Repository {
 
             // add user for the parser to find the user ID of a late join spec
             BarUserRepository userRepo = svs.GetRequiredService<BarUserRepository>();
-            await userRepo.Upsert(11212, new gex.Models.UserStats.BarUser() {
+            await userRepo.Upsert(11212, new BarUser() {
                 UserID = 11212,
                 Username = "Arastais",
                 LastUpdated = DateTime.UtcNow,

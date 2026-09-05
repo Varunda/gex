@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,7 +25,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<MatchPoolEntry>> GetByPoolID(long poolID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MatchPoolEntry>(
                 "SELECT * FROM match_pool_entry WHERE pool_id = @PoolID",
                 new { PoolID = poolID },
@@ -37,7 +40,7 @@ namespace gex.Services.Db {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MatchPoolEntry>> GetByMatchID(string matchID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MatchPoolEntry>(
                 "SELECT * FROM match_pool_entry WHERE match_id = @MatchID",
                 new { MatchID = matchID },
@@ -46,7 +49,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<MatchPoolEntry?> GetByPoolAndMatchID(long poolID, string matchID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<MatchPoolEntry>(
                 "SELECT * FROM match_pool_entry WHERE pool_id = @PoolID AND match_id = @MatchID",
                 new { PoolID = poolID, MatchID = matchID },
@@ -66,8 +69,8 @@ namespace gex.Services.Db {
                 throw new Exception($"missing {nameof(MatchPoolEntry.MatchID)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO match_pool_entry (
                     pool_id, match_id, added_by_id, description, timestamp
                 ) VALUES (
@@ -92,8 +95,8 @@ namespace gex.Services.Db {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task UpdateDescription(MatchPoolEntry entry, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 UPDATE match_pool_entry
                     SET description = @Description
                 WHERE
@@ -111,8 +114,8 @@ namespace gex.Services.Db {
         }
 
         public async Task Remove(MatchPoolEntry entry, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM match_pool_entry
                     WHERE pool_id = @PoolID
                         AND match_id = @MatchID;

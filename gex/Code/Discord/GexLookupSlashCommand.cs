@@ -3,7 +3,6 @@ using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using gex.Common.Code.Constants;
 using gex.Code.ExtensionMethods;
-using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Discord;
 using gex.Common.Models.Lobby;
@@ -12,7 +11,6 @@ using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Event;
-using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Parser;
 using gex.Services.Repositories;
@@ -30,6 +28,14 @@ using System.Threading.Tasks;
 using gex.Common.Models;
 using gex.Common.Services.Lobby;
 using gex.Common.Code.ExtensionMethods;
+using gex.Common.Services.Repository;
+using gex.Common.Models.Map;
+using gex.Common.Models.Bar;
+using gex.Common.Models.User;
+using gex.Common.Models.Match;
+using gex.Services.Db.Match;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Db.Match;
 
 namespace gex.Code.Discord {
 
@@ -52,8 +58,8 @@ namespace gex.Code.Discord {
         public BarUserFactionStatsDb _FactionStatsDb { set; private get; } = default!;
         public BarMatchRepository _MatchRepository { set; private get; } = default!;
         public BarMatchPlayerRepository _PlayerRepository { set; private get; } = default!;
-        public BarMatchTeamDb _TeamDb { set; private get; } = default!;
-        public BarMatchAllyTeamDb _AllyTeamDb { set; private get; } = default!;
+        public IBarMatchTeamDb _TeamDb { set; private get; } = default!;
+        public IBarMatchAllyTeamDb _AllyTeamDb { set; private get; } = default!;
         public DiscordBarUserLinkDb _LinkDb { set; private get; } = default!;
         public DiscordSubscriptionMatchProcessedDb _SubscriptionDb { set; private get; } = default!;
         public LobbyManager _LobbyManager { set; private get; } = default!;
@@ -819,7 +825,7 @@ namespace gex.Code.Discord {
                 Players = [ new SearchPlayer() { UserID = userID } ],
                 OrderBy = OrderBy.START_TIME,
                 OrderByDirection = OrderByDirection.DESC
-            }, offset: 0, limit: 1, currentUser: null, cancel: cancel);
+            }, offset: 0, limit: 1, currentUserID: null, cancel: cancel);
 
             if (matches.Count == 0) {
                 embed.Title = "No matches found!";
@@ -1337,7 +1343,7 @@ namespace gex.Code.Discord {
                 Players = [new SearchPlayer() {  UserID = user.UserID }],
                 OrderBy = OrderBy.START_TIME,
                 OrderByDirection = OrderByDirection.DESC
-            }, offset: 0, limit: 4, currentUser: null, cancel);
+            }, offset: 0, limit: 4, currentUserID: null, cancel);
             if (recentGames.Count > 0) {
                 embed.Description += $"**Recent public PvP games:**\n";
 

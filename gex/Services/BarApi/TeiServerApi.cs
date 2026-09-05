@@ -1,8 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
+using gex.Common.Services.Metrics;
 using gex.Models.Bar;
 using gex.Models.Options;
-using gex.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;

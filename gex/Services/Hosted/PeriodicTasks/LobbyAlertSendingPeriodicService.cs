@@ -3,12 +3,10 @@ using gex.Common.Code.Constants;
 using gex.Models.Db;
 using gex.Models.Discord;
 using gex.Common.Models.Lobby;
-using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
-using gex.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -19,6 +17,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using gex.Common.Services.Lobby;
+using gex.Common.Services.Repository;
+using gex.Common.Models.User;
+using gex.Services.Repositories.Implementations;
 
 namespace gex.Services.Hosted.PeriodicTasks {
 

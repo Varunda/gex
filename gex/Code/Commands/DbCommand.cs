@@ -1,9 +1,12 @@
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 
-namespace gex.Commands {
+namespace gex.Code.Commands {
 
     [Command]
     public class DbCommand {

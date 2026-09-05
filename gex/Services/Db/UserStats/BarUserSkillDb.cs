@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
-using gex.Models.UserStats;
+using gex.Common.Models.User;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -29,8 +32,8 @@ namespace gex.Services.Db.UserStats {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for the async operation</returns>
         public async Task Upsert(BarUserSkill skill, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO bar_user_skill (
                     user_id, gamemode, skill, skill_uncertainty, last_updated
                 ) VALUES (
@@ -62,7 +65,7 @@ namespace gex.Services.Db.UserStats {
         ///     of <paramref name="userID"/>
         /// </returns>
         public async Task<List<BarUserSkill>> GetByUserID(long userID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return (await conn.QueryAsync<BarUserSkill>(new CommandDefinition(
                 "SELECT * FROM bar_user_skill WHERE user_id = @UserID",
                 new { UserID = userID },

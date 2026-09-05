@@ -1,6 +1,9 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.Db;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using Npgsql.Schema;
 using System;
 using System.Collections.ObjectModel;
@@ -11,7 +14,7 @@ namespace gex.Services.Db.Readers {
 
     public class BarMatchDbReader : IDataReader<BarMatch> {
 
-        public override BarMatch? ReadEntry(NpgsqlDataReader reader) {
+        public override BarMatch? ReadEntry(DbDataReader reader) {
             BarMatch match = new();
 
             match.ID = reader.GetString("id");
@@ -39,7 +42,7 @@ namespace gex.Services.Db.Readers {
             match.SpadsSettings = reader.GetJsonb("spads_settings");
             match.Restrictions = reader.GetJsonb("restrictions");
 
-            ReadOnlyCollection<NpgsqlDbColumn> columns = reader.GetColumnSchema();
+            ReadOnlyCollection<DbColumn> columns = reader.GetColumnSchema();
 
             bool hasDesc = columns.FirstOrDefault(iter => iter.ColumnName == "description") != null;
             if (hasDesc == true) {

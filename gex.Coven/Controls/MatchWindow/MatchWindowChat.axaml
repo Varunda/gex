@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:common="using:gex.Common.Models"
+                    xmlns:controls="using:gex.Coven.Controls.MatchWindow"
+                    xmlns:match="using:gex.Common.Models.Match">
+
+    <!--
+        Additional resources
+        Using Control Themes:
+            https://docs.avaloniaui.net/docs/basics/user-interface/styling/control-themes
+        Using Theme Variants:
+            https://docs.avaloniaui.net/docs/guides/styles-and-resources/how-to-use-theme-variants
+    -->
+
+    <Design.PreviewWith>
+        <StackPanel Width="400" Spacing="10">
+            <StackPanel Background="{DynamicResource SystemRegionBrush}">
+                <controls:MatchWindowChat />
+            </StackPanel>
+        </StackPanel>
+    </Design.PreviewWith>
+
+    <ControlTheme x:Key="{x:Type controls:MatchWindowChat}"
+                  TargetType="controls:MatchWindowChat">
+        <Setter Property="Template">
+            <ControlTemplate>
+
+                <ScrollViewer MaxHeight="600">
+                    <StackPanel>
+                        <ListBox ItemsSource="{TemplateBinding Messages}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="match:BarMatchChatMessage">
+                                    <TextBlock Text="{Binding Message}"></TextBlock>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

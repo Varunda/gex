@@ -1,6 +1,9 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +25,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<T>> GetLatestByMapFilename(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<T>(@$"
                 SELECT 
                     * 
@@ -37,7 +40,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<T>> GetByVersionAndMapFilename(string mapFilename, int version, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<T>(@$"
                 SELECT 
                     * 
@@ -53,8 +56,8 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task Insert(T inst, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"", cancel);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"", cancel);
 
             InsertSetup(cmd, inst);
             await cmd.PrepareAsync(cancel);
@@ -63,11 +66,11 @@ namespace gex.Services.Db.Map {
             await conn.CloseAsync();
         }
 
-        protected abstract void InsertSetup(NpgsqlCommand cmd, T inst);
+        protected abstract void InsertSetup(DbCommand cmd, T inst);
 
         public async Task DeleteByMapFilename(string mapFilename, int version, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
                 DELETE FROM {_TableName}
                     WHERE map_filename = @MapFilename AND version = @Version;
             ", cancel);

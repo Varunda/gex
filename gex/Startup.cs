@@ -6,6 +6,7 @@ using gex.Code.Hubs.Implementations;
 using gex.Code.Swagger;
 using gex.Common.Models.Options;
 using gex.Common.Services;
+using gex.Common.Services.Db;
 using gex.Models;
 using gex.Models.Options;
 using gex.Services;
@@ -92,9 +93,7 @@ namespace gex {
             }).AddRazorRuntimeCompilation();
 
             services.AddSwaggerGen(doc => {
-                doc.CustomSchemaIds((Type type) => {
-                    return type.FullName;
-                });
+                doc.CustomSchemaIds((Type type) => type.FullName);
 
                 doc.SwaggerDoc("api", new OpenApiInfo() {
                     Title = "Gex API",
@@ -107,7 +106,11 @@ namespace gex {
                         + "<p>gex uses a bucketing rate limiting. users start with 300 requests, and refill 60 requests per minute (up to 300). "
                         + "additonally, please limit to 1 concurrent request.</p>"
                         + "<p>finally, if API requests are repeated needlessly (such as getting the same user every 5 seconds),"
-                        + " developers may be contacted to fix this (or blocked, if contact info is not provided)</p>",
+                        + " developers may be contacted to fix this (or blocked, if contact info is not provided)</p>"
+                        + "<h3>webhooks</h3>"
+                        + "<p>some users want the data Gex produces by replaying a game. instead of polling, consider using a webhook, "
+                        + "where Gex will send a POST request to a URL whenever a game is replayed.</p>"
+                        + "<p>set one up <a href=\"/settings\" target=\"_blank\" ref=\"nofollow\">in user settings</a>.</p>"
                 });
 
                 Console.Write("Including XML documentation in: ");
@@ -327,8 +330,8 @@ namespace gex {
             services.AddTransient<EnginePathUtil>();
 
             services.AddTransient<IActionResultExecutor<ApiResponse>, ApiResponseExecutor>();
-            services.AddSingleton<IDbHelper, DbHelper>();
-            services.AddSingleton<IDbCreator, DefaultDbCreator>();
+            services.AddSingleton<IDbHelper, PgDbHelper>();
+            services.AddSingleton<IDbCreator, PgDbCreator>();
 
             services.AddSingleton<CommandBus, CommandBus>();
 
@@ -374,7 +377,7 @@ namespace gex {
             services.Configure<ForwardedHeadersOptions>(options => {
                 // look for the x-forwarded-for headers to know the remote IP
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                options.ForwardLimit = 3; // behind 2 proxies, cloudflare and nginx
+                options.ForwardLimit = 4;
 
                 // from https://www.cloudflare.com/ips/
                 List<string> cfips = [

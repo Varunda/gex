@@ -1,4 +1,4 @@
-﻿using gex.Models;
+﻿using gex.Models.Health;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;

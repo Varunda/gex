@@ -1,6 +1,7 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
 using gex.Code.Converters;
+using gex.Common.Code;
 using System;
 using System.Text.Json.Serialization;
 

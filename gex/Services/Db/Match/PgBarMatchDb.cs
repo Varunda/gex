@@ -1,0 +1,622 @@
+﻿using Dapper;
+using gex.Code.ExtensionMethods;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db;
+using gex.Common.Services.Db.Match;
+using gex.Models.Internal;
+using gex.Services.Repositories;
+using Microsoft.Extensions.Logging;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace gex.Services.Db.Match {
+
+    public class PgBarMatchDb : IBarMatchDb {
+
+        private readonly ILogger<PgBarMatchDb> _Logger;
+        private readonly IDbHelper _DbHelper;
+        private readonly IDataReader<BarMatch> _Reader;
+
+        private readonly AppPermissionRepository? _PermissionRepository;
+
+        public PgBarMatchDb(ILogger<PgBarMatchDb> logger,
+            IDbHelper dbHelper, IDataReader<BarMatch> reader,
+            AppPermissionRepository? permissionRepository) {
+
+            _Logger = logger;
+            _DbHelper = dbHelper;
+            _Reader = reader;
+            _PermissionRepository = permissionRepository;
+        }
+
+        /// <summary>
+        ///		insert a new <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to insert. <see cref="BarMatch.ID"/> must be populated</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public async Task Insert(BarMatch match, CancellationToken cancel) {
+            if (string.IsNullOrEmpty(match.ID)) {
+                throw new ArgumentException($"ID of match is empty!");
+            }
+
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                INSERT INTO bar_match (
+                    id, start_time, start_offset, map, duration_ms, duration_frame_count,
+					engine, game_version, file_name, map_name, gamemode, player_count, uploaded_by, wrong_skill_values,
+                    average_os, min_os, max_os, start_spot_version,
+                    host_settings, game_settings, map_settings, spads_settings, restrictions
+                ) VALUES (
+                    @ID, @StartTime, @StartOffset, @Map, @DurationMs, @DurationFrameCount,
+					@Engine, @GameVersion, @FileName, @MapName, @Gamemode, @PlayerCount, @UploadedBy, @WrongSkillValues,
+                    @AverageOS, @MinOS, @MaxOS, @StartSpotVersion,
+                    @HostSettings, @GameSettings, @MapSettings, @SpadsSettings, @Restrictions
+                );
+            ", cancel);
+
+            cmd.AddParameter("ID", match.ID);
+            cmd.AddParameter("StartTime", match.StartTime);
+            cmd.AddParameter("StartOffset", match.StartOffset);
+            cmd.AddParameter("Map", match.Map);
+            cmd.AddParameter("DurationMs", match.DurationMs);
+            cmd.AddParameter("DurationFrameCount", match.DurationFrameCount);
+            cmd.AddParameter("Engine", match.Engine);
+            cmd.AddParameter("GameVersion", match.GameVersion);
+            cmd.AddParameter("FileName", match.FileName);
+            cmd.AddParameter("MapName", match.MapName);
+            cmd.AddParameter("Gamemode", match.Gamemode);
+            cmd.AddParameter("PlayerCount", match.PlayerCount);
+            cmd.AddParameter("UploadedBy", match.UploadedByID);
+            cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
+            cmd.AddParameter("AverageOS", match.AverageOS);
+            cmd.AddParameter("MinOS", match.MinOS);
+            cmd.AddParameter("MaxOS", match.MaxOS);
+            cmd.AddParameter("StartSpotVersion", match.StartSpotVersion);
+
+            cmd.AddParameter("HostSettings", match.HostSettings);
+            cmd.AddParameter("GameSettings", match.GameSettings);
+            cmd.AddParameter("MapSettings", match.MapSettings);
+            cmd.AddParameter("SpadsSettings", match.SpadsSettings);
+            cmd.AddParameter("Restrictions", match.Restrictions);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     update just the <see cref="BarMatch.WrongSkillValues"/> of a <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to update. uses <see cref="BarMatch.ID"/> and <see cref="BarMatch.WrongSkillValues"/></param>
+        /// <param name="cancel">cancellation token</param>
+        public async Task UpdateWrongSkillValues(BarMatch match, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET wrong_skill_values = @WrongSkillValues
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("WrongSkillValues", match.WrongSkillValues);
+            cmd.AddParameter("ID", match.ID);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     update just the <see cref="BarMatch.StartOffset"/> of a <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="match">match to update. uses <see cref="BarMatch.ID"/> and <see cref="BarMatch.WrongSkillValues"/></param>
+        /// <param name="cancel">cancellation token</param>
+        public async Task UpdateStartOffset(BarMatch match, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET start_offset = @StartOffset
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("StartOffset", match.StartOffset);
+            cmd.AddParameter("ID", match.ID);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        public async Task UpdateStartSpotDataVersion(BarMatch match, CancellationToken cancel) {
+            if (match.StartSpotVersion == null) {
+                throw new ArgumentNullException("StartSpotVersion is null");
+            }
+
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                UPDATE bar_match
+                    SET start_spot_version = @Version
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("Version", match.StartSpotVersion.Value);
+            cmd.AddParameter("ID", match.ID);
+            await cmd.PrepareAsync(cancel);
+
+            _Logger.LogDebug(cmd.Print());
+
+            int ret = await cmd.ExecuteNonQueryAsync(cancel);
+            _Logger.LogDebug($"{match.ID} {match.StartSpotVersion} {ret}");
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     get a single <see cref="BarMatch"/> by it's <see cref="BarMatch.ID"/>
+        /// </summary>
+        /// <param name="ID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<BarMatch?> GetByID(string ID, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match
+                    WHERE id = @ID;
+            ", cancel);
+
+            cmd.AddParameter("ID", ID);
+            await cmd.PrepareAsync(cancel);
+
+            BarMatch? match = await _Reader.ReadSingle(cmd, cancel);
+            await conn.CloseAsync();
+
+            return match;
+        }
+
+        /// <summary>
+        ///     get a list of <see cref="BarMatch"/>
+        /// </summary>
+        /// <param name="IDs">List of IDs to get from the DB</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetByIDs(IEnumerable<string> IDs, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match
+                    WHERE id = ANY(@IDs);
+            ", cancel);
+
+            cmd.AddParameter("IDs", IDs);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
+        ///     get all <see cref="BarMatch"/>s in the DB. do not use this frequently
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetAll(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match;
+            ", cancel);
+
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        public async Task<List<BarMatch>> GetAllByMap(string mapFilename, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match WHERE map_name = @MapFilename;
+            ", cancel);
+
+            cmd.AddParameter("MapFilename", mapFilename);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
+        ///		perform a search in the DB based on the parameters passed in <paramref name="parms"/>
+        /// </summary>
+        /// <param name="parms">parameters used to search</param>
+        /// <param name="offset">offset into the search</param>
+        /// <param name="limit">limit the returned results</param>
+        /// <param name="currentUserID">the ID of the user making the request, or <c>null</c> if no user</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a list of <see cref="BarMatch"/>s that fulfill the search parameters
+        /// </returns>
+        public async Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, long? currentUserID, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, "", cancel); // command text will be set later
+
+            List<string> conditions = [];
+            List<string> withs = [];
+
+            bool joinProcessing = false;
+
+            if (parms.EngineVersion != null) {
+                conditions.Add("m.engine = @Engine");
+                cmd.AddParameter("Engine", parms.EngineVersion);
+            }
+
+            if (parms.GameVersion != null) {
+                conditions.Add("m.game_version = @GameVersion");
+                cmd.AddParameter("GameVersion", parms.GameVersion);
+            }
+
+            if (parms.Map != null) {
+                conditions.Add("m.map = @Map");
+                cmd.AddParameter("Map", parms.Map);
+            }
+
+            if (parms.StartTimeAfter != null) {
+                conditions.Add("m.start_time > @StartTime");
+                cmd.AddParameter("StartTime", parms.StartTimeAfter.Value);
+            }
+
+            if (parms.StartTimeBefore != null) {
+                conditions.Add("m.start_time <= @EndTime");
+                cmd.AddParameter("EndTime", parms.StartTimeBefore.Value);
+            }
+
+            if (parms.DurationMinimum != null) {
+                conditions.Add("m.duration_ms > @DurationMin");
+                cmd.AddParameter("DurationMin", parms.DurationMinimum.Value);
+            }
+
+            if (parms.DurationMaximum != null) {
+                conditions.Add("m.duration_ms <= @DurationMax");
+                cmd.AddParameter("DurationMax", parms.DurationMaximum.Value);
+            }
+
+            if (parms.Ranked != null) {
+                // 2025-05-09 TODO: why does this return 0 results when used as a query parameter?
+                //conditions.Add("m.game_settings->>'ranked_game' = @Ranked");
+                //cmd.AddParameter("Ranked", parms.Ranked.Value == true ? "'1'" : "'0'");
+                conditions.Add($"m.game_settings->>'ranked_game' = {(parms.Ranked.Value == true ? "'1'" : "'0'")}");
+            }
+
+            if (parms.Gamemode != null) {
+                conditions.Add("m.gamemode = @Gamemode");
+                cmd.AddParameter("Gamemode", parms.Gamemode.Value);
+            }
+
+            if (parms.ProcessingDownloaded != null) {
+                joinProcessing = true;
+                conditions.Add("p.demofile_fetched is "
+                    + (parms.ProcessingDownloaded.Value == true ? "not null" : "null"));
+            }
+
+            if (parms.ProcessingParsed != null) {
+                joinProcessing = true;
+                conditions.Add("p.demofile_parsed is "
+                    + (parms.ProcessingParsed.Value == true ? "not null" : "null"));
+            }
+
+            if (parms.ProcessingReplayed != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran is "
+                    + (parms.ProcessingReplayed.Value == true ? "not null" : "null"));
+            }
+
+            if (parms.ProcessingAction != null) {
+                joinProcessing = true;
+                conditions.Add("p.actions_parsed is "
+                    + (parms.ProcessingAction.Value == true ? "not null" : "null"));
+            }
+
+            if (parms.PlayerCountMinimum != null) {
+                conditions.Add("m.player_count > @PlayerCountMin");
+                cmd.AddParameter("PlayerCountMin", parms.PlayerCountMinimum.Value);
+            }
+
+            if (parms.PlayerCountMaximum != null) {
+                conditions.Add("m.player_count <= @PlayerCountMax");
+                cmd.AddParameter("PlayerCountMax", parms.PlayerCountMaximum.Value);
+            }
+
+            if (parms.LegionEnabled != null) {
+                conditions.Add($"m.game_settings->>'experimentallegionfaction' = {(parms.LegionEnabled.Value == true ? "'1'" : "'0'")}");
+            }
+
+            if (parms.PoolID != null) {
+                conditions.Add("mp.pool_id = @PoolID");
+                cmd.AddParameter("PoolID", parms.PoolID.Value);
+            }
+
+            for (int i = 0; i < parms.GameSettings.Count; ++i) {
+                MatchSearchKeyValue svk = parms.GameSettings[i];
+                if (svk.Operation == "eq") {
+                    conditions.Add($"m.game_settings->>@sk{i} = @sv{i}");
+                } else if (svk.Operation == "ne") {
+                    conditions.Add($"m.game_settings->>@sk{i} != @sv{i}");
+                } else if (svk.Operation == "st") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE (@sv{i} || '%')");
+                } else if (svk.Operation == "en") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE ('%' || @sv{i})");
+                } else if (svk.Operation == "in") {
+                    conditions.Add($"m.game_settings->>@sk{i} LIKE ('%' || @sv{i} || '%')");
+                } else {
+                    throw new Exception($"unchecked operation in SearchKeyValue: '{svk.Operation}'. expected 'eq'|'ne'|'st'|'en'|'in'");
+                }
+
+                cmd.AddParameter($"sk{i}", svk.Key);
+                cmd.AddParameter($"sv{i}", svk.Value);
+            }
+
+            // need a different join for each player, can't use the same join for the list of players
+            string joinPlayersStr = "";
+            /*
+            if (parms.UserIDs.Count > 0) {
+                for (int i = 0; i < parms.UserIDs.Count; ++i) {
+                    joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
+                    conditions.Add($"players{i}.user_id = @UserID{i}");
+                    cmd.AddParameter($"UserID{i}", parms.UserIDs[i]);
+                }
+            }
+            */
+
+            if (parms.Players.Count > 0) {
+                for (int i = 0; i < parms.Players.Count; ++i) {
+                    SearchPlayer iter = parms.Players[i];
+                    joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
+
+                    if (iter.UserID != null) {
+                        conditions.Add($"players{i}.user_id = @UserID{i}");
+                        cmd.AddParameter($"UserID{i}", iter.UserID.Value);
+                    }
+
+                    if (iter.Position != null) {
+                        conditions.Add($"players{i}.starting_position_x BETWEEN @StartXMin{i} AND @StartXMax{i}");
+                        cmd.AddParameter($"StartXMin{i}", iter.Position.Value.X - (iter.PositionRadius ?? 150));
+                        cmd.AddParameter($"StartXMax{i}", iter.Position.Value.X + (iter.PositionRadius ?? 150));
+
+                        conditions.Add($"players{i}.starting_position_z BETWEEN @StartZMin{i} AND @StartZMax{i}");
+                        cmd.AddParameter($"StartZMin{i}", iter.Position.Value.Z - (iter.PositionRadius ?? 150));
+                        cmd.AddParameter($"StartZMax{i}", iter.Position.Value.Z + (iter.PositionRadius ?? 150));
+                    }
+
+                    if (iter.PositionLabel != null) {
+                        conditions.Add($"LOWER(players{i}.start_spot_label) = LOWER(@StartSpot{i})");
+                        cmd.AddParameter($"StartSpot{i}", iter.PositionLabel);
+                    }
+
+                    if (iter.MinOS != null) {
+                        conditions.Add($"players{i}.skill >= @PlayerMinOS{i}");
+                        cmd.AddParameter($"PlayerMinOS{i}", iter.MinOS.Value);
+                    }
+
+                    if (iter.MaxOS != null) {
+                        conditions.Add($"players{i}.skill < @PlayerMaxOS{i}");
+                        cmd.AddParameter($"PlayerMaxOS{i}", iter.MaxOS.Value);
+                    }
+                }
+            }
+
+            if (parms.MinimumOS != null) {
+                conditions.Add($"m.min_os > @MinOS");
+                cmd.AddParameter("MinOS", parms.MinimumOS.Value);
+            }
+
+            if (parms.MaximumOS != null) {
+                conditions.Add($"m.max_os <= @MaxOS");
+                cmd.AddParameter("MaxOS", parms.MaximumOS.Value);
+            }
+
+            if (parms.MinimumAverageOS != null || parms.MaximumAverageOS != null) {
+                if (parms.MinimumAverageOS != null) {
+                    conditions.Add($"m.average_os > @MinAvgOS");
+                    cmd.AddParameter("MinAvgOS", parms.MinimumAverageOS.Value);
+                }
+
+                if (parms.MaximumAverageOS != null) {
+                    conditions.Add($"m.average_os <= @MaxAvgOS");
+                    cmd.AddParameter("MaxAvgOS", parms.MaximumAverageOS.Value);
+                }
+            }
+
+            if (parms.ReplayedAfter != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran IS NOT NULL AND p.headless_ran >= @ReplayedAfter");
+                cmd.AddParameter("ReplayedAfter", parms.ReplayedAfter.Value);
+            }
+
+            if (parms.ReplayedBefore != null) {
+                joinProcessing = true;
+                conditions.Add("p.headless_ran IS NOT NULL AND p.headless_ran < @ReplayedBefore");
+                cmd.AddParameter("ReplayedBefore", parms.ReplayedBefore.Value);
+            }
+
+            if (_PermissionRepository != null) {
+                bool isDev = currentUserID != null && await _PermissionRepository.HasPermission(currentUserID.Value, [AppPermission.GEX_DEV], cancel);
+                if (isDev == false) {
+                    string cond = $"(mpool.hide_until IS NULL OR mpool.hide_until <= NOW() at time zone 'utc' ";
+                    if (currentUserID != null) {
+                        cond += $" OR mpool.created_by_id = @CurrentUserID ";
+                        cmd.AddParameter("CurrentUserID", currentUserID.Value);
+                    }
+
+                    cond += ")";
+                    conditions.Add(cond);
+                }
+            }
+
+            cmd.CommandText = $@"
+                {(withs.Count > 0 ? $"WITH {string.Join(",\n", withs)}" : "")}
+                SELECT
+                    *
+                FROM (
+                    SELECT DISTINCT ON (m.id) *
+                        FROM bar_match m
+                            LEFT JOIN match_pool_entry mp ON mp.match_id = m.id
+                            LEFT JOIN match_pool mpool ON mp.pool_id = mpool.id
+                            {(joinProcessing == true ? "LEFT JOIN bar_match_processing p ON m.id = p.game_id " : "")}
+                            {joinPlayersStr}
+                        WHERE 1=1
+                            AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}
+                ) sub_query
+                ORDER BY {parms.OrderBy.Value} {parms.OrderByDirection.Value}
+                LIMIT {limit}
+                OFFSET {offset}
+            ";
+
+            _Logger.LogDebug($"performing DB search: " + cmd.Print());
+
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
+        ///     get a list of <see cref="BarMatch"/>s that took place between a period of time
+        /// </summary>
+        /// <param name="start">start of the time period to include (exclusive)</param>
+        /// <param name="end">end of the time period to include (inclusive)</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetByTimePeriod(DateTime start, DateTime end, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
+                SELECT *
+                    FROM bar_match
+                    WHERE start_time > @Start
+                        AND start_time <= @End;
+            ");
+
+            cmd.AddParameter("Start", start);
+            cmd.AddParameter("End", end);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
+        ///     get all matches of a user
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<List<BarMatch>> GetByUserID(long userID, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
+                SELECT * FROM bar_match WHERE id IN (
+                    SELECT distinct(game_id) FROM bar_match_player WHERE user_id = @UserID
+                ) ORDER BY start_time DESC;
+            ", cancel);
+
+            cmd.AddParameter("UserID", userID);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return matches;
+        }
+
+        /// <summary>
+        ///     get the oldest <see cref="BarMatch"/> in the DB, or <c>null</c> if no matches are in the DB
+        /// </summary>
+        /// <remarks>
+        ///     ignores user uploaded matches, as those might be older than when Gex started
+        /// </remarks>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<BarMatch?> GetOldestMatch(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                SELECT * 
+                FROM bar_match 
+                WHERE uploaded_by IS NULL 
+                ORDER BY start_time ASC
+                LIMIT 1;
+            ", cancel);
+
+            await cmd.PrepareAsync(cancel);
+
+            BarMatch? match = await _Reader.ReadSingle(cmd, cancel);
+            await conn.CloseAsync();
+
+            return match;
+        }
+
+        /// <summary>
+        ///		get all unique engine versions stored in the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a string of all unique values of <see cref="BarMatch.Engine"/> stored in the DB
+        /// </returns>
+        public async Task<List<string>> GetUniqueEngines(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+            return (await conn.QueryAsync<string>(new CommandDefinition(
+                "SELECT distinct(engine) FROM bar_match",
+                cancellationToken: cancel
+            ))).ToList();
+        }
+
+        /// <summary>
+        ///		get all unique <see cref="BarMatch.GameVersion"/>s stored in the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///		a list of all unique values of <see cref="BarMatch.GameVersion"/> stored in the DB
+        /// </returns>
+        public async Task<List<string>> GetUniqueGameVersions(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+
+            return (await conn.QueryAsync<string>(new CommandDefinition(
+                "SELECT distinct(game_version) FROM bar_match",
+                cancellationToken: cancel
+            ))).ToList();
+        }
+
+        /// <summary>
+        ///     delete a <see cref="BarMatch"/> from the DB
+        /// </summary>
+        /// <param name="gameID"></param>
+        /// <returns></returns>
+        public async Task Delete(string gameID) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                DELETE FROM bar_match
+                    WHERE id = @GameID;
+            ");
+
+            cmd.AddParameter("GameID", gameID);
+            await cmd.PrepareAsync();
+
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
+
+    }
+}

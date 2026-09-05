@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.MapStats;
+using gex.Common.Services.Db;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +24,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<MapDailyPlays>> GetByMap(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapDailyPlays>(
                 @"
                     SELECT 

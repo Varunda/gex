@@ -1,5 +1,7 @@
 ﻿using Dapper;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;

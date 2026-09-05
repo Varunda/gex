@@ -1,10 +1,11 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Common.Code;
 using gex.Common.Code.Constants;
-using gex.Models.Db;
+using gex.Common.Models.Match;
 using System;
 
-namespace gex.Models.MapStats {
+namespace gex.Models.Map {
 
     [DapperColumnsMapped]
     public class MapStatsDailyOpeningLab {

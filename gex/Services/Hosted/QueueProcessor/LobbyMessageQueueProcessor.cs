@@ -1,13 +1,13 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Familiar;
 using gex.Common.Models.Lobby;
+using gex.Common.Models.User;
 using gex.Common.Services.Lobby;
+using gex.Common.Services.Repository;
 using gex.Models.Options;
 using gex.Models.Queues;
-using gex.Models.UserStats;
 using gex.Services.Lobby;
 using gex.Services.Queues;
-using gex.Services.Repositories;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

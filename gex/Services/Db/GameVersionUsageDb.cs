@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,8 +45,8 @@ namespace gex.Services.Db {
 
             _Logger.LogDebug($"updating game version usage [engine={entry.Engine}] [version={entry.Version}] [lastUsed={entry.LastUsed:u}]");
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
 				INSERT INTO game_version_usage AS v (
 					engine, version, last_used, deleted_on
 				) VALUES (
@@ -73,8 +76,8 @@ namespace gex.Services.Db {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task MarkDeleted(string engine, string version, DateTime when, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
 				UPDATE game_version_usage
 					SET deleted_on = @DeletedOn
 				WHERE
@@ -100,7 +103,7 @@ namespace gex.Services.Db {
         ///		is over 1 day ago
         /// </returns>
         public async Task<List<GameVersionUsage>> GetExpired(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return (await conn.QueryAsync<GameVersionUsage>(new CommandDefinition(
                 "SELECT * FROM game_version_usage WHERE deleted_on IS NULL AND last_used < NOW() AT TIME ZONE 'utc' - '1 day'::INTERVAL",
                 cancellationToken: cancel

@@ -1,7 +1,10 @@
 ﻿using Dapper;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -27,7 +30,7 @@ namespace gex.Services.Db {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MapPriorityMod>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return (await conn.QueryAsync<MapPriorityMod>(new CommandDefinition(@"
 				SELECT * FROM map_priority_mod
 			", cancellationToken: cancel
@@ -35,7 +38,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<MapPriorityMod?> GetByName(string name, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryFirstOrDefaultAsync<MapPriorityMod>(new CommandDefinition(
                 @"SELECT * FROM map_priority_mod WHERE map_name = @Name",
                 new { Name = name },

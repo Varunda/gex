@@ -1,0 +1,149 @@
+﻿using Dapper;
+using gex.Code.ExtensionMethods;
+using gex.Common.Models.User;
+using gex.Common.Services.Db;
+using Microsoft.Extensions.Logging;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace gex.Services.Db.UserStats {
+
+    public class PgBarUserDb : IBarUserDb {
+
+        private readonly ILogger<PgBarUserDb> _Logger;
+        private readonly IDbHelper _DbHelper;
+
+        public PgBarUserDb(ILogger<PgBarUserDb> logger,
+            IDbHelper dbHelper) {
+
+            _Logger = logger;
+            _DbHelper = dbHelper;
+        }
+
+        /// <summary>
+        ///     update/insert (upsert) a <see cref="BarUser"/>
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="user"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task Upsert(long userID, BarUser user, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                INSERT INTO bar_user AS u (
+                    id, username, last_updated, country_code
+                ) VALUES (
+                    @ID, @Username, @LastUpdated, @CountryCode
+                ) ON CONFLICT (id) DO UPDATE SET
+                    username = @Username,
+                    last_updated = @LastUpdated,
+                    country_code = COALESCE(@CountryCode, u.country_code);
+            ", cancel);
+
+            cmd.AddParameter("ID", userID);
+            cmd.AddParameter("Username", user.Username);
+            cmd.AddParameter("LastUpdated", user.LastUpdated);
+            cmd.AddParameter("CountryCode", user.CountryCode);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        /// <summary>
+        ///     get a specific <see cref="BarUser"/> by <see cref="BarUser.UserID"/>
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        public async Task<BarUser?> GetByID(long userID, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryFirstOrDefaultAsync<BarUser>(new CommandDefinition(
+                "SELECT * FROM bar_user WHERE id = @UserID",
+                new { UserID = userID },
+                cancellationToken: cancel
+            ));
+        }
+
+        /// <summary>
+        ///     select all <see cref="BarUser"/>s from the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<List<BarUser>> GetAll(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarUser>(
+                "SELECT * FROM bar_user",
+                cancel
+            );
+        }
+
+        /// <summary>
+        ///     search for user by name, and optionally previous names. case-insensitive
+        /// </summary>
+        /// <param name="name">name to search for</param>
+        /// <param name="includePreviousNames">will previous names be searched as well</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>a list of <see cref="UserSearchResult"/>s</returns>
+        public async Task<List<UserSearchResult>> SearchByName(string name, bool includePreviousNames, CancellationToken cancel) {
+            // transparently handle using * as a wildcard
+            // if a * is given, assume the user does not want results that contain the string, and instead is using * as a wildcard
+            name = name.Replace("_", "\\_");
+
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<UserSearchResult>(
+                includePreviousNames == true
+                    ? @"SELECT distinct(u.id) ""user_id"", u.username, u.last_updated, p.user_name ""previous_name""
+                            FROM bar_user u LEFT JOIN bar_match_player p ON p.user_id = u.id
+                            WHERE lower(u.username) LIKE lower(@Search) OR lower(p.user_name) LIKE lower(@Search)"
+                    : @"SELECT id ""user_id"", username, last_updated, username ""previous_name"" FROM bar_user WHERE lower(username) LIKE lower(@Search)",
+                new { Search = name.Contains("*") ? name.Replace("*", "%") : $"%{name}%" },
+                cancellationToken: cancel
+            );
+        }
+
+        public async Task<List<BarUser>> GetByName(string name, CancellationToken cancel) {
+
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<BarUser>(
+                @"
+                    SELECT *
+                    FROM bar_user
+                    WHERE username = @Name;
+                ",
+                new {
+                    Name = name
+                }, cancel
+            );
+        }
+
+        /// <summary>
+        ///     get all names that a user has used
+        /// </summary>
+        /// <param name="userID">ID of the user to get the previous names of</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a list of <see cref="UserPreviousName"/>s that represent the past names of a user
+        /// </returns>
+        public async Task<List<UserPreviousName>> GetUserNames(long userID, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<UserPreviousName>(
+                @"
+                    SELECT user_name, min(m.start_time) ""timestamp""
+                    FROM bar_match_player p LEFT JOIN bar_match m ON m.id = p.game_id
+                    WHERE p.user_id = @UserID
+                    GROUP BY p.user_name
+                    ORDER BY 2 DESC;
+                ",
+                new { UserID = userID },
+                cancel
+            );
+        }
+
+    }
+}

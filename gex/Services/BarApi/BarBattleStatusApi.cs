@@ -1,7 +1,7 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Lobby;
-using gex.Services.Metrics;
+using gex.Common.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

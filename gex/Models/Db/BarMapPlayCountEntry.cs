@@ -1,5 +1,5 @@
 ﻿using Dapper.ColumnMapper;
-using gex.Code;
+using gex.Common.Code;
 using gex.Common.Code.Constants;
 using System;
 

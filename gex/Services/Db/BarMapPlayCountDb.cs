@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -30,7 +33,7 @@ namespace gex.Services.Db {
                 throw new Exception($"{nameof(rangeStart)} can be at most 31 days ago");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
                 WITH matches AS (
                     select gamemode, map, count(*) from bar_match 
@@ -55,7 +58,7 @@ namespace gex.Services.Db {
                 throw new Exception($"{nameof(rangeStart)} cannot be in the future");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
                 WITH matches AS (
                     select date_trunc('day', start_time) ""timestamp"", gamemode, map, count(*) from bar_match 
@@ -75,7 +78,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<BarMapPlayCountEntry>> GetAllTime(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMapPlayCountEntry>(@"
                 SELECT NOW() at time zone 'utc' ""timestamp"", map, gamemode, count(*)
                 FROM

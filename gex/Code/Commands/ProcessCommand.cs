@@ -1,17 +1,17 @@
-﻿using gex.Commands;
-using gex.Common.Models;
-using gex.Models.Bar;
-using gex.Models.Db;
+﻿using gex.Common.Models;
+using gex.Common.Models.Bar;
+using gex.Common.Models.Match;
 using gex.Models.Queues;
 using gex.Services.BarApi;
-using gex.Services.Db;
+using gex.Common.Services.Db;
 using gex.Services.Queues;
-using gex.Services.Repositories;
+using gex.Common.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Services.Db;
 
 namespace gex.Code.Commands {
 

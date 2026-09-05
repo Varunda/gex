@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,8 +12,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add unit_tweak_exemption";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
 				CREATE TABLE IF NOT EXISTS unit_tweak_exemption (
 					unit_tweak varchar NOT NULL PRIMARY KEY,
 					timestamp timestamptz NOT NULL

@@ -1,5 +1,8 @@
 ﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Models.Match;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Util;
 using gex.Models.Db;
 using gex.Models.Event;
 using gex.Models.Options;
@@ -25,6 +28,7 @@ namespace gex.Services.Util {
         private readonly MatchProcessingWebhookRepository _WebhookRepository;
         private readonly BarMatchRepository _MatchRepository;
         private readonly GameOutputRepository _OutputRepository;
+        private readonly IBarMatchBuilderUtil _MatchBuilder;
         private readonly IOptions<MatchProcessingWebhookOptions> _Options;
 
         private static HttpClient _Http = new HttpClient();
@@ -36,13 +40,15 @@ namespace gex.Services.Util {
 
         public MatchProcessingWebhookUtil(ILogger<MatchProcessingWebhookUtil> logger,
             MatchProcessingWebhookRepository webhookRepository, BarMatchRepository matchRepository,
-            GameOutputRepository outputRepository, IOptions<MatchProcessingWebhookOptions> options) {
+            GameOutputRepository outputRepository, IOptions<MatchProcessingWebhookOptions> options,
+            IBarMatchBuilderUtil matchBuilder) {
 
             _Logger = logger;
             _WebhookRepository = webhookRepository;
             _MatchRepository = matchRepository;
             _OutputRepository = outputRepository;
             _Options = options;
+            _MatchBuilder = matchBuilder;
         }
 
         /// <summary>
@@ -53,7 +59,7 @@ namespace gex.Services.Util {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public async Task<Result<JsonObject, string>> BuildBody(string gameID, bool includeOutput, CancellationToken cancel) {
-            Result<Maybe<BarMatch>, string> built = await _MatchRepository.BuildMatch(gameID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> built = await _MatchBuilder.BuildMatch(gameID, new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludePlayers = true,
                 IncludeSpectators = true,

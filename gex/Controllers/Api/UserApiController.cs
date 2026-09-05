@@ -1,10 +1,17 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Common.Models.User;
+using gex.Common.Services.Db;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
 using gex.Models;
 using gex.Models.Api;
-using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Event;
-using gex.Models.MapStats;
+using gex.Models.Map;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Db;
@@ -33,20 +40,20 @@ namespace gex.Controllers.Api {
         private readonly BarUserSkillDb _SkillDb;
         private readonly BarUserMapStatsDb _MapStatsDb;
         private readonly BarUserFactionStatsDb _FactionStatsDb;
-        private readonly BarMapDb _MapDb;
+        private readonly IBarMapDb _MapDb;
         private readonly MapStatsStartSpotRepository _StartSpotRepository;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchPlayerRepository _MatchPlayerRepository;
-        private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly IBarMatchAllyTeamDb _AllyTeamDb;
         private readonly BaseQueue<FixCountryCodeQueueEntry> _FixCountryCodeQueue;
         private readonly GameUnitsCreatedRepository _GameUnitsCreatedRepository;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserRepository userRepository, BarUserMapStatsDb mapStatsDb,
             BarUserFactionStatsDb factionStatsDb, BarUserSkillDb skillDb,
-            BarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
+            IBarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
             BarMatchPlayerRepository matchPlayerRepository, BarMatchRepository matchRepository,
-            BarMatchAllyTeamDb allyTeamDb, BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue,
+            IBarMatchAllyTeamDb allyTeamDb, BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue,
             GameUnitsCreatedRepository gameUnitsCreatedRepository) {
 
             _Logger = logger;

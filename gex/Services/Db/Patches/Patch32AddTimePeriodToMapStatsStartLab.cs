@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -10,8 +13,8 @@ namespace gex.Services.Db.Patches {
 
         public async Task Execute(IDbHelper helper) {
             if ((await helper.HasColumn("map_stats_opening_lab", "count_win")) == true) {
-                using NpgsqlConnection conn2 = helper.Connection(Dbs.MAIN);
-                using NpgsqlCommand cmd2 = await helper.Command(conn2, @"
+                using DbConnection conn2 = helper.Connection(Dbs.MAIN);
+                using DbCommand cmd2 = await helper.Command(conn2, @"
                     ALTER TABLE map_stats_opening_lab RENAME COLUMN count_win TO win_total;
                 ");
 
@@ -19,8 +22,8 @@ namespace gex.Services.Db.Patches {
                 await conn2.CloseAsync();
             }
 
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
 				ALTER TABLE map_stats_opening_lab
 					ADD COLUMN IF NOT EXISTS count_month int NOT NULL DEFAULT 0;
 				ALTER TABLE map_stats_opening_lab

@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Map;
 using Microsoft.Extensions.Logging;
 using Salaros.Configuration;
 using System.Collections.Generic;

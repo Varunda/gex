@@ -1,8 +1,10 @@
 ﻿using gex.Common.Models;
-using gex.Models.Db;
-using gex.Models.Demofile;
+using gex.Common.Models.Match;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Storage;
 using gex.Models.Queues;
-using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using gex.Services.Storage;

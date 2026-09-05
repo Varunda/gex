@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Discord;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +24,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<DiscordBarUserLink?> GetByDiscordID(ulong discordID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<DiscordBarUserLink>(
                 @"SELECT * FROM discord_bar_user_link WHERE discord_id = @DiscordID",
                 new { DiscordID = unchecked((long)discordID) },
@@ -37,8 +40,8 @@ namespace gex.Services.Db {
                 throw new ArgumentException($"missing {nameof(DiscordBarUserLink.BarUserID)} from {nameof(DiscordBarUserLink)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO discord_bar_user_link (
                     discord_id, bar_user_id, timestamp
                 ) VALUES (
@@ -58,8 +61,8 @@ namespace gex.Services.Db {
         }
 
         public async Task Unlink(ulong discordID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM discord_bar_user_link
                     WHERE discord_id = @DiscordID;
             ", cancel);

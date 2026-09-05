@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Map;
 using gex.Models;
-using gex.Models.Bar;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

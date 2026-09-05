@@ -1,3 +1,5 @@
+using gex.Common.Services.Db;
+using gex.Common.Services.Db.Match;
 using gex.Services.Db.Account;
 using gex.Services.Db.Event;
 using gex.Services.Db.Map;
@@ -21,17 +23,17 @@ namespace gex.Services.Db {
 
             // bar match
             services.AddSingleton<BarReplayDb>();
-            services.AddSingleton<BarMatchDb>();
-            services.AddSingleton<BarMatchProcessingDb>();
-            services.AddSingleton<BarMatchProcessingPriorityDb>();
-            services.AddSingleton<BarMatchTeamDb>();
-            services.AddSingleton<BarMatchAllyTeamDb>();
-            services.AddSingleton<BarMatchPlayerDb>();
-            services.AddSingleton<BarMatchSpectatorDb>();
-            services.AddSingleton<BarMatchChatMessageDb>();
-            services.AddSingleton<BarMatchTeamDeathDb>();
-            services.AddSingleton<BarMatchPlayerLeftDb>();
-            services.AddSingleton<BarMatchTextPingDb>();
+            services.AddSingleton<IBarMatchDb, PgBarMatchDb>();
+            services.AddSingleton<IBarMatchProcessingDb, PgBarMatchProcessingDb>();
+            services.AddSingleton<IBarMatchProcessingPriorityDb, PgBarMatchProcessingPriorityDb>();
+            services.AddSingleton<IBarMatchTeamDb, PgBarMatchTeamDb>();
+            services.AddSingleton<IBarMatchAllyTeamDb, PgBarMatchAllyTeamDb>();
+            services.AddSingleton<IBarMatchPlayerDb, PgBarMatchPlayerDb>();
+            services.AddSingleton<IBarMatchSpectatorDb, PgBarMatchSpectatorDb>();
+            services.AddSingleton<IBarMatchChatMessageDb, PgBarMatchChatMessageDb>();
+            services.AddSingleton<IBarMatchTeamDeathDb, PgBarMatchTeamDeathDb>();
+            services.AddSingleton<IBarMatchPlayerLeftDb, PgBarMatchPlayerLeftDb>();
+            services.AddSingleton<IBarMatchTextPingDb, PgBarMatchTextPingDb>();
 
             // game event
             services.AddSingleton<GameEventUnitCreatedDb>();
@@ -54,7 +56,7 @@ namespace gex.Services.Db {
             services.AddSingleton<GameUnitsCreatedDb>();
 
             // user stats
-            services.AddSingleton<BarUserDb>();
+            services.AddSingleton<IBarUserDb, PgBarUserDb>();
             services.AddSingleton<BarUserSkillDb>();
             services.AddSingleton<BarUserMapStatsDb>();
             services.AddSingleton<BarUserFactionStatsDb>();
@@ -63,7 +65,7 @@ namespace gex.Services.Db {
             services.AddSingleton<UserUnitsMadeLeaderboardDb>();
 
             // map stats
-            services.AddSingleton<BarMapDb>();
+            services.AddSingleton<IBarMapDb, PgBarMapDb>();
             services.AddSingleton<MapStatsDb>();
             services.AddSingleton<MapStatsStartSpotDb>();
             services.AddSingleton<MapStatsByFactionDb>();

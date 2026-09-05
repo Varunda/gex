@@ -1,5 +1,5 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Commands;
+
 using gex.Common.Models.Lobby;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,6 +13,7 @@ using gex.Common.Models;
 using gex.Common.Services.Lobby;
 using gex.Services.Lobby;
 using gex.Common.Models.Familiar;
+using gex.Common.Code.ExtensionMethods;
 
 namespace gex.Code.Commands {
 

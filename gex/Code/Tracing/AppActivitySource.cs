@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace gex.Code.Tracking {
+namespace gex.Code.Tracing {
 
     public static class AppActivitySource {
 

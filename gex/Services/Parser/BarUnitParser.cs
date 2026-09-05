@@ -1,6 +1,7 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Bar;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

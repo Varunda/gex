@@ -1,7 +1,8 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
-using gex.Models.Bar;
-using gex.Models.UserStats;
+using gex.Common.Code;
+using gex.Common.Models.Map;
+using gex.Common.Models.User;
 using System;
 
 namespace gex.Models.Map {

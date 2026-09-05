@@ -1,12 +1,15 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
+using gex.Common.Services.Db;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Data;
 
 namespace gex.Services.Db.Readers {
 
     public class BarMatchAllyTeamDbReader : IDataReader<BarMatchAllyTeam> {
 
-        public override BarMatchAllyTeam? ReadEntry(NpgsqlDataReader reader) {
+        public override BarMatchAllyTeam? ReadEntry(DbDataReader reader) {
             BarMatchAllyTeam allyTeam = new();
 
             allyTeam.GameID = reader.GetString("game_id");

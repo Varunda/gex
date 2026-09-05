@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,8 +12,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add map_stats_opening_lab";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
 				CREATE OR REPLACE VIEW game_event_unit_created_def AS (
 					SELECT uc.*, ud.definition_name 
 					FROM game_event_unit_created uc 

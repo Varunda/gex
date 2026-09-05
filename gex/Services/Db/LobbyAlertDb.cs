@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -23,29 +26,29 @@ namespace gex.Services.Db {
         }
 
         public async Task<LobbyAlert?> GetByID(long alertID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<LobbyAlert>(@"
                 SELECT * FROM lobby_alert WHERE id = @AlertID;
             ", new { AlertID = alertID }, cancel);
         }
 
         public async Task<List<LobbyAlert>> GetByChannelID(ulong channelID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<LobbyAlert>(@"
                 SELECT * FROM lobby_alert WHERE channel_id = @ChannelID;
             ", new { ChannelID = unchecked((long)channelID) }, cancel);
         }
 
         public async Task<List<LobbyAlert>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<LobbyAlert>(@"
                 SELECT * FROM lobby_alert;
             ", cancel);
         }
 
         public async Task<long> Insert(LobbyAlert alert, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO lobby_alert (
                     guild_id,
                     channel_id,
@@ -92,8 +95,8 @@ namespace gex.Services.Db {
         }
 
         public async Task DeleteByID(long ID, CancellationToken cancel) {
-            NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await _DbHelper.Command(conn, @"
                 DELETE FROM lobby_alert
                     WHERE id = @ID;
             ", cancel);

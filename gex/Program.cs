@@ -1,7 +1,7 @@
 using Dapper;
 using Dapper.ColumnMapper;
 using gex.Code;
-using gex.Code.Tracking;
+using gex.Code.Tracing;
 using gex.Common;
 using gex.Common.Code;
 using gex.Common.Models;

@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Map;
+using gex.Common.Models.Map;
 using gex.Services.Parser;
 using gex.Tests.Util;
 using Lua.CodeAnalysis.Compilation;

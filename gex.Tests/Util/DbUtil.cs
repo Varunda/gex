@@ -1,5 +1,5 @@
-﻿using gex.Models.Options;
-using gex.Services.Db;
+﻿using gex.Common.Services.Db;
+using gex.Models.Options;
 using gex.Services.Db.Implementations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -19,16 +19,16 @@ namespace gex.Tests.Util {
                 .Build();
             await container.StartAsync();
 
-            DbHelper dbHelper = new DbHelper(
-                logger: new TestLogger<DbHelper>(log),
+            PgDbHelper dbHelper = new PgDbHelper(
+                logger: new TestLogger<PgDbHelper>(log),
                 config: new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>() {
                     { "ConnectionStrings:gex", container.GetConnectionString() + ";Include Error Detail=true" },
                     { "ConnectionStrings:event", container.GetConnectionString() + ";Include Error Detail=true" },
                 }).Build()
             );
 
-            DefaultDbCreator creator = new DefaultDbCreator(
-                logger: new TestLogger<DefaultDbCreator>(log),
+            PgDbCreator creator = new PgDbCreator(
+                logger: new TestLogger<PgDbCreator>(log),
                 dbHelper: dbHelper,
                 instanceOptions: Options.Create<InstanceOptions>(new InstanceOptions() {
                     SplitDatabases = false

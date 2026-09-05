@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Bar;
 using gex.Services;
 using gex.Services.Parser;
 using gex.Tests.Util;

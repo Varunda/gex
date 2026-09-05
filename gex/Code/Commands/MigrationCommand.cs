@@ -1,7 +1,6 @@
-﻿using gex.Commands;
-using gex.Models.Bar;
+﻿using gex.Common.Models.Map;
+using gex.Common.Services.Repository;
 using gex.Services.Migrations;
-using gex.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

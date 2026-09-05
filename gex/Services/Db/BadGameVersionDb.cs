@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +24,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<BadGameVersion>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BadGameVersion>(
                 "SELECT * FROM bad_game_version",
                 cancel
@@ -29,7 +32,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<BadGameVersion?> GetByGameVersion(string gameVersion, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<BadGameVersion>(
                 "SELECT * FROM bad_game_version WHERE game_version = @GameVersion",
                 new { GameVersion = gameVersion},

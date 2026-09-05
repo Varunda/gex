@@ -2,10 +2,10 @@
 using gex.Common.Models;
 using gex.Common.Models.Options;
 using gex.Common.Services;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Util;
 using gex.Models.Bar;
 using gex.Services.Parser;
-using gex.Services.Repositories;
-using gex.Services.Util;
 using gex.Tests.Util;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

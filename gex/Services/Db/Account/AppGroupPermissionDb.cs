@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -27,7 +30,7 @@ namespace gex.Services.Db.Account {
         /// <param name="ID">ID of the specific permission to get</param>
         /// <param name="cancel">cancellation token</param>
         public async Task<AppGroupPermission?> GetByID(long ID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QuerySingleAsync<AppGroupPermission>(
                 "SELECT * FROM app_group_permission WHERE id = @ID",
                 new { ID = ID },
@@ -41,7 +44,7 @@ namespace gex.Services.Db.Account {
         /// <param name="groupID">ID of the group</param>
         /// <param name="cancel">cancellation token</param>
         public async Task<List<AppGroupPermission>> GetByGroupID(long groupID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QueryListAsync<AppGroupPermission>(
                 "SELECT * FROM app_group_permission WHERE group_id = @GroupID",
                 new { GroupID = groupID },
@@ -64,8 +67,8 @@ namespace gex.Services.Db.Account {
                 throw new ArgumentException($"Passed permission has a {nameof(AppGroupPermission.GrantedByID)} that is 0 or lower");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO app_group_permission (
                     group_id, permission, timestamp, granted_by_id
                 ) VALUES (
@@ -90,8 +93,8 @@ namespace gex.Services.Db.Account {
         /// <param name="ID">ID of the permission to delete</param>
         /// <param name="cancel">cancellation token</param>
         public async Task DeleteByID(long ID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE 
                     FROM app_group_permission
                     WHERE id = @ID;

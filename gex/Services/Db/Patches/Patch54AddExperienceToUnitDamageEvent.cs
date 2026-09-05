@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -11,8 +14,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add experience to game_event_unit_damage";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.EVENT);
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE game_event_unit_damage
                     ADD COLUMN IF NOT EXISTS experience double precision NOT NULL DEFAULT -1;
 

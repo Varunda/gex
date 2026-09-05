@@ -1,12 +1,9 @@
 ﻿using gex.Common.Code.Constants;
-using gex.Commands;
-using gex.Models.Bar;
 using gex.Models.Db;
 using gex.Models.Queues;
 using gex.Models.UserStats;
 using gex.Services.Db.UserStats;
 using gex.Services.Queues;
-using gex.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,6 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Services.Repository;
+using gex.Common.Models.Map;
+using gex.Common.Services.Repository.Match;
 
 namespace gex.Code.Commands {
 

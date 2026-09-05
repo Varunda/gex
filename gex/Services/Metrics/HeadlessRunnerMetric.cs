@@ -1,4 +1,5 @@
 ﻿using gex.Common.Code;
+using gex.Common.Services.Metrics;
 using System.Diagnostics.Metrics;
 
 namespace gex.Services.Metrics {

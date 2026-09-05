@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Bar;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using ZstdSharp;

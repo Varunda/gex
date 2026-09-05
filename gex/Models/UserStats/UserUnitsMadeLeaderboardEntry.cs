@@ -1,5 +1,6 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Code;
+using gex.Common.Code;
 
 namespace gex.Models.UserStats {
 

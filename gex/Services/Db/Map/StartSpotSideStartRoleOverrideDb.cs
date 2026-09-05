@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.Map;
+using gex.Common.Models.Map;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +17,13 @@ namespace gex.Services.Db.Map {
             : base(loggerFactory, helper, "start_spot_side_start_role_override") {
         }
 
-        protected override void InsertSetup(NpgsqlCommand cmd, StartSpotSideStartRoleOverride inst) {
+        protected override void InsertSetup(DbCommand cmd, StartSpotSideStartRoleOverride inst) {
             throw new NotImplementedException("use Upsert instead");
         }
 
         public async Task Upsert(StartSpotSideStartRoleOverride @override, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO start_spot_side_start_role_override (
                     map_filename, version, position, role, max_radius, timestamp
                 ) VALUES (

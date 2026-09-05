@@ -1,4 +1,4 @@
-﻿using gex.Models.Map;
+﻿using gex.Common.Models.Map;
 using gex.Models.Queues;
 using gex.Services.Db.Map;
 using gex.Services.Queues;

@@ -1,7 +1,6 @@
 ﻿using gex.Models;
 using gex.Common.Models;
 using gex.Models.Api;
-using gex.Models.Bar;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -12,6 +11,7 @@ using gex.Services.Db;
 using gex.Models.UserStats;
 using gex.Models.Db;
 using System;
+using gex.Common.Models.Bar;
 
 namespace gex.Controllers.Api {
 

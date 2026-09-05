@@ -1,12 +1,13 @@
+
 using gex.Common.Code.ExtensionMethods;
-using gex.Models;
+using gex.Models.Health;
 using gex.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 
-namespace gex.Commands {
+namespace gex.Code.Commands {
 
     [Command]
     public class ServiceCommand {

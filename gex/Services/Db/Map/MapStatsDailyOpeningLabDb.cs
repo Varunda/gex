@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
-using gex.Models.MapStats;
+using gex.Common.Services.Db;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +27,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<MapStatsDailyOpeningLab>> GetByMap(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsDailyOpeningLab>(
                 "SELECT * FROM map_stats_daily_opening_lab WHERE map_filename = @MapFilename",
                 new { MapFilename = mapFilename },
@@ -56,7 +59,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task Generate(MapStatsNeedsUpdate entry, CancellationToken cancel) {
-            using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection evConn = _DbHelper.Connection(Dbs.EVENT);
 
             List<MapStatsDailyOpeningLab> openers = (await evConn.QueryAsync<MapStatsDailyOpeningLab>(new CommandDefinition(
                 @"
@@ -112,8 +115,8 @@ namespace gex.Services.Db.Map {
                 return;
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, $@"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats_daily_opening_lab 

@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.Map;
+using gex.Common.Models.Map;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading;
@@ -16,7 +19,7 @@ namespace gex.Services.Db.Map {
 
         }
 
-        protected override void InsertSetup(NpgsqlCommand cmd, StartSpotSideStart inst) {
+        protected override void InsertSetup(DbCommand cmd, StartSpotSideStart inst) {
             cmd.CommandText = @"
                 INSERT INTO start_spot_side_start (
                     map_filename, version, side_index, role, spawn_point, base_center

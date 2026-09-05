@@ -1,4 +1,5 @@
-﻿using gex.Models.UserStats;
+﻿using gex.Common.Models.User;
+using gex.Common.Services.Db;
 using gex.Services.Db.UserStats;
 using gex.Tests.Util;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,17 +16,17 @@ namespace gex.Tests.Services.Db {
     [TestClass]
     public class BarUserDbTest {
 
-        private async Task<(BarUserDb, ServiceProvider)> _Get() {
+        private async Task<(IBarUserDb, ServiceProvider)> _Get() {
             ServiceCollection services = await Service.Standard();
 
             ServiceProvider svs = services.BuildServiceProvider();
 
-            return (svs.GetRequiredService<BarUserDb>(), svs);
+            return (svs.GetRequiredService<IBarUserDb>(), svs);
         }
 
         [TestMethod("ensure calling Upsert() with a null country_code does not overwrite one that already exists")]
         public async Task Test_InsertThenUpsertWithNullCountryCode() {
-            (BarUserDb db, _) = await _Get();
+            (IBarUserDb db, _) = await _Get();
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 

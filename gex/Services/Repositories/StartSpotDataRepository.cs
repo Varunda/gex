@@ -1,4 +1,4 @@
-﻿using gex.Models.Map;
+﻿using gex.Common.Models.Map;
 using gex.Services.Db.Map;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Caching.Memory;

@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,7 +25,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<MatchPool>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MatchPool>(
                 "SELECT * FROM match_pool",
                 cancel
@@ -30,7 +33,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<MatchPool?> GetByID(long ID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<MatchPool>(
                 "SELECT * FROM match_pool WHERE id = @ID",
                 new { ID = ID },
@@ -43,8 +46,8 @@ namespace gex.Services.Db {
                 throw new Exception($"missing {nameof(MatchPool.Name)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO match_pool (
                     name, created_by_id, timestamp, unlisted, hide_until
                 ) VALUES (
@@ -68,8 +71,8 @@ namespace gex.Services.Db {
                 throw new Exception($"missing {nameof(MatchPool.Name)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 UPDATE match_pool
                     SET name = @Name,
                         unlisted = @Unlisted,

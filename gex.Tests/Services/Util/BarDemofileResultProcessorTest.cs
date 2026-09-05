@@ -1,4 +1,10 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Match;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Storage;
+using gex.Common.Services.Util;
 using gex.Models.Db;
 using gex.Services.Metrics;
 using gex.Services.Parser;
@@ -69,8 +75,9 @@ namespace gex.Tests.Services.Util {
             await processor.Process(output.Value, CancellationToken.None);
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
+            IBarMatchBuilderUtil matchBuilder = svs.GetRequiredService<IBarMatchBuilderUtil>();
 
-            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch(output.Value.ID, new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchBuilder.BuildMatch(output.Value.ID, new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,
@@ -119,8 +126,9 @@ namespace gex.Tests.Services.Util {
             await processor.Process(output.Value, CancellationToken.None);
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
+            IBarMatchBuilderUtil matchBuilder = svs.GetRequiredService<IBarMatchBuilderUtil>();
 
-            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch("c5d0cb673d1c101091ba9c25b84d7a69", new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchBuilder.BuildMatch("c5d0cb673d1c101091ba9c25b84d7a69", new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,
@@ -243,8 +251,9 @@ namespace gex.Tests.Services.Util {
             await processor.Process(output.Value, CancellationToken.None);
 
             BarMatchRepository matchRepository = svs.GetRequiredService<BarMatchRepository>();
+            IBarMatchBuilderUtil matchBuilder = svs.GetRequiredService<IBarMatchBuilderUtil>();
 
-            Result<Maybe<BarMatch>, string> ret = await matchRepository.BuildMatch("2144826a169387cee01499f2922c384b", new BarMatchRepository.BuildOptions() {
+            Result<Maybe<BarMatch>, string> ret = await matchBuilder.BuildMatch("2144826a169387cee01499f2922c384b", new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeAllyTeams = true,
                 IncludeChat = true,
                 IncludeLabeledPings = true,

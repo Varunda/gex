@@ -1,7 +1,9 @@
 ﻿using gex.Common.Models;
-using gex.Models;
-using gex.Models.Db;
+using gex.Common.Models.Match;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repositories;
 using gex.Models.Event;
+using gex.Models.Health;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
@@ -34,13 +36,13 @@ namespace gex.Services.Hosted.BackgroundTasks {
         private readonly BarHeadlessInstance _HeadlessRunner;
         private readonly BaseQueue<ActionLogParseQueueEntry> _ActionLogParseQueue;
         private readonly ServiceHealthMonitor _ServiceHealthMonitor;
-        private readonly BarMatchProcessingPriorityDb _PriorityDb;
+        private readonly IBarMatchProcessingPriorityDb _PriorityDb;
         private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
 
         public PriorityMatchHeadlessBackgroundTask(ILogger<PriorityMatchHeadlessBackgroundTask> logger,
             BarMatchProcessingRepository processingRepository, BarHeadlessInstance headlessRunner,
             BaseQueue<ActionLogParseQueueEntry> actionLogParseQueue, ServiceHealthMonitor serviceHealthMonitor,
-            BarMatchProcessingPriorityDb priorityDb, IOptions<FocusPlayerModeOptions> focusUserOptions) {
+            IBarMatchProcessingPriorityDb priorityDb, IOptions<FocusPlayerModeOptions> focusUserOptions) {
 
             _Logger = logger;
             _ProcessingRepository = processingRepository;

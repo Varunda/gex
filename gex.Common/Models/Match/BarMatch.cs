@@ -1,0 +1,113 @@
+﻿using gex.Common.Code.Constants;
+using gex.Common.Models.Bar;
+using gex.Common.Models.Map;
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+
+namespace gex.Common.Models.Match {
+
+    public class BarMatch {
+
+        public string ID { get; set; } = "";
+
+        public string Engine { get; set; } = "";
+
+        public string GameVersion { get; set; } = "";
+
+        public DateTime StartTime { get; set; }
+
+        /// <summary>
+        ///     display name of the map
+        /// </summary>
+        public string Map { get; set; } = "";
+
+        /// <summary>
+        ///     map filename
+        /// </summary>
+        public string MapName { get; set; } = "";
+
+        public string FileName { get; set; } = "";
+
+        public float StartOffset { get; set; }
+
+        public long DurationMs { get; set; }
+
+        /// <summary>
+        ///		how many frames long this game is. IS NOT 100% ACCURATE, as it only updates on key frames
+        /// </summary>
+        public long DurationFrameCount { get; set; }
+
+        public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
+
+        public JsonElement HostSettings { get; set; } = default;
+
+        public JsonElement GameSettings { get; set; } = default;
+
+        public JsonElement MapSettings { get; set; } = default;
+
+        public JsonElement SpadsSettings { get; set; } = default;
+
+        public JsonElement Restrictions { get; set; } = default;
+
+        public List<BarMatchTeam> Teams { get; set; } = [];
+
+        public List<BarMatchAllyTeam> AllyTeams { get; set; } = [];
+
+        public List<BarMatchPlayer> Players { get; set; } = [];
+
+        public List<BarMatchSpectator> Spectators { get; set; } = [];
+
+        /// <summary>
+        ///		not currently saved in the DB, only returned from parsing
+        /// </summary>
+        public List<BarMatchAiPlayer> AiPlayers { get; set; } = [];
+
+        public List<BarMatchChatMessage> ChatMessages { get; set; } = [];
+
+        public List<BarMatchTeamDeath> TeamDeaths { get; set; } = [];
+
+        public List<BarMatchPlayerLeft> PlayerLeaves { get; set; } = [];
+
+        public List<BarMatchMapDraw> MapDraws { get; set; } = [];
+
+        public List<BarCommand> Commands { get; set; } = [];
+
+        public int PlayerCount { get; set; }
+
+        public long? UploadedByID { get; set; }
+
+        /// <summary>
+        ///     does this match contain the wrong open skill values for the <see cref="Gamemode"/>
+        ///     in the <see cref="BarMatchPlayer"/> entries for this match?
+        /// </summary>
+        public bool WrongSkillValues { get; set; }
+
+        public bool OfflineGame { get; set; }
+
+        public float AverageOS { get; set; }
+
+        public float MinOS { get; set; }
+
+        public float MaxOS { get; set; }
+
+        public int? StartSpotVersion { get; set; }
+
+        public BarMap? MapData { get; set; }
+
+        /// <summary>
+        ///     when searching by a match pool ID, this will be populated with the <see cref="MatchPoolEntry.Description"/>
+        /// </summary>
+        public string? MatchPoolEntryNote { get; set; }
+
+        /// <summary>
+        ///     if this match is part of a match pool, is this match pool hidden? (not unlisted)
+        /// </summary>
+        public bool MatchPoolIsHidden { get; set; }
+
+        public List<StartRegionData>? StartRegionData { get; set; } = null;
+
+        public List<BarMatchTeamStats> TeamStats { get; set; } = [];
+
+    }
+}

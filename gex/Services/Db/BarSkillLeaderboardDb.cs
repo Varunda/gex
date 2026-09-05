@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +24,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<BarSkillLeaderboardEntry>> Get(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarSkillLeaderboardEntry>(@"
 				(select gamemode, s.user_id, u.username, skill - (2 * skill_uncertainty) ""skill""
                     from bar_user_skill s left join bar_user u ON s.user_id = u.id where gamemode = 1 order by 4 desc limit 10)

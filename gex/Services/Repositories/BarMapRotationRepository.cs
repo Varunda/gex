@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Models.Bar;
+using gex.Common.Models.Map;
 using gex.Services.BarApi;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;

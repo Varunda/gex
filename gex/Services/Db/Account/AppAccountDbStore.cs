@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models;
+using gex.Common.Services.Db;
+using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,8 +35,8 @@ namespace gex.Services.Db.Account {
         ///     or <c>null</c> if it does not exist
         /// </returns>
         public async Task<AppAccount?> GetByID(long ID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 SELECT *
                     FROM app_account
                     WHERE id = @ID;
@@ -52,8 +55,8 @@ namespace gex.Services.Db.Account {
         ///     A list of all <see cref="AppAccount"/>s, including ones that are deactivated
         /// </returns>
         public async Task<List<AppAccount>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 SELECT *
                     FROM app_account;
             ");
@@ -71,8 +74,8 @@ namespace gex.Services.Db.Account {
         ///     or <c>null</c> if it does not exist
         /// </returns>
         public async Task<AppAccount?> GetByDiscordID(ulong discordID, CancellationToken cancel = default) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 SELECT *
                     FROM app_account
                     WHERE discord_id = @DiscordID;
@@ -92,8 +95,8 @@ namespace gex.Services.Db.Account {
         ///     The <see cref="AppAccount.ID"/> of the row that was newly inserted in the DB
         /// </returns>
         public async Task<long> Insert(AppAccount param, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO app_account (
                     name, discord_id, timestamp 
                 ) VALUES (
@@ -117,8 +120,8 @@ namespace gex.Services.Db.Account {
         ///     When the operation has completed
         /// </returns>
         public async Task Delete(long accountID, long deletedByID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 UPDATE app_account
                     SET deleted_on = NOW() AT TIME ZONE 'utc',
                         deleted_by = @DeletedByID

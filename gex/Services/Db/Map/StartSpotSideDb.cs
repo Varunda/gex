@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.Map;
+using gex.Common.Models.Map;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +17,7 @@ namespace gex.Services.Db.Map {
             : base(loggerFactory, helper, "start_spot_side") {
         }
 
-        protected override void InsertSetup(NpgsqlCommand cmd, StartSpotSide inst) {
+        protected override void InsertSetup(DbCommand cmd, StartSpotSide inst) {
             cmd.CommandText = @"
                 INSERT INTO start_spot_side (
                     map_filename, version, players_per_team, team_count, index

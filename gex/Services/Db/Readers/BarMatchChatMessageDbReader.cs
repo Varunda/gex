@@ -1,12 +1,15 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
+using gex.Common.Services.Db;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Data;
 
 namespace gex.Services.Db.Readers {
 
     public class BarMatchChatMessageDbReader : IDataReader<BarMatchChatMessage> {
 
-        public override BarMatchChatMessage? ReadEntry(NpgsqlDataReader reader) {
+        public override BarMatchChatMessage? ReadEntry(DbDataReader reader) {
             BarMatchChatMessage msg = new();
 
             msg.GameID = reader.GetString("game_id");

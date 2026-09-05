@@ -1,4 +1,4 @@
-﻿using gex.Models.Bar;
+﻿using gex.Common.Models.Bar;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;

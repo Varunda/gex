@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -27,8 +30,8 @@ namespace gex.Services.Db.Event {
                 throw new System.Exception($"missing hash from unit def");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO unit_def_set_entry (
                     hash, definition_id, definition_name, name, tooltip, size_x, size_z,
                     metal_cost, energy_cost, health, speed, build_time, unit_group, build_power,
@@ -88,7 +91,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<GameEventUnitDef>> GetByHash(string hash) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
 
             return (await conn.QueryAsync<GameEventUnitDef>(
                 "SELECT * FROM unit_def_set_entry WHERE hash = @Hash",
@@ -97,7 +100,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<UnitNameToDefinitionSet>> GetUnitNames(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<UnitNameToDefinitionSet>(@"
                 SELECT
                     name,
@@ -109,7 +112,7 @@ namespace gex.Services.Db.Event {
         }
 
         public async Task<List<string>> GetUnitNameByDefinitionName(string defName, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<string>(@"
                 SELECT name 
                 FROM unit_def_set_entry 

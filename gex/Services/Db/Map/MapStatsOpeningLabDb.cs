@@ -1,9 +1,12 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
-using gex.Models.MapStats;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +28,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task<List<MapStatsOpeningLab>> GetByMap(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsOpeningLab>(
                 "SELECT * FROM map_stats_opening_lab WHERE map_file_name = @MapFilename",
                 new { MapFilename = mapFilename },
@@ -34,7 +37,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task Generate(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection evConn = _DbHelper.Connection(Dbs.EVENT);
 
             List<MapStatsOpeningLab> openers = (await evConn.QueryAsync<MapStatsOpeningLab>(new CommandDefinition(
                 @"
@@ -90,8 +93,8 @@ namespace gex.Services.Db.Map {
                 throw new Exception($"missing any opener labs for map [mapName={mapFilename}]");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, $@"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats_opening_lab WHERE map_file_name = @MapFileName;
@@ -140,7 +143,7 @@ namespace gex.Services.Db.Map {
         }
 
         public async Task Generate(MapOpeningLabNeedsUpdate entry, CancellationToken cancel) {
-            using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection evConn = _DbHelper.Connection(Dbs.EVENT);
 
             List<MapStatsOpeningLab> openers = (await evConn.QueryAsync<MapStatsOpeningLab>(new CommandDefinition(
                 @"
@@ -198,8 +201,8 @@ namespace gex.Services.Db.Map {
                 throw new Exception($"missing any opener labs for map [mapName={entry.MapFilename}]");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, $@"
 				BEGIN TRANSACTION;
 
 				DELETE FROM map_stats_opening_lab WHERE map_file_name = @MapFileName;

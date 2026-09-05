@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
-using gex.Models.MapStats;
+using gex.Common.Services.Db;
+using gex.Models.Map;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -27,7 +30,7 @@ namespace gex.Services.Db.Map {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MapStatsNeedsUpdate>> GetReady(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsNeedsUpdate>(@"
                 SELECT *
                 FROM map_stats_needs_update
@@ -42,7 +45,7 @@ namespace gex.Services.Db.Map {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MapStatsNeedsUpdate>> GetByMapFilename(string mapFilename, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapStatsNeedsUpdate>(@"
                 SELECT *
                 FROM map_stats_needs_update
@@ -64,8 +67,8 @@ namespace gex.Services.Db.Map {
                 throw new Exception($"missing {nameof(MapStatsNeedsUpdate.Day)}]");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO map_stats_needs_update (
                     map_filename, gamemode, day, last_dirtied
                 ) VALUES (
@@ -92,8 +95,8 @@ namespace gex.Services.Db.Map {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task Remove(MapStatsNeedsUpdate update, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM map_stats_needs_update
                     WHERE map_filename = @MapFilename
                         AND gamemode = @Gamemode

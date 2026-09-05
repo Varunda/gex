@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 
-namespace gex.Models {
+namespace gex.Models.Health {
 
     /// <summary>
     ///     Represents the health of a realtime census event stream

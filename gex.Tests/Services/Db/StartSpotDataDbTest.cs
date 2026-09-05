@@ -1,5 +1,5 @@
-﻿using gex.Models.Map;
-using gex.Services.Db;
+﻿using gex.Common.Models.Map;
+using gex.Common.Services.Db;
 using gex.Services.Db.Map;
 using gex.Tests.Util;
 using Microsoft.Extensions.Logging;

@@ -1,7 +1,6 @@
-﻿using gex.Models.Map;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace gex.Models.MapStats {
+namespace gex.Models.Map {
 
     public class MapStats {
 

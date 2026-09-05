@@ -1,4 +1,5 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
+using gex.Common.Services.Db.Match;
 using gex.Services.Db.Match;
 using gex.Services.Storage;
 using Microsoft.Extensions.Logging;
@@ -11,13 +12,13 @@ namespace gex.Services.Hosted.PeriodicTasks {
 
     public class GameLogDeleterPeriodicService : AppBackgroundPeriodicService {
 
-        private readonly BarMatchProcessingDb _ProcessingDb;
+        private readonly IBarMatchProcessingDb _ProcessingDb;
         private readonly GameOutputStorage _OutputStorage;
 
         private readonly static TimeSpan CUT_OFF = TimeSpan.FromDays(90);
 
         public GameLogDeleterPeriodicService(ILoggerFactory loggerFactory,
-            ServiceHealthMonitor healthMon, BarMatchProcessingDb processingDb,
+            ServiceHealthMonitor healthMon, IBarMatchProcessingDb processingDb,
             GameOutputStorage outputStorage)
         : base("game_log_deleter", TimeSpan.FromMinutes(15), loggerFactory, healthMon) {
 

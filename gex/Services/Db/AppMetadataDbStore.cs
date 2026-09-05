@@ -1,7 +1,10 @@
 ﻿
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db {
@@ -27,8 +30,8 @@ namespace gex.Services.Db {
         ///     The string value of the metadata key, or <c>null</c> if it doesn't exist
         /// </returns>
         public async Task<string?> Get(string key) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 SELECT value
                     from metadata
                     WHERE name = @Key;
@@ -59,8 +62,8 @@ namespace gex.Services.Db {
         ///     A task for when the async operation is complete
         /// </returns>
         public async Task Upsert(string key, string value) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO metadata (name, value)
                     VALUES (@Key, @Value)
                 ON CONFLICT (name) DO

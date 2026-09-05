@@ -1,9 +1,12 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using gex.Models.UserStats;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +35,7 @@ namespace gex.Services.Db.UserStats {
         /// <returns></returns>
         public async Task Generate(UserUnitsMadeNeedsUpdate entry, CancellationToken cancel) {
 
-            using NpgsqlConnection evConn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection evConn = _DbHelper.Connection(Dbs.EVENT);
             List<BarUserUnitsMade> unitsMade = (await evConn.QueryAsync<BarUserUnitsMade>(
                 new CommandDefinition(@"
                     SELECT
@@ -70,8 +73,8 @@ namespace gex.Services.Db.UserStats {
                 return;
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, $@"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, $@"
 				BEGIN TRANSACTION;
 
 				DELETE FROM user_units_made
@@ -124,7 +127,7 @@ namespace gex.Services.Db.UserStats {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         public async Task<List<BarUserUnitsMade>> GetByUserID(long userID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarUserUnitsMade>(@"
                     SELECT *
                     FROM user_units_made
@@ -136,8 +139,8 @@ namespace gex.Services.Db.UserStats {
         }
 
         public async Task Upsert(BarUserUnitsMade made, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO user_units_made (
                     user_id, day, map_filename, definition_name, count, timestamp
                 ) VALUES (

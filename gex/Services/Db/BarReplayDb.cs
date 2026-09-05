@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
-using gex.Models.Bar;
+using gex.Common.Models.Bar;
+using gex.Common.Services.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,8 +31,8 @@ namespace gex.Services.Db {
                 throw new System.Exception($"missing filename from bar replay");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO bar_replay (
                     id, filename, map_name
                 ) VALUES (
@@ -52,7 +55,7 @@ namespace gex.Services.Db {
         /// <param name="gameID"></param>
         /// <returns></returns>
         public async Task<BarReplay?> GetByID(string gameID) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryFirstOrDefaultAsync<BarReplay>(
                 "SELECT * FROM bar_replay WHERE id = @ID",
                 new { ID = gameID }

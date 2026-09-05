@@ -1,20 +1,18 @@
 ﻿using gex.Common.Code.Constants;
-using gex.Code.ExtensionMethods;
-using gex.Commands;
-using gex.Models.Db;
-using gex.Services.Db.Match;
-using gex.Services.Repositories;
+using gex.Common.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using gex.Models.Demofile;
-using gex.Services.Parser;
-using gex.Services.Storage;
+using gex.Common.Services.Storage;
 using gex.Common.Models;
 using gex.Services.Db.Event;
+using gex.Common.Services.Parser;
+using gex.Common.Models.Match;
+using gex.Common.Code.ExtensionMethods;
+using gex.Common.Services.Db.Match;
 
 namespace gex.Code.Commands {
 
@@ -22,14 +20,14 @@ namespace gex.Code.Commands {
     public class MatchCommand {
 
         private readonly ILogger<MatchCommand> _Logger;
-        private readonly BarMatchDb _MatchDb;
+        private readonly IBarMatchDb _MatchDb;
         private readonly DemofileStorage _DemofileStorage;
         private readonly BarDemofileParser _DemofileParser;
         private readonly GameUnitsCreatedDb _GameUnitsCreatedDb;
 
         public MatchCommand(IServiceProvider services) {
             _Logger = services.GetRequiredService<ILogger<MatchCommand>>();
-            _MatchDb = services.GetRequiredService<BarMatchDb>();
+            _MatchDb = services.GetRequiredService<IBarMatchDb>();
             _DemofileStorage = services.GetRequiredService<DemofileStorage>();
             _DemofileParser = services.GetRequiredService<BarDemofileParser>();
             _GameUnitsCreatedDb = services.GetRequiredService<GameUnitsCreatedDb>();

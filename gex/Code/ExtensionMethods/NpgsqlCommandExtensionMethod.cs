@@ -1,8 +1,9 @@
-﻿using gex.Services.Db;
+﻿using gex.Common.Services.Db;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading;

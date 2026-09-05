@@ -1,7 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using gex.Code.ExtensionMethods;
-using gex.Commands;
+
 using gex.Models.Discord;
 using gex.Services.Discord;
 using gex.Services.Queues;

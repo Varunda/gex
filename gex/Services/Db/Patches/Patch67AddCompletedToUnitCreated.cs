@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -10,8 +13,8 @@ namespace gex.Services.Db.Patches {
 
         public async Task Execute(IDbHelper helper) {
             {
-                using NpgsqlConnection conn = helper.Connection(Dbs.EVENT);
-                using NpgsqlCommand cmd = await helper.Command(conn, @"
+                using DbConnection conn = helper.Connection(Dbs.EVENT);
+                using DbCommand cmd = await helper.Command(conn, @"
                     ALTER TABLE game_event_unit_created
                         ADD COLUMN IF NOT EXISTS completed int NOT NULL DEFAULT 0;
                 ");
@@ -21,8 +24,8 @@ namespace gex.Services.Db.Patches {
             }
 
             {
-                using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-                using NpgsqlCommand cmd = await helper.Command(conn, @"
+                using DbConnection conn = helper.Connection(Dbs.MAIN);
+                using DbCommand cmd = await helper.Command(conn, @"
                     ALTER TABLE bar_match_ally_team
                         ADD COLUMN IF NOT EXISTS average_skill numeric NOT NULL DEFAULT -1;
 
@@ -51,7 +54,7 @@ namespace gex.Services.Db.Patches {
                 await conn.CloseAsync();
             }
 
-            using NpgsqlConnection conn2 = helper.Connection(Dbs.MAIN);
+            using DbConnection conn2 = helper.Connection(Dbs.MAIN);
 
         }
 

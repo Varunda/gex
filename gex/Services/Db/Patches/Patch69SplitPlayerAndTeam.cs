@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,8 +12,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "split bar_match_player and create bar_match_team";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 CREATE TABLE IF NOT EXISTS bar_match_team (
                     id bigint NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 

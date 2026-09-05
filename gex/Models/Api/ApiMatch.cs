@@ -1,6 +1,8 @@
 ﻿using gex.Common.Code.Constants;
-using gex.Models.Bar;
-using gex.Models.Db;
+using gex.Common.Models.Bar;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
+using gex.Models.Internal;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

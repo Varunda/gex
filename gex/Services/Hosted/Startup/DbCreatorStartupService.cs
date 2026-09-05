@@ -1,4 +1,4 @@
-﻿using gex.Services.Db;
+﻿using gex.Common.Services.Db;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Hosted {
+namespace gex.Services.Hosted.Startup {
 
     /// <summary>
     /// Startup service that runs the DB creator, going thru all patches to ensure the database is ready to run

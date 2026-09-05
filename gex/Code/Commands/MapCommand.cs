@@ -1,9 +1,8 @@
-﻿using gex.Commands;
-using gex.Common.Code.Constants;
+﻿using gex.Common.Code.Constants;
 using gex.Common.Models;
-using gex.Models.Bar;
-using gex.Services.Repositories;
-using gex.Services.Util;
+using gex.Common.Models.Map;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

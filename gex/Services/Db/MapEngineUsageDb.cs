@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -32,8 +35,8 @@ namespace gex.Services.Db {
                 throw new Exception($"default {nameof(MapEngineUsage.LastUsed)} from {nameof(MapEngineUsage)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO map_engine_usage AS v (
                     engine, map, last_used, deleted_on
                 ) VALUES (
@@ -55,8 +58,8 @@ namespace gex.Services.Db {
         }
 
         public async Task MarkDeleted(MapEngineUsage usage, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 UPDATE map_engine_usage
                     SET deleted_on = @DeletedOn
                 WHERE
@@ -79,7 +82,7 @@ namespace gex.Services.Db {
         /// <param name="cancel"></param>
         /// <returns></returns>
         public async Task<List<MapEngineUsage>> GetExpired(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MapEngineUsage>(
                 "SELECT * FROM map_engine_usage WHERE deleted_on IS NULL AND (last_used < NOW() at time zone 'utc' - '2 hour'::interval)",
                 cancel

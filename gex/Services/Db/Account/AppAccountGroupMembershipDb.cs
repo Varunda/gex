@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Internal;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -23,7 +26,7 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task<AppAccountGroupMembership?> GetByID(long memberID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QuerySingleAsync<AppAccountGroupMembership>(
                 "SELECT * FROM app_account_group_membership WHERE id = @ID",
                 new { ID = memberID },
@@ -40,7 +43,7 @@ namespace gex.Services.Db.Account {
         ///     
         /// </returns>
         public async Task<List<AppAccountGroupMembership>> GetByAccountID(long accountID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QueryListAsync<AppAccountGroupMembership>(
                 "SELECT * FROM app_account_group_membership WHERE account_id = @ID",
                 new { ID = accountID },
@@ -57,7 +60,7 @@ namespace gex.Services.Db.Account {
         ///     
         /// </returns>
         public async Task<List<AppAccountGroupMembership>> GetByGroupID(long groupID, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
+            using DbConnection conn = _DbHelper.Connection();
             return await conn.QueryListAsync<AppAccountGroupMembership>(
                 "SELECT * FROM app_account_group_membership WHERE group_id = @ID",
                 new { ID = groupID },
@@ -73,8 +76,8 @@ namespace gex.Services.Db.Account {
                 throw new ArgumentException($"group id cannot be 0");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO app_account_group_membership (
                     account_id, group_id, timestamp, granted_by_account_id
                 ) VALUES (
@@ -95,8 +98,8 @@ namespace gex.Services.Db.Account {
         }
 
         public async Task Delete(AppAccountGroupMembership membership, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection();
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection();
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM 
                     app_account_group_membership
                 WHERE

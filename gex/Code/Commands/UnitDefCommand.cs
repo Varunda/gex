@@ -1,5 +1,5 @@
-﻿using gex.Code.ExtensionMethods;
-using gex.Commands;
+﻿
+using gex.Common.Code.ExtensionMethods;
 using gex.Models.Event;
 using gex.Services.Db.Event;
 using Microsoft.Extensions.DependencyInjection;

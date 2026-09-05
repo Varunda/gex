@@ -1,10 +1,12 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using System.Collections.Generic;
 using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,8 +45,8 @@ namespace gex.Services.Db.Event {
                 throw new System.Exception($"missing GameID for {nameof(T)}");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"", cancel);
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"", cancel);
 
             SetupInsert(ev, cmd);
 
@@ -69,7 +71,7 @@ namespace gex.Services.Db.Event {
         /// </summary>
         /// <param name="ev">event that contains the parameters to use</param>
         /// <param name="cmd">command</param>
-        protected abstract void SetupInsert(T ev, NpgsqlCommand cmd);
+        protected abstract void SetupInsert(T ev, DbCommand cmd);
 
         /// <summary>
         ///     get the <typeparamref name="T"/> for a specific game ID
@@ -80,7 +82,7 @@ namespace gex.Services.Db.Event {
         ///     a list of <typeparamref name="T"/> with <see cref="GameEvent.GameID"/> of <paramref name="gameID"/>
         /// </returns>
         public async Task<List<T>> GetByGameID(string gameID, CancellationToken cancel = default) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
             return await conn.QueryListAsync<T>(
                 $"SELECT '{_ActionName}' \"Action\", * from {_TableName} WHERE game_id = @GameID ORDER BY frame ASC",
                 new { GameID = gameID },
@@ -95,8 +97,8 @@ namespace gex.Services.Db.Event {
         /// <param name="cancel">cancellation token</param>
         /// <returns>a task for when the async operation is complete</returns>
         public async Task DeleteByGameID(string gameID, CancellationToken cancel = default) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.EVENT);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @$"
+            using DbConnection conn = _DbHelper.Connection(Dbs.EVENT);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @$"
                 DELETE FROM {_TableName}
                     WHERE game_id = @GameID;
             ", cancel);

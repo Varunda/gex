@@ -1,5 +1,6 @@
 ﻿using gex.Common.Code.Constants;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Models;
 using gex.Models.Bar;
 using gex.Models.Db;

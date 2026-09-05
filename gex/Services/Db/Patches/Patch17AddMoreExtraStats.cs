@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -9,9 +12,9 @@ namespace gex.Services.Db.Patches {
         public string Name => "add more to game_event_extra_stats";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
 
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE game_event_extra_stats ADD COLUMN IF NOT EXISTS total_value double precision NOT NULL default 0;
 
                 ALTER TABLE game_event_extra_stats ADD COLUMN IF NOT EXISTS defense_value double precision NOT NULL default 0;

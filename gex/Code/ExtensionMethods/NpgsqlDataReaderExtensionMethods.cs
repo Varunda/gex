@@ -1,4 +1,6 @@
 ﻿using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Data;
 using System.Text.Json;
@@ -8,7 +10,7 @@ namespace gex.Code.ExtensionMethods {
     public static class NpgsqlDataReaderExtensionMethods {
 
         /// <summary>
-        /// Get a string value from a column that may ben ull
+        /// Get a string value from a column that may be null
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="field"></param>

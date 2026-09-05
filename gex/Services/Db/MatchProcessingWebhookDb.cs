@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Db;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,7 +25,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<List<MatchProcessingWebhook>> GetAll(CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MatchProcessingWebhook>(
                 "SELECT * FROM match_processing_webhook",
                 cancel
@@ -30,7 +33,7 @@ namespace gex.Services.Db {
         }
 
         public async Task<MatchProcessingWebhook?> Get(string url, string type, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QuerySingleAsync<MatchProcessingWebhook>(
                 "SELECT * FROM match_processing_webhook WHERE url = @Url and type = LOWER(@Type)",
                 new {
@@ -46,8 +49,8 @@ namespace gex.Services.Db {
                 throw new ArgumentException($"UserID cannot be default value (0)");
             }
 
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 INSERT INTO match_processing_webhook (
                     url, type, shared_secret, include_events, timestamp, ip, user_id
                 ) VALUES (
@@ -71,8 +74,8 @@ namespace gex.Services.Db {
         }
 
         public async Task Delete(MatchProcessingWebhook webhook, CancellationToken cancel) {
-            using NpgsqlConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await _DbHelper.Command(conn, @"
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
                 DELETE FROM match_processing_webhook
                     WHERE url = @Url
                         AND type = @Type

@@ -1,4 +1,6 @@
-﻿using gex.Models.Db;
+﻿using gex.Common.Models.Match;
+using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository.Match;
 using gex.Models.Event;
 using gex.Services.Db.Event;
 using gex.Services.Repositories;

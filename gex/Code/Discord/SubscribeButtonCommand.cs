@@ -2,11 +2,11 @@
 using DSharpPlus.ButtonCommands;
 using DSharpPlus.Entities;
 using gex.Code.ExtensionMethods;
+using gex.Common.Models.User;
+using gex.Common.Services.Repository;
 using gex.Models.Db;
-using gex.Models.UserStats;
 using gex.Services.Db;
 using gex.Services.Db.UserStats;
-using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

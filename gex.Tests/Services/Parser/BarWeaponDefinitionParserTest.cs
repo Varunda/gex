@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Models;
-using gex.Models.Bar;
 using gex.Services;
 using gex.Services.Parser;
 using gex.Tests.Util;

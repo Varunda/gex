@@ -1,8 +1,8 @@
-﻿using gex.Models;
-using gex.Models.Bar;
+﻿using gex.Common.Models.Map;
+using gex.Common.Models.User;
+using gex.Common.Services.Repository;
+using gex.Models;
 using gex.Models.Map;
-using gex.Models.MapStats;
-using gex.Models.UserStats;
 using gex.Services.Db.Map;
 using gex.Services.Repositories;
 using Microsoft.AspNetCore.Mvc;

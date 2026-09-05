@@ -1,5 +1,5 @@
 ﻿using gex.Common.Code.ExtensionMethods;
-using gex.Models;
+using gex.Models.Internal;
 using gex.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;

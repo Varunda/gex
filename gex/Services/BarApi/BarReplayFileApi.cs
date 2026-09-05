@@ -1,5 +1,5 @@
 ﻿using gex.Common.Models;
-using gex.Services.Metrics;
+using gex.Common.Services.Metrics;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Net.Http;

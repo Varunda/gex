@@ -1,7 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
+using gex.Common.Services.Db;
 using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 
 namespace gex.Services.Db.Event {
 
@@ -10,7 +13,7 @@ namespace gex.Services.Db.Event {
         public GameEventUnitGivenDb(ILoggerFactory loggerFactory, IDbHelper dbHelper)
             : base("game_event_unit_given", "unit_given", loggerFactory, dbHelper) { }
 
-        protected override void SetupInsert(GameEventUnitGiven ev, NpgsqlCommand cmd) {
+        protected override void SetupInsert(GameEventUnitGiven ev, DbCommand cmd) {
             cmd.CommandText = @"
                 INSERT INTO game_event_unit_given (
                     game_id, frame,

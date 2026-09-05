@@ -1,12 +1,13 @@
 ﻿using DSharpPlus.Entities;
 using gex.Code.Discord;
+using gex.Common.Models.Match;
+using gex.Common.Services.Repository.Match;
+using gex.Common.Services.Util;
 using gex.Models.Db;
 using gex.Models.Discord;
 using gex.Models.Queues;
 using gex.Services.Db;
 using gex.Services.Queues;
-using gex.Services.Repositories;
-using gex.Services.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

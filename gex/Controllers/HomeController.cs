@@ -1,11 +1,14 @@
 ﻿using gex.Code;
 using gex.Common.Code.Constants;
+using gex.Common.Models.Map;
+using gex.Common.Models.Match;
 using gex.Common.Models.Options;
-using gex.Models;
-using gex.Models.Bar;
+using gex.Common.Models.User;
+using gex.Common.Services.Db.Match;
+using gex.Common.Services.Repository;
+using gex.Common.Services.Repository.Match;
 using gex.Models.Db;
 using gex.Models.Internal;
-using gex.Models.UserStats;
 using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Account;
@@ -40,7 +43,7 @@ namespace gex.Controllers {
         private readonly AppAccountDbStore _AccountDb;
 
         private readonly BarMatchRepository _MatchRepository;
-        private readonly BarMatchAllyTeamDb _AllyTeamDb;
+        private readonly IBarMatchAllyTeamDb _AllyTeamDb;
         private readonly BarMatchPlayerRepository _PlayerRepository;
         private readonly BarMapRepository _MapRepository;
         private readonly BarUserRepository _UserRepository;
@@ -50,7 +53,7 @@ namespace gex.Controllers {
         public HomeController(ILogger<HomeController> logger,
             IHttpContextAccessor httpContextAccessor, HttpUtilService httpUtil,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
-            BarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
+            IBarMatchAllyTeamDb allyTeamDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository mapRepository, BarUserRepository userRepository,
             ICurrentAccount currentUser, AppAccountDbStore accountDb,
             MatchPoolRepository matchPoolRepository, MatchPoolEntryDb poolEntryDb) {

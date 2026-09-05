@@ -1,4 +1,7 @@
-﻿using Npgsql;
+﻿using gex.Common.Services.Db;
+using Npgsql;
+using System.Data.Common;
+using gex.Common.Code.ExtensionMethods;
 using System.Threading.Tasks;
 
 namespace gex.Services.Db.Patches {
@@ -11,8 +14,8 @@ namespace gex.Services.Db.Patches {
         public string Name => "add timings to bar_match_processing";
 
         public async Task Execute(IDbHelper helper) {
-            using NpgsqlConnection conn = helper.Connection(Dbs.MAIN);
-            using NpgsqlCommand cmd = await helper.Command(conn, @"
+            using DbConnection conn = helper.Connection(Dbs.MAIN);
+            using DbCommand cmd = await helper.Command(conn, @"
                 ALTER TABLE bar_match_processing ADD COLUMN IF NOT EXISTS fetch_ms int null;
                 ALTER TABLE bar_match_processing ADD COLUMN IF NOT EXISTS parse_ms int null;
                 ALTER TABLE bar_match_processing ADD COLUMN IF NOT EXISTS replay_ms int null;

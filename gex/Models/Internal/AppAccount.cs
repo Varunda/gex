@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace gex.Models {
+namespace gex.Models.Internal {
 
     /// <summary>
     ///     Represents the info about an account with the app

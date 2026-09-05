@@ -1,5 +1,5 @@
-﻿using gex.Commands;
-using gex.Models;
+﻿
+using gex.Models.Internal;
 using gex.Services.Db.Account;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

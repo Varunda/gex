@@ -1,12 +1,13 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Bar;
+using gex.Common.Models.Match;
 using gex.Common.Models.Options;
-using gex.Models.Bar;
-using gex.Models.Db;
+using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
 using gex.Services.Db;
-using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;

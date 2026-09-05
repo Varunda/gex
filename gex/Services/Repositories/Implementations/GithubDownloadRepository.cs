@@ -1,4 +1,4 @@
-﻿using gex.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Options;
 using gex.Models.Options;

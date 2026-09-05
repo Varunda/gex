@@ -1,9 +1,9 @@
 ﻿using gex.Common.Models.Options;
 using gex.Common.Services.Bar;
-using gex.Services.BarApi;
+using gex.Common.Services.Db;
+using gex.Common.Services.Metrics;
 using gex.Services.Db;
 using gex.Services.Db.Readers;
-using gex.Services.Metrics;
 using gex.Services.Parser;
 using gex.Services.Repositories;
 using gex.Services.Util;
