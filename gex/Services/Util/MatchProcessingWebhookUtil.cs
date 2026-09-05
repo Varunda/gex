@@ -60,6 +60,7 @@ namespace gex.Services.Util {
         /// <returns></returns>
         public async Task<Result<JsonObject, string>> BuildBody(string gameID, bool includeOutput, CancellationToken cancel) {
             Result<Maybe<BarMatch>, string> built = await _MatchBuilder.BuildMatch(gameID, new IBarMatchBuilderUtil.BuildOptions() {
+                IncludeTeams = true,
                 IncludeAllyTeams = true,
                 IncludePlayers = true,
                 IncludeSpectators = true,
