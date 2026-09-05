@@ -66,7 +66,7 @@ namespace gex.Coven.Models {
 
             try {
                 byte[] bytes = await File.ReadAllBytesAsync(args.FullPath, cts.Token);
-                Result<BarMatch, string> ret = await _DemofileParser.Parse(args.Name, bytes, new DemofileParserOptions() {
+                Result<BarMatch, string> ret = await _DemofileParser.Parse(args.FullPath, bytes, new DemofileParserOptions() {
 
                 }, cts.Token);
 
