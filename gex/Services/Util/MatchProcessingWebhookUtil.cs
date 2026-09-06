@@ -1,4 +1,5 @@
-﻿using gex.Common.Code.ExtensionMethods;
+﻿using gex.Code.Converters;
+using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Services.Repository.Match;
@@ -79,6 +80,9 @@ namespace gex.Services.Util {
 
             JsonSerializerOptions opts = new();
             opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            opts.Converters.Add(new DateTimeJsonConverter());
+            opts.Converters.Add(new TimeSpanJsonConverter());
+            opts.Converters.Add(new Vector3JsonConverter());
 
             BarMatch match = built.Value.Get();
 

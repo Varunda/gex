@@ -5,6 +5,7 @@ using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Code;
 using gex.Coven.Models;
+using gex.Coven.Models.Config;
 using gex.Coven.Services.Db;
 using gex.Coven.Services.Hosted;
 using gex.Coven.ViewModels;
@@ -37,6 +38,7 @@ sealed class Program {
             .AddCommandLine(args)
             .AddEnvironmentVariables()
             .AddJsonFile("appsettings.json")
+            .AddJsonFile("UserOptions.json")
             .AddInMemoryCollection();
 
         hostBuilder.Services.AddMemoryCache();
@@ -51,6 +53,8 @@ sealed class Program {
         hostBuilder.Services.AddSingleton<BarMatchRepository>();
 
         hostBuilder.Services.AddCovenDbServices();
+
+        hostBuilder.Services.Configure<UserOptions>(hostBuilder.Configuration.GetSection("UserOptions"));
 
         hostBuilder.Logging.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", options => {
             options.FormatLogFileName = fName => {

@@ -2,9 +2,11 @@
 using gex.Common.Models.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
+using gex.Coven.Models.Config;
 using gex.Coven.Models.Match;
 using gex.Coven.Services.Db.Match;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,16 +25,18 @@ namespace gex.Coven.Models {
         private readonly BarDemofileParser _DemofileParser;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchHashDb _MatchHashDb;
+        private readonly IOptions<UserOptions> _UserOptions;
 
         private readonly FileSystemWatcher _FileWatcher;
 
         public DemofileWatcher(ILogger<DemofileWatcher> logger,
             BarDemofileParser demofileParser, BarMatchRepository matchRepository,
-            BarMatchHashDb matchHashDb) {
+            BarMatchHashDb matchHashDb, IOptions<UserOptions> userOptions) {
 
             _Logger = logger;
 
-            _FileWatcher = new FileSystemWatcher("F:/Games/Beyond-All-Reason/data/demos");
+            _UserOptions = userOptions;
+            _FileWatcher = new FileSystemWatcher(_UserOptions.Value.ReplayFolder);
             _FileWatcher.Filter = "*.sdfz";
             _FileWatcher.NotifyFilter = NotifyFilters.LastWrite;
             _FileWatcher.EnableRaisingEvents = true;
@@ -66,7 +70,7 @@ namespace gex.Coven.Models {
 
             try {
                 byte[] bytes = await File.ReadAllBytesAsync(args.FullPath, cts.Token);
-                Result<BarMatch, string> ret = await _DemofileParser.Parse(args.FullPath, bytes, new DemofileParserOptions() {
+                Result<BarMatch, string> ret = await _DemofileParser.Parse(args.Name, bytes, new DemofileParserOptions() {
 
                 }, cts.Token);
 
@@ -104,7 +108,7 @@ namespace gex.Coven.Models {
                 _Logger.LogInformation($"loading new match [file={demofile}]");
 
                 try {
-                    Result<BarMatch, string> ret = await _DemofileParser.Parse(demofile, bytes, new DemofileParserOptions() {
+                    Result<BarMatch, string> ret = await _DemofileParser.Parse(filename, bytes, new DemofileParserOptions() {
 
                     }, CancellationToken.None);
 

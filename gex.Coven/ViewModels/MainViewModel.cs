@@ -5,14 +5,17 @@ using gex.Common.Models.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Coven.Models;
+using gex.Coven.Models.Config;
 using gex.Coven.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,11 +26,13 @@ public partial class MainViewModel : ViewModelBase {
     private readonly ILogger<MainViewModel> _Logger;
     private readonly BarMatchRepository _MatchRepository;
     private readonly BarDemofileParser _Parser;
+    private readonly IOptions<UserOptions> _UserOptions;
 
     public MainViewModel() {
         _Logger = App.Current.Services.GetRequiredService<ILogger<MainViewModel>>();
         _MatchRepository = App.Current.Services.GetRequiredService<BarMatchRepository>();
         _Parser = App.Current.Services.GetRequiredService<BarDemofileParser>();
+        _UserOptions = App.Current.Services.GetRequiredService<IOptions<UserOptions>>();
     }
 
     [ObservableProperty]
@@ -52,7 +57,16 @@ public partial class MainViewModel : ViewModelBase {
             return;
         }
 
-        byte[] bytes = File.ReadAllBytes(match.FileName);
+        byte[] bytes = [];
+        string replayFileName = Path.Join(_UserOptions.Value.ReplayFolder, match.FileName);
+        if (File.Exists(match.FileName)) {
+            bytes = File.ReadAllBytes(match.FileName);
+        } else if (File.Exists(replayFileName)) {
+            bytes = File.ReadAllBytes(replayFileName);
+        } else {
+            _Logger.LogError($"failed to find demofile [FileName={match.FileName}]");
+            return;
+        }
 
         Result<BarMatch, string> parsed = await _Parser.Parse(match.FileName, bytes, new DemofileParserOptions() {
 
