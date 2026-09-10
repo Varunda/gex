@@ -30,7 +30,7 @@
                     </TableViewColumn.CellTemplate>
                 </TableViewColumn>
 
-                <TableViewColumn Header="Message" Binding="{Binding Message}" Width="1*"/>
+                <TableViewColumn Header="Message" Binding="{Binding Message}" Width="4*"/>
             </TableView.Columns>
         </TableView>
     </ScrollViewer>

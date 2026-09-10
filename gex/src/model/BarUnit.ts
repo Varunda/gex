@@ -162,6 +162,10 @@ export class BarWeaponDefinition {
 
     public sweepFire: number = 0;
 
+    public sweepFireFireTime: number = 0;
+
+    public sweepFireReloadTime: number = 0;
+
     public velocity: number = 0;
 
     public weaponType: string = "";
@@ -245,6 +249,10 @@ export class BarWeaponDefinition {
 
         def.defaultBurstDamage = def.defaultDamage * Math.max(1, def.burst);
         def.defaultDps = def.sweepFire == 0 ? (def.defaultDamage / Math.max(0.01, def.reloadTime)) : def.defaultDamage;
+        if (def.sweepFireFireTime != 0 && def.sweepFireReloadTime != 0) {
+            def.defaultDps = def.defaultDamage * 30 * def.sweepFireFireTime / Math.max(0.01, def.sweepFireReloadTime);
+        }
+
         if (def.burst != 0) {
             def.defaultDps *= def.burst;
         }

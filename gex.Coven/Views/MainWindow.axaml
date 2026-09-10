@@ -2,8 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:gex.Coven.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:views="using:gex.Coven.Views"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
 		xmlns:controls="using:gex.Coven.Controls"
+        xmlns:services="using:gex.Coven.Services"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="gex.Coven.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -16,43 +19,59 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-	<Grid Margin="5" RowDefinitions="Auto, *" Name="Root">
-		<Border Background="Gray" CornerRadius="10">
-			<TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center" FontFamily="{StaticResource Font}"></TextBlock>
-		</Border>
+    <Panel>
+        <DockPanel>
+            <Border DockPanel.Dock="Bottom" Background="#f3f4f6" Padding="8,4">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Background="Gray" Foreground="White"
+                            ToolTip.Tip="View logs (hotkey: F2)"
+                            Command="{Binding OpenLogs}" HotKey="F2">
 
-		<ScrollViewer Grid.Row="1">
+                        <TextBlock FontSize="12" Text="Logs"/>
+                    </Button>
 
-			<TableView ItemsSource="{Binding Matches}">
-				<TableView.Columns>
-					<TableViewColumn Header="When">
-						<TableViewColumn.CellTemplate>
-							<DataTemplate>
-								<controls:DateTimeView When="{Binding StartTime}"></controls:DateTimeView>
-							</DataTemplate>
-						</TableViewColumn.CellTemplate>
-					</TableViewColumn>
+                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="Gray"/>
+                </DockPanel>
+            </Border>
+            
+            <TabbedPage>
+                <ContentPage Header="Matches">
+                    <views:MatchListView></views:MatchListView>
+                </ContentPage>
 
-					<TableViewColumn Header="Map" Binding="{Binding Map}"/>
+                <ContentPage Header="Settings">
+                    <views:UserOptionsView></views:UserOptionsView>
+                </ContentPage>
+            </TabbedPage>
+        </DockPanel>
 
-					<TableViewColumn Header="Gamemode" Binding="{Binding Gamemode}"/>
+        <ItemsControl x:Name="ToastRoot"
+                      ItemsSource="{Binding Toasts.Toasts}"
+                      HorizontalAlignment="Right" VerticalAlignment="Top"
+                      Margin="16" MaxWidth="360">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#1e1e2e" CornerRadius="8" Padding="12,8" Margin="0,0,0,8"
+                            BorderBrush="#333" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap"
+                                       Foreground="White" VerticalAlignment="Center">
+                            </TextBlock>
 
-					<TableViewColumn Header="Duration" Binding="{Binding Duration}"/>
+                            <Button Grid.Column="1" Content="x" FontSize="10"
+                                    Background="Transparent" Foreground="Gray"
+                                    Padding="4,2" Margin="8,0,0,0"
+                                    Command="{Binding #ToastRoot.((vm:MainViewModel)DataContext).Toasts.DismissCommand}"
+                                    CommandParameter="{Binding .}">
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            
+        </ItemsControl>
 
-					<TableViewColumn Header="View">
-						<TableViewColumn.CellTemplate>
-							<DataTemplate>
-								<Button Content="View"
-										Command="{Binding #Root.((vm:MainViewModel)DataContext).OpenCommand}"
-										CommandParameter="{Binding GameID}">
-								</Button>
-							</DataTemplate>
-						</TableViewColumn.CellTemplate>
-					</TableViewColumn>
-				</TableView.Columns>
-				
-			</TableView>
-		</ScrollViewer>
-	</Grid>
+    </Panel>
 
 </Window>

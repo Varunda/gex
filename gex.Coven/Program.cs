@@ -1,11 +1,14 @@
 ﻿using Avalonia;
+using Avalonia.Logging;
 using gex.Common.Services.Db;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Code;
+using gex.Coven.Code.ExtensionMethods;
 using gex.Coven.Models;
 using gex.Coven.Models.Config;
+using gex.Coven.Services;
 using gex.Coven.Services.Db;
 using gex.Coven.Services.Hosted;
 using gex.Coven.ViewModels;
@@ -13,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
 using NReco.Logging.File;
 using R86.Avalonia.Hosting;
 using System;
@@ -32,56 +36,52 @@ sealed class Program {
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("macos")]
     public static void Main(string[] args) {
+
         HostedApplication<App>.AvaloniaApplicationBuilder hostBuilder = App.CreateBuilder(args, BuildAvaloniaApp, () => Host.CreateEmptyApplicationBuilder(null));
 
         hostBuilder.Configuration
             .AddCommandLine(args)
             .AddEnvironmentVariables()
             .AddJsonFile("appsettings.json")
-            .AddJsonFile("UserOptions.json")
             .AddInMemoryCollection();
 
         hostBuilder.Services.AddMemoryCache();
 
+        // services
         hostBuilder.Services.AddSingleton<BarDemofileParser>();
-        hostBuilder.Services.AddSingleton<MainViewModel>();
+        hostBuilder.Services.AddSingleton<MatchListViewModel>();
+        hostBuilder.Services.AddSingleton<ToastService>();
+        hostBuilder.Services.AddSingleton<DisplayLoggerService>();
+        hostBuilder.Services.AddSingleton<UserOptionsViewModel>();
         hostBuilder.Services.AddSingleton<IDbHelper, SqLiteDbHelper>();
         hostBuilder.Services.AddSingleton<IDbCreator, SqLiteDbCreator>();
         hostBuilder.Services.AddSingleton<DemofileWatcher>();
         hostBuilder.Services.AddSingleton<LuaCommandParser>();
         hostBuilder.Services.AddSingleton<PolygonStartboxUtil>();
         hostBuilder.Services.AddSingleton<BarMatchRepository>();
+        hostBuilder.Services.AddSingleton<UserOptionsService>();
 
         hostBuilder.Services.AddCovenDbServices();
 
-        hostBuilder.Services.Configure<UserOptions>(hostBuilder.Configuration.GetSection("UserOptions"));
-
-        hostBuilder.Logging.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", options => {
+        // logging
+        hostBuilder.Logging.AddConfiguration();
+        hostBuilder.Logging.AddDisplayLogger();
+        hostBuilder.Logging.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", (FileLoggerOptions options) => {
             options.FormatLogFileName = fName => {
                 return string.Format(fName, DateTime.UtcNow);
             };
             options.FileSizeLimitBytes = (1024 * 1024 * 64); // 64MB
             options.MaxRollingFiles = 10;
-            options.MinLevel = LogLevel.Trace;
         });
 
         // add hosted services here
         hostBuilder.Services.AddHostedService<HostedDbStartup>();
-        hostBuilder.Services.AddHostedService<HostedMatchFinder>();
 
         // end hosted services
         App host = hostBuilder.Build();
 
         ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("host built, running app");
-
-        /*
-        TaskScheduler.UnobservedTaskException += (sender, ex) => {
-            logger.LogError(ex.Exception, $"unhandled exception");
-            Trace.WriteLine(ex);
-            ex.SetObserved();
-        };
-        */
 
         host.Run();
     }
@@ -97,7 +97,8 @@ sealed class Program {
             .ConfigureFonts(manager => {
                 manager.AddFontCollection(new FontCollection());
             })
-            .LogToTrace(Avalonia.Logging.LogEventLevel.Information);
+            .LogToTrace(LogEventLevel.Information)
+            .LogToTrace(LogEventLevel.Verbose, LogArea.Binding);
     }
 
 }

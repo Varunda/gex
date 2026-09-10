@@ -524,6 +524,9 @@ namespace gex.Code.Discord {
                         // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luaui/Widgets/gui_info.lua#L479
                         // unitDefInfo[unitDefID].maxdps = (weaponDef.damages[0] * weaponDef.customParams.sweepfire) / math.max(weaponDef.minIntensity, 0.5)
                         double dps = (weapon.SweepFire == 0) ? (damage / Math.Max(0.01, reloadTime)) : (damage * weapon.SweepFire);
+                        if (weapon.SweepFireFireTime != 0 && weapon.SweepFireReloadTime != 0) {
+                            dps = damage * 30 * weapon.SweepFireFireTime / Math.Max(0.01, weapon.SweepFireReloadTime);
+                        }
 
                         if (weapon.Burst != 0) { dps *= weapon.Burst; }
                         if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
@@ -554,6 +557,10 @@ namespace gex.Code.Discord {
 
                         if (showExtra == true) {
                             embed.Description += $", {weapon.ImpulseFactor} impulse";
+
+                            if (weapon.SweepFireReloadTime != 0 && weapon.SweepFireFireTime != 0) {
+                                embed.Description += $", {weapon.SweepFireFireTime} fire time, {weapon.SweepFireReloadTime} reload time";
+                            }
                         }
 
                         embed.Description += $", {_D(reloadTime)}s reload)\n";

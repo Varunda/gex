@@ -30,6 +30,10 @@ namespace gex.Common.Models.Bar {
 
         public double SweepFire { get; set; }
 
+        public double SweepFireFireTime { get; set; }
+
+        public double SweepFireReloadTime { get; set; }
+
         public double Range { get; set; }
 
         public double ReloadTime { get; set; }

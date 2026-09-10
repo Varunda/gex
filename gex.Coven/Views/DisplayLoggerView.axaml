@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:gex.Coven.ViewModels"
+             xmlns:controls="using:gex.Coven.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:DisplayLoggerViewModel"
+             x:Class="gex.Coven.Views.DisplayLoggerView">
+
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,4">
+            <Button Content="Clear" Margin="0,0,12,0" Command="{Binding Clear}"></Button>
+
+            <Button Content="Open folder" Command="{Binding OpenFolder}"></Button>
+        </StackPanel>
+
+        <Border DockPanel.Dock="Bottom" Background="Gray" Padding="8">
+            <TextBlock Text="{Binding Messages.Count, StringFormat='{}{0} messages'}"></TextBlock>
+        </Border>
+
+        <TableView ItemsSource="{Binding Messages}">
+            <TableView.Columns>
+                <TableViewColumn Header="Timestamp" Width="12*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <controls:DateTimeView When="{Binding Timestamp}" Format="yyyy-MM-dd hh:mm:ss.fff tt"
+                                                   TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                                   TextElement.FontSize="14"></controls:DateTimeView>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <TableViewColumn Header="Level" Width="6*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Level}"
+                                       Background="{Binding BackgroundColor}"
+                                       Foreground="{Binding Foreground}"
+                                       HorizontalAlignment="Left"
+                                       Padding="2"
+                                       TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                       TextElement.FontSize="14"></TextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <TableViewColumn Header="Message" Width="82*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <SelectableTextBlock TextWrapping="Wrap" Text="{Binding Message}"
+                                       TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                       TextElement.FontSize="14"></SelectableTextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+            </TableView.Columns>
+        </TableView>
+    </DockPanel>
+
+</UserControl>

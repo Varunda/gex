@@ -29,6 +29,10 @@
                     <b>Gamemode</b>
                 </a-header>
 
+                <a-filter field="gamemode" type="number" method="dropdown" :source="source.gamemode"
+                    :conditions="[ 'equals' ]">
+                </a-filter>
+
                 <a-body v-slot="entry">
                     {{ entry.gamemode | gamemode }}
                 </a-body>
@@ -155,6 +159,8 @@
     import "filters/BarFactionFilter";
     import "filters/BarGamemodeFilter";
 
+    import { GamemodeUtil } from "util/Gamemode";
+
     type BarUserMapStatsWithPosition = BarUserMapStats & {
         favoritePosition: string | null;
     };
@@ -279,6 +285,19 @@
 
                 return this.startSpot.data.data.map(iter => iter.gamemode).filter((val, index, arr) => arr.indexOf(val) == index);
             },
+
+            source: function() {
+                return {
+                    gamemode: [
+                        { key: "All", value: null },
+                        { key: "Duel", value: GamemodeUtil.DUEL },
+                        { key: "Small team", value: GamemodeUtil.SMALL_TEAM },
+                        { key: "Large team", value: GamemodeUtil.LARGE_TEAM },
+                        { key: "FFA", value: GamemodeUtil.FFA },
+                        { key: "Team FFA", value: GamemodeUtil.TEAM_FFA }
+                    ]
+                }
+            }
         },
 
         components: {

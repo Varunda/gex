@@ -95,6 +95,8 @@
                 <tr is="Cell" name="Reload (s)" field="reloadTime" :unit="selectedWeapon" :compare="compareWeaponDef" :low="true"> sec</tr>
                 <tr is="Cell" name="Projectiles" field="projectiles" :unit="selectedWeapon" :compare="compareWeaponDef" :d="0"></tr>
                 <tr is="Cell" name="Sweep fire" field="sweepFire" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
+                <tr is="Cell" name="Sweep fire fire time" field="sweepFireFireTime" :unit="selectedWeapon" :compare="compareWeaponDef"> sec</tr>
+                <tr is="Cell" name="Sweep fire reload time" field="sweepFireReloadTime" :unit="selectedWeapon" :compare="compareWeaponDef"> sec</tr>
                 <tr is="Cell" name="Range" field="range" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Splash" field="areaOfEffect" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>
                 <tr is="Cell" name="Speed" field="velocity" :unit="selectedWeapon" :compare="compareWeaponDef"></tr>

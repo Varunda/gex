@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:gex.Coven.Controls"
              xmlns:converters="using:Avalonia.Markup.Xaml.Converters"
+             xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
              x:Class="gex.Coven.App"
              xmlns:local="using:gex.Coven"
              RequestedThemeVariant="Default">
@@ -23,6 +24,7 @@
 
     <Application.Styles>
         <FluentTheme />
+        <husk:HuskuiTheme Accent="Purple" />
 
         <Style Selector="ContentPresenter">
             <Setter Property="FontFamily" Value="fonts:Coven#Atkinson Hyperlegible Regular"></Setter>
@@ -31,6 +33,19 @@
 
         <Style Selector="ContentPresenter.pb3">
             <Setter Property="Padding" Value="0,0,0,10"></Setter>
+        </Style>
+
+        <Style Selector="Border.info">
+            <Setter Property="Background" Value="#3b82f6"/>
+        </Style>
+        <Style Selector="Border.success">
+            <Setter Property="Background" Value="#22c55e"/>
+        </Style>
+        <Style Selector="Border.warn">
+            <Setter Property="Background" Value="#efef22"/>
+        </Style>
+        <Style Selector="Border.error">
+            <Setter Property="Background" Value="#ef4444"/>
         </Style>
 
     </Application.Styles>

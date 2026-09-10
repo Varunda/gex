@@ -55,6 +55,8 @@ namespace gex.Services.Parser {
                 weapon.ParalyzerExceptions = _Str(wepCustomParms, "paralyzetime_exception") ?? "";
                 weapon.StockpileLimit = _Int(wepCustomParms, "stockpilelimit", 0);
                 weapon.SweepFire = _Double(wepCustomParms, "sweepfire", 0);
+                weapon.SweepFireFireTime = _Double(wepCustomParms, "sweepfire_firetime", 0d);
+                weapon.SweepFireReloadTime = _Double(wepCustomParms, "sweepfire_reloadtime", 0d);
                 weapon.ChainForkDamage = _Double(wepCustomParms, "spark_forkdamage", 0);
                 weapon.ChainMaxUnits = _Int(wepCustomParms, "spark_maxunits", 0);
                 weapon.ChainForkRange = _Double(wepCustomParms, "spark_range", 0);

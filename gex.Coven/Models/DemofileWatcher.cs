@@ -1,9 +1,11 @@
-﻿using gex.Common.Models;
+﻿using Avalonia.Platform.Storage;
+using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Coven.Models.Config;
 using gex.Coven.Models.Match;
+using gex.Coven.Services;
 using gex.Coven.Services.Db.Match;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,25 +27,35 @@ namespace gex.Coven.Models {
         private readonly BarDemofileParser _DemofileParser;
         private readonly BarMatchRepository _MatchRepository;
         private readonly BarMatchHashDb _MatchHashDb;
-        private readonly IOptions<UserOptions> _UserOptions;
+        private readonly UserOptionsService _UserOptionsService;
 
         private readonly FileSystemWatcher _FileWatcher;
 
         public DemofileWatcher(ILogger<DemofileWatcher> logger,
             BarDemofileParser demofileParser, BarMatchRepository matchRepository,
-            BarMatchHashDb matchHashDb, IOptions<UserOptions> userOptions) {
+            BarMatchHashDb matchHashDb,
+            UserOptionsService userOptionsService) {
 
             _Logger = logger;
-
-            _UserOptions = userOptions;
-            _FileWatcher = new FileSystemWatcher(_UserOptions.Value.ReplayFolder);
-            _FileWatcher.Filter = "*.sdfz";
-            _FileWatcher.NotifyFilter = NotifyFilters.LastWrite;
-            _FileWatcher.EnableRaisingEvents = true;
-            _FileWatcher.Changed += FileWatcher_OnWrite;
+            _UserOptionsService = userOptionsService;
             _DemofileParser = demofileParser;
             _MatchRepository = matchRepository;
             _MatchHashDb = matchHashDb;
+
+
+            UserOptions userOptions = _UserOptionsService.Load();
+            _Logger.LogInformation($"loading replay folder [replayFolder={userOptions.ReplayFolder}]");
+
+            if (string.IsNullOrWhiteSpace(userOptions.ReplayFolder) || Directory.Exists(userOptions.ReplayFolder) == false) {
+                _Logger.LogError($"ReplayFolder is null/empty, or points to a directory that doesn't exist");
+                _FileWatcher = new FileSystemWatcher(Environment.CurrentDirectory);
+            } else {
+                _FileWatcher = new FileSystemWatcher(userOptions.ReplayFolder);
+                _FileWatcher.Filter = "*.sdfz";
+                _FileWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                _FileWatcher.EnableRaisingEvents = true;
+                _FileWatcher.Changed += FileWatcher_OnWrite;
+            }
         }
 
         public delegate void NewMatchReadyHandler(object sender, BarMatch match);
@@ -105,7 +117,7 @@ namespace gex.Coven.Models {
                     continue;
                 }
 
-                _Logger.LogInformation($"loading new match [file={demofile}]");
+                _Logger.LogInformation($"loading new match [file={demofile}] [hash={md5}]");
 
                 try {
                     Result<BarMatch, string> ret = await _DemofileParser.Parse(filename, bytes, new DemofileParserOptions() {

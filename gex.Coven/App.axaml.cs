@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml;
@@ -10,6 +11,7 @@ using gex.Common.Services.Repository;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Models;
+using gex.Coven.Services;
 using gex.Coven.Services.Db;
 using gex.Coven.Services.Hosted;
 using gex.Coven.ViewModels;
@@ -30,6 +32,8 @@ namespace gex.Coven;
 
 public partial class App : HostedApplication<App> {
 
+    public static Window MainWindow = null!;
+
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
 
@@ -44,11 +48,12 @@ public partial class App : HostedApplication<App> {
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken) {
-        MainViewModel vm = Current.Services.GetRequiredService<MainViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             desktop.MainWindow = new MainWindow() {
-                DataContext = vm
+                DataContext = new MainViewModel()
             };
+
+            MainWindow = desktop.MainWindow;
         }
 
         await base.StartAsync(cancellationToken);
