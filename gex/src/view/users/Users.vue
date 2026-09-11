@@ -192,7 +192,7 @@
             search: async function(term: string): Promise<void> {
                 this.users = Loadable.loading();
 
-                const ret: Loading<UserSearchResult[]> = await BarUserApi.search(this.searchTerm, this.searchPreviousNames, true);
+                const ret: Loading<UserSearchResult[]> = await BarUserApi.search(this.searchTerm.trim(), this.searchPreviousNames, true);
 
                 if (ret.state != "loaded") {
                     this.users = Loadable.rewrap(ret);
