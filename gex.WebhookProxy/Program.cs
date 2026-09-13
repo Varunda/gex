@@ -71,7 +71,7 @@ namespace gex.WebhookProxy {
                     req.Headers.Authorization = new AuthenticationHeaderValue("SharedSecret", auth);
                     req.Content = new StringContent(body);
 
-                    using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                    using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
                     await http.SendAsync(req, cts.Token);
 
                     logger.LogInformation($"proxyied webhook [target={target}] [timer={timer.ElapsedMilliseconds}ms] [size={body.Length}]"); 
