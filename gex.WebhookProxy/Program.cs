@@ -34,7 +34,7 @@ namespace gex.WebhookProxy {
 
             HttpClient http = new();
             http.DefaultRequestHeaders.UserAgent.TryParseAdd("gex-webhooks-proxy/0.1");
-            http.Timeout = TimeSpan.FromSeconds(5);
+            http.Timeout = TimeSpan.FromSeconds(15);
 
             host.MapPost("/proxy", async (HttpContext httpContext, IOptions<Secret> secrets) => {
                 if (httpContext.Request.Headers.TryGetValue("ProxySecret", out StringValues proxySecretValue) == false || proxySecretValue.First() == null) {
