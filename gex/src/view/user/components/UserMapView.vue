@@ -62,7 +62,7 @@
 
                     <a-body v-slot="entry">
                         {{ entry.total }}
-                        ({{ entry.total / matches.length * 100 | locale(2) }}%)
+                        ({{ entry.total / totalCount * 100 | locale(2) }}%)
                     </a-body>
                 </a-col>
             </a-table>
@@ -164,7 +164,7 @@
 
                     const allyTeam = match.allyTeams.find(iter => iter.allyTeamID == player.allyTeamID);
                     if (allyTeam == undefined) {
-                        console.warn(``);
+                        console.warn(`UserMapView> missing ally team in match [match=${match.id}] [allyTeamID=${player.allyTeamID}]`);
                     }
 
                     if (allyTeam?.won == true) {
