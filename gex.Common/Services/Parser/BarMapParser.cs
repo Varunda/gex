@@ -90,12 +90,13 @@ namespace gex.Common.Services.Parser {
                     return $"expected returned Lua script to be an Dictionary<object, object>, is a {mapInfo[0].GetType().FullName} instead";
                 }
 
-                string? name = table["name"]?.ToString();
+                string? name = table.GetValueOrDefault("name")?.ToString();
                 if (name == null) {
                     return $"missing 'name' property in mapinfo table";
                 }
 
-                string mapFile = table["mapfile"]?.ToString() ?? "maps/" + name + ".smf"; // if the mapfile is not given, looks like it defaults to the map name
+                string mapFile = table.GetValueOrDefault("mapfile")?.ToString()
+                    ?? "maps/" + name + ".smf"; // if the mapfile is not given, looks like it defaults to the map name
 
                 string? smfLocation = GetSmfLocation(mapWorkingFolder, mapFile);
                 if (smfLocation == null) {
@@ -117,16 +118,16 @@ namespace gex.Common.Services.Parser {
 
                 // but isn't this value minWind in the mapfile.lua? yes, but actually no
                 // because the Lua file will normalize all keys to lowercase when executed
-                string? minWind = atmo["minwind"]?.ToString();
-                string? maxWind = atmo["maxwind"]?.ToString();
-                string? maxMetal = table["maxmetal"]?.ToString();
-                string? extractorRadius = table["extractorradius"]?.ToString();
-                string? tidalStrength = table["tidalstrength"]?.ToString();
+                string? minWind = atmo.GetValueOrDefault("minwind")?.ToString();
+                string? maxWind = atmo.GetValueOrDefault("maxwind")?.ToString();
+                string? maxMetal = table.GetValueOrDefault("maxmetal")?.ToString();
+                string? extractorRadius = table.GetValueOrDefault("extractorradius")?.ToString();
+                string? tidalStrength = table.GetValueOrDefault("tidalstrength")?.ToString();
 
                 BarMap map = new();
                 map.Name = name;
-                map.Description = table["description"]?.ToString() ?? "";
-                map.Author = table["author"]?.ToString() ?? "";
+                map.Description = table.GetValueOrDefault("description")?.ToString() ?? "";
+                map.Author = table.GetValueOrDefault("author")?.ToString() ?? "";
                 map.FileName = mapName;
 
                 Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, cancel);

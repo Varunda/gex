@@ -57,7 +57,10 @@ public partial class App : HostedApplication<App> {
             MainWindow = desktop.MainWindow;
         }
 
+        ILogger<App> logger = Services.GetRequiredService<ILogger<App>>();
+
         Dispatcher.UIThread.UnhandledException += (object sender, DispatcherUnhandledExceptionEventArgs e) => {
+            logger.LogError(e.Exception, $"unhandled UI exception");
             Trace.Write($"unhandled UI exception: {e.Exception}");
         };
 

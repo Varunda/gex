@@ -15,7 +15,7 @@
 	<PublishSingleFile>true</PublishSingleFile>
 	<SelfContained>true</SelfContained>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-	<OutputType>exe</OutputType>
+	<OutputType>winexe</OutputType>
 	<NoWarn>CS1591</NoWarn>
 	<PublishDir>./dist/win-x64</PublishDir>
   </PropertyGroup>

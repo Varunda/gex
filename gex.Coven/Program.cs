@@ -93,7 +93,15 @@ sealed class Program {
         ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("host built, running app");
 
-        host.Run();
+        TaskScheduler.UnobservedTaskException += (sender, e) => {
+            logger.LogError(e.Exception, $"unobserved task exception");
+        };
+
+        try {
+            host.Run();
+        } catch (Exception ex) {
+            logger.LogError(ex, $"error in Run() for host");
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

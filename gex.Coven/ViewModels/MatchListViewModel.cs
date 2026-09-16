@@ -107,9 +107,6 @@ namespace gex.Coven.ViewModels {
         private async void Init() {
             _DemofileWatcher.NewMatchReady += _DemofileWatcher_NewMatchReady;
 
-            using CancellationTokenSource ctsLoadAll = new(TimeSpan.FromMinutes(10));
-            _ = _DemofileWatcher.LoadAll(ctsLoadAll.Token);
-
             try {
                 using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
                 List<BarMatch> matches = await _MatchRepository.GetAll(cts.Token);
@@ -145,7 +142,9 @@ namespace gex.Coven.ViewModels {
         /// </summary>
         /// <param name="match"></param>
         public void AddMatch(BarMatch match) {
-            _Source.Add(new BarMatchViewModel(match));
+            Dispatcher.UIThread.Invoke(() => {
+                _Source.Add(new BarMatchViewModel(match));
+            });
         }
 
         /// <summary>

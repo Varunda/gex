@@ -22,26 +22,26 @@ jobs:
             - run: mkdir -p dist
             - run: mkdir -p release_builds
             - run: dotnet publish gex/gex.sln -c PublishLinux
-            - run: zip -r release_builds/gex-linux-x64-${{ forgejo.SHA }}.zip gex/dist/linux-x64/
+            - run: zip -r release_builds/gex.Web_linux-x64.zip gex/dist/linux-x64/
             - run: dotnet clean
             - run: dotnet publish gex/gex.sln -c PublishWindows
-            - run: zip -r release_builds/gex-win-x64-${{ forgejo.SHA }}.zip gex/dist/win-x64/
+            - run: zip -r release_builds/gex.Web_win-x64.zip gex/dist/win-x64/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
                 release-dir: release_builds
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
-                tag: web-${{ forgejo.ref_name }}
+                tag: web-${{ forgejo.SHA }}
                 override: true
                 verbose: true
             - run: mkdir -p coven_builds
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishLinux
-            - run: zip -r coven_builds/gex.Coven-linux-x64-${{ forgejo.SHA }}.zip gex.Coven/dist/linux-x64/
+            - run: zip -r coven_builds/gex.Coven_linux-x64.zip gex.Coven/dist/linux-x64/
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishWindows
-            - run: zip -r coven_builds/gex.Coven-win-x64-${{ forgejo.SHA }}.zip gex.Coven/dist/win-x64/
+            - run: zip -r coven_builds/gex.Coven_win-x64.zip gex.Coven/dist/win-x64/
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload

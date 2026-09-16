@@ -103,6 +103,8 @@ namespace gex.Coven.ViewModels {
             InstallFolder = installDir;
             _UserOptions.InstallFolder = InstallFolder;
             _UserOptionsService.Save(_UserOptions);
+
+            _ToastService.Show("Updated install folder", "Install folder updated and saved", ToastType.INFO, TimeSpan.FromSeconds(5));
         }
 
         /// <summary>

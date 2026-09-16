@@ -65,6 +65,7 @@ namespace gex.Coven.Services {
                 return;
             }
 
+            _Logger.LogInformation($"replay folder changed [replayFolder={replayFolder}]");
             CreateFileWatcher(replayFolder);
         }
 
@@ -80,6 +81,15 @@ namespace gex.Coven.Services {
             _FileWatcher.NotifyFilter = NotifyFilters.LastWrite;
             _FileWatcher.EnableRaisingEvents = true;
             _FileWatcher.Changed += FileWatcher_OnWrite;
+
+            Task.Run(async () => {
+                try {
+                    using CancellationTokenSource cts = new(TimeSpan.FromMinutes(10));
+                    await LoadAll(cts.Token);
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to load all");
+                }
+            });
         }
 
         public delegate void NewMatchReadyHandler(object sender, BarMatch match);
@@ -115,6 +125,7 @@ namespace gex.Coven.Services {
                     return;
                 }
 
+                _Logger.LogInformation($"found new match [path={args.FullPath}] [gameID={ret.Value.ID}]");
                 NewMatchReady?.Invoke(this, ret.Value);
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to parse demofile [path={args.FullPath}]");
@@ -210,6 +221,7 @@ namespace gex.Coven.Services {
                             Hash = md5
                         }, cancel);
 
+                        _Logger.LogInformation($"loaded new match [gameID={ret.Value.ID}]");
                         NewMatchReady?.Invoke(this, ret.Value);
                     } else {
                         _Logger.LogWarning($"failed to parse demofile [filename={filename}] [error={ret.Error}]");
