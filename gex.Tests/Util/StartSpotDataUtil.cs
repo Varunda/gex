@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Map;
-using gex.Services.Parser;
+using gex.Common.Services.Parser;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;

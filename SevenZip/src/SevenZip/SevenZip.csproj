@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>CA2256</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>Exocad.SevenZip</PackageId>
+    <Description>A .NET library relying on 7z to create, modify and read different kinds of archives.</Description>
+
+    <TargetFrameworks>net9.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SevenZipTests, PublicKey=002400000480000094000000060200000024000052534131000400000100010061362d199e2dc189856d64d5bd0bf037d3cbf9af89d2aab96453ae025d669dd3dd91b7f6e584c341ebcc60b9a6ee227989d8426e46c0d724a07265de84efc5c4177760b28fb791ce93357ca871c0ce949ab3b61637bf6715a9ecfb927ef5dd386b174250990deee0ef8f3722cedf62c67c992a9b908495a757eac37eba02bba3" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <!--
+    <None Include="$(SolutionDir)README.md" Pack="true" PackagePath="\" />
+    <None Include="$(SolutionDir)LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="$(SolutionDir)runtimes/LICENSE.md" Link="runtimes/LICENSE.md" Pack="true" PackagePath="runtimes" />
+    <None Include="$(SolutionDir)runtimes/win-x64/native/7z.dll" Link="runtimes/win-x64/native/7z.dll" Pack="true" PackagePath="runtimes/win-x64/native" />
+    <None Include="$(SolutionDir)runtimes/linux-x64/native/7z.so" Link="runtimes/linux-x64/native/7z.so" Pack="true" PackagePath="runtimes/linux-x64/native" />
+    -->
+  </ItemGroup>
+
+  <PropertyGroup Condition="Exists('$(SevenZipSharpSimple_KeyFilePath)')">
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(SevenZipSharpSimple_KeyFilePath)</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <Target Name="Notification" AfterTargets="PreBuildEvent">
+    <Message Text="Building a signed assembly." Importance="high" Condition="Exists('$(SevenZipSharpSimple_KeyFilePath)')" />
+    <Message Text="Building an unsigned assembly." Importance="high" Condition="!Exists('$(SevenZipSharpSimple_KeyFilePath)')" />
+  </Target>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" Version="4.1.0" />
+    <PackageReference Include="System.Buffers" Version="4.6.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+  </ItemGroup>
+</Project>

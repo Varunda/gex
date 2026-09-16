@@ -2,11 +2,11 @@
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
+using gex.Common.Services.Parser;
 using gex.Common.Services.Repository;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Models.Db;
-using gex.Services.Parser;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers.Text;

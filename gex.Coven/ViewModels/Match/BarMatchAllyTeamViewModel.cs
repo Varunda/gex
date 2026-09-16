@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using gex.Common.Models.Match;
 using System;
 using System.Collections.Generic;
@@ -19,11 +20,16 @@ namespace gex.Coven.ViewModels.Match {
             _Name = $"Team {allyTeam.AllyTeamID + 1}";
             _Won = allyTeam.Won;
 
-            foreach (BarMatchTeam team in match.Teams) {
+            foreach (BarMatchTeam team in match.Teams.OrderBy(iter => iter.TeamID)) {
                 if (team.AllyTeamID != allyTeam.AllyTeamID) {
                     continue;
                 }
+
                 _Teams.Add(new BarMatchTeamViewModel(match, team));
+                if (_ColorBrush == Brushes.Transparent) {
+                    _ColorBrush = _Teams[0].ColorBrush;
+                    _BackgroundColorBrush = new SolidColorBrush(((SolidColorBrush)_ColorBrush).Color, 0.2d);
+                }
             }
 
             _TeamCount = _Teams.Count;
@@ -34,6 +40,12 @@ namespace gex.Coven.ViewModels.Match {
 
         [ObservableProperty]
         private bool _Won = false;
+
+        [ObservableProperty]
+        private IBrush _ColorBrush = Brushes.Transparent;
+
+        [ObservableProperty]
+        private IBrush _BackgroundColorBrush = Brushes.Transparent;
 
         [ObservableProperty]
         private int _TeamCount = 0;

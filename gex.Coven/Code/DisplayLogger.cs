@@ -25,7 +25,7 @@ namespace gex.Coven.Code {
         }
 
         public bool IsEnabled(LogLevel logLevel) {
-            return logLevel >= LogLevel.Information;
+            return logLevel >= _GetCurrentConfig().LogLevel;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
@@ -67,6 +67,8 @@ namespace gex.Coven.Code {
         };
 
         public sealed class DisplayLoggerConfiguration {
+
+            public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
         }
 

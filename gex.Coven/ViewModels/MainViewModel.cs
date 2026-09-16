@@ -34,8 +34,8 @@ namespace gex.Coven.ViewModels {
             DisplayLogger = App.Current.Services.GetService<DisplayLoggerService>() ?? new DisplayLoggerService();
         }
 
-        public void AddToast(string message, ToastType type, TimeSpan duration) {
-            Toasts.Show(message, type, duration);
+        public void AddToast(string title, string message, ToastType type, TimeSpan duration) {
+            Toasts.Show(title, message, type, duration);
         }
 
         [ObservableProperty]

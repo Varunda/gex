@@ -1,16 +1,17 @@
 ﻿using Avalonia;
 using Avalonia.Logging;
+using gex.Common.Services;
 using gex.Common.Services.Db;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Code;
 using gex.Coven.Code.ExtensionMethods;
-using gex.Coven.Models;
 using gex.Coven.Models.Config;
 using gex.Coven.Services;
 using gex.Coven.Services.Db;
 using gex.Coven.Services.Hosted;
+using gex.Coven.Services.Util;
 using gex.Coven.ViewModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,8 @@ sealed class Program {
     [SupportedOSPlatform("macos")]
     public static void Main(string[] args) {
 
-        HostedApplication<App>.AvaloniaApplicationBuilder hostBuilder = App.CreateBuilder(args, BuildAvaloniaApp, () => Host.CreateEmptyApplicationBuilder(null));
+        HostedApplication<App>.AvaloniaApplicationBuilder hostBuilder
+            = App.CreateBuilder(args, BuildAvaloniaApp, () => Host.CreateEmptyApplicationBuilder(null));
 
         hostBuilder.Configuration
             .AddCommandLine(args)
@@ -48,30 +50,38 @@ sealed class Program {
         hostBuilder.Services.AddMemoryCache();
 
         // services
+        hostBuilder.Services.AddSingleton<LuaRunner>();
         hostBuilder.Services.AddSingleton<BarDemofileParser>();
+        hostBuilder.Services.AddSingleton<StartSpotDataParser>();
+        hostBuilder.Services.AddSingleton<BarMapParser>();
         hostBuilder.Services.AddSingleton<MatchListViewModel>();
         hostBuilder.Services.AddSingleton<ToastService>();
         hostBuilder.Services.AddSingleton<DisplayLoggerService>();
         hostBuilder.Services.AddSingleton<UserOptionsViewModel>();
-        hostBuilder.Services.AddSingleton<IDbHelper, SqLiteDbHelper>();
-        hostBuilder.Services.AddSingleton<IDbCreator, SqLiteDbCreator>();
         hostBuilder.Services.AddSingleton<DemofileWatcher>();
         hostBuilder.Services.AddSingleton<LuaCommandParser>();
         hostBuilder.Services.AddSingleton<PolygonStartboxUtil>();
         hostBuilder.Services.AddSingleton<BarMatchRepository>();
         hostBuilder.Services.AddSingleton<UserOptionsService>();
+        hostBuilder.Services.AddSingleton<BarMatchPlayerRepository>();
+        hostBuilder.Services.AddSingleton<BarMatchTeamRepository>();
 
         hostBuilder.Services.AddCovenDbServices();
+        hostBuilder.Services.AddCovenUtils();
 
         // logging
-        hostBuilder.Logging.AddConfiguration();
-        hostBuilder.Logging.AddDisplayLogger();
-        hostBuilder.Logging.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", (FileLoggerOptions options) => {
-            options.FormatLogFileName = fName => {
-                return string.Format(fName, DateTime.UtcNow);
-            };
-            options.FileSizeLimitBytes = (1024 * 1024 * 64); // 64MB
-            options.MaxRollingFiles = 10;
+        hostBuilder.Services.AddLogging(builder => {
+            builder.AddConfiguration(hostBuilder.Configuration.GetSection("Logging"));
+            builder.AddDisplayLogger();
+
+            builder.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", (FileLoggerOptions options) => {
+                options.FormatLogFileName = fName => {
+                    return string.Format(fName, DateTime.UtcNow);
+                };
+                options.FileSizeLimitBytes = (1024 * 1024 * 64); // 64MB
+                options.MaxRollingFiles = 10;
+                options.MinLevel = LogLevel.Trace;
+            });
         });
 
         // add hosted services here

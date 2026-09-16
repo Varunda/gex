@@ -26,6 +26,9 @@ namespace gex.Coven.Services {
             _Cache = cache;
         }
 
+        public delegate void OptionsUpdatedHandler(object sender, UserOptions options);
+        public event OptionsUpdatedHandler? OptionsUpdated;
+
         /// <summary>
         ///     load the <see cref="UserOptions"/> 
         /// </summary>
@@ -80,6 +83,8 @@ namespace gex.Coven.Services {
         /// <param name="options"></param>
         public void Save(UserOptions options) {
             _Cache.Remove(CACHE_KEY);
+
+            OptionsUpdated?.Invoke(this, options);
 
             string optionsDir = Path.GetDirectoryName(_Path)!;
             Directory.CreateDirectory(optionsDir);

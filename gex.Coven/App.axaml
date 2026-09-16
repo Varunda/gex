@@ -1,21 +1,20 @@
 ﻿<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:gex.Coven.Controls"
-             xmlns:converters="using:Avalonia.Markup.Xaml.Converters"
              xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
              x:Class="gex.Coven.App"
+             xmlns:converters="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
              xmlns:local="using:gex.Coven"
+             xmlns:ti="using:TablerIcons"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="/Controls/DateTimeView.axaml"/>
-                <ResourceInclude Source="/Controls/FactionImage.axaml"/>
-                <ResourceInclude Source="/Controls/MatchWindow/MatchWindowChat.axaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
+        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+
+        <ControlTheme x:Key="{x:Type ti:TablerIcon}" TargetType="ti:TablerIcon">
+            <Setter Property="Brush" Value="{StaticResource ControlForegroundBrush}"/>
+        </ControlTheme>
     </Application.Resources>
 
     <Application.DataTemplates>
@@ -24,7 +23,20 @@
 
     <Application.Styles>
         <FluentTheme />
-        <husk:HuskuiTheme Accent="Purple" />
+        <husk:HuskuiTheme />
+
+        <Style>
+            <Style.Resources>
+                <ResourceDictionary>
+                    <ResourceDictionary.MergedDictionaries>
+                        <ResourceInclude Source="/Controls/DateTimeView.axaml"/>
+                        <ResourceInclude Source="/Controls/FactionImage.axaml"/>
+                        <ResourceInclude Source="/Controls/MatchWindow/MatchWindowChat.axaml"/>
+                        <ResourceInclude Source="/Controls/MapNameImage.axaml"/>
+                    </ResourceDictionary.MergedDictionaries>
+                </ResourceDictionary>
+            </Style.Resources>
+        </Style>
 
         <Style Selector="ContentPresenter">
             <Setter Property="FontFamily" Value="fonts:Coven#Atkinson Hyperlegible Regular"></Setter>
@@ -36,16 +48,30 @@
         </Style>
 
         <Style Selector="Border.info">
-            <Setter Property="Background" Value="#3b82f6"/>
-        </Style>
-        <Style Selector="Border.success">
-            <Setter Property="Background" Value="#22c55e"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ControlSuccessInteractiveBorderBrush}"/>
         </Style>
         <Style Selector="Border.warn">
-            <Setter Property="Background" Value="#efef22"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ControlWarningInteractiveBorderBrush}"/>
         </Style>
         <Style Selector="Border.error">
-            <Setter Property="Background" Value="#ef4444"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ControlDangerInteractiveBorderBrush}"/>
+        </Style>
+
+        <Style Selector="TableView.Border TableViewRow">
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+
+        <Style Selector="TableView.BorderSecondary TableViewRow">
+            <Setter Property="BorderBrush" Value="{StaticResource ControlSecondaryForegroundBrush}"/>
+        </Style>
+
+        <Style Selector="TableView.BorderAccent TableViewRow">
+            <Setter Property="BorderBrush" Value="{StaticResource ControlAccentForegroundBrush}"/>
+        </Style>
+
+        <Style Selector="Button">
+            <Setter Property="BorderBrush" Value="{StaticResource ControlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
     </Application.Styles>

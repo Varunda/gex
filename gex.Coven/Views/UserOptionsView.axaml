@@ -2,19 +2,94 @@
              xmlns:common="using:gex.Common"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:tablericons="using:TablerIcons"
              xmlns:vm="using:gex.Coven.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="450"
              x:DataType="vm:UserOptionsViewModel"
-             x:Class="gex.Coven.Views.UserOptionsView">
+             x:Class="gex.Coven.Views.UserOptionsView"
+             x:Name="Root">
 
-    <StackPanel Orientation="Vertical">
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Margin="0,24,0,0" Spacing="36">
 
-        <Label Content="Replay folder"/>
-        <TextBlock Text="{Binding ReplayFolder}"></TextBlock>
+            <husk:Card Padding="24" 
+                       Background="{StaticResource ControlBackgroundBrush}"
+                       HorizontalAlignment="Center"
+                       Width="1280" MaxWidth="1280">
+                <StackPanel>
+                    <TextBlock FontSize="{StaticResource LargeFontSize}"
+                               FontWeight="{StaticResource ControlStrongFontWeight}"
+                               Padding="0,0,0,12"
+                               Text="Install folder">
+                    </TextBlock>
 
-        <Button Command="{Binding OpenReplayFolderDialog}">Open</Button>
-        
-    </StackPanel>
+                    <TextBlock FontSize="{StaticResource NormalFontSize}"
+                               Text="This folder can be found by opening the BAR launcher, and clicking 'Open install directory'"
+                               Padding="0,0,0,4"
+                               TextWrapping="Wrap">
+                    </TextBlock>
 
+                    <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="4">
+                        <TextBox Text="{Binding InstallFolder}" IsReadOnly="True" Grid.Column="0"></TextBox>
+                        <Button Command="{Binding OpenReplayFolderDialog}" Grid.Column="1">Select</Button>
+                        <Button Command="{Binding OpenReplayFolderExplorer}" Grid.Column="2">Open</Button>
+                    </Grid>
+                </StackPanel>
+            </husk:Card>
+
+            <husk:Card Padding="24"
+                       Background="{StaticResource ControlBackgroundBrush}"
+                       HorizontalAlignment="Center"
+                       Width="1280" MaxWidth="1280">
+
+                <StackPanel MaxHeight="480">
+                    <TextBlock FontSize="{StaticResource LargeFontSize}"
+                               FontWeight="{StaticResource ControlStrongFontWeight}"
+                               Padding="0,0,0,12"
+                               Text="Ignored demofiles">
+                    </TextBlock>
+
+                    <TextBlock FontSize="{StaticResource NormalFontSize}"
+                               Text="These demofiles are ignored by Coven, usually because they are duplicate demofiles, or could not be parsed"
+                               Padding="0,0,0,4"
+                               TextWrapping="Wrap">
+                    </TextBlock>
+
+                    <TableView MaxHeight="380" ItemsSource="{Binding IgnoredFiles}" Margin="0,0,0,8"
+                               Background="{StaticResource ControlInteractiveBackgroundBrush}"
+                               VerticalAlignment="Center">
+
+                        <TableView.Columns>
+                            <TableViewColumn Header="Filename" Binding="{Binding FileName}" Width="40*"></TableViewColumn>
+
+                            <TableViewColumn Header="Reason" Binding="{Binding Reason}" Width="40*"></TableViewColumn>
+
+                            <TableViewColumn Header="Unignore" Width="10*">
+                                <TableViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button ToolTip.Tip="Unignore this file"
+                                            Command="{Binding #Root.((vm:UserOptionsViewModel)DataContext).RemoveIgnoredFile}"
+                                            CommandParameter="{Binding .}">
+
+                                            <tablericons:TablerIcon Icon="IconTrash"
+                                                                    Width="16" Height="16">
+                                            </tablericons:TablerIcon>
+                                        </Button>
+                                    </DataTemplate>
+                                </TableViewColumn.CellTemplate>
+                                
+                            </TableViewColumn>
+                        </TableView.Columns>
+                    </TableView>
+
+                    <TextBlock Text="{Binding IgnoredFiles.Count, StringFormat='Ignoring {0} files'}"/>
+                    
+                </StackPanel>
+                
+            </husk:Card>
+
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

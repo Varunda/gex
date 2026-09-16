@@ -11,6 +11,24 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU'">
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<OutputType>exe</OutputType>
+	<NoWarn>CS1591</NoWarn>
+	<PublishDir>./dist/win-x64</PublishDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|AnyCPU'">
+	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+	<OutputType>exe</OutputType>
+	<NoWarn>CS1591</NoWarn>
+	<PublishDir>./dist/linux-x64</PublishDir>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="UserOptions.json" />
@@ -37,6 +55,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="DynamicData" Version="9.4.33" />
     <PackageReference Include="Huskui.Avalonia" Version="2.0.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
@@ -44,12 +63,24 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
+    <PackageReference Include="NLua" Version="1.7.9" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
     <PackageReference Include="R86.Avalonia.Hosting" Version="0.4.0" />
+    <PackageReference Include="TablerIcons.Avalonia" Version="3.44.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\gex.Common\gex.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Controls\MapNameImage.axaml.cs">
+      <DependentUpon>MapNameImage.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\Repository\" />
   </ItemGroup>
 
 </Project>

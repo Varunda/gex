@@ -1,7 +1,7 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Services;
 using gex.Models;
-using gex.Services;
 using gex.Tests.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

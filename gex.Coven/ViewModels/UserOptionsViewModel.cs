@@ -2,11 +2,16 @@
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using gex.Coven.Code;
 using gex.Coven.Models.Config;
+using gex.Coven.Models.Match;
 using gex.Coven.Services;
+using gex.Coven.Services.Db.Match;
+using ImageMagick.Drawing;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,23 +24,51 @@ namespace gex.Coven.ViewModels {
 
         private readonly ILogger<UserOptionsViewModel> _Logger;
         private readonly UserOptionsService _UserOptionsService;
+        private readonly ToastService _ToastService;
+        private readonly BarMatchIgnoredFilesDb _IgnoredFilesDb;
 
         private readonly UserOptions _UserOptions;
 
+        public UserOptionsViewModel() {
+            _Logger = default!;
+            _UserOptionsService = default!;
+            _ToastService = default!;
+            _UserOptions = default!;
+            _IgnoredFilesDb = default!;
+        }
+
         public UserOptionsViewModel(ILogger<UserOptionsViewModel> logger,
-            UserOptionsService userOptionsService) {
+            UserOptionsService userOptionsService, ToastService toastService,
+            BarMatchIgnoredFilesDb ignoredFilesDb) {
 
             _Logger = logger;
             _UserOptionsService = userOptionsService;
+            _ToastService = toastService;
 
             _UserOptions = _UserOptionsService.Load();
 
-            _ReplayFolder = _UserOptions.ReplayFolder;
+            _InstallFolder = _UserOptions.InstallFolder;
+            _IgnoredFilesDb = ignoredFilesDb;
+
+            Init();
         }
 
         [ObservableProperty]
-        private string _ReplayFolder = "";
+        private string _InstallFolder = "";
 
+        [ObservableProperty]
+        private ObservableCollection<BarMatchIgnoredFile> _IgnoredFiles = [];
+
+        private async void Init() {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+            List<BarMatchIgnoredFile> ignored = await _IgnoredFilesDb.GetAll(cts.Token);
+            IgnoredFiles = new ObservableCollection<BarMatchIgnoredFile>(ignored);
+        }
+
+        /// <summary>
+        ///     command to open a folder picker to pick the install folder
+        /// </summary>
+        /// <returns></returns>
         [RelayCommand]
         public async Task OpenReplayFolderDialog() {
             TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
@@ -49,16 +82,61 @@ namespace gex.Coven.ViewModels {
 
             IReadOnlyList<IStorageFolder> folders = await tl.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions() {
                 AllowMultiple = false,
-                Title = "Pick the folder that contains all the demofiles (.sdfz files)",
+                Title = "Select the Beyond all Reason install directory",
             });
 
             if (folders.Count < 1) {
                 return;
             }
 
-            ReplayFolder = folders[0].Path.AbsolutePath;
-            _UserOptions.ReplayFolder = ReplayFolder;
+            string installDir = folders[0].Path.AbsolutePath;
+            if (Directory.Exists(Path.Join(installDir, "demos")) == false) {
+                _ToastService.Show($"Cannot set install folder", $"Missing 'demos' folder from '{installDir}'", Code.ToastType.ERROR, TimeSpan.FromSeconds(-1));
+                return;
+            }
+
+            if (Directory.Exists(Path.Join(installDir, "maps")) == false) {
+                _ToastService.Show($"Cannot set install folder", $"Missing 'maps' folder from '{installDir}'", Code.ToastType.ERROR, TimeSpan.FromSeconds(-1));
+                return;
+            }
+
+            InstallFolder = installDir;
+            _UserOptions.InstallFolder = InstallFolder;
             _UserOptionsService.Save(_UserOptions);
+        }
+
+        /// <summary>
+        ///     command to open the selected install folder
+        /// </summary>
+        /// <returns></returns>
+        [RelayCommand]
+        public async Task OpenReplayFolderExplorer() {
+            TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
+            if (tl == null) {
+                return;
+            }
+
+            if (Directory.Exists(InstallFolder) == false) {
+                return;
+            }
+
+            DirectoryInfo di = new(InstallFolder);
+            await tl.Launcher.LaunchDirectoryInfoAsync(di);
+        }
+
+        [RelayCommand]
+        public async Task RemoveIgnoredFile(BarMatchIgnoredFile ignored) {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+            await _IgnoredFilesDb.Remove(ignored.FileName, cts.Token);
+
+            _ToastService.Show("Success",
+                $"Unignored file '{ignored.FileName}'",
+                ToastType.INFO,
+                TimeSpan.FromSeconds(5)
+            );
+
+            List<BarMatchIgnoredFile> list = await _IgnoredFilesDb.GetAll(cts.Token);
+            IgnoredFiles = new ObservableCollection<BarMatchIgnoredFile>(list);
         }
 
     }

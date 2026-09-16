@@ -39,22 +39,55 @@
                     header
                 -->
 
-                <Label Content="Map"/>
-                <TextBlock Text="{Binding Match.Map}" Classes="pb3"></TextBlock>
+                <Grid ColumnDefinitions="Auto, *" RowDefinitions="*, *, *, *, *">
+                    <Label Content="Map" Grid.Column="0"/>
+                    <TextBlock Text="{Binding Match.Map}" Grid.Column="1"></TextBlock>
 
-                <Label Content="When"/>
-                <controls:DateTimeView When="{Binding Match.StartTime}"></controls:DateTimeView>
+                    <Label Content="When" Grid.Row="1"/>
+                    <controls:DateTimeView When="{Binding Match.StartTime}" 
+                                           Grid.Row="1" Grid.Column="1">
+                    </controls:DateTimeView>
 
-                <Label Content="Duration"/>
-                <TextBlock Text="{Binding Match.Duration}" Classes="pb3"></TextBlock>
+                    <Label Content="Duration" Grid.Row="2"/>
+                    <TextBlock Text="{Binding Match.Duration}"
+                               Grid.Row="2" Grid.Column="1">
+                    </TextBlock>
 
-                <Label Content="Filename"></Label>
-                <TextBlock Text="{Binding Match.FileName}" Classes="pb3"></TextBlock>
+                    <Label Content="Filename" Grid.Row="3"></Label>
+                    <TextBlock Text="{Binding Match.FileName}"
+                               Grid.Row="3" Grid.Column="1">
+                    </TextBlock>
+
+                    <Label Content="ID" Grid.Row="4"></Label>
+                    <SelectableTextBlock Text="{Binding Match.GameID}"
+                               Grid.Row="4" Grid.Column="1">
+                    </SelectableTextBlock>
+                    
+                </Grid>
+
+                <!--
+                    Map
+                -->
+
+                <Border Background="Gray" Margin="0 0 0 10">
+                    <TextBlock FontSize="18" Foreground="White" 
+                               HorizontalAlignment="Center"
+                               Text="Map">
+                    </TextBlock>
+                </Border>
+
+                <Grid RowDefinitions="*" ColumnDefinitions="1024" HorizontalAlignment="Center">
+                    <matchwindow:MatchViewMap DataContext="{Binding Match}"/>
+                </Grid>
 
                 <!--
                     Teams
                 -->
-                <Label Content="Teams"></Label>
+
+                <Border Background="Gray" Margin="0,4">
+                    <Label Content="Teams" Foreground="White" FontSize="24" 
+                           HorizontalAlignment="Center"/>
+                </Border>
 
                 <ItemsControl ItemsSource="{Binding Match.AllyTeams}">
                     <ItemsControl.ItemTemplate>
@@ -118,8 +151,7 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
-                <Label Content="Viewing"></Label>
-                <TextBlock Text="{Binding SelectedTeamStatKey}"></TextBlock>
+                <Label Content="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}"></Label>
 
                 <lvc:CartesianChart x:Name="TeamStatChart" 
                                     LegendPosition="Right" Height="400"
@@ -155,7 +187,7 @@
                 </lvc:CartesianChart>
 
                 <!--
-                    chat
+                    Chat
                 -->
 
                 <Border Background="Gray" Margin="0 0 0 10">

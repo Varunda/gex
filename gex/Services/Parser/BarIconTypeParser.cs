@@ -1,4 +1,5 @@
 ﻿using gex.Common.Models;
+using gex.Common.Services;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Asn1.Cms;
 using System;

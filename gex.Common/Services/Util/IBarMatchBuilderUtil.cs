@@ -27,6 +27,7 @@ namespace gex.Common.Services.Util {
         ///     options used when calling <see cref="BuildMatch(string, BuildOptions, long?, CancellationToken)"/>
         /// </summary>
         public class BuildOptions {
+            public bool IncludeAiPlayers { get; set; } = false;
             public bool IncludeTeams { get; set; } = false;
             public bool IncludeAllyTeams { get; set; } = false;
             public bool IncludePlayers { get; set; } = false;

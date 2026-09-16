@@ -47,16 +47,21 @@ namespace gex.Coven.Controls {
                 return;
             }
 
-            DateTimeOffset local = TimeZoneInfo.ConvertTimeFromUtc(When.Value, TimeZoneInfo.Local);
-            Value = local.ToString(Format);
+            if (When.Value.Kind == DateTimeKind.Utc) {
+                DateTime local = TimeZoneInfo.ConvertTimeFromUtc(When.Value, TimeZoneInfo.Local);
+                Value = local.ToString(Format);
+            } else {
+                Value = When.Value.ToString(Format);
+            }
+
+            //Value += $"{When.Value.ToString(Format)} {When.Value.Kind}";
+            Value += $" {When.Value.Kind}";
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
             base.OnPropertyChanged(change);
 
-            if (change.Property == WhenProperty) {
-                _UpdateValue();
-            } else if (change.Property == FormatProperty) {
+            if (change.Property == WhenProperty || change.Property == FormatProperty) {
                 _UpdateValue();
             }
         }

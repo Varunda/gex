@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="using:gex.Coven.Controls"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="using:gex.Coven.Controls.MatchWindow"
+             xmlns:match="using:gex.Coven.ViewModels.Match"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="2048" d:DesignHeight="2048"
+             x:DataType="match:BarMatchMapViewModel"
+             x:Class="gex.Coven.Controls.MatchWindow.MatchViewMap">
+
+    <Border BorderBrush="Gray" BorderThickness="1" Padding="4" Margin="4"
+            Width="1024" Height="1024">
+        <Panel>
+            <controls:MapNameImage Map="{Binding Map}" Size="texture-hq"
+                                   Width="1024" Height="1024" ZIndex="1">
+            </controls:MapNameImage>
+
+            <local:MatchViewMapOverlay ZIndex="10" Background="Transparent"></local:MatchViewMapOverlay>
+        </Panel>
+    </Border>
+
+</UserControl>

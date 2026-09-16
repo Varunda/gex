@@ -5,6 +5,7 @@ using gex.Common.Models.Match;
 using HarfBuzzSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ namespace gex.Coven.ViewModels.Match {
             _TeamID = team.TeamID;
             _Color = TeamColorLut.Lut.GetValueOrDefault(team.Color);
             _HexColor = $"#{Color.ToString("X2").PadLeft(6, '0')}";
+            _ColorBrush = SolidColorBrush.Parse(_HexColor);
             _StartPositionLabel = team.StartSpotLabel;
             _Faction = team.Faction;
             _Handicap = team.Handicap;
@@ -46,6 +48,9 @@ namespace gex.Coven.ViewModels.Match {
 
         [ObservableProperty]
         private int _Color = 0;
+
+        [ObservableProperty]
+        private IBrush _ColorBrush = Brushes.Transparent;
 
         [ObservableProperty]
         private string? _StartPositionLabel = null;

@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:gex.Coven.Controls">
+
+    <Design.PreviewWith>
+        <StackPanel Width="256" Spacing="10" Height="256">
+            <StackPanel Background="{DynamicResource SystemRegionBrush}">
+                <controls:MapNameImage Map="All That Glitters v2.2.3"></controls:MapNameImage>
+            </StackPanel>
+        </StackPanel>
+    </Design.PreviewWith>
+
+    <ControlTheme x:Key="{x:Type controls:MapNameImage}"
+                  TargetType="controls:MapNameImage">
+        <Setter Property="Template">
+            <ControlTemplate x:DataType="controls:MapNameImage">
+                <Image Source="{Binding ImageSource^, RelativeSource={RelativeSource TemplatedParent}}"
+                       IsVisible="{TemplateBinding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}">
+                </Image>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>

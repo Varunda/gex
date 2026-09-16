@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using gex.Common.Services.Bar;
 using gex.Common.Services.Db;
 using gex.Common.Services.Metrics;
@@ -55,6 +56,10 @@ public partial class App : HostedApplication<App> {
 
             MainWindow = desktop.MainWindow;
         }
+
+        Dispatcher.UIThread.UnhandledException += (object sender, DispatcherUnhandledExceptionEventArgs e) => {
+            Trace.Write($"unhandled UI exception: {e.Exception}");
+        };
 
         await base.StartAsync(cancellationToken);
     }

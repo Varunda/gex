@@ -75,6 +75,7 @@ namespace gex.Coven.Services.Db {
             SqlMapper.AddTypeHandler(new DapperSqlMappers.HashSetStringHandler());
 
             SqlMapper.AddTypeHandler(new SqLiteDapperTypeMapper.JsonElementHandler());
+            SqlMapper.AddTypeHandler(new SqLiteDapperTypeMapper.DateTimeHandler());
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Bar;
+using gex.Common.Services;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;

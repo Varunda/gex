@@ -8,7 +8,7 @@ namespace gex.Coven.Models.Config {
 
     public class UserOptions {
 
-        public string ReplayFolder { get; set; } = "";
+        public string InstallFolder { get; set; } = "";
 
     }
 }

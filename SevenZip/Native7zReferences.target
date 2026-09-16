@@ -1,0 +1,6 @@
+<Project>
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)runtimes\win-x64\native\7z.dll" Link="7z.dll" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="$(MSBuildThisFileDirectory)runtimes\linux-x64\native\7z.so" Link="7z.so" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+</Project>

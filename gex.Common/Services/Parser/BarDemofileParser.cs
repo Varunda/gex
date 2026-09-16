@@ -107,7 +107,7 @@ namespace gex.Common.Services.Parser {
             BarMatch match = new();
             match.FileName = filename;
 
-            DemofileHeader header = new();;
+            DemofileHeader header = new();
             header.Magic = reader.ReadAsciiStringNullTerminated(16);
             if (header.Magic != "spring demofile") {
                 return $"expected 'spring demofile' from magic, got '{header.Magic}' instead";
@@ -262,6 +262,7 @@ namespace gex.Common.Services.Parser {
                         int teamID = iter.Value.GetRequiredInt32("team");
 
                         BarMatchAiPlayer ai = new();
+                        ai.GameID = match.ID;
                         ai.AiID = aiID;
                         ai.TeamID = teamID;
                         ai.Name = iter.Value.GetRequiredString("name");

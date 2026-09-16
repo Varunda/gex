@@ -1,5 +1,6 @@
 ﻿using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using gex.Common.Code.Constants;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models.Match;
 using HarfBuzzSharp;
@@ -95,7 +96,7 @@ namespace gex.Coven.ViewModels.Match {
                 return _SpecBrush;
             } else if (playerID == 252) {
                 if (allyTeamID != null) {
-                    int color = match.Teams.Find(iter => iter.AllyTeamID == allyTeamID.Value)?.Color ?? 0;
+                    int color = TeamColorLut.Lut.GetValueOrDefault(match.Teams.Find(iter => iter.AllyTeamID == allyTeamID.Value)?.Color ?? 0, 0);
 
                     return new SolidColorBrush(new Color(
                         r: (byte)((color >> 16) & 0xFF),
@@ -110,7 +111,7 @@ namespace gex.Coven.ViewModels.Match {
                 if (player != null) {
                     BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
 
-                    int color = team?.Color ?? 0;
+                    int color = TeamColorLut.Lut.GetValueOrDefault(team?.Color ?? 0, 0);
 
                     return new SolidColorBrush(new Color(
                         r: (byte)((color >> 16) & 0xFF),

@@ -3,48 +3,263 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="using:gex.Coven.Controls"
+             xmlns:converters="using:Avalonia.Controls.Converters"
              xmlns:services="using:gex.Coven.Services"
              xmlns:viewmodels="using:gex.Coven.ViewModels"
+             xmlns:ti="using:TablerIcons"
+             xmlns:ui="using:gex.Coven.Models.Ui"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="viewmodels:MatchListViewModel"
              x:Class="gex.Coven.Views.MatchListView">
 
     <Grid Margin="5" RowDefinitions="Auto, *" Name="MatchListRoot">
-        <Border Background="Gray" CornerRadius="10">
-            <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center" FontFamily="{StaticResource Font}"></TextBlock>
+        <Border Background="Gray">
+            <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center"></TextBlock>
         </Border>
 
-        <ScrollViewer Grid.Row="1">
+        <TableView Grid.Row="1" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary">
+            <TableView.Columns>
 
-            <TableView ItemsSource="{Binding Matches}">
-                <TableView.Columns>
-                    <TableViewColumn Header="When">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <controls:DateTimeView When="{Binding StartTime}"></controls:DateTimeView>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
+                <!--
+                    when
+                -->
+                <TableViewColumn Width="15*">
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <Button Tag="When" 
+                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_StartTime}"
+                                    ToolTip.Tip="Sort by when this match took place">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="When"/>
 
-                    <TableViewColumn Header="Map" Binding="{Binding Map}"/>
+                                    <ti:TablerIcon Width="16" Height="16"
+                                                   Icon="IconSortAscending">
 
-                    <TableViewColumn Header="Gamemode" Binding="{Binding Gamemode}"/>
+                                        <ti:TablerIcon.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:MatchListSortField.StartTime}">
+                                                </Binding>
 
-                    <TableViewColumn Header="Duration" Binding="{Binding Duration}"/>
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:SortDirection.Asc}">
+                                                </Binding>
+                                            </MultiBinding>
+                                        </ti:TablerIcon.IsVisible>
+                                    </ti:TablerIcon>
 
-                    <TableViewColumn Header="View">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="View" Classes="Primary"
-                                        Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).OpenCommand}"
-                                        CommandParameter="{Binding GameID}">
-                                </Button>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
-                </TableView.Columns>
-                
-            </TableView>
-        </ScrollViewer>
+                                    <ti:TablerIcon Width="16" Height="16"
+                                                   Icon="IconSortDescending">
+
+                                        <ti:TablerIcon.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:MatchListSortField.StartTime}">
+                                                </Binding>
+
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:SortDirection.Desc}">
+                                                </Binding>
+                                            </MultiBinding>
+                                        </ti:TablerIcon.IsVisible>
+                                    </ti:TablerIcon>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <controls:DateTimeView When="{Binding StartTime}"></controls:DateTimeView>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <!--
+                    map
+                -->
+                <TableViewColumn Width="15*">
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*" RowDefinitions="*" HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Vertical">
+                                    <Label Content="Map"/>
+
+                                    <TextBox Text="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).FilterMap}"
+                                             HorizontalAlignment="Stretch"
+                                             Width="180"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Map}"></TextBlock>
+                                <controls:MapNameImage Map="{Binding Map}" Size="texture-thumb" 
+                                                       Width="128" Height="128"
+                                                       IsVisible="{Binding Map, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                       HorizontalAlignment="Left">
+                                </controls:MapNameImage>
+                            </StackPanel>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <!--
+                    gamemode
+                -->
+                <TableViewColumn Header="Gamemode" Width="55*">
+
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*, *" RowDefinitions="*, *" HorizontalAlignment="Stretch" ColumnSpacing="4" RowSpacing="4">
+
+                                <Label Content="Gamemode" Grid.Row="0" Grid.Column="0"/>
+                                <ComboBox Grid.Row="1" Grid.Column="0"
+                                          ItemsSource="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).GamemodeList}"
+                                          SelectedValue="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).FilterGamemode}"
+                                          SelectedValueBinding="{Binding ID}"
+                                          SelectedIndex="0">
+
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}"></TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <Label Content="Players" Grid.Row="0" Grid.Column="1"/>
+                                <TextBox Text="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).FilterPlayer}"
+                                         HorizontalAlignment="Stretch" Width="180"
+                                         Grid.Row="1" Grid.Column="1">
+                                </TextBox>
+                            </Grid>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="{Binding Gamemode}" FontSize="20"></TextBlock>
+
+                                <ItemsControl ItemsSource="{Binding AllyTeams}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal"></StackPanel>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{Binding ColorBrush}" 
+                                                    Background="{Binding BackgroundColorBrush}"
+                                                    BorderThickness="1" Padding="4" Margin="4,0,4,0" CornerRadius="4"
+                                                    MaxHeight="120" MinWidth="280" MaxWidth="280">
+
+                                                <ItemsControl ItemsSource="{Binding Teams}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Vertical" 
+                                                                       ItemSpacing="4" LineSpacing="12">
+                                                            </WrapPanel>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Name}" MaxWidth="140" 
+                                                                       TextWrapping="NoWrap"
+                                                                       ToolTip.Tip="{Binding Name}">
+                                                            </TextBlock>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                            </StackPanel>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                    
+                </TableViewColumn>
+
+                <!--
+                    duration
+                -->
+                <TableViewColumn Binding="{Binding Duration}" Width="10*">
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <Button Tag="Duration" 
+                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_Duration}"
+                                    ToolTip.Tip="Sort by duration">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Duration"/>
+
+                                    <ti:TablerIcon Width="16" Height="16"
+                                                   Icon="IconSortAscending">
+
+                                        <ti:TablerIcon.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:MatchListSortField.Duration}">
+                                                </Binding>
+
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:SortDirection.Asc}">
+                                                </Binding>
+                                            </MultiBinding>
+                                        </ti:TablerIcon.IsVisible>
+                                    </ti:TablerIcon>
+
+                                    <ti:TablerIcon Width="16" Height="16"
+                                                   Icon="IconSortDescending">
+
+                                        <ti:TablerIcon.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:MatchListSortField.Duration}">
+                                                </Binding>
+
+                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
+                                                         Converter="{StaticResource EnumToBoolConverter}"
+                                                         ConverterParameter="{x:Static ui:SortDirection.Desc}">
+                                                </Binding>
+                                            </MultiBinding>
+                                        </ti:TablerIcon.IsVisible>
+                                    </ti:TablerIcon>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+                </TableViewColumn>
+
+                <!--
+                    view button
+                -->
+                <TableViewColumn Header="View" Width="5*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="View" Classes="Primary" VerticalAlignment="Top"
+                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).OpenCommand}"
+                                    CommandParameter="{Binding GameID}">
+                            </Button>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+            </TableView.Columns>
+        </TableView>
+
     </Grid>
 </UserControl>

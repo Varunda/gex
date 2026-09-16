@@ -17,8 +17,8 @@ namespace gex.Coven.Services {
 
         public ObservableCollection<ToastViewModel> Toasts { get; } = [];
 
-        public void Show(string message, ToastType type, TimeSpan duration) {
-            ToastViewModel vm = new(message, type);
+        public void Show(string title, string message, ToastType type, TimeSpan duration) {
+            ToastViewModel vm = new(title, message, type);
 
             Toasts.Add(vm);
 
@@ -33,7 +33,6 @@ namespace gex.Coven.Services {
 
         [RelayCommand]
         private void Dismiss(ToastViewModel vm) {
-            Trace.WriteLine($"removing vm [message={vm.Message}]");
             Toasts.Remove(vm);
         }
 

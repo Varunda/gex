@@ -12,7 +12,7 @@ namespace gex.Coven.Views {
 
         public UserOptionsView() {
             InitializeComponent();
-            this.DataContext = App.Current.Services.GetRequiredService<UserOptionsViewModel>();
+            this.DataContext = App.Current?.Services?.GetService<UserOptionsViewModel>() ?? new UserOptionsViewModel();
         }
 
     }

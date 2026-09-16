@@ -8,6 +8,7 @@
     <AssemblyName>gex</AssemblyName>
     <UserSecretsId>6c73819c-56ce-4453-88d3-9e5c73a6c56e</UserSecretsId>
     <DocumentationFile>gex.xml</DocumentationFile>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -25,6 +26,15 @@
 	<PublishDir>./dist/linux-x64</PublishDir>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|ARM64'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <OutputType>exe</OutputType>
+    <NoWarn>CS1591</NoWarn>
+    <PublishDir>./dist/linux-x64</PublishDir>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU'">
 	<PublishSingleFile>true</PublishSingleFile>
 	<SelfContained>true</SelfContained>
@@ -32,6 +42,15 @@
 	<OutputType>exe</OutputType>
 	<NoWarn>CS1591</NoWarn>
 	<PublishDir>./dist/win-x64</PublishDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|ARM64'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <OutputType>exe</OutputType>
+    <NoWarn>CS1591</NoWarn>
+    <PublishDir>./dist/win-x64</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -66,7 +85,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="NLua" Version="1.7.5" />
+    <PackageReference Include="NLua" Version="1.7.9" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="8.0.7" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />

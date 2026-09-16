@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4BA2E925-C1F0-4A75-B45A-0120E555E286}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".root", ".root", "{2FFF78F1-D3D3-4985-90F3-215CA5889969}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CHANGELOG.md = CHANGELOG.md
+		Directory.Build.props = Directory.Build.props
+		LICENSE.md = LICENSE.md
+		Native7zReferences.target = Native7zReferences.target
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02C96461-4756-42AB-9BFE-67C7F84B68AA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SevenZipTests", "test\SevenZipTests\SevenZipTests.csproj", "{190225BF-6E25-44DC-AC54-CBD493538066}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SevenZip", "src\SevenZip\SevenZip.csproj", "{EBDF12FA-5021-47AA-B943-ACF40600D2AF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{A2D3356A-F9C6-46EA-9080-1F8553AB3B9F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{2075EB82-342F-42A2-8E73-8B808DE48CF3}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{190225BF-6E25-44DC-AC54-CBD493538066}.Debug|x64.ActiveCfg = Debug|x64
+		{190225BF-6E25-44DC-AC54-CBD493538066}.Debug|x64.Build.0 = Debug|x64
+		{190225BF-6E25-44DC-AC54-CBD493538066}.Release|x64.ActiveCfg = Release|x64
+		{190225BF-6E25-44DC-AC54-CBD493538066}.Release|x64.Build.0 = Release|x64
+		{EBDF12FA-5021-47AA-B943-ACF40600D2AF}.Debug|x64.ActiveCfg = Debug|x64
+		{EBDF12FA-5021-47AA-B943-ACF40600D2AF}.Debug|x64.Build.0 = Debug|x64
+		{EBDF12FA-5021-47AA-B943-ACF40600D2AF}.Release|x64.ActiveCfg = Release|x64
+		{EBDF12FA-5021-47AA-B943-ACF40600D2AF}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{190225BF-6E25-44DC-AC54-CBD493538066} = {02C96461-4756-42AB-9BFE-67C7F84B68AA}
+		{EBDF12FA-5021-47AA-B943-ACF40600D2AF} = {4BA2E925-C1F0-4A75-B45A-0120E555E286}
+		{2075EB82-342F-42A2-8E73-8B808DE48CF3} = {A2D3356A-F9C6-46EA-9080-1F8553AB3B9F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {965DA08E-2D75-484F-99ED-6BC4A7C1E50F}
+	EndGlobalSection
+EndGlobal
