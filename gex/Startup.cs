@@ -94,6 +94,7 @@ namespace gex {
 
             services.AddSwaggerGen(doc => {
                 doc.CustomSchemaIds((Type type) => type.FullName);
+                doc.UseAllOfToExtendReferenceSchemas();
 
                 doc.SwaggerDoc("api", new OpenApiInfo() {
                     Title = "Gex API",

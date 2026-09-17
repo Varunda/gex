@@ -58,8 +58,8 @@ namespace gex.Familiar {
             services.AddSingleton<ILobbyClient, LobbyClient>();
             services.AddSingleton<FamiliarHubClient>();
             services.AddSingleton<StatusHolder>();
-            services.AddSingleton<BarEngineDownloader>();
-            services.AddSingleton<PrDownloaderService>();
+            services.AddSingleton<HeadlessBarEngineDownloader>();
+            services.AddSingleton<HeadlessPrDownloaderService>();
             services.AddSingleton<EnginePathUtil>();
             services.AddSingleton<PathEnvironmentService>();
             services.AddSingleton<GameInstance>();

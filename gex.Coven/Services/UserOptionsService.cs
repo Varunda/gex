@@ -1,4 +1,5 @@
 ﻿using gex.Coven.Models.Config;
+using gex.Coven.Services.Util;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,7 +18,7 @@ namespace gex.Coven.Services {
         private readonly IMemoryCache _Cache;
         private const string CACHE_KEY = "Gex.Coven.UserOptions";
 
-        private static readonly string _Path = Path.Join(Environment.CurrentDirectory, "UserOptions.json");
+        private static readonly string _Path = Path.Join(ShellUtil.GetWorkingDirectory(), "UserOptions.json");
 
         public UserOptionsService(ILogger<UserOptionsService> logger,
             IMemoryCache cache) {

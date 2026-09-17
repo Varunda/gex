@@ -9,6 +9,7 @@ using gex.Coven.Code;
 using gex.Coven.Code.ExtensionMethods;
 using gex.Coven.Models.Config;
 using gex.Coven.Services;
+using gex.Coven.Services.Bar;
 using gex.Coven.Services.Db;
 using gex.Coven.Services.Hosted;
 using gex.Coven.Services.Util;
@@ -22,6 +23,7 @@ using NReco.Logging.File;
 using R86.Avalonia.Hosting;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
@@ -37,6 +39,10 @@ sealed class Program {
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("macos")]
     public static void Main(string[] args) {
+
+        if (args.Length > 0) {
+            PendingDemofileRead = args[0];
+        }
 
         HostedApplication<App>.AvaloniaApplicationBuilder hostBuilder
             = App.CreateBuilder(args, BuildAvaloniaApp, () => Host.CreateEmptyApplicationBuilder(null));
@@ -68,13 +74,14 @@ sealed class Program {
 
         hostBuilder.Services.AddCovenDbServices();
         hostBuilder.Services.AddCovenUtils();
+        hostBuilder.Services.AddCovenBarServices();
 
         // logging
         hostBuilder.Services.AddLogging(builder => {
             builder.AddConfiguration(hostBuilder.Configuration.GetSection("Logging"));
             builder.AddDisplayLogger();
 
-            builder.AddFile("logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", (FileLoggerOptions options) => {
+            builder.AddFile(Path.GetDirectoryName(Environment.ProcessPath) + "/logs/gex.Coven-{0:yyyy}-{0:MM}-{0:dd}.log", (FileLoggerOptions options) => {
                 options.FormatLogFileName = fName => {
                     return string.Format(fName, DateTime.UtcNow);
                 };
@@ -91,7 +98,8 @@ sealed class Program {
         App host = hostBuilder.Build();
 
         ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("host built, running app");
+        logger.LogInformation($"host built, running app [args={string.Join(' ', args)}] [cwd={Environment.CurrentDirectory}] "
+            + $"[cmd={Environment.CommandLine}] [process path={Environment.ProcessPath}]");
 
         TaskScheduler.UnobservedTaskException += (sender, e) => {
             logger.LogError(e.Exception, $"unobserved task exception");
@@ -118,5 +126,11 @@ sealed class Program {
             .LogToTrace(LogEventLevel.Information)
             .LogToTrace(LogEventLevel.Verbose, LogArea.Binding);
     }
+
+    /// <summary>
+    ///     when launched by double clicking a sdfz file, this will contain the full path
+    ///     of the demofile to be launched and loaded
+    /// </summary>
+    public static string? PendingDemofileRead { get; private set; } = null;
 
 }

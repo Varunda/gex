@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace gex.Common.Services.Bar {
 
-    public class BarEngineDownloader {
+    public class HeadlessBarEngineDownloader : IBarEngineDownloader {
 
-        private readonly ILogger<BarEngineDownloader> _Logger;
+        private readonly ILogger<HeadlessBarEngineDownloader> _Logger;
         private readonly PathEnvironmentService _PathUtil;
         private readonly EnginePathUtil _EnginePathUtil;
 
@@ -25,11 +25,11 @@ namespace gex.Common.Services.Bar {
             "{0}/recoil_{0}_amd64-{1}.7z"
         ];
 
-        static BarEngineDownloader() {
+        static HeadlessBarEngineDownloader() {
             _Http.DefaultRequestHeaders.UserAgent.ParseAdd("gex/0.1 (discord: varunda)");
         }
 
-        public BarEngineDownloader(ILogger<BarEngineDownloader> logger,
+        public HeadlessBarEngineDownloader(ILogger<HeadlessBarEngineDownloader> logger,
             PathEnvironmentService pathUtil, EnginePathUtil enginePathUtil) {
 
             _Logger = logger;

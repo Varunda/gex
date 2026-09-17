@@ -3,6 +3,7 @@ using gex.Common.Models.Bar.Commands;
 using gex.Common.Models.Bar.Commands.Types;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace gex.Common.Models.Bar {

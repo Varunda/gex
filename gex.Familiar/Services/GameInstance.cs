@@ -20,8 +20,8 @@ namespace gex.Familiar.Services {
 
         private readonly ILogger<GameInstance> _Logger;
         private readonly EnginePathUtil _EnginePathUtil;
-        private readonly BarEngineDownloader _EngineDownloader;
-        private readonly PrDownloaderService _PrDownloader;
+        private readonly HeadlessBarEngineDownloader _EngineDownloader;
+        private readonly HeadlessPrDownloaderService _PrDownloader;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly IOptions<SpringFamiliarOptions> _SpringOptions;
         private readonly MatchUploader _Uploader;
@@ -60,7 +60,7 @@ namespace gex.Familiar.Services {
             + "bind: An attempt was made to access a socket in a way forbidden by its access permissions.";
 
         public GameInstance(ILogger<GameInstance> logger,
-            BarEngineDownloader engineDownloader, PrDownloaderService prDownloader,
+            HeadlessBarEngineDownloader engineDownloader, HeadlessPrDownloaderService prDownloader,
             EnginePathUtil enginePathUtil, IOptions<FileStorageOptions> options,
             IOptions<SpringFamiliarOptions> springOptions, MatchUploader uploader) {
 

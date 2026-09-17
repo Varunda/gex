@@ -40,6 +40,7 @@ namespace gex.Common.Services.Util {
             public bool IncludeCommands { get; set; } = false;
             public bool IncludeSelfDCommands { get; set; } = false;
             public bool IncludeStartRegionData { get; set; } = false;
+            public bool IncludeMapData { get; set; } = false;
         }
 
     }

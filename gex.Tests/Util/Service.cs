@@ -31,7 +31,7 @@ namespace gex.Tests.Util {
             services.AddSingleton<IMemoryCache, NonCachingCache>();
             services.AddSingleton<BarMapApi>();
             services.AddSingleton<BarApiMetric>();
-            services.AddSingleton<PrDownloaderService>();
+            services.AddSingleton<HeadlessPrDownloaderService>();
             services.AddSingleton<IDbHelper>(await DbUtil.Create());
             services.AddSingleton<IOptions<FileStorageOptions>>(Options.Create<FileStorageOptions>(new FileStorageOptions() {
                 EngineLocation = "./engines/",

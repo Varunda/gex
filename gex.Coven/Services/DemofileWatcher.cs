@@ -225,6 +225,10 @@ namespace gex.Coven.Services {
                         NewMatchReady?.Invoke(this, ret.Value);
                     } else {
                         _Logger.LogWarning($"failed to parse demofile [filename={filename}] [error={ret.Error}]");
+                        await _IgnoredFilesDb.Insert(new BarMatchIgnoredFile() {
+                            FileName = filename,
+                            Reason = $"failed to parse: {ret.Error}",
+                        }, cancel);
                     }
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to parse demofile [path={demofile}]");

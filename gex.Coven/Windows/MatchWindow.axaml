@@ -65,6 +65,15 @@
                     
                 </Grid>
 
+                <Border Background="{StaticResource ControlBackgroundBrush}" Padding="0,1"/>
+
+                <StackPanel Margin="4,8">
+                    <Button Command="{Binding LaunchReplay}" Classes="btn-primary">
+                        Launch replay
+                    </Button>
+                    
+                </StackPanel>
+
                 <!--
                     Map
                 -->

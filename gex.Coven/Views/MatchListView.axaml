@@ -17,7 +17,70 @@
             <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center"></TextBlock>
         </Border>
 
-        <TableView Grid.Row="1" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary">
+        <TableView Grid.Row="1" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary" SelectedItem="{Binding SelectedMatch}">
+
+            <TableView.ContextMenu>
+                <ContextMenu>
+
+                    <MenuItem Command="{Binding OpenReplay}">
+                        <MenuItem.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ti:TablerIcon Icon="IconFolderOpen" Width="16" Height="16"></ti:TablerIcon>
+                                    <TextBlock Text="View"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </MenuItem.HeaderTemplate>
+                    </MenuItem>
+
+                    <MenuItem>
+                        <MenuItem.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ti:TablerIcon Icon="IconPlayerPlay" Width="16" Height="16"></ti:TablerIcon>
+                                    <TextBlock Text="Launch replay"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </MenuItem.HeaderTemplate>
+                    </MenuItem>
+
+                    <MenuItem Header="Copy">
+                        <MenuItem Command="{Binding CopyReplayPath}">
+                            <MenuItem.HeaderTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ti:TablerIcon Icon="IconLetterT" Width="16" Height="16"></ti:TablerIcon>
+                                        <TextBlock Text="Copy path"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </MenuItem.HeaderTemplate>
+                        </MenuItem>
+
+                        <MenuItem Command="{Binding CopyReplayData}">
+                            <MenuItem.HeaderTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ti:TablerIcon Icon="IconCopy" Width="16" Height="16"></ti:TablerIcon>
+                                        <TextBlock Text="Copy file"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </MenuItem.HeaderTemplate>
+                        </MenuItem>
+                    </MenuItem>
+
+                    <MenuItem>
+                        <MenuItem.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ti:TablerIcon Icon="IconCancel" Width="16" Height="16"></ti:TablerIcon>
+                                    <TextBlock Text="Ignore"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </MenuItem.HeaderTemplate>
+                    </MenuItem>
+                </ContextMenu>
+            </TableView.ContextMenu>
+
             <TableView.Columns>
 
                 <!--

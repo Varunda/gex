@@ -55,6 +55,7 @@ namespace gex.Models.Api {
             StartRegionData = match.StartRegionData;
         }
 
+        [Required]
         public string ID { get; set; } = "";
 
         public string Engine { get; set; } = "";

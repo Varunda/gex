@@ -1,4 +1,7 @@
-﻿using Avalonia.Threading;
+﻿using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
@@ -101,6 +104,9 @@ namespace gex.Coven.ViewModels {
         [ObservableProperty]
         private Models.Ui.SortDirection _TableSortDirection = Models.Ui.SortDirection.Desc;
 
+        [ObservableProperty]
+        private BarMatchViewModel? _SelectedMatch = null;
+
         /// <summary>
         ///     init method that loads all matches from the repo
         /// </summary>
@@ -157,75 +163,13 @@ namespace gex.Coven.ViewModels {
             if (parameter is not string gameID) {
                 return;
             }
-            _Logger.LogInformation($"viewing match [gameID={gameID}]");
 
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-
-            BarMatch? match = await _MatchRepository.GetByID(gameID, cts.Token);
-            if (match == null) {
-                _Logger.LogError($"failed to find match in Open command [gameID={gameID}]");
-                return;
+            try {
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
+                await MatchWindow.LoadMatchAndShow(gameID, cts.Token);
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to open replay [gameID={gameID}]");
             }
-
-            UserOptions userOptions = _UserOptionsService.Load();
-
-            byte[] bytes = [];
-            string replayFileName = Path.Join(userOptions.InstallFolder, "demos", match.FileName);
-            if (File.Exists(match.FileName)) {
-                bytes = File.ReadAllBytes(match.FileName);
-            } else if (File.Exists(replayFileName)) {
-                bytes = File.ReadAllBytes(replayFileName);
-            } else {
-                _Logger.LogError($"failed to find demofile [FileName={match.FileName}]");
-                return;
-            }
-
-            Result<BarMatch, string> parsed = await _Parser.Parse(match.FileName, bytes, new DemofileParserOptions() {
-
-            }, cts.Token);
-
-            if (parsed.IsOk == false) {
-                _Logger.LogError($"failed to parse match from demofile [gameID={gameID}] [error={parsed.Error}]");
-                return;
-            }
-
-            BarMap? map = await _MapDb.GetByName(parsed.Value.Map, cts.Token);
-            if (map == null) {
-                _Logger.LogDebug($"map is not in DB, attempting to load from files [map={parsed.Value.Map}]");
-                string mapName = parsed.Value.Map;
-                string mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.Replace(" ", "_") + ".sd7");
-                if (File.Exists(mapPath) == false) {
-                    mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.ToLower().Replace(" ", "_") + ".sd7");
-                }
-
-                if (File.Exists(mapPath)) {
-                    Result<BarMap, string> mapData = await _MapParser.Parse(mapPath, cts.Token);
-                    if (mapData.IsOk == true) {
-                        map = mapData.Value;
-
-                        await _MapDb.Upsert(mapData.Value, cts.Token);
-                        _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");
-                    } else {
-                        _Logger.LogError($"failed to parse map [map={map}] [mapDir={mapPath}] [error={mapData.Error}]");
-                    }
-                } else {
-                    _Logger.LogWarning($"missing map directory [map={map}] [mapDir={mapPath}]");
-                }
-            }
-
-            if (map == null) {
-                _Logger.LogWarning($"failed to find map [map={parsed.Value.Map}]");
-            }
-
-            parsed.Value.MapData = map;
-
-            MatchWindowViewModel vm = new(parsed.Value);
-
-            MatchWindow win = new() {
-                DataContext = vm
-            };
-
-            win.Show();
         }
 
         /// <summary>
@@ -277,6 +221,59 @@ namespace gex.Coven.ViewModels {
             } else {
                 TableSortField = MatchListSortField.Duration;
             }
+        }
+
+        /// <summary>
+        ///     copy the selected match path to clipboard
+        /// </summary>
+        [RelayCommand]
+        public void CopyReplayPath() {
+            TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
+            BarMatchViewModel? vm = SelectedMatch;
+            if (tl == null || vm == null) { return; }
+
+            UserOptions userOptions = _UserOptionsService.Load();
+            string path = Path.Join(userOptions.InstallFolder, "demos", vm.Match.FileName);
+            try {
+                _ = tl.Clipboard?.SetTextAsync(path);
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to copy demofile path to clipboard");
+            }
+        }
+
+        /// <summary>
+        ///     copy the selected match demofile to clipboard
+        /// </summary>
+        [RelayCommand]
+        public async Task CopyReplayData() {
+            TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
+            BarMatchViewModel? vm = SelectedMatch;
+            if (tl == null || vm == null) { return; }
+
+            UserOptions userOptions = _UserOptionsService.Load();
+            string path = Path.Join(userOptions.InstallFolder, "demos", vm.Match.FileName);
+            try {
+                IStorageFile? file = await tl.StorageProvider.TryGetFileFromPathAsync(new Uri(path, UriKind.Absolute));
+
+                if (file != null) {
+                    tl.Clipboard?.SetFileAsync(file);
+                } else {
+                    _Logger.LogError($"failed to load file from tl.StorageProvider");
+                }
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to copy demofile path to clipboard");
+            }
+        }
+
+        [RelayCommand]
+        public async Task OpenReplay() {
+            BarMatchViewModel? vm = SelectedMatch;
+            if (vm == null) {
+                return;
+            }
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
+            await MatchWindow.LoadMatchAndShow(vm.GameID, cts.Token);
         }
 
         /// <summary>

@@ -19,7 +19,6 @@
             <TextBlock Text="{Binding Messages.Count, StringFormat='{}{0} messages'}"></TextBlock>
         </Border>
 
-        <Grid ColumnDefinitions="*" RowDefinitions="*">
             <TableView ItemsSource="{Binding Messages}">
                 <TableView.Columns>
                     <TableViewColumn Header="Timestamp" Width="12*">
@@ -39,6 +38,7 @@
                                            Background="{Binding BackgroundColor}"
                                            Foreground="{Binding Foreground}"
                                            HorizontalAlignment="Left"
+                                           VerticalAlignment="Top"
                                            Padding="2"
                                            TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
                                            TextElement.FontSize="14"></TextBlock>
@@ -57,7 +57,6 @@
                     </TableViewColumn>
                 </TableView.Columns>
             </TableView>
-        </Grid>
     </DockPanel>
 
 </UserControl>

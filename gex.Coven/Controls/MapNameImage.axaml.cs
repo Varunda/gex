@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using gex.Coven.Code;
+using gex.Coven.Services.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -74,12 +75,12 @@ namespace gex.Coven.Controls {
         }
 
         private void _UpdateImageSource() {
-            _Logger?.LogInformation($"drawing map image [map={Map}] [size={Size}]");
+            //_Logger?.LogInformation($"drawing map image [map={Map}] [size={Size}]");
             if (string.IsNullOrWhiteSpace(Map) == true) {
                 return;
             }
 
-            string dir = $"./cache/image/MapNameBackground/{Size}/";
+            string dir = $"{ShellUtil.GetWorkingDirectory()}/cache/image/MapNameBackground/{Size}/";
             string path = Path.Join(dir, $"{Map}.jpg");
             try {
                 Directory.CreateDirectory(dir);

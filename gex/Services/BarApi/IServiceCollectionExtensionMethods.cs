@@ -8,8 +8,8 @@ namespace gex.Services.BarApi {
         public static void AddBarApiServices(this IServiceCollection services) {
             services.AddSingleton<BarReplayApi>();
             services.AddSingleton<BarReplayFileApi>();
-            services.AddSingleton<PrDownloaderService>();
-            services.AddSingleton<BarEngineDownloader>();
+            services.AddSingleton<HeadlessPrDownloaderService>();
+            services.AddSingleton<HeadlessBarEngineDownloader>();
             services.AddSingleton<BarHeadlessInstance>();
             services.AddSingleton<ActionLogParser>();
             services.AddSingleton<BarMapApi>();

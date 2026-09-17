@@ -1,9 +1,11 @@
 ﻿using gex.Common.Services.Db;
+using gex.Coven.Services.Util;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -15,8 +17,10 @@ namespace gex.Coven.Services.Db {
 
         private SqliteConnection _Connection;
 
+        private static string _DbPath = $"\"{ShellUtil.GetWorkingDirectory()}/gex.db\"";
+
         public SqLiteDbHelper() {
-            _Connection = new SqliteConnection("Data Source=gex.db;");
+            _Connection = new SqliteConnection($"Data Source={_DbPath};");
             _Connection.Open();
         }
 
@@ -34,7 +38,7 @@ namespace gex.Coven.Services.Db {
 
         public DbConnection Connection(string server = "gex", string? task = null, bool enlist = true) {
             if (server == Dbs.MAIN || server == SqLiteDb.READ) {
-                DbConnection conn = new SqliteConnection("Data Source=gex.db;Mode=ReadOnly;");
+                DbConnection conn = new SqliteConnection($"Data Source={_DbPath};Mode=ReadOnly;");
                 conn.Open();
                 return conn;
             } else if (server == SqLiteDb.WRITE) {

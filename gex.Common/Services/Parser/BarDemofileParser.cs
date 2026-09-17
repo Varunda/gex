@@ -287,802 +287,805 @@ namespace gex.Common.Services.Parser {
             match.DurationMs = header.WallClockTime * 1000;
             long modSettingsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-            BarMap? map = null;
-            if (_MapRepository != null) {
-                map = await _MapRepository.GetByName(match.Map, cancel); 
-                if (map == null) {
-                    _Logger.LogWarning($"failed to find map, start spots will not be validated [map={match.Map}] [gameID={match.ID}]");
+            if (options.ParseHeaderOnly == false) {
+                BarMap? map = null;
+                if (_MapRepository != null) {
+                    map = await _MapRepository.GetByName(match.Map, cancel); 
+                    if (map == null) {
+                        _Logger.LogWarning($"failed to find map, start spots will not be validated [map={match.Map}] [gameID={match.ID}]");
+                    }
                 }
-            }
 
-            if (header.PacketOffset != reader.Index) {
-                return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
-            }
+                if (header.PacketOffset != reader.Index) {
+                    return $"expected reader to be {header.PacketOffset} (for reading packets), was at {reader.Index} instead";
+                }
 
-            Dictionary<int, string> unitDefDict = [];
+                Dictionary<int, string> unitDefDict = [];
 
-            byte[] winningAllyTeams = [];
+                byte[] winningAllyTeams = [];
 
-            // ok, this is fun
-            // this commit changes MAPDRAW to use u32: https://github.com/beyond-all-reason/RecoilEngine/commit/cfc599994ec5d22e31f83b0aa1925404bb048126
-            // this commit changes the MAPDRAW packet from 31 to 32: https://github.com/beyond-all-reason/RecoilEngine/commit/5e8a5c123ee8dba3b88a308db42a4f0103fd40e9
-            // 
-            // HOWEVER, the commit to use packet ID 32 is NOT part of 2025.04.xx, but the commit to use u32 IS part of 2025.04.xx
-            // which means for only version 2025.04.xx, packet ID 31 uses u32 coords
-            //bool hasWrongPacket31CoordSize = (header.EngineVersion == "2025.04.01" || header.EngineVersion == "2025.04.04" || header.EngineVersion == "2025.04.08");
-            BarEngineVersion wrongPacketIdStart = new("2025.03.01"); // inclusive, all engines on and after this
-            BarEngineVersion wrongPacketIdEnd = new("2025.06.01"); // exclusive, all engines before this (but not this one)
-            BarEngineVersion matchEngineVersion = new(header.EngineVersion);
-            bool hasWrongPacket31CoordSize = matchEngineVersion >= wrongPacketIdStart && matchEngineVersion < wrongPacketIdEnd;
+                // ok, this is fun
+                // this commit changes MAPDRAW to use u32: https://github.com/beyond-all-reason/RecoilEngine/commit/cfc599994ec5d22e31f83b0aa1925404bb048126
+                // this commit changes the MAPDRAW packet from 31 to 32: https://github.com/beyond-all-reason/RecoilEngine/commit/5e8a5c123ee8dba3b88a308db42a4f0103fd40e9
+                // 
+                // HOWEVER, the commit to use packet ID 32 is NOT part of 2025.04.xx, but the commit to use u32 IS part of 2025.04.xx
+                // which means for only version 2025.04.xx, packet ID 31 uses u32 coords
+                //bool hasWrongPacket31CoordSize = (header.EngineVersion == "2025.04.01" || header.EngineVersion == "2025.04.04" || header.EngineVersion == "2025.04.08");
+                BarEngineVersion wrongPacketIdStart = new("2025.03.01"); // inclusive, all engines on and after this
+                BarEngineVersion wrongPacketIdEnd = new("2025.06.01"); // exclusive, all engines before this (but not this one)
+                BarEngineVersion matchEngineVersion = new(header.EngineVersion);
+                bool hasWrongPacket31CoordSize = matchEngineVersion >= wrongPacketIdStart && matchEngineVersion < wrongPacketIdEnd;
 
-            Dictionary<byte, List<ushort>> selectedUnitIds = [];
+                Dictionary<byte, List<ushort>> selectedUnitIds = [];
 
-            HashSet<byte> playedPositionsLockedIn = [];
+                HashSet<byte> playedPositionsLockedIn = [];
 
-            // for team ffa, there is a game setting that shuffles the start boxes for each ally team.
-            // this means doing a check on the ally team start box is not useful, as where each start box
-            //  is will have changed, and that is handled entirely within the game (would need to sim to get data)
-            bool startBoxesShuffled = match.GameSettings.GetString("teamffa_start_boxes_shuffle", "0") == "1"
-                && match.AllyTeams.Count > 2
-                && match.AllyTeams.FirstOrDefault(iter => match.Players.Where(i2 => i2.AllyTeamID == iter.AllyTeamID).Count() > 1) != null;
+                // for team ffa, there is a game setting that shuffles the start boxes for each ally team.
+                // this means doing a check on the ally team start box is not useful, as where each start box
+                //  is will have changed, and that is handled entirely within the game (would need to sim to get data)
+                bool startBoxesShuffled = match.GameSettings.GetString("teamffa_start_boxes_shuffle", "0") == "1"
+                    && match.AllyTeams.Count > 2
+                    && match.AllyTeams.FirstOrDefault(iter => match.Players.Where(i2 => i2.AllyTeamID == iter.AllyTeamID).Count() > 1) != null;
 
-            if (startBoxesShuffled == true) {
-                _Logger.LogDebug($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
-            }
+                if (startBoxesShuffled == true) {
+                    _Logger.LogDebug($"skipping ally team start box check, teamffa_start_boxes_shuffle is on [gameID={header.GameID}]");
+                }
 
-            // parse polygon start data
-            Result<Maybe<PolygonStartbox>, string> polygonStartBox = _PolygonStartboxUtil.GetFromMatch(match);
-            if (polygonStartBox.IsOk == true && polygonStartBox.Value.Has()) {
-                PolygonStartbox startbox = polygonStartBox.Value.Get();
+                // parse polygon start data
+                Result<Maybe<PolygonStartbox>, string> polygonStartBox = _PolygonStartboxUtil.GetFromMatch(match);
+                if (polygonStartBox.IsOk == true && polygonStartBox.Value.Has()) {
+                    PolygonStartbox startbox = polygonStartBox.Value.Get();
 
-                foreach (PolygonStartbox.Side side in startbox.Sides) {
-                    if (side.Anchors.Count == 2) {
-                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == side.Index);
-                        if (at == null) {
-                            _Logger.LogWarning($"missing ally team for startbox side [gameID={match.ID}] [index={side.Index}]");
-                            continue;
+                    foreach (PolygonStartbox.Side side in startbox.Sides) {
+                        if (side.Anchors.Count == 2) {
+                            BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == side.Index);
+                            if (at == null) {
+                                _Logger.LogWarning($"missing ally team for startbox side [gameID={match.ID}] [index={side.Index}]");
+                                continue;
+                            }
+
+                            // divided by 200 as the anchors are in 0.5% of total dimension
+                            at.StartBox = new Rectangle() {
+                                Left = (float)side.Anchors[0].X / 200f,
+                                Right = (float)side.Anchors[1].X / 200f,
+
+                                // why isn't bottom the 0th elem? top left is (0, 0), not bottom left
+                                Top = (float)side.Anchors[0].Z / 200f,
+                                Bottom = (float)side.Anchors[1].Z / 200f,
+                            };
+
+                            _Logger.LogTrace($"updated allyteam startbox with polygon region data [gameID={match.ID}] [allyTeamID={side.Index}]"
+                                + $" [rect (lrtb)={at.StartBox.Left},{at.StartBox.Right},{at.StartBox.Top},{at.StartBox.Bottom}]");
                         }
-
-                        // divided by 200 as the anchors are in 0.5% of total dimension
-                        at.StartBox = new Rectangle() {
-                            Left = (float)side.Anchors[0].X / 200f,
-                            Right = (float)side.Anchors[1].X / 200f,
-
-                            // why isn't bottom the 0th elem? top left is (0, 0), not bottom left
-                            Top = (float)side.Anchors[0].Z / 200f,
-                            Bottom = (float)side.Anchors[1].Z / 200f,
-                        };
-
-                        _Logger.LogTrace($"updated allyteam startbox with polygon region data [gameID={match.ID}] [allyTeamID={side.Index}]"
-                            + $" [rect (lrtb)={at.StartBox.Left},{at.StartBox.Right},{at.StartBox.Top},{at.StartBox.Bottom}]");
-                    }
-                }
-            }
-
-            int packetCount = 0;
-            int frameCount = 0;
-            int maxFrame = 0;
-            while (reader.Index < header.StatOffset) {
-                DemofilePacket packet = new();
-                packet.GameTime = reader.ReadFloat32LE();
-                packet.Length = reader.ReadUInt32LE();
-                packet.PacketType = reader.ReadByte();
-
-                Span<byte> packetData = reader.Read(packet.Length - 1);
-                packet.Data = packetData.ToArray();
-                ++packetCount;
-
-                // KEYFRAME (1)
-                if (packet.PacketType == BarPacketType.KEYFRAME) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    int frame = packetReader.ReadInt32LE();
-
-                    maxFrame = Math.Max(frameCount, frame);
-                }
-
-                // NEW_FRAME (2)
-                else if (packet.PacketType == BarPacketType.NEW_FRAME) {
-                    // it seems like this isn't accurate
-                    ++frameCount;
-                }
-
-                // START_PLAYING (4)
-                if (packet.PacketType == BarPacketType.START_PLAYING) {
-                    ByteArrayReader pr = new(packet.Data);
-
-                    float countdown = pr.ReadFloat32LE();
-                    if (countdown == 0) {
-                        match.StartOffset = packet.GameTime;
                     }
                 }
 
-                // CHAT (7)
-                else if (packet.PacketType == BarPacketType.CHAT) {
-                    ByteArrayReader packetReader = new(packet.Data);
+                int packetCount = 0;
+                int frameCount = 0;
+                int maxFrame = 0;
+                while (reader.Index < header.StatOffset) {
+                    DemofilePacket packet = new();
+                    packet.GameTime = reader.ReadFloat32LE();
+                    packet.Length = reader.ReadUInt32LE();
+                    packet.PacketType = reader.ReadByte();
 
-                    BarMatchChatMessage msg = new();
-                    msg.Size = packetReader.ReadByte();
-                    msg.FromId = packetReader.ReadByte();
-                    msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
-                    msg.Message = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
-                    msg.GameID = match.ID;
-                    msg.GameTimestamp = packet.GameTime;
+                    Span<byte> packetData = reader.Read(packet.Length - 1);
+                    packet.Data = packetData.ToArray();
+                    ++packetCount;
 
-                    match.ChatMessages.Add(msg);
-                }
+                    // KEYFRAME (1)
+                    if (packet.PacketType == BarPacketType.KEYFRAME) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        int frame = packetReader.ReadInt32LE();
 
-                // GAME_ID (9)
-                else if (packet.PacketType == BarPacketType.GAME_ID) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    string packetGameID = Convert.ToHexStringLower(packetReader.Read(16).ToArray());
-
-                    if (packetGameID != header.GameID) {
-                        return $"inconsistent gameID found, refusing to process further [packet gameID={packetGameID}] [header gameID={header.GameID}]";
-                    }
-                }
-
-                // PAUSE (13)
-                else if (packet.PacketType == BarPacketType.PAUSE) {
-                    ByteArrayReader packetReader = new(packet.Data);
-
-                    byte playerID = packetReader.ReadByte();
-                    byte paused = packetReader.ReadByte();
-                }
-
-                // COMMAND (11)
-                else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
-                    ByteArrayReader pr = new(packet.Data);
-
-                    short size = pr.ReadInt16LE();
-                    byte playerNum = pr.ReadByte();
-                    int commandId = pr.ReadInt32LE(); // a negative command ID is for a unit def ID
-                    int timeout = pr.ReadInt32LE();
-                    byte cmdOpts = pr.ReadByte();
-                    uint paramCount = pr.ReadUInt32LE();
-                    List<float> parms = [];
-                    for (uint i = 0; i < paramCount; ++i) {
-                        parms.Add(pr.ReadFloat32LE());
+                        maxFrame = Math.Max(frameCount, frame);
                     }
 
-                    Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
-                    if (cmd.IsOk == false) {
-                        _Logger.LogError($"failed to parse command [error={cmd.Error}]");
-                        continue;
+                    // NEW_FRAME (2)
+                    else if (packet.PacketType == BarPacketType.NEW_FRAME) {
+                        // it seems like this isn't accurate
+                        ++frameCount;
                     }
 
-                    BarCommand command = cmd.Value;
-                    command.UnitIDs = selectedUnitIds.GetValueOrDefault(playerNum) ?? [];
-                    command.FullGameTime = packet.GameTime;
-                    command.PlayerID = playerNum;
-                    match.Commands.Add(command);
-                }
+                    // START_PLAYING (4)
+                    if (packet.PacketType == BarPacketType.START_PLAYING) {
+                        ByteArrayReader pr = new(packet.Data);
 
-                // SELECT command (12)
-                else if (packet.PacketType == BarPacketType.SELECT && options.IncludeCommands == true) {
-                    ByteArrayReader pr = new(packet.Data);
-
-                    short size = pr.ReadInt16LE();
-                    byte playerNum = pr.ReadByte();
-
-                    byte[] left = pr.ReadAll();
-                    List<ushort> unitIDs = [];
-                    for (int i = 0; i < left.Length; i += 2) {
-                        ushort unitID = (ushort)(left[i] | (ushort)(left[i + 1] << 8));
-                        unitIDs.Add(unitID);
+                        float countdown = pr.ReadFloat32LE();
+                        if (countdown == 0) {
+                            match.StartOffset = packet.GameTime;
+                        }
                     }
 
-                    selectedUnitIds[playerNum] = unitIDs;
-                }
+                    // CHAT (7)
+                    else if (packet.PacketType == BarPacketType.CHAT) {
+                        ByteArrayReader packetReader = new(packet.Data);
 
-                // AI_COMMAND (14)
-                else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
-                    ByteArrayReader pr = new(packet.Data);
-                    short size = pr.ReadInt16LE();
-                    byte playerNum = pr.ReadByte();
-                    byte aiId = pr.ReadByte();
-                    byte aiTeamId = pr.ReadByte();
-                    ushort unitID = pr.ReadUInt16LE();
-                    int commandId = pr.ReadInt32LE();
-                    int timeout = pr.ReadInt32LE();
-                    byte cmdOpts = pr.ReadByte();
-                    uint paramCount = pr.ReadUInt32LE();
+                        BarMatchChatMessage msg = new();
+                        msg.Size = packetReader.ReadByte();
+                        msg.FromId = packetReader.ReadByte();
+                        msg.ToId = packetReader.ReadByte(); // 127 = allies, 126 = spec, 125 = global
+                        msg.Message = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
+                        msg.GameID = match.ID;
+                        msg.GameTimestamp = packet.GameTime;
 
-                    List<float> parms = [];
-                    for (uint i = 0; i < paramCount; ++i) {
-                        parms.Add(pr.ReadFloat32LE());
+                        match.ChatMessages.Add(msg);
                     }
 
-                    Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
-                    if (cmd.IsOk == false) {
-                        _Logger.LogError($"failed to parse command [error={cmd.Error}]");
-                        continue;
+                    // GAME_ID (9)
+                    else if (packet.PacketType == BarPacketType.GAME_ID) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        string packetGameID = Convert.ToHexStringLower(packetReader.Read(16).ToArray());
+
+                        if (packetGameID != header.GameID) {
+                            return $"inconsistent gameID found, refusing to process further [packet gameID={packetGameID}] [header gameID={header.GameID}]";
+                        }
                     }
 
-                    BarCommand command = cmd.Value;
-                    command.UnitIDs = [unitID];
-                    command.FullGameTime = packet.GameTime;
-                    command.PlayerID = playerNum;
-                    match.Commands.Add(command);
+                    // PAUSE (13)
+                    else if (packet.PacketType == BarPacketType.PAUSE) {
+                        ByteArrayReader packetReader = new(packet.Data);
 
-                }
-
-                // AI_COMMANDS (15)
-                else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
-                    ByteArrayReader pr = new(packet.Data);
-
-                    short size = pr.ReadInt16LE();
-                    byte playerNum = pr.ReadByte();
-                    byte aiId = pr.ReadByte();
-                    byte pairwise = pr.ReadByte();
-                    uint refCmdId = pr.ReadUInt32LE();
-                    byte refCmdOpts = pr.ReadByte();
-                    ushort refCmdSize = pr.ReadUInt16LE();
-                    short unitCount = pr.ReadInt16LE();
-
-                    List<ushort> unitIds = [];
-                    for (int i = 0; i < unitCount; ++i) {
-                        unitIds.Add(pr.ReadUInt16LE());
+                        byte playerID = packetReader.ReadByte();
+                        byte paused = packetReader.ReadByte();
                     }
 
-                    ushort commandCount = pr.ReadUInt16LE();
+                    // COMMAND (11)
+                    else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
+                        ByteArrayReader pr = new(packet.Data);
 
-                    List<BarCommand> commands = [];
-                    for (int i = 0; i < commandCount; ++i) {
-                        uint id = refCmdId == 0 ? pr.ReadUInt32LE() : refCmdId;
-                        byte optionBitmask = refCmdOpts == 0xFF ? pr.ReadByte() : refCmdOpts;
-                        ushort cmdSize = refCmdSize == 0xFFFF ? pr.ReadUInt16LE() : refCmdSize;
-
+                        short size = pr.ReadInt16LE();
+                        byte playerNum = pr.ReadByte();
+                        int commandId = pr.ReadInt32LE(); // a negative command ID is for a unit def ID
+                        int timeout = pr.ReadInt32LE();
+                        byte cmdOpts = pr.ReadByte();
+                        uint paramCount = pr.ReadUInt32LE();
                         List<float> parms = [];
-                        for (int j = 0; j < cmdSize; ++j) {
+                        for (uint i = 0; i < paramCount; ++i) {
                             parms.Add(pr.ReadFloat32LE());
                         }
 
-                        Result<BarCommand, string> cmd = _CommandParser.Parse((int)id, optionBitmask, new Span<float>([.. parms]));
+                        Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
                         if (cmd.IsOk == false) {
                             _Logger.LogError($"failed to parse command [error={cmd.Error}]");
                             continue;
                         }
 
                         BarCommand command = cmd.Value;
-                        command.PlayerID = playerNum;
-                        if (i < unitIds.Count) {
-                            command.UnitIDs = [unitIds[i]];
-                        }
+                        command.UnitIDs = selectedUnitIds.GetValueOrDefault(playerNum) ?? [];
                         command.FullGameTime = packet.GameTime;
-
+                        command.PlayerID = playerNum;
                         match.Commands.Add(command);
                     }
-                }
 
-                // GAME_OVER (30)
-                else if (packet.PacketType == BarPacketType.GAME_OVER) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte size = packetReader.ReadByte();
-                    byte playerNum = packetReader.ReadByte();
-                    winningAllyTeams = packetReader.ReadAll();
-                }
+                    // SELECT command (12)
+                    else if (packet.PacketType == BarPacketType.SELECT && options.IncludeCommands == true) {
+                        ByteArrayReader pr = new(packet.Data);
 
-                // MAP_DRAW_OLD (31)
-                else if (options.IncludeMapDraws == true && packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte size = packetReader.ReadByte();
-                    byte playerID = packetReader.ReadByte();
-                    // 0 = point, 1 = erase, 2 = line
-                    byte drawType = packetReader.ReadByte();
-                    int x = packetReader.ReadInt16LE();
-                    int z = packetReader.ReadInt16LE();
+                        short size = pr.ReadInt16LE();
+                        byte playerNum = pr.ReadByte();
 
-                    if (drawType == BarMapDrawActionType.POINT) {
-                        byte fromLua = packetReader.ReadByte();
-                        string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
-
-                        match.MapDraws.Add(new BarMatchMapDrawPoint() {
-                            Action = "point",
-                            PlayerID = playerID,
-                            Index = packetCount,
-                            GameID = header.GameID,
-                            GameTime = packet.GameTime,
-                            Label = label,
-                            X = x,
-                            Z = z,
-                            FromLua = fromLua
-                        });
-                    } else if (drawType == BarMapDrawActionType.LINE) {
-                        int x2 = packetReader.ReadInt16LE();
-                        int z2 = packetReader.ReadInt16LE();
-                        byte fromLua = packetReader.ReadByte();
-
-                        match.MapDraws.Add(new BarMatchMapDrawLine() {
-                            Action = "line",
-                            PlayerID = playerID,
-                            GameTime = packet.GameTime,
-                            Index = packetCount,
-                            X = x,
-                            EndX = x2,
-                            Z = z,
-                            EndZ = z2,
-                            FromLua = fromLua,
-                        });
-                    } else if (drawType == BarMapDrawActionType.ERASE) {
-                        match.MapDraws.Add(new BarMatchMapDrawErase() {
-                            Action = "erase",
-                            PlayerID = playerID,
-                            GameTime = packet.GameTime,
-                            Index = packetCount,
-                            X = x,
-                            Z = z,
-                        });
-                    } else {
-                        _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
-                    }
-                }
-
-                // MAP_DRAW (32)
-                else if (options.IncludeMapDraws == true
-                    && packet.PacketType == BarPacketType.MAP_DRAW || packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize) {
-
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte size = packetReader.ReadByte();
-                    byte playerID = packetReader.ReadByte();
-                    // 0 = point, 1 = erase, 2 = line
-                    byte drawType = packetReader.ReadByte();
-                    int x = packetReader.ReadInt32LE();
-                    int z = packetReader.ReadInt32LE();
-
-                    if (drawType == BarMapDrawActionType.POINT) {
-                        byte fromLua = packetReader.ReadByte();
-                        string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
-
-                        match.MapDraws.Add(new BarMatchMapDrawPoint() {
-                            Action = "point",
-                            PlayerID = playerID,
-                            GameID = header.GameID,
-                            Index = packetCount,
-                            GameTime = packet.GameTime,
-                            Label = label,
-                            X = x,
-                            Z = z,
-                        });
-                    } else if (drawType == BarMapDrawActionType.LINE) {
-                        int x2 = packetReader.ReadInt32LE();
-                        int z2 = packetReader.ReadInt32LE();
-                        byte fromLua = packetReader.ReadByte();
-
-                        match.MapDraws.Add(new BarMatchMapDrawLine() {
-                            Action = "line",
-                            PlayerID = playerID,
-                            Index = packetCount,
-                            GameTime = packet.GameTime,
-                            X = x,
-                            EndX = x2,
-                            Z = z,
-                            EndZ = z2,
-                        });
-                    } else if (drawType == BarMapDrawActionType.ERASE) {
-                        match.MapDraws.Add(new BarMatchMapDrawErase() {
-                            Action = "erase",
-                            PlayerID = playerID,
-                            GameTime = packet.GameTime,
-                            Index = packetCount,
-                            X = x,
-                            Z = z
-                        });
-                    } else {
-                        _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
-                    }
-                }
-
-                // START_POS (36)
-                else if (packet.PacketType == BarPacketType.START_POS) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte playerID = packetReader.ReadByte();
-                    byte teamID = packetReader.ReadByte();
-                    byte readyState = packetReader.ReadByte();
-                    float x = packetReader.ReadFloat32LE();
-                    float y = packetReader.ReadFloat32LE();
-                    float z = packetReader.ReadFloat32LE();
-
-                    //
-                    // 2026-06-22: from what i can tell, the demofile just contains the last start spot a player sent,
-                    //  even if that start spot is not valid for that player.
-                    // so, gex will do some basic checks to ensure that the start spots are valid
-                    //
-                    // check if the new start spot is valid by:
-                    //  1. ensuring the spot is within the start box of the ally team
-                    //  2. the player has not already locked in their start spot
-                    //
-                    do {
-                        // this is set in LUA_MSG, with the data of "locking_in_place", see below for that handling
-                        if (readyState == 0 && playedPositionsLockedIn.Contains(playerID)) {
-                            _Logger.LogTrace($"cannot set set start position, player is already locked in [teamID={teamID}] [gameID={header.GameID}]");
-                            break;
+                        byte[] left = pr.ReadAll();
+                        List<ushort> unitIDs = [];
+                        for (int i = 0; i < left.Length; i += 2) {
+                            ushort unitID = (ushort)(left[i] | (ushort)(left[i + 1] << 8));
+                            unitIDs.Add(unitID);
                         }
 
-                        BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
-                        if (team == null) {
-                            _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
-                            break;
+                        selectedUnitIds[playerNum] = unitIDs;
+                    }
+
+                    // AI_COMMAND (14)
+                    else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
+                        ByteArrayReader pr = new(packet.Data);
+                        short size = pr.ReadInt16LE();
+                        byte playerNum = pr.ReadByte();
+                        byte aiId = pr.ReadByte();
+                        byte aiTeamId = pr.ReadByte();
+                        ushort unitID = pr.ReadUInt16LE();
+                        int commandId = pr.ReadInt32LE();
+                        int timeout = pr.ReadInt32LE();
+                        byte cmdOpts = pr.ReadByte();
+                        uint paramCount = pr.ReadUInt32LE();
+
+                        List<float> parms = [];
+                        for (uint i = 0; i < paramCount; ++i) {
+                            parms.Add(pr.ReadFloat32LE());
                         }
 
-                        if (startBoxesShuffled == true) {
+                        Result<BarCommand, string> cmd = _CommandParser.Parse(commandId, cmdOpts, new Span<float>([.. parms]));
+                        if (cmd.IsOk == false) {
+                            _Logger.LogError($"failed to parse command [error={cmd.Error}]");
+                            continue;
+                        }
+
+                        BarCommand command = cmd.Value;
+                        command.UnitIDs = [unitID];
+                        command.FullGameTime = packet.GameTime;
+                        command.PlayerID = playerNum;
+                        match.Commands.Add(command);
+
+                    }
+
+                    // AI_COMMANDS (15)
+                    else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
+                        ByteArrayReader pr = new(packet.Data);
+
+                        short size = pr.ReadInt16LE();
+                        byte playerNum = pr.ReadByte();
+                        byte aiId = pr.ReadByte();
+                        byte pairwise = pr.ReadByte();
+                        uint refCmdId = pr.ReadUInt32LE();
+                        byte refCmdOpts = pr.ReadByte();
+                        ushort refCmdSize = pr.ReadUInt16LE();
+                        short unitCount = pr.ReadInt16LE();
+
+                        List<ushort> unitIds = [];
+                        for (int i = 0; i < unitCount; ++i) {
+                            unitIds.Add(pr.ReadUInt16LE());
+                        }
+
+                        ushort commandCount = pr.ReadUInt16LE();
+
+                        List<BarCommand> commands = [];
+                        for (int i = 0; i < commandCount; ++i) {
+                            uint id = refCmdId == 0 ? pr.ReadUInt32LE() : refCmdId;
+                            byte optionBitmask = refCmdOpts == 0xFF ? pr.ReadByte() : refCmdOpts;
+                            ushort cmdSize = refCmdSize == 0xFFFF ? pr.ReadUInt16LE() : refCmdSize;
+
+                            List<float> parms = [];
+                            for (int j = 0; j < cmdSize; ++j) {
+                                parms.Add(pr.ReadFloat32LE());
+                            }
+
+                            Result<BarCommand, string> cmd = _CommandParser.Parse((int)id, optionBitmask, new Span<float>([.. parms]));
+                            if (cmd.IsOk == false) {
+                                _Logger.LogError($"failed to parse command [error={cmd.Error}]");
+                                continue;
+                            }
+
+                            BarCommand command = cmd.Value;
+                            command.PlayerID = playerNum;
+                            if (i < unitIds.Count) {
+                                command.UnitIDs = [unitIds[i]];
+                            }
+                            command.FullGameTime = packet.GameTime;
+
+                            match.Commands.Add(command);
+                        }
+                    }
+
+                    // GAME_OVER (30)
+                    else if (packet.PacketType == BarPacketType.GAME_OVER) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte size = packetReader.ReadByte();
+                        byte playerNum = packetReader.ReadByte();
+                        winningAllyTeams = packetReader.ReadAll();
+                    }
+
+                    // MAP_DRAW_OLD (31)
+                    else if (options.IncludeMapDraws == true && packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize == false) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte size = packetReader.ReadByte();
+                        byte playerID = packetReader.ReadByte();
+                        // 0 = point, 1 = erase, 2 = line
+                        byte drawType = packetReader.ReadByte();
+                        int x = packetReader.ReadInt16LE();
+                        int z = packetReader.ReadInt16LE();
+
+                        if (drawType == BarMapDrawActionType.POINT) {
+                            byte fromLua = packetReader.ReadByte();
+                            string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
+
+                            match.MapDraws.Add(new BarMatchMapDrawPoint() {
+                                Action = "point",
+                                PlayerID = playerID,
+                                Index = packetCount,
+                                GameID = header.GameID,
+                                GameTime = packet.GameTime,
+                                Label = label,
+                                X = x,
+                                Z = z,
+                                FromLua = fromLua
+                            });
+                        } else if (drawType == BarMapDrawActionType.LINE) {
+                            int x2 = packetReader.ReadInt16LE();
+                            int z2 = packetReader.ReadInt16LE();
+                            byte fromLua = packetReader.ReadByte();
+
+                            match.MapDraws.Add(new BarMatchMapDrawLine() {
+                                Action = "line",
+                                PlayerID = playerID,
+                                GameTime = packet.GameTime,
+                                Index = packetCount,
+                                X = x,
+                                EndX = x2,
+                                Z = z,
+                                EndZ = z2,
+                                FromLua = fromLua,
+                            });
+                        } else if (drawType == BarMapDrawActionType.ERASE) {
+                            match.MapDraws.Add(new BarMatchMapDrawErase() {
+                                Action = "erase",
+                                PlayerID = playerID,
+                                GameTime = packet.GameTime,
+                                Index = packetCount,
+                                X = x,
+                                Z = z,
+                            });
+                        } else {
+                            _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
+                        }
+                    }
+
+                    // MAP_DRAW (32)
+                    else if (options.IncludeMapDraws == true
+                        && packet.PacketType == BarPacketType.MAP_DRAW || packet.PacketType == BarPacketType.MAP_DRAW_OLD && hasWrongPacket31CoordSize) {
+
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte size = packetReader.ReadByte();
+                        byte playerID = packetReader.ReadByte();
+                        // 0 = point, 1 = erase, 2 = line
+                        byte drawType = packetReader.ReadByte();
+                        int x = packetReader.ReadInt32LE();
+                        int z = packetReader.ReadInt32LE();
+
+                        if (drawType == BarMapDrawActionType.POINT) {
+                            byte fromLua = packetReader.ReadByte();
+                            string label = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
+
+                            match.MapDraws.Add(new BarMatchMapDrawPoint() {
+                                Action = "point",
+                                PlayerID = playerID,
+                                GameID = header.GameID,
+                                Index = packetCount,
+                                GameTime = packet.GameTime,
+                                Label = label,
+                                X = x,
+                                Z = z,
+                            });
+                        } else if (drawType == BarMapDrawActionType.LINE) {
+                            int x2 = packetReader.ReadInt32LE();
+                            int z2 = packetReader.ReadInt32LE();
+                            byte fromLua = packetReader.ReadByte();
+
+                            match.MapDraws.Add(new BarMatchMapDrawLine() {
+                                Action = "line",
+                                PlayerID = playerID,
+                                Index = packetCount,
+                                GameTime = packet.GameTime,
+                                X = x,
+                                EndX = x2,
+
+                                Z = z,
+                                EndZ = z2,
+                            });
+                        } else if (drawType == BarMapDrawActionType.ERASE) {
+                            match.MapDraws.Add(new BarMatchMapDrawErase() {
+                                Action = "erase",
+                                PlayerID = playerID,
+                                GameTime = packet.GameTime,
+                                Index = packetCount,
+                                X = x,
+                                Z = z
+                            });
+                        } else {
+                            _Logger.LogWarning($"unchecked drawType [gameID={header.GameID}] [drawType={drawType}]");
+                        }
+                    }
+
+                    // START_POS (36)
+                    else if (packet.PacketType == BarPacketType.START_POS) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte playerID = packetReader.ReadByte();
+                        byte teamID = packetReader.ReadByte();
+                        byte readyState = packetReader.ReadByte();
+                        float x = packetReader.ReadFloat32LE();
+                        float y = packetReader.ReadFloat32LE();
+                        float z = packetReader.ReadFloat32LE();
+
+                        //
+                        // 2026-06-22: from what i can tell, the demofile just contains the last start spot a player sent,
+                        //  even if that start spot is not valid for that player.
+                        // so, gex will do some basic checks to ensure that the start spots are valid
+                        //
+                        // check if the new start spot is valid by:
+                        //  1. ensuring the spot is within the start box of the ally team
+                        //  2. the player has not already locked in their start spot
+                        //
+                        do {
+                            // this is set in LUA_MSG, with the data of "locking_in_place", see below for that handling
+                            if (readyState == 0 && playedPositionsLockedIn.Contains(playerID)) {
+                                _Logger.LogTrace($"cannot set set start position, player is already locked in [teamID={teamID}] [gameID={header.GameID}]");
+                                break;
+                            }
+
+                            BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
+                            if (team == null) {
+                                _Logger.LogWarning($"cannot set start position, team does not exist [teamID={teamID}] [gameID={header.GameID}]");
+                                break;
+                            }
+
+                            if (startBoxesShuffled == true) {
+                                team.StartingPosition = new Vector3() {
+                                    X = x,
+                                    Y = y,
+                                    Z = z
+                                };
+                                break;
+                            }
+
+                            BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == team.AllyTeamID);
+                            if (at == null) {
+                                _Logger.LogWarning($"cannot set start position, ally team does not exist [gameID={header.GameID}] [allyTeamID={team.AllyTeamID}]");
+                                break;
+                            }
+
+                            Rectangle scaled = new() {
+                                Left = (float)(at.StartBox.Left * (map?.Width ?? 1f) * 512f),
+                                Right = (float)(at.StartBox.Right * (map?.Width ?? 1f) * 512f),
+                                Top = (float)(at.StartBox.Top * (map?.Height ?? 1f) * 512f),
+                                Bottom = (float)(at.StartBox.Bottom * (map?.Height ?? 1f) * 512f),
+                            };
+
+                            if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
+                                if ((readyState == 3 || readyState == 1) && team.StartingPosition == Vector3.Zero) {
+                                    _Logger.LogWarning($"team start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
+                                        + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                                } else {
+                                    _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}]"
+                                        + $" [gameID={header.GameID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                                    break;
+                                }
+                            }
+
                             team.StartingPosition = new Vector3() {
                                 X = x,
                                 Y = y,
                                 Z = z
                             };
-                            break;
-                        }
 
-                        BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == team.AllyTeamID);
-                        if (at == null) {
-                            _Logger.LogWarning($"cannot set start position, ally team does not exist [gameID={header.GameID}] [allyTeamID={team.AllyTeamID}]");
-                            break;
-                        }
-
-                        Rectangle scaled = new() {
-                            Left = (float)(at.StartBox.Left * (map?.Width ?? 1f) * 512f),
-                            Right = (float)(at.StartBox.Right * (map?.Width ?? 1f) * 512f),
-                            Top = (float)(at.StartBox.Top * (map?.Height ?? 1f) * 512f),
-                            Bottom = (float)(at.StartBox.Bottom * (map?.Height ?? 1f) * 512f),
-                        };
-
-                        if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
-                            if ((readyState == 3 || readyState == 1) && team.StartingPosition == Vector3.Zero) {
-                                _Logger.LogWarning($"team start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
-                                    + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
-                            } else {
-                                _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}]"
-                                    + $" [gameID={header.GameID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
-                                break;
-                            }
-                        }
-
-                        team.StartingPosition = new Vector3() {
-                            X = x,
-                            Y = y,
-                            Z = z
-                        };
-
-                        //_Logger.LogDebug($"start position changed [teamID={teamID}] [readyState={readyState}] [ts={packet.GameTime}] [x={x}] [y={y}] [z={z}]"
-                        //    + $"[rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
-                    } while (false);
-                }
-
-                // PLAYER_LEFT (39)
-                else if (packet.PacketType == BarPacketType.PLAYER_LEFT) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte playerNum = packetReader.ReadByte();
-                    byte reason = packetReader.ReadByte();
-
-                    BarMatchPlayerLeft left = new();
-                    left.GameID = header.GameID;
-                    left.PlayerID = playerNum;
-                    left.Reason = reason;
-                    left.GameTime = packet.GameTime;
-                    left.Index = packetCount;
-
-                    match.PlayerLeaves.Add(left);
-                }
-
-                // LUA_MSG (50)
-                else if (packet.PacketType == BarPacketType.LUA_MSG) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    short size = packetReader.ReadInt16LE();
-                    byte playerNum = packetReader.ReadByte();
-                    short script = packetReader.ReadInt16LE();
-                    byte mode = packetReader.ReadByte();
-
-                    byte[] bytes = packetReader.ReadAll();
-                    string msg = Encoding.ASCII.GetString(bytes);
-
-                    // LUA_MSG: AutoColors
-                    if (msg.StartsWith("AutoColors")) {
-                        JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg[10..]);
-
-                        foreach (JsonElement iter in colors.EnumerateArray()) {
-                            int teamID = iter.GetProperty("teamID").GetInt32();
-
-                            // TODO: why can these values go can over 255 and below 0 
-                            byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
-                            byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
-                            byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
-
-                            BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
-                            if (team != null) {
-                                team.Color = r << 16 | g << 8 | b;
-                            }
-                        }
+                            //_Logger.LogDebug($"start position changed [teamID={teamID}] [readyState={readyState}] [ts={packet.GameTime}] [x={x}] [y={y}] [z={z}]"
+                            //    + $"[rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                        } while (false);
                     }
 
-                    // LUA_MSG: changeStartUnit (faction change)
-                    else if (msg.StartsWith("changeStartUnit")) {
-                        int unitDefID = int.Parse(msg["changeStartUnit".Length..]);
-                        _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
+                    // PLAYER_LEFT (39)
+                    else if (packet.PacketType == BarPacketType.PLAYER_LEFT) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte playerNum = packetReader.ReadByte();
+                        byte reason = packetReader.ReadByte();
 
-                        string? defName = unitDefDict.GetValueOrDefault(unitDefID);
-                        if (defName == null) {
-                            _Logger.LogWarning($"missing unit definition in changeStartUnit! [gameID={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
-                        } else {
-                            // TODO: is playerNum here the player ID or the team ID?
-                            BarMatchPlayer? player = match.Players.FirstOrDefault(iter => iter.PlayerID == playerNum);
-                            if (player == null) {
-                                _Logger.LogError($"cannot changeStartUnit: missing player [gameID={header.GameID}] [playerNum={playerNum}]");
-                            } else {
-                                BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                        BarMatchPlayerLeft left = new();
+                        left.GameID = header.GameID;
+                        left.PlayerID = playerNum;
+                        left.Reason = reason;
+                        left.GameTime = packet.GameTime;
+                        left.Index = packetCount;
+
+                        match.PlayerLeaves.Add(left);
+                    }
+
+                    // LUA_MSG (50)
+                    else if (packet.PacketType == BarPacketType.LUA_MSG) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        short size = packetReader.ReadInt16LE();
+                        byte playerNum = packetReader.ReadByte();
+                        short script = packetReader.ReadInt16LE();
+                        byte mode = packetReader.ReadByte();
+
+                        byte[] bytes = packetReader.ReadAll();
+                        string msg = Encoding.ASCII.GetString(bytes);
+
+                        // LUA_MSG: AutoColors
+                        if (msg.StartsWith("AutoColors")) {
+                            JsonElement colors = JsonSerializer.Deserialize<JsonElement>(msg[10..]);
+
+                            foreach (JsonElement iter in colors.EnumerateArray()) {
+                                int teamID = iter.GetProperty("teamID").GetInt32();
+
+                                // TODO: why can these values go can over 255 and below 0 
+                                byte r = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("r").GetInt32()));
+                                byte g = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("g").GetInt32()));
+                                byte b = (byte)Math.Min(255, Math.Max(0, iter.GetProperty("b").GetInt32()));
+
+                                BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == teamID);
                                 if (team != null) {
-                                    if (defName == "armcom") {
-                                        team.Faction = "Armada";
-                                    } else if (defName == "corcom") {
-                                        team.Faction = "Cortex";
-                                    } else if (defName == "legcom") {
-                                        team.Faction = "Legion";
-                                    } else if (defName == "dummycom") {
-                                        team.Faction = "Random";
-                                    } else {
-                                        _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
-                                    }
-                                    _Logger.LogTrace($"team changed factions [playerNum={playerNum}] [faction={team.Faction}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
+                                    team.Color = r << 16 | g << 8 | b;
                                 }
                             }
                         }
 
-                    }
+                        // LUA_MSG: changeStartUnit (faction change)
+                        else if (msg.StartsWith("changeStartUnit")) {
+                            int unitDefID = int.Parse(msg["changeStartUnit".Length..]);
+                            _Logger.LogTrace($"player changing factions [playerNum={playerNum}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
 
-                    // LUA_MSG: unitdefs
-                    else if (msg.StartsWith("unitdefs:")) {
-                        if (unitDefDict.Count == 0) {
-                            Span<byte> input = bytes.AsSpan("unitdefs:".Length);
-                            using MemoryStream stream = new(input.ToArray());
-                            using ZLibStream zlib = new(stream, CompressionMode.Decompress);
-                            using MemoryStream output = new();
-                            zlib.CopyTo(output);
-                            byte[] unitDefs = output.ToArray();
-
-                            JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
-
-                            int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
-                            foreach (JsonElement iter in json.EnumerateArray()) {
-                                string defName = iter.GetString()!;
-                                if (unitDefDict.ContainsKey(index)) {
-                                    if (unitDefDict[index] != defName) {
-                                        _Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
-                                    }
+                            string? defName = unitDefDict.GetValueOrDefault(unitDefID);
+                            if (defName == null) {
+                                _Logger.LogWarning($"missing unit definition in changeStartUnit! [gameID={header.GameID}] [def ID={unitDefID}] [playerID={playerNum}]");
+                            } else {
+                                // TODO: is playerNum here the player ID or the team ID?
+                                BarMatchPlayer? player = match.Players.FirstOrDefault(iter => iter.PlayerID == playerNum);
+                                if (player == null) {
+                                    _Logger.LogError($"cannot changeStartUnit: missing player [gameID={header.GameID}] [playerNum={playerNum}]");
                                 } else {
-                                    unitDefDict.Add(index, iter.GetString()!);
+                                    BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                                    if (team != null) {
+                                        if (defName == "armcom") {
+                                            team.Faction = "Armada";
+                                        } else if (defName == "corcom") {
+                                            team.Faction = "Cortex";
+                                        } else if (defName == "legcom") {
+                                            team.Faction = "Legion";
+                                        } else if (defName == "dummycom") {
+                                            team.Faction = "Random";
+                                        } else {
+                                            _Logger.LogWarning($"unchecked defName for changeStartUnit [id={header.GameID}] [def name={defName}]");
+                                        }
+                                        _Logger.LogTrace($"team changed factions [playerNum={playerNum}] [faction={team.Faction}] [unitDefID={unitDefID}] [gameID={header.GameID}]");
+                                    }
                                 }
-                                index += 1;
+                            }
+
+                        }
+
+                        // LUA_MSG: unitdefs
+                        else if (msg.StartsWith("unitdefs:")) {
+                            if (unitDefDict.Count == 0) {
+                                Span<byte> input = bytes.AsSpan("unitdefs:".Length);
+                                using MemoryStream stream = new(input.ToArray());
+                                using ZLibStream zlib = new(stream, CompressionMode.Decompress);
+                                using MemoryStream output = new();
+                                zlib.CopyTo(output);
+                                byte[] unitDefs = output.ToArray();
+
+                                JsonElement json = JsonSerializer.Deserialize<JsonElement>(unitDefs);
+
+                                int index = 1; // i'm gonna write a mean comment about why this index starts at 1 instead of 0
+                                foreach (JsonElement iter in json.EnumerateArray()) {
+                                    string defName = iter.GetString()!;
+                                    if (unitDefDict.ContainsKey(index)) {
+                                        if (unitDefDict[index] != defName) {
+                                            _Logger.LogWarning($"inconsistent def names! [gameID={header.GameID}] [index={index}] [current={unitDefDict[index]}] [new={defName}]");
+                                        }
+                                    } else {
+                                        unitDefDict.Add(index, iter.GetString()!);
+                                    }
+                                    index += 1;
+                                }
                             }
                         }
+
+                        // LUA_MSG: locking_in_place
+                        else if (msg == "locking_in_place") {
+                            playedPositionsLockedIn.Add(playerNum);
+                        }
+
+                        // LUA_MSG: unlocking_in_place
+                        else if (msg == "unlocking_in_place") {
+                            playedPositionsLockedIn.Remove(playerNum);
+                        }
                     }
 
-                    // LUA_MSG: locking_in_place
-                    else if (msg == "locking_in_place") {
-                        playedPositionsLockedIn.Add(playerNum);
+                    // TEAM_MSG (51)
+                    else if (packet.PacketType == BarPacketType.TEAM_MSG) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        byte playerNum = packetReader.ReadByte();
+                        byte action = packetReader.ReadByte();
+                        byte param1 = packetReader.ReadByte();
+
+                        if (action == 2) { // 2 = resigned
+                            // how can a team die multiple times ??
+                            if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == playerNum) != null) {
+                                _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={playerNum}] [gametime={packet.GameTime}] [action={action}]");
+                                continue;
+                            }
+
+                            BarMatchTeamDeath death = new();
+                            death.GameID = header.GameID;
+                            death.TeamID = playerNum;
+                            death.Reason = action;
+                            death.GameTime = packet.GameTime;
+                            match.TeamDeaths.Add(death);
+                        } else if (action == 4) { // 4 = TEAM_DIED, param1 = team that died
+                            if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == param1) != null) {
+                                _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={param1}] [gametime={packet.GameTime}] [action={action}]");
+                                continue;
+                            }
+                            BarMatchTeamDeath death = new();
+                            death.GameID = header.GameID;
+                            death.TeamID = param1;
+                            death.Reason = action;
+                            death.GameTime = packet.GameTime;
+                            match.TeamDeaths.Add(death);
+                        }
                     }
 
-                    // LUA_MSG: unlocking_in_place
-                    else if (msg == "unlocking_in_place") {
-                        playedPositionsLockedIn.Remove(playerNum);
-                    }
-                }
+                    // CREATE_NEW_PLAYER (75)
+                    else if (packet.PacketType == BarPacketType.CREATE_NEW_PLAYER) {
+                        ByteArrayReader packetReader = new(packet.Data);
+                        short size = packetReader.ReadInt16LE();
+                        byte playerID = packetReader.ReadByte();
+                        bool isSpec = packetReader.ReadByte() == 1;
+                        byte teamNum = packetReader.ReadByte();
+                        string playerName = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
 
-                // TEAM_MSG (51)
-                else if (packet.PacketType == BarPacketType.TEAM_MSG) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    byte playerNum = packetReader.ReadByte();
-                    byte action = packetReader.ReadByte();
-                    byte param1 = packetReader.ReadByte();
-
-                    if (action == 2) { // 2 = resigned
-                        // how can a team die multiple times ??
-                        if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == playerNum) != null) {
-                            _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={playerNum}] [gametime={packet.GameTime}] [action={action}]");
+                        if (isSpec == false) {
+                            _Logger.LogWarning($"non-spectator joining via CREATE_NEW_PLAYER? [playerID={playerID}] [gameID={header.GameID}]");
+                            //Debug.Fail("non-spectator joining via CREATE_NEW_PLAYER?");
                             continue;
                         }
 
-                        BarMatchTeamDeath death = new();
-                        death.GameID = header.GameID;
-                        death.TeamID = playerNum;
-                        death.Reason = action;
-                        death.GameTime = packet.GameTime;
-                        match.TeamDeaths.Add(death);
-                    } else if (action == 4) { // 4 = TEAM_DIED, param1 = team that died
-                        if (match.TeamDeaths.FirstOrDefault(iter => iter.TeamID == param1) != null) {
-                            _Logger.LogWarning($"found another death for a team that already died [gameID={match.ID}] [teamID={param1}] [gametime={packet.GameTime}] [action={action}]");
+                        if (match.Spectators.FirstOrDefault(iter => iter.Name == playerName) != null) {
+                            _Logger.LogDebug($"spectator already exists [name={playerName}] [gameID={header.GameID}] [playerID={playerID}]");
                             continue;
                         }
-                        BarMatchTeamDeath death = new();
-                        death.GameID = header.GameID;
-                        death.TeamID = param1;
-                        death.Reason = action;
-                        death.GameTime = packet.GameTime;
-                        match.TeamDeaths.Add(death);
-                    }
-                }
 
-                // CREATE_NEW_PLAYER (75)
-                else if (packet.PacketType == BarPacketType.CREATE_NEW_PLAYER) {
-                    ByteArrayReader packetReader = new(packet.Data);
-                    short size = packetReader.ReadInt16LE();
-                    byte playerID = packetReader.ReadByte();
-                    bool isSpec = packetReader.ReadByte() == 1;
-                    byte teamNum = packetReader.ReadByte();
-                    string playerName = Encoding.UTF8.GetString(packetReader.ReadUntilNull());
+                        BarMatchSpectator spec = new();
+                        spec.GameID = header.GameID;
+                        spec.PlayerID = playerID;
+                        spec.Name = playerName;
 
-                    if (isSpec == false) {
-                        _Logger.LogWarning($"non-spectator joining via CREATE_NEW_PLAYER? [playerID={playerID}] [gameID={header.GameID}]");
-                        //Debug.Fail("non-spectator joining via CREATE_NEW_PLAYER?");
-                        continue;
-                    }
-
-                    if (match.Spectators.FirstOrDefault(iter => iter.Name == playerName) != null) {
-                        _Logger.LogDebug($"spectator already exists [name={playerName}] [gameID={header.GameID}] [playerID={playerID}]");
-                        continue;
-                    }
-
-                    BarMatchSpectator spec = new();
-                    spec.GameID = header.GameID;
-                    spec.PlayerID = playerID;
-                    spec.Name = playerName;
-
-                    if (_UserRepository != null) {
-                        List<BarUser> users = await _UserRepository.GetByName(playerName, cancel);
-                        if (users.Count >= 1) {
-                            BarUser highestUser = users.MaxBy(iter => iter.UserID)!;
-                            spec.UserID = highestUser.UserID;
-                            spec.UserIDCanBeWrong = true;
+                        if (_UserRepository != null) {
+                            List<BarUser> users = await _UserRepository.GetByName(playerName, cancel);
+                            if (users.Count >= 1) {
+                                BarUser highestUser = users.MaxBy(iter => iter.UserID)!;
+                                spec.UserID = highestUser.UserID;
+                                spec.UserIDCanBeWrong = true;
+                            }
                         }
+
+                        match.Spectators.Add(spec);
                     }
 
-                    match.Spectators.Add(spec);
+                    // QUIT (3)
+                    else if (packet.PacketType == BarPacketType.QUIT) {
+                        _Logger.LogTrace($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
+                        break;
+                    }
                 }
 
-                // QUIT (3)
-                else if (packet.PacketType == BarPacketType.QUIT) {
-                    _Logger.LogTrace($"found packet type 3, breaking [index={reader.Index}] [packet count={packetCount}] [time={packet.GameTime}]");
-                    break;
-                }
-            }
+                long packetReadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
-            long packetReadMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-            if (header.StatOffset != reader.Index) {
-                return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
-            }
-
-            _Logger.LogTrace($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
-            match.DurationFrameCount = maxFrame;
-
-            // player stat parsing
-            DemofileStatistics playerStats = new();
-
-            // only given when there is at least 1 team
-            // https://github.com/beyond-all-reason/RecoilEngine/blob/b77e4a45421a367ad0044089d862ea17ff327bb4/rts/System/LoadSave/DemoRecorder.cpp#L276
-            if (header.TeamCount > 0) {
-                for (int i = 0; i < header.WinningAllyTeamsSize; ++i) {
-                    playerStats.WinningAllyTeamIDs.Add(reader.ReadByte());
-                }
-            }
-
-            for (int i = 0; i < header.PlayerCount; ++i) {
-                DemofilePlayerStats iter = new();
-                iter.PlayerID = i;
-                iter.CommandCount = reader.ReadInt32LE();
-                iter.UnitCommands = reader.ReadInt32LE();
-                iter.MousePixels = reader.ReadInt32LE();
-                iter.MouseClicks = reader.ReadInt32LE();
-                iter.KeyPresses = reader.ReadInt32LE();
-
-                playerStats.PlayerStats.Add(iter);
-            }
-
-            demofile.Statistics = playerStats;
-
-            // team stat parsing
-            List<DemofileTeamStats> teamStats = [];
-            for (int i = 0; i < header.TeamCount; ++i) {
-                teamStats.Add(new DemofileTeamStats() {
-                    TeamID = i,
-                    StatCount = reader.ReadInt32LE()
-                });
-            }
-
-            for (int i = 0; i < header.TeamCount; ++i) {
-                DemofileTeamStats iter = teamStats[i];
-
-                for (int j = 0; j < iter.StatCount; ++j) {
-                    BarMatchTeamStats frame = new();
-                    frame.TeamID = iter.TeamID;
-                    frame.Frame = reader.ReadInt32LE();
-                    frame.MetalUsed = reader.ReadFloat32LE();
-                    frame.EnergyUsed = reader.ReadFloat32LE();
-                    frame.MetalProduced = reader.ReadFloat32LE();
-                    frame.EnergyProduced = reader.ReadFloat32LE();
-                    frame.MetalExcess = reader.ReadFloat32LE();
-                    frame.EnergyExcess = reader.ReadFloat32LE();
-                    frame.MetalReceived = reader.ReadFloat32LE();
-                    frame.EnergyReceived = reader.ReadFloat32LE();
-                    frame.MetalSend = reader.ReadFloat32LE();
-                    frame.EnergySend = reader.ReadFloat32LE();
-                    frame.DamageDealt = reader.ReadFloat32LE();
-                    frame.DamageReceived = reader.ReadFloat32LE();
-                    frame.UnitsProduced = reader.ReadInt32LE();
-                    frame.UnitsDied = reader.ReadInt32LE();
-                    frame.UnitsReceived = reader.ReadInt32LE();
-                    frame.UnitsSent = reader.ReadInt32LE();
-                    frame.UnitsCaptured = reader.ReadInt32LE();
-                    frame.UnitsOutCaptured = reader.ReadInt32LE();
-                    frame.UnitsKilled = reader.ReadInt32LE();
-
-                    match.TeamStats.Add(frame);
-                }
-            }
-
-            if (reader.Index != data.Length) {
-                _Logger.LogWarning($"finished parsing, but did not reach the end of the file [gameID={header.GameID}] [reader.Index={reader.Index}] [data.Length={data.Length}]");
-                Debug.Fail("expected to be eof, was not");
-            }
-
-            demofile.TeamStatistics = teamStats;
-
-            foreach (BarMatchPlayer player in match.Players) {
-                BarMatchTeam? playerTeam = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
-                if (playerTeam == null) {
-                    Debug.Fail($"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]");
-                    return $"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]";
+                if (header.StatOffset != reader.Index) {
+                    return $"expected reader to be {header.StatOffset} (for reading stats), was at {reader.Index} instead";
                 }
 
-                player.AllyTeamID = playerTeam.AllyTeamID;
-            }
+                _Logger.LogTrace($"packets parsed [gameID={match.ID}] [packet count={packetCount}] [frame count={frameCount}] [max frame={maxFrame}]");
+                match.DurationFrameCount = maxFrame;
 
-            foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
-                if (winningAllyTeams.Contains((byte)allyTeam.AllyTeamID)) {
-                    allyTeam.Won = true;
+                // player stat parsing
+                DemofileStatistics playerStats = new();
+
+                // only given when there is at least 1 team
+                // https://github.com/beyond-all-reason/RecoilEngine/blob/b77e4a45421a367ad0044089d862ea17ff327bb4/rts/System/LoadSave/DemoRecorder.cpp#L276
+                if (header.TeamCount > 0) {
+                    for (int i = 0; i < header.WinningAllyTeamsSize; ++i) {
+                        playerStats.WinningAllyTeamIDs.Add(reader.ReadByte());
+                    }
                 }
-                allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
-                if (allyTeam.PlayerCount > 0) {
-                    allyTeam.AverageSkill = match.Players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Average(iter => iter.Skill);
+
+                for (int i = 0; i < header.PlayerCount; ++i) {
+                    DemofilePlayerStats iter = new();
+                    iter.PlayerID = i;
+                    iter.CommandCount = reader.ReadInt32LE();
+                    iter.UnitCommands = reader.ReadInt32LE();
+                    iter.MousePixels = reader.ReadInt32LE();
+                    iter.MouseClicks = reader.ReadInt32LE();
+                    iter.KeyPresses = reader.ReadInt32LE();
+
+                    playerStats.PlayerStats.Add(iter);
+                }
+
+                demofile.Statistics = playerStats;
+
+                // team stat parsing
+                List<DemofileTeamStats> teamStats = [];
+                for (int i = 0; i < header.TeamCount; ++i) {
+                    teamStats.Add(new DemofileTeamStats() {
+                        TeamID = i,
+                        StatCount = reader.ReadInt32LE()
+                    });
+                }
+
+                for (int i = 0; i < header.TeamCount; ++i) {
+                    DemofileTeamStats iter = teamStats[i];
+
+                    for (int j = 0; j < iter.StatCount; ++j) {
+                        BarMatchTeamStats frame = new();
+                        frame.TeamID = iter.TeamID;
+                        frame.Frame = reader.ReadInt32LE();
+                        frame.MetalUsed = reader.ReadFloat32LE();
+                        frame.EnergyUsed = reader.ReadFloat32LE();
+                        frame.MetalProduced = reader.ReadFloat32LE();
+                        frame.EnergyProduced = reader.ReadFloat32LE();
+                        frame.MetalExcess = reader.ReadFloat32LE();
+                        frame.EnergyExcess = reader.ReadFloat32LE();
+                        frame.MetalReceived = reader.ReadFloat32LE();
+                        frame.EnergyReceived = reader.ReadFloat32LE();
+                        frame.MetalSend = reader.ReadFloat32LE();
+                        frame.EnergySend = reader.ReadFloat32LE();
+                        frame.DamageDealt = reader.ReadFloat32LE();
+                        frame.DamageReceived = reader.ReadFloat32LE();
+                        frame.UnitsProduced = reader.ReadInt32LE();
+                        frame.UnitsDied = reader.ReadInt32LE();
+                        frame.UnitsReceived = reader.ReadInt32LE();
+                        frame.UnitsSent = reader.ReadInt32LE();
+                        frame.UnitsCaptured = reader.ReadInt32LE();
+                        frame.UnitsOutCaptured = reader.ReadInt32LE();
+                        frame.UnitsKilled = reader.ReadInt32LE();
+
+                        match.TeamStats.Add(frame);
+                    }
+                }
+
+                if (reader.Index != data.Length) {
+                    _Logger.LogWarning($"finished parsing, but did not reach the end of the file [gameID={header.GameID}] [reader.Index={reader.Index}] [data.Length={data.Length}]");
+                    Debug.Fail("expected to be eof, was not");
+                }
+
+                demofile.TeamStatistics = teamStats;
+
+                foreach (BarMatchPlayer player in match.Players) {
+                    BarMatchTeam? playerTeam = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                    if (playerTeam == null) {
+                        Debug.Fail($"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]");
+                        return $"missing team of player [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]";
+                    }
+
+                    player.AllyTeamID = playerTeam.AllyTeamID;
+                }
+
+                foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+                    if (winningAllyTeams.Contains((byte)allyTeam.AllyTeamID)) {
+                        allyTeam.Won = true;
+                    }
+                    allyTeam.PlayerCount = match.Players.Count(iter => iter.AllyTeamID == allyTeam.AllyTeamID);
+                    if (allyTeam.PlayerCount > 0) {
+                        allyTeam.AverageSkill = match.Players.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Average(iter => iter.Skill);
+                    } else {
+                        allyTeam.AverageSkill = 0;
+                    }
+                    match.PlayerCount += allyTeam.PlayerCount;
+                }
+
+                int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();
+                int allyTeamCount = match.AllyTeams.Count;
+                match.Gamemode = BarGamemode.GetByPlayers(allyTeamCount, largestAllyTeam);
+
+                long statParsingMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+                if (match.Gamemode != BarGamemode.DEFAULT && match.OfflineGame == false) {
+                    if (match.SpadsSettings.GetChild("nbteams") == null) {
+                        _Logger.LogWarning($"missing nbteams from SpadsSettings [gameID={match.ID}]");
+                    }
+
+                    int spadsTeamCount = match.SpadsSettings.GetRequiredInt32("nbteams");
+                    int spadsTeamSize = match.SpadsSettings.GetRequiredInt32("teamsize");
+                    byte spadsGamemode = BarGamemode.GetByPlayers(spadsTeamCount, spadsTeamSize);
+                    match.WrongSkillValues = match.Gamemode != spadsGamemode;
+                    if (match.WrongSkillValues == true) {
+                        _Logger.LogInformation($"got demofile with wrong skill values "
+                            + $"[gameID={match.ID}] [gamemode={match.Gamemode}] [spads={spadsGamemode}] [spads team count={spadsTeamCount}] [spads team size={spadsTeamSize}]");
+                    }
                 } else {
-                    allyTeam.AverageSkill = 0;
-                }
-                match.PlayerCount += allyTeam.PlayerCount;
-            }
-
-            int largestAllyTeam = match.AllyTeams.Select(iter => iter.PlayerCount).Max();
-            int allyTeamCount = match.AllyTeams.Count;
-            match.Gamemode = BarGamemode.GetByPlayers(allyTeamCount, largestAllyTeam);
-
-            long statParsingMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
-
-            if (match.Gamemode != BarGamemode.DEFAULT && match.OfflineGame == false) {
-                if (match.SpadsSettings.GetChild("nbteams") == null) {
-                    _Logger.LogWarning($"missing nbteams from SpadsSettings [gameID={match.ID}]");
+                    _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
                 }
 
-                int spadsTeamCount = match.SpadsSettings.GetRequiredInt32("nbteams");
-                int spadsTeamSize = match.SpadsSettings.GetRequiredInt32("teamsize");
-                byte spadsGamemode = BarGamemode.GetByPlayers(spadsTeamCount, spadsTeamSize);
-                match.WrongSkillValues = match.Gamemode != spadsGamemode;
-                if (match.WrongSkillValues == true) {
-                    _Logger.LogInformation($"got demofile with wrong skill values "
-                        + $"[gameID={match.ID}] [gamemode={match.Gamemode}] [spads={spadsGamemode}] [spads team count={spadsTeamCount}] [spads team size={spadsTeamSize}]");
+                if (match.Players.Count > 0) {
+                    match.MinOS = (float)match.Players.Min(iter => iter.Skill);
+                    match.MaxOS = (float)match.Players.Max(iter => iter.Skill);
+                    match.AverageOS = (float)match.Players.Average(iter => iter.Skill);
+                } else {
+                    match.MinOS = 0f;
+                    match.MaxOS = 0f;
+                    match.AverageOS = 0f;
                 }
-            } else {
-                _Logger.LogWarning($"unchecked gamemode [gameID={match.ID}] [largestAllyTeam={largestAllyTeam}] [allyTeamCount={allyTeamCount}]");
-            }
 
-            if (match.Players.Count > 0) {
-                match.MinOS = (float)match.Players.Min(iter => iter.Skill);
-                match.MaxOS = (float)match.Players.Max(iter => iter.Skill);
-                match.AverageOS = (float)match.Players.Average(iter => iter.Skill);
-            } else {
-                match.MinOS = 0f;
-                match.MaxOS = 0f;
-                match.AverageOS = 0f;
+                _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [timer={timer.ElapsedMilliseconds}ms] [gamemode={match.Gamemode}] [packets={packetCount}]"
+                    + $" [header={readHeaderMs}ms] [mod options={modSettingsMs}ms] [packet parsing={packetReadMs}ms] [stat parsing={statParsingMs}ms]");
             }
-
-            _Logger.LogInformation($"demofile parsed [gameID={match.ID}] [timer={timer.ElapsedMilliseconds}ms] [gamemode={match.Gamemode}] [packets={packetCount}]"
-                + $" [header={readHeaderMs}ms] [mod options={modSettingsMs}ms] [packet parsing={packetReadMs}ms] [stat parsing={statParsingMs}ms]");
 
             return match;
         }
@@ -1090,6 +1093,8 @@ namespace gex.Common.Services.Parser {
     }
 
     public class DemofileParserOptions {
+
+        public bool ParseHeaderOnly { get; set; } = false;
 
         public bool IncludeCommands { get; set; } = false;
 

@@ -33,8 +33,8 @@ namespace gex.Services.BarApi {
         private readonly ILogger<BarHeadlessInstance> _Logger;
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarMatchRepository _MatchRepository;
-        private readonly PrDownloaderService _PrDownloader;
-        private readonly BarEngineDownloader _EngineDownloader;
+        private readonly HeadlessPrDownloaderService _PrDownloader;
+        private readonly HeadlessBarEngineDownloader _EngineDownloader;
         private readonly EnginePathUtil _EnginePathUtil;
         private readonly GameVersionUsageDb _VersionUsageDb;
         private readonly MapEngineUsageDb _MapEngineUsageDb;
@@ -81,7 +81,7 @@ namespace gex.Services.BarApi {
 
         public BarHeadlessInstance(ILogger<BarHeadlessInstance> logger,
             IOptions<FileStorageOptions> options, BarMatchRepository matchRepository,
-            PrDownloaderService prDownloader, BarEngineDownloader engineDownloader,
+            HeadlessPrDownloaderService prDownloader, HeadlessBarEngineDownloader engineDownloader,
             EnginePathUtil enginePathUtil, GameVersionUsageDb versionUsageDb,
             HeadlessRunStatusRepository headlessRunStatusRepository, BaseQueue<HeadlessRunStatus> headlessRunStatusQueue,
             IHubContext<HeadlessReplayHub, IHeadlessReplayHub> headlessReplayHub,

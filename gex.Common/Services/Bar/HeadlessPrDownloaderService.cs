@@ -14,15 +14,15 @@ using System.Threading.Tasks;
 
 namespace gex.Common.Services.Bar {
 
-    public class PrDownloaderService {
+    public class HeadlessPrDownloaderService : IPrDownloaderService {
 
-        private readonly ILogger<PrDownloaderService> _Logger;
+        private readonly ILogger<HeadlessPrDownloaderService> _Logger;
         private readonly EnginePathUtil _EnginePathUtil;
         private readonly IOptions<FileStorageOptions> _Options;
 
         private static Dictionary<string, Task<bool>> _PendingDownloads = [];
 
-        public PrDownloaderService(ILogger<PrDownloaderService> logger,
+        public HeadlessPrDownloaderService(ILogger<HeadlessPrDownloaderService> logger,
             EnginePathUtil enginePathUtil, IOptions<FileStorageOptions> options) {
 
             _Logger = logger;

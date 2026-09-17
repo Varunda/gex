@@ -48,6 +48,45 @@
                     <TextBlock FontSize="{StaticResource LargeFontSize}"
                                FontWeight="{StaticResource ControlStrongFontWeight}"
                                Padding="0,0,0,12"
+                               Text=".sdfz file association">
+                    </TextBlock>
+
+                    <TextBlock FontSize="{StaticResource NormalFontSize}"
+                               Text="Will .sdfz files be opened with gex.Coven?"
+                               Padding="0,0,0,4"
+                               TextWrapping="Wrap">
+                    </TextBlock>
+
+                    <Grid ColumnDefinitions="*, Auto, Auto" Margin="8" ColumnSpacing="8">
+                        <TextBlock Text="{Binding SdfzAssociated}" VerticalAlignment="Center" Grid.Column="0"/>
+
+                        <Button Command="{Binding AddFileAssociation}" Classes="btn-success" IsEnabled="{Binding IsAdmin}" Grid.Column="1">
+                            Add
+                        </Button>
+
+                        <Button Command="{Binding RemoveFileAssociation}" Classes="btn-danger" IsEnabled="{Binding IsAdmin}" Grid.Column="2">
+                            Remove
+                        </Button>
+                    </Grid>
+
+                    <Border CornerRadius="4" Background="{StaticResource ControlWarningBackgroundBrush}">
+                        <TextBlock IsVisible="{Binding !IsAdmin}" Padding="4"
+                                   Text="This application must be run as an admin to be able to add the file association">
+                        </TextBlock>
+                    </Border>
+                    
+                </StackPanel>
+            </husk:Card>
+
+            <husk:Card Padding="24"
+                       Background="{StaticResource ControlBackgroundBrush}"
+                       HorizontalAlignment="Center"
+                       Width="1280" MaxWidth="1280">
+
+                <StackPanel MaxHeight="480">
+                    <TextBlock FontSize="{StaticResource LargeFontSize}"
+                               FontWeight="{StaticResource ControlStrongFontWeight}"
+                               Padding="0,0,0,12"
                                Text="Ignored demofiles">
                     </TextBlock>
 
@@ -64,7 +103,13 @@
                         <TableView.Columns>
                             <TableViewColumn Header="Filename" Binding="{Binding FileName}" Width="40*"></TableViewColumn>
 
-                            <TableViewColumn Header="Reason" Binding="{Binding Reason}" Width="40*"></TableViewColumn>
+                            <TableViewColumn Header="Reason" Width="40*">
+                                <TableViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Reason}" ToolTip.Tip="{Binding Reason}"/>
+                                    </DataTemplate>
+                                </TableViewColumn.CellTemplate>
+                            </TableViewColumn>
 
                             <TableViewColumn Header="Unignore" Width="10*">
                                 <TableViewColumn.CellTemplate>
@@ -87,7 +132,6 @@
                     <TextBlock Text="{Binding IgnoredFiles.Count, StringFormat='Ignoring {0} files'}"/>
                     
                 </StackPanel>
-                
             </husk:Card>
 
         </StackPanel>

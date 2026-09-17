@@ -74,5 +74,25 @@
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
+        <Style Selector="Button.btn-primary">
+            <Setter Property="Background" Value="{StaticResource ControlAccentBackgroundBrush}"/>
+        </Style>
+
+        <Style Selector="Button.btn-primary:hover">
+            <Setter Property="Background" Value="{StaticResource ControlAccentInteractiveBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ControlAccentInteractiveBorderBrush}"/>
+        </Style>
+
+        <Style Selector="Button.btn-success">
+            <Setter Property="Background" Value="{StaticResource ControlSuccessBackgroundBrush}"/>
+        </Style>
+
+        <Style Selector="Button.btn-warning">
+            <Setter Property="Background" Value="{StaticResource ControlWarningBackgroundBrush}"/>
+        </Style>
+
+        <Style Selector="Button.btn-danger">
+            <Setter Property="Background" Value="{StaticResource ControlDangerBackgroundBrush}"/>
+        </Style>
     </Application.Styles>
 </Application>

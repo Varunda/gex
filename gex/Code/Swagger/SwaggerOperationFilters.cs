@@ -50,16 +50,54 @@ namespace gex.Code.Swagger {
 
             if (res.Content.ContainsKey("application/json") == false) {
 
-                string schemaId = retType.FullName!;
+                string schemaId = retType.FullName!.Replace("+", "_");
 
                 OpenApiSchema? schema = ctx.SchemaRepository.Schemas.GetValueOrDefault(schemaId);
                 if (schema == null) {
                     schema = ctx.SchemaGenerator.GenerateSchema(retType, ctx.SchemaRepository);
 
                     if (schemaId.StartsWith("System.") == false) {
+                        foreach (KeyValuePair<string, OpenApiSchema> kvp in schema.Properties) {
+                            PropertyInfo? prop = retType.GetProperties()
+                                .FirstOrDefault(iter => iter.Name.ToLower() == kvp.Key.ToLower());
+
+                            if (prop != null) {
+                                if (prop.GetCustomAttribute<System.Runtime.CompilerServices.NullableAttribute>() != null) {
+                                    kvp.Value.Nullable = true;
+                                } else {
+                                    kvp.Value.Nullable = false;
+                                }
+
+                                if (Nullable.GetUnderlyingType(prop.PropertyType) != null) {
+                                    kvp.Value.Nullable = true;
+                                }
+                            }
+
+                            schema.Required.Add(kvp.Key);
+                        }
+
                         if (ctx.SchemaRepository.Schemas.ContainsKey(schemaId) == false) {
                             ctx.SchemaRepository.AddDefinition(schemaId, schema);
                         }
+                    }
+                } else {
+                    foreach (KeyValuePair<string, OpenApiSchema> kvp in schema.Properties) {
+                        PropertyInfo? prop = retType.GetProperties()
+                            .FirstOrDefault(iter => iter.Name.ToLower() == kvp.Key.ToLower());
+
+                        if (prop != null) {
+                            if (prop.GetCustomAttribute<System.Runtime.CompilerServices.NullableAttribute>() != null) {
+                                kvp.Value.Nullable = true;
+                            } else {
+                                kvp.Value.Nullable = false;
+                            }
+
+                            if (Nullable.GetUnderlyingType(prop.PropertyType) != null) {
+                                kvp.Value.Nullable = true;
+                            }
+                        }
+
+                        schema.Required.Add(kvp.Key);
                     }
                 }
 

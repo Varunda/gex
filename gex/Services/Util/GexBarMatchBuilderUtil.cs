@@ -5,6 +5,7 @@ using gex.Common.Models.Match;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Storage;
 using gex.Common.Services.Util;
@@ -40,6 +41,7 @@ namespace gex.Services.Util {
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
         private readonly IBarMatchTextPingDb _TextPingDb;
         private readonly PolygonStartboxUtil _PolygonStartboxUtil;
+        private readonly BarMapRepository _MapRepository;
 
         public GexBarMatchBuilderUtil(ILogger<GexBarMatchBuilderUtil> logger,
             BarMatchRepository matchRepository, IBarMatchTeamDb teamDb,
@@ -49,7 +51,7 @@ namespace gex.Services.Util {
             BarMatchProcessingRepository processingRepository, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, MatchPoolRepository matchPoolRepository,
             MatchPoolEntryDb matchPoolEntryDb, IBarMatchTextPingDb textPingDb,
-            PolygonStartboxUtil polygonStartboxUtil) {
+            PolygonStartboxUtil polygonStartboxUtil, BarMapRepository mapRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -67,6 +69,7 @@ namespace gex.Services.Util {
             _MatchPoolEntryDb = matchPoolEntryDb;
             _TextPingDb = textPingDb;
             _PolygonStartboxUtil = polygonStartboxUtil;
+            _MapRepository = mapRepository;
         }
 
         public async Task<Result<Maybe<BarMatch>, string>> BuildMatch(string gameID,
@@ -271,6 +274,10 @@ namespace gex.Services.Util {
                         match.StartRegionData.Add(startRegion);
                     }
                 }
+            }
+
+            if (options.IncludeMapData == true) {
+                match.MapData = await _MapRepository.GetByName(match.Map, cancel);
             }
 
             return Maybe<BarMatch>.Some(match);
