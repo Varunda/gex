@@ -84,14 +84,19 @@ namespace gex.Coven.Services.Util {
                     }
 
                     if (File.Exists(mapPath)) {
-                        Result<BarMap, string> mapData = await _MapParser.Parse(mapPath, cancel);
-                        if (mapData.IsOk == true) {
-                            map = mapData.Value;
+                        try {
+                            Result<BarMap, string> mapData = await _MapParser.Parse(mapPath, cancel);
+                            if (mapData.IsOk == true) {
+                                map = mapData.Value;
 
-                            await _BarMapDb.Upsert(mapData.Value, cancel);
-                            _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");
-                        } else {
-                            _Logger.LogError($"failed to parse map [map={map}] [mapDir={mapPath}] [error={mapData.Error}]");
+                                await _BarMapDb.Upsert(mapData.Value, cancel);
+                                _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");
+                            } else {
+                                _Logger.LogError($"failed to parse map [map={map}] [mapDir={mapPath}] [error={mapData.Error}]");
+                            }
+                        } catch (Exception ex) {
+                            _Logger.LogError(ex, $"failed to parse map [map={map}] [mapPath={mapPath}]");
+
                         }
                     } else {
                         _Logger.LogWarning($"missing map directory [map={map}] [mapDir={mapPath}]");

@@ -4,6 +4,7 @@ using gex.Coven.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ using System.Threading.Tasks;
 namespace gex.Coven.Code {
 
     public class DisplayLogger : ILogger {
+
+        private static string _UsernameToRedact = Environment.UserName;
 
         private string _Name { get; set; } = "";
         private Func<DisplayLoggerConfiguration> _GetCurrentConfig;
@@ -33,10 +36,14 @@ namespace gex.Coven.Code {
                 return;
             }
 
+			char ps = Path.DirectorySeparatorChar;
+            string message = formatter(state, exception)
+				.Replace($"{ps}Users{ps}{_UsernameToRedact}{ps}", $"{ps}Users{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase);
+
             WeakReferenceMessenger.Default.Send(new DisplayLoggerMessage() {
                 Timestamp = DateTime.UtcNow,
                 Level = LEVEL_NAMES[logLevel],
-                Message = formatter(state, exception),
+                Message = message,
                 BackgroundColor = LEVEL_BACKGROUND_COLORS[logLevel],
                 Foreground = LEVEL_FORGROUND_COLORS[logLevel]
             });

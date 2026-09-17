@@ -1,0 +1,112 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Lightweight file logging provider implementation for NET6 / NET8 / NET10+ .NET Core without dependencies on logging frameworks.
+
+How to use:
+
+using NReco.Logging.File;
+
+services.AddLogging(loggingBuilder =&gt; {
+	loggingBuilder.AddFile("app.log", append:true);
+});
+
+More details and examples: https://github.com/nreco/logging
+</Description>
+    <Title>NET10 / NET8 / NET6 (.NET Core) file logger provider.</Title>
+	<Copyright>Copyright (c) 2017-2026 Vitalii Fedorchenko and contributors</Copyright>
+    <AssemblyTitle>NReco.Logging.File</AssemblyTitle>
+    <VersionPrefix>1.4.0</VersionPrefix>
+    <Authors>Vitalii Fedorchenko and contributors</Authors>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyName>NReco.Logging.File</AssemblyName>
+    <PackageId>NReco.Logging.File</PackageId>
+    <PackageTags>log;file;logging;asp.net;file-logger;logging-provider;netstandard;netcore</PackageTags>
+    <PackageIconUrl>https://www.nrecosite.com/img/nreco-logo-200.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/nreco/logging</PackageProjectUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/nreco/logging/master/LICENSE</PackageLicenseUrl>
+	<PackageReleaseNotes>How to use: https://github.com/nreco/logging
+
+Version 1.4.0 changes:
+ - Add optional logging scope support. (#86)
+
+Version 1.3.1 changes:
+ - return netstandard2.0 as .NET Framework apps need it
+
+Version 1.3.0 changes:
+ - added NET10 target
+ - Avoided Caching FileLoggerProvider instance in AddFile() registration extension method. (#80)
+
+Version 1.2.2 changes:
+ - Reduce heap allocation of the default log message formatting logic in the FileLogger.Log #74
+ - Explicitly specifying FileShare.Read option when opening the file stream (#72)
+
+Version 1.2.1 changes:
+ - Added different rolling name conventions #66 (unix-style is supported with 'Descending' convention)
+
+Version 1.2.0 changes:
+ - NReco's FileLoggerExtensions should NOT be in the Microsoft.Extensions.Logging namespace #61
+ - Added net6 and net8 builds to reference appropriate Microsoft.Logging.Extensions versions
+
+Version 1.1.7 changes:
+ - bugfix: App deadlock on FileLoggerProvider.WriteEntry #57
+
+Version 1.1.6 changes:
+ - added ILoggerFactory.AddFile(string fileName, Action&lt;FileLoggerOptions&gt; configure) extension method
+ - now AddFile methods that accept IConfiguration may use it as a "File" section (only if there is no "File" sub-section) #50
+ - removed legacy netstandard1.3 build
+
+Version 1.1.5 changes:
+ - added FileLoggerOptions.FilterLogEntry (custom predicate to filter log entries) #41
+
+Version 1.1.4 changes:
+ - added FileLoggerOptions.UseUtcTimestamp to use UTC timestamp in the default log entry formatter #36
+
+Version 1.1.3 changes:
+ - added FileLoggerOptions.HandleFileError for app-specific handling of File.Open exceptions (file is used by another process etc)
+
+Version 1.1.2 changes:
+ - changed default FileLoggingProvider.MinLevel from Debug to Trace #26
+ - added FileLoggerOptions.MinLevel + ability to specify "MinLevel" in the configuration section
+
+Version 1.1.1 changes:
+ - added 'logName' for FileLoggerOptions.FormatLogEntry context #15
+
+Version 1.1.0 changes:
+ - added the ability to customize log file name on-the-fly with "FormatLogFileName" handler
+
+Version 1.0.5 changes:
+ - log file folder is created automatically if not exists
+ - environment variables are expanded in the file path
+
+Version 1.0.4 changes:
+ - added "File" provider alias for MVC Core 2 filtering rules
+ - added 'rolling file' behaviour controlled with new FileLoggerProvider properties (FileSizeLimitBytes and MaxRollingFiles)</PackageReleaseNotes>
+    <GenerateAssemblyTitleAttribute>true</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>true</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>true</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>true</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>NReco.Logging.File.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0|AnyCPU'">
+    <NoWarn>1701;1702;CS1501</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0|AnyCPU'">
+    <NoWarn>1701;1702;CS1501</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.*" />
+  </ItemGroup>
+
+</Project>

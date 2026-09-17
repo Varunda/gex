@@ -1,0 +1,10 @@
+App_Data/
+packages/
+bin/
+obj/
+*.user
+*.suo
+*.snk
+.vs
+*.nuget.targets
+*.lock.json
