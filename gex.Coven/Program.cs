@@ -99,7 +99,7 @@ sealed class Program {
 
         ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation($"host built, running app [args={string.Join(' ', args)}] [cwd={Environment.CurrentDirectory}] "
-            + $"[cmd={Environment.CommandLine}] [process path={Environment.ProcessPath}]");
+            + $"[cmd={Environment.CommandLine}] [process path={Environment.ProcessPath}] [user=/{Environment.UserName}/ (supposed to be redacted)]");
 
         TaskScheduler.UnobservedTaskException += (sender, e) => {
             logger.LogError(e.Exception, $"unobserved task exception");

@@ -53,7 +53,7 @@ namespace NReco.Logging.File {
 
 			char ps = Path.DirectorySeparatorChar;
 			string message = formatter(state, exception)
-				.Replace($"{ps}Users{ps}{_UsernameToRedact}{ps}", $"{ps}Users{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase);
+				.Replace($"{ps}{_UsernameToRedact}{ps}", $"{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase);
 
 			// IncludeScopes is the single opt-in for scope handling: when it is off, no formatter can reach scopes
 			// and the original formatting path does no scope work.
