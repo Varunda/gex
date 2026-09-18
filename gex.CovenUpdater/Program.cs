@@ -191,8 +191,9 @@ namespace gex.CovenUpdater {
                     try {
                         string[] files = Directory.GetFiles("staging");
                         foreach (string file in files) {
-                            _Logger.LogDebug($"copying file out of staging [file={file}]");
-                            File.Copy(file, ".", true);
+                            string filename = Path.GetFileName(file);
+                            _Logger.LogDebug($"copying file out of staging [filename={filename}] [file={file}]");
+                            File.Copy(file, Path.Join(".", filename), true);
                         }
                     } catch (Exception ex) {
                         _Logger.LogError(ex, $"failed to copy files out of staging");

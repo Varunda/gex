@@ -78,7 +78,6 @@
 	<Target Name="DeleteFiles" AfterTargets="Publish">
 		<ItemGroup>
 			<FilesToDelete Include="$(PublishDir)*.pdb;"/>
-			<FilesToDelete Include="$(PublishDir)*.dll;"/>
 		</ItemGroup>
 		<Delete Files="@(FilesToDelete)">
 			<Output
