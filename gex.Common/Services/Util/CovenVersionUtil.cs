@@ -79,6 +79,10 @@ namespace gex.Common.Services.Util {
 
                 foreach (JsonElement asset in assets.EnumerateArray()) {
                     string assetName = asset.GetRequiredString("name");
+                    if (assetName.StartsWith("gex.Coven") == false) {
+                        continue;
+                    }
+
                     string assetUrl = asset.GetRequiredString("browser_download_url");
 
                     if (assetName.Contains("linux-x64", StringComparison.OrdinalIgnoreCase)) {
