@@ -100,7 +100,6 @@ namespace gex.CovenUpdater {
                     _Logger.LogDebug($"loading versions [instance={_Options.Value.Instance}]"
                         + $" [owner={_Options.Value.RepositoryOwner}] [name={_Options.Value.RepositoryName}]");
 
-
                     string folderPath = Path.GetFullPath(".");
                     if (File.Exists(Path.Join(folderPath, "gex.Coven.exe")) == false
                         && File.Exists(Path.Join(folderPath, "gex.Coven")) == false) {

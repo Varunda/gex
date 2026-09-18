@@ -42,11 +42,8 @@ namespace gex.Coven.ViewModels {
             VersionUtil = App.Current?.Services?.GetService<CovenVersionUtil>() ?? default!;
 
             try {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-                _Version = $"{fvi.FileVersion ?? "<none>"}";
+                _Version = VersionUtil.GetCurrentVersion() ?? "<missing>";
                 _Logger.LogInformation($"current version loaded [version={_Version}]");
-                _Logger.LogTrace($"current version loaded from assembly [version={_Version}] [assembly={assembly.Location}]");
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to load file version from assembly");
                 _Version = "<errored>";

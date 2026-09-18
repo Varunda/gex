@@ -3,6 +3,8 @@ using gex.Common.Models;
 using gex.Common.Models.Options;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 
 namespace gex.Common.Services.Util {
@@ -25,6 +27,11 @@ namespace gex.Common.Services.Util {
 
             _Logger = logger;
             _Cache = cache;
+        }
+
+        public string? GetCurrentVersion() {
+            FileVersionInfo? fvi = FileVersionInfo.GetVersionInfo(Path.Join(AppContext.BaseDirectory, "gex.Coven" + (OperatingSystem.IsWindows() ? ".exe" : "")));
+            return fvi?.FileVersion;
         }
 
         /// <summary>
