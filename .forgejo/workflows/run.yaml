@@ -42,13 +42,13 @@ jobs:
             - run: rm gex.Coven/dist/linux-x64/UserOptions.json
             - run: |
                 cd gex.Coven/dist/linux-x64/
-                zip -r coven_builds/gex.Coven_linux-x64.zip .
+                zip -r ../../../coven_builds/gex.Coven_linux-x64.zip .
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishWindows
             - run: rm gex.Coven/dist/win-x64/UserOptions.json
             - run: |
                 cd gex.Coven/dist/win-x64/
-                zip -r coven_builds/gex.Coven_win-x64.zip .
+                zip -r ../../../coven_builds/gex.Coven_win-x64.zip .
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
