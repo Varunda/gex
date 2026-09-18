@@ -21,7 +21,7 @@ jobs:
             - run: |
                 mkdir -p dist
                 mkdir -p release_builds
-            - run: echo "<Project><PropertyGroup><Version>${{ forgejo.ref_name }}</Version></PropertyGroup></Project>" >> Directory.Build.props
+            - run: echo "<Project><PropertyGroup><Version>${{ forgejo.ref_name }}</Version></PropertyGroup></Project>" > Directory.Build.props
             - run: dotnet publish gex/gex.sln -c PublishLinux
             - run: zip -r release_builds/gex.Web_linux-x64.zip gex/dist/linux-x64/
             - run: dotnet clean
