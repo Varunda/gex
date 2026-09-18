@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+﻿<husk:AppWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:gex.Coven.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -19,29 +19,44 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <Panel>
+    <Panel Background="{StaticResource WindowBackgroundBrush}">
         <DockPanel>
-            <Border DockPanel.Dock="Bottom" Background="Gray" Padding="4">
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource OverlayBackgroundBrush}" Padding="4">
                 <DockPanel>
                     <Button DockPanel.Dock="Right"
-                            Background="Gray" Foreground="White" 
-                            BorderBrush="White" BorderThickness="1"
+                            Foreground="{StaticResource ControlForegroundBrush}" 
+                            BorderBrush="{StaticResource ControlTranslucentForegroundBrush}" BorderThickness="1"
                             ToolTip.Tip="View logs (hotkey: F2)"
                             Command="{Binding OpenLogs}" HotKey="F2">
 
                         <TextBlock FontSize="12" Text="Logs"/>
                     </Button>
 
-                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="Gray"/>
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="12,0">
+                        <TextBlock Text="{Binding Version, StringFormat='Version {0}'}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource ControlForegroundBrush}"/>
+
+                        <StackPanel Orientation="Horizontal" IsVisible="{Binding CanVersionUpdate}" Spacing="12">
+                            <TextBlock Text="{Binding LatestVersion, StringFormat='A newer version of gex.Coven is available ({0})'}"
+                                       FontSize="14"
+                                       VerticalAlignment="Center">
+                            </TextBlock>
+
+                            <Button Command="{Binding OpenUpdater}" VerticalAlignment="Center" FontSize="12">
+                                Update
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
                 </DockPanel>
             </Border>
             
-            <TabbedPage>
-                <ContentPage Header="Matches">
+            <TabbedPage Background="{StaticResource LayerBackgroundBrush}">
+                <ContentPage Header="Matches" Background="{StaticResource LayerBackgroundBrush}">
                     <views:MatchListView></views:MatchListView>
                 </ContentPage>
 
-                <ContentPage Header="Settings">
+                <ContentPage Header="Settings" Background="{StaticResource LayerBackgroundBrush}">
                     <views:UserOptionsView></views:UserOptionsView>
                 </ContentPage>
             </TabbedPage>
@@ -91,4 +106,4 @@
 
     </Panel>
 
-</Window>
+</husk:AppWindow>

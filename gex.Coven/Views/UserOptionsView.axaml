@@ -6,16 +6,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:tablericons="using:TablerIcons"
              xmlns:vm="using:gex.Coven.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="2000"
              x:DataType="vm:UserOptionsViewModel"
              x:Class="gex.Coven.Views.UserOptionsView"
              x:Name="Root">
 
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Margin="0,24,0,0" Spacing="36">
+    <ScrollViewer Background="{StaticResource OverlayBackgroundBrush}">
+        <StackPanel Orientation="Vertical" Margin="0,24,0,24" Spacing="36">
 
             <husk:Card Padding="24" 
-                       Background="{StaticResource ControlBackgroundBrush}"
                        HorizontalAlignment="Center"
                        Width="1280" MaxWidth="1280">
                 <StackPanel>
@@ -40,7 +39,6 @@
             </husk:Card>
 
             <husk:Card Padding="24"
-                       Background="{StaticResource ControlBackgroundBrush}"
                        HorizontalAlignment="Center"
                        Width="1280" MaxWidth="1280">
 
@@ -56,6 +54,8 @@
                                Padding="0,0,0,4"
                                TextWrapping="Wrap">
                     </TextBlock>
+
+                    <husk:Divider/>
 
                     <Grid ColumnDefinitions="*, Auto, Auto" Margin="8" ColumnSpacing="8">
                         <TextBlock Text="{Binding SdfzAssociated}" VerticalAlignment="Center" Grid.Column="0"/>
@@ -79,7 +79,38 @@
             </husk:Card>
 
             <husk:Card Padding="24"
-                       Background="{StaticResource ControlBackgroundBrush}"
+                       HorizontalAlignment="Center"
+                       Width="1280" MaxWidth="1280">
+
+                <StackPanel MaxHeight="480" Spacing="12">
+                    <TextBlock FontSize="{StaticResource LargeFontSize}"
+                               FontWeight="{StaticResource ControlStrongFontWeight}"
+                               Padding="0,0,0,12"
+                               Text="Version">
+                    </TextBlock>
+
+                    <husk:Divider />
+
+                    <ToggleSwitch Content="Check for updates" IsChecked="{Binding VersionCheckUpdates}"/>
+
+                    <TextBlock Foreground="{StaticResource ControlSecondaryForegroundBrush}"
+                               Text="Will gex.Coven check for updates on startup?">
+                    </TextBlock>
+
+                    <ToggleSwitch Content="Auto update" IsChecked="{Binding VersionAutoUpdate}"/>
+
+                    <TextBlock Foreground="{StaticResource ControlSecondaryForegroundBrush}"
+                               Text="Will gex.Coven automatically download and update itself on startup?">
+                    </TextBlock>
+
+                    <Button HorizontalAlignment="Left">
+                        Check for updates
+                    </Button>
+                        
+                </StackPanel>
+            </husk:Card>
+
+            <husk:Card Padding="24"
                        HorizontalAlignment="Center"
                        Width="1280" MaxWidth="1280">
 

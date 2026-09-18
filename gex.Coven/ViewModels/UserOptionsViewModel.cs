@@ -54,6 +54,8 @@ namespace gex.Coven.ViewModels {
             _IsAdmin = IsAdminUtil.IsAdmin();
 
             _InstallFolder = _UserOptions.InstallFolder;
+            _VersionCheckUpdates = _UserOptions.CheckForUpdates;
+            _VersionAutoUpdate = _UserOptions.AutoUpdate;
 
             Init();
         }
@@ -69,6 +71,12 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private bool _IsAdmin;
+
+        [ObservableProperty]
+        private bool _VersionCheckUpdates;
+
+        [ObservableProperty]
+        private bool _VersionAutoUpdate;
 
         private async void Init() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));

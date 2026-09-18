@@ -31,7 +31,17 @@
                         </TableViewColumn.CellTemplate>
                     </TableViewColumn>
 
-                    <TableViewColumn Header="Level" Width="6*">
+                    <TableViewColumn Header="Category" Width="17*">
+                        <TableViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Category}"
+                                           ToolTip.Tip="{Binding Category}" FontSize="14">
+                                </TextBlock>
+                            </DataTemplate>
+                        </TableViewColumn.CellTemplate>
+                    </TableViewColumn>
+
+                    <TableViewColumn Header="Level" Width="4*">
                         <TableViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Level}"
@@ -46,7 +56,7 @@
                         </TableViewColumn.CellTemplate>
                     </TableViewColumn>
 
-                    <TableViewColumn Header="Message" Width="82*">
+                    <TableViewColumn Header="Message" Width="67*">
                         <TableViewColumn.CellTemplate>
                             <DataTemplate>
                                 <SelectableTextBlock TextWrapping="Wrap" Text="{Binding Message}"

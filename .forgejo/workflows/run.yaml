@@ -18,9 +18,10 @@ jobs:
                 cd gex
                 npm install
                 npm run build
-            - run: ls
-            - run: mkdir -p dist
-            - run: mkdir -p release_builds
+            - run: |
+                mkdir -p dist
+                mkdir -p release_builds
+            - run: echo "<Project><PropertyGroup><Version>${{ forgejo.ref_name }}</Version></PropertyGroup></Project>" >> Directory.Build.props
             - run: dotnet publish gex/gex.sln -c PublishLinux
             - run: zip -r release_builds/gex.Web_linux-x64.zip gex/dist/linux-x64/
             - run: dotnet clean
@@ -32,23 +33,29 @@ jobs:
                 release-dir: release_builds
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
-                tag: web-${{ forgejo.SHA }}
+                tag: web-${{ forgejo.ref_name }}
                 override: true
                 verbose: true
             - run: mkdir -p coven_builds
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishLinux
-            - run: zip -r coven_builds/gex.Coven_linux-x64.zip gex.Coven/dist/linux-x64/
+            - run: rm gex.Coven/dist/linux-x64/UserOptions.json
+            - run: |
+                cd gex.Coven/dist/linux-x64/
+                zip -r coven_builds/gex.Coven_linux-x64.zip .
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishWindows
-            - run: zip -r coven_builds/gex.Coven_win-x64.zip gex.Coven/dist/win-x64/
+            - run: rm gex.Coven/dist/win-x64/UserOptions.json
+            - run: |
+                cd gex.Coven/dist/win-x64/
+                zip -r coven_builds/gex.Coven_win-x64.zip .
             - uses: https://code.forgejo.org/actions/forgejo-release@v2.5.0
               with:
                 direction: upload
                 release-dir: coven_builds
                 token: ${{ secrets.WRITE_TOKEN }}
                 sha: ${{ forgejo.SHA }}
-                tag: coven-${{ forgejo.SHA }}
+                tag: coven-${{ forgejo.ref_name }}
                 override: true
                 verbose: true
 

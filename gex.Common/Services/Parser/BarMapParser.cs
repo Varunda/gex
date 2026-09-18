@@ -45,6 +45,7 @@ namespace gex.Common.Services.Parser {
                 return $"missing file location: '{location}'";
             }
 
+            _Logger.LogDebug($"loading map [location={location}]");
             // normalize path (convert windows style \ to /)
             location = Path.GetFullPath(location) ?? throw new Exception($"failed to normalized path");
 

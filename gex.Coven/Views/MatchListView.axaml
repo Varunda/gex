@@ -26,7 +26,7 @@
                         <MenuItem.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <ti:TablerIcon Icon="IconFolderOpen" Width="16" Height="16"></ti:TablerIcon>
+                                    <ti:TablerIcon Icon="IconFolderOpen" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                     <TextBlock Text="View"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -37,7 +37,7 @@
                         <MenuItem.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <ti:TablerIcon Icon="IconPlayerPlay" Width="16" Height="16"></ti:TablerIcon>
+                                    <ti:TablerIcon Icon="IconPlayerPlay" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                     <TextBlock Text="Launch replay"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -49,7 +49,7 @@
                             <MenuItem.HeaderTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <ti:TablerIcon Icon="IconLetterT" Width="16" Height="16"></ti:TablerIcon>
+                                        <ti:TablerIcon Icon="IconLetterT" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                         <TextBlock Text="Copy path"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -60,7 +60,7 @@
                             <MenuItem.HeaderTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <ti:TablerIcon Icon="IconCopy" Width="16" Height="16"></ti:TablerIcon>
+                                        <ti:TablerIcon Icon="IconCopy" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                         <TextBlock Text="Copy file"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -72,7 +72,7 @@
                         <MenuItem.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <ti:TablerIcon Icon="IconCancel" Width="16" Height="16"></ti:TablerIcon>
+                                    <ti:TablerIcon Icon="IconCancel" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                     <TextBlock Text="Ignore"/>
                                 </StackPanel>
                             </DataTemplate>

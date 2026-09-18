@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU' Or '$(Configuration)|$(Platform)'=='PublishLinux|AnyCpu'">
+		<Optimize>true</Optimize>
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<NoWarn>CS1591</NoWarn>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU' Or '$(Configuration)|$(Platform)'=='PublishLinux|AnyCpu'">
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<PublishDir>./dist/win-x64</PublishDir>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|AnyCPU'">
+		<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+		<PublishDir>./dist/linux-x64</PublishDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.*" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.*" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.*" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\gex.Common\gex.Common.csproj">
+			<PrivateAssets>all</PrivateAssets>
+		</ProjectReference>
+	</ItemGroup>
+
+	<!-- 
+		Unfortunately, command-line args -p:DebugType=None -p:DebugSymbols=false started working only for the main project,
+		PDBs from other projects are still included. Looks like this is the most reliable way to remove PDBs.
+		Source https://github.com/dotnet/sdk/issues/16975#issuecomment-1689291544 
+	-->
+	<Target Name="DeleteFiles" AfterTargets="Publish">
+		<ItemGroup>
+			<FilesToDelete Include="$(PublishDir)*.pdb;" />
+			<FilesToDelete Include="$(PublishDir)*.dll;" />
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)">
+			<Output TaskParameter="DeletedFiles" ItemName="FilesDeleted" />
+		</Delete>
+		<Message Text="Deleted PDB files: @(FilesDeleted)" Importance="high" />
+	</Target>
+
+</Project>
+

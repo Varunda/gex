@@ -94,5 +94,14 @@
         <Style Selector="Button.btn-danger">
             <Setter Property="Background" Value="{StaticResource ControlDangerBackgroundBrush}"/>
         </Style>
+
+        <Style Selector="MenuItem">
+            <Setter Property="Padding" Value="4,8"/>
+        </Style>
+
+        <Style Selector="CheckBox">
+            <Setter Property="FontSize" Value="16"/>
+        </Style>
+
     </Application.Styles>
 </Application>

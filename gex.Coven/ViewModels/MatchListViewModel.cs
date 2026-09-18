@@ -49,15 +49,15 @@ namespace gex.Coven.ViewModels {
         private readonly IBarMapDb _MapDb;
 
         public MatchListViewModel() {
-            _Logger = App.Current.Services.GetRequiredService<ILogger<MainViewModel>>();
-            _MatchRepository = App.Current.Services.GetRequiredService<BarMatchRepository>();
-            _Parser = App.Current.Services.GetRequiredService<BarDemofileParser>();
-            _UserOptionsService = App.Current.Services.GetRequiredService<UserOptionsService>();
-            _DemofileWatcher = App.Current.Services.GetRequiredService<DemofileWatcher>();
-            _MatchBuilder = App.Current.Services.GetRequiredService<IBarMatchBuilderUtil>();
-            _ProcessorUtil = App.Current.Services.GetRequiredService<BarMatchProcessorUtil>();
-            _MapParser = App.Current.Services.GetRequiredService<BarMapParser>();
-            _MapDb = App.Current.Services.GetRequiredService<IBarMapDb>();
+            _Logger = App.Current?.Services?.GetService<ILogger<MainViewModel>>() ?? default!;
+            _MatchRepository = App.Current?.Services?.GetService<BarMatchRepository>() ?? default!;
+            _Parser = App.Current?.Services?.GetService<BarDemofileParser>() ?? default!;
+            _UserOptionsService = App.Current?.Services?.GetService<UserOptionsService>() ?? default!;
+            _DemofileWatcher = App.Current?.Services?.GetService<DemofileWatcher>() ?? default!;
+            _MatchBuilder = App.Current?.Services?.GetService<IBarMatchBuilderUtil>() ?? default!;
+            _ProcessorUtil = App.Current?.Services?.GetService<BarMatchProcessorUtil>() ?? default!;
+            _MapParser = App.Current?.Services?.GetService<BarMapParser>() ?? default!;
+            _MapDb = App.Current?.Services?.GetService<IBarMapDb>() ?? default!;
 
             IObservable<Func<BarMatchViewModel, bool>> filterPredicate = 
                 this.WhenAnyPropertyChanged(nameof(FilterMap), nameof(FilterPlayer), nameof(FilterGamemode))
@@ -111,9 +111,9 @@ namespace gex.Coven.ViewModels {
         ///     init method that loads all matches from the repo
         /// </summary>
         private async void Init() {
-            _DemofileWatcher.NewMatchReady += _DemofileWatcher_NewMatchReady;
-
             try {
+                _DemofileWatcher.NewMatchReady += _DemofileWatcher_NewMatchReady;
+
                 using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
                 List<BarMatch> matches = await _MatchRepository.GetAll(cts.Token);
 

@@ -13,6 +13,7 @@ namespace gex.Coven.Services.Util {
         public static void AddCovenUtils(this IServiceCollection services) {
             services.AddSingleton<IBarMatchBuilderUtil, CovenBarMatchBuilderUtil>();
             services.AddSingleton<BarMatchProcessorUtil>();
+            services.AddSingleton<CovenVersionUtil>();
         }
 
     }

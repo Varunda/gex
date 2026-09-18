@@ -18,6 +18,8 @@ namespace gex.Coven.Models {
 
         public IBrush Foreground { get; set; } = Brushes.Black;
 
+        public string Category { get; set; } = "";
+
         public string Message { get; set; } = "";
 
     }

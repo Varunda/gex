@@ -98,8 +98,9 @@ sealed class Program {
         App host = hostBuilder.Build();
 
         ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
+        char ps = Path.DirectorySeparatorChar;
         logger.LogInformation($"host built, running app [args={string.Join(' ', args)}] [cwd={Environment.CurrentDirectory}] "
-            + $"[cmd={Environment.CommandLine}] [process path={Environment.ProcessPath}] [user=/{Environment.UserName}/ (supposed to be redacted)]");
+            + $"[cmd={Environment.CommandLine}] [process path={Environment.ProcessPath}] [user={ps}{Environment.UserName}{ps} (supposed to be redacted)]");
 
         TaskScheduler.UnobservedTaskException += (sender, e) => {
             logger.LogError(e.Exception, $"unobserved task exception");

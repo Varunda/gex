@@ -43,6 +43,7 @@ namespace gex.Coven.Code {
             WeakReferenceMessenger.Default.Send(new DisplayLoggerMessage() {
                 Timestamp = DateTime.UtcNow,
                 Level = LEVEL_NAMES[logLevel],
+                Category = _Name,
                 Message = message,
                 BackgroundColor = LEVEL_BACKGROUND_COLORS[logLevel],
                 Foreground = LEVEL_FORGROUND_COLORS[logLevel]

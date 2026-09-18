@@ -1,88 +1,91 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <RootNamespace>gex.Coven</RootNamespace>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\icon-44x44.ico</ApplicationIcon>
-  </PropertyGroup>
+	<PropertyGroup>
+		<RootNamespace>gex.Coven</RootNamespace>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<ApplicationIcon>Assets\icon-44x44.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="Assets\**" />
+	</ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU'">
-	<PublishSingleFile>true</PublishSingleFile>
-	<SelfContained>true</SelfContained>
-	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-	<OutputType>winexe</OutputType>
-	<NoWarn>CS1591</NoWarn>
-	<PublishDir>./dist/win-x64</PublishDir>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishWindows|AnyCPU'">
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<OutputType>winexe</OutputType>
+		<NoWarn>CS1591</NoWarn>
+		<PublishDir>./dist/win-x64</PublishDir>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|AnyCPU'">
-	<PublishSingleFile>true</PublishSingleFile>
-	<SelfContained>true</SelfContained>
-	<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
-	<OutputType>exe</OutputType>
-	<NoWarn>CS1591</NoWarn>
-	<PublishDir>./dist/linux-x64</PublishDir>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PublishLinux|AnyCPU'">
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+		<OutputType>exe</OutputType>
+		<NoWarn>CS1591</NoWarn>
+		<PublishDir>./dist/linux-x64</PublishDir>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="appsettings.json" />
-    <None Remove="UserOptions.json" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Assets\icon-44x44.ico" />
+		<Content Include="UserOptions.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\icon-44x44.ico" />
-    <Content Include="UserOptions.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\gex.Common\gex.Common.csproj" />
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Headless" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
-    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="dotnet-file-associator" Version="0.1.4" />
-    <PackageReference Include="DynamicData" Version="9.4.33" />
-    <PackageReference Include="Huskui.Avalonia" Version="2.0.0" />
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
-    <PackageReference Include="NLua" Version="1.7.9" />
-    <PackageReference Include="R86.Avalonia.Hosting" Version="0.4.0" />
-    <PackageReference Include="TablerIcons.Avalonia" Version="3.44.0" />
-  </ItemGroup>
+		<PackageReference Include="Avalonia" Version="12.1.2" />
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+		<PackageReference Include="Avalonia.Headless" Version="12.1.2" />
+		<PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.2" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="dotnet-file-associator" Version="0.1.4" />
+		<PackageReference Include="DynamicData" Version="9.4.33" />
+		<PackageReference Include="Huskui.Avalonia" Version="2.0.0" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
+		<PackageReference Include="NLua" Version="1.7.9" />
+		<PackageReference Include="R86.Avalonia.Hosting" Version="0.4.0" />
+		<PackageReference Include="TablerIcons.Avalonia" Version="3.44.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\gex.Common\gex.Common.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Controls\MapNameImage.axaml.cs">
-      <DependentUpon>MapNameImage.axaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Repository\" />
-  </ItemGroup>
+	<!-- 
+		Unfortunately, command-line args -p:DebugType=None -p:DebugSymbols=false started working only for the main project,
+		PDBs from other projects are still included. Looks like this is the most reliable way to remove PDBs.
+		Source https://github.com/dotnet/sdk/issues/16975#issuecomment-1689291544 
+	-->
+	<Target Name="DeleteFiles" AfterTargets="Publish">
+		<ItemGroup>
+			<FilesToDelete Include="$(PublishDir)*.pdb;"/>
+			<FilesToDelete Include="$(PublishDir)*.dll;"/>
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)">
+			<Output
+				TaskParameter="DeletedFiles"
+				ItemName="FilesDeleted"/>
+		</Delete>
+		<Message Text="Deleted PDB files: @(FilesDeleted)" Importance="high" />
+	</Target>
 
 </Project>

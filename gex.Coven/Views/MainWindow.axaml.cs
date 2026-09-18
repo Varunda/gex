@@ -7,7 +7,7 @@ using System.IO;
 
 namespace gex.Coven.Views;
 
-public partial class MainWindow : Window {
+public partial class MainWindow : AppWindow {
 
     public MainWindow() {
         InitializeComponent();
