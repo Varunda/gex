@@ -36,7 +36,7 @@ namespace gex.Services.Util {
 
         static MatchProcessingWebhookUtil() {
             _Http.DefaultRequestHeaders.UserAgent.TryParseAdd("gex-webhooks/0.1");
-            _Http.Timeout = TimeSpan.FromSeconds(5);
+            _Http.Timeout = TimeSpan.FromSeconds(15);
         }
 
         public MatchProcessingWebhookUtil(ILogger<MatchProcessingWebhookUtil> logger,

@@ -31,7 +31,7 @@ namespace gex.Common.Services.Util {
 
         public string? GetCurrentVersion() {
             FileVersionInfo? fvi = FileVersionInfo.GetVersionInfo(Path.Join(AppContext.BaseDirectory, "gex.Coven" + (OperatingSystem.IsWindows() ? ".exe" : "")));
-            return fvi?.FileVersion;
+            return $"coven-{fvi?.FileVersion}";
         }
 
         /// <summary>
@@ -66,6 +66,10 @@ namespace gex.Common.Services.Util {
 
             foreach (JsonElement iter in response.Value.EnumerateArray()) {
                 string name = iter.GetRequiredString("tag_name");
+                if (name.StartsWith("coven") == false) {
+                    continue;
+                }
+
                 DateTime publishedAt = DateTime.Parse(iter.GetRequiredString("published_at"));
 
                 JsonElement assets = iter.GetRequiredChild("assets");

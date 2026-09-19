@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -85,6 +86,15 @@ namespace gex.Coven.ViewModels {
 
             string appLoc = Environment.ProcessPath ?? "";
             SdfzAssociated = FileAssociator.IsFileAssociationSet(appLoc, ".sdfz");
+        }
+
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e) {
+            base.OnPropertyChanged(e);
+
+            _UserOptions.InstallFolder = InstallFolder;
+            _UserOptions.AutoUpdate = VersionAutoUpdate;
+            _UserOptions.CheckForUpdates = VersionCheckUpdates;
+            _UserOptionsService.Save(_UserOptions);
         }
 
         /// <summary>

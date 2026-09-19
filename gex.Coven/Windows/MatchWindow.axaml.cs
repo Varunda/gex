@@ -8,13 +8,11 @@ using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Models.Config;
 using gex.Coven.Services;
+using gex.Coven.Services.Util;
 using gex.Coven.ViewModels;
-using LiveChartsCore.Kernel.Sketches;
-using LiveChartsCore.SkiaSharpView;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -99,6 +97,8 @@ namespace gex.Coven.Windows {
             MatchWindow win = new() {
                 DataContext = vm
             };
+
+            WindowManager.Register(win);
 
             win.Show();
         }

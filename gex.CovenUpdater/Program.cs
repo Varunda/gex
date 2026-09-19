@@ -118,9 +118,21 @@ namespace gex.CovenUpdater {
                         _Logger.LogError(ex, $"failed to load version of gex.Coven");
                     }
 
-                    Process[] gexCovenProcs = Process.GetProcessesByName("gex.Coven");
-                    if (gexCovenProcs.Length > 0) {
-                        _Logger.LogWarning($"gex.Coven is currently running, not performing update");
+
+                    int attempt = 0;
+                    while (attempt <= 3) {
+                        Process[] gexCovenProcs = Process.GetProcessesByName("gex.Coven");
+                        if (gexCovenProcs.Length > 0) {
+                            ++attempt;
+                            _Logger.LogWarning($"gex.Coven is running, waiting 5 seconds and trying again [attempt={attempt}]");
+                            await Task.Delay(TimeSpan.FromSeconds(5), cancel);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (attempt > 3) {
+                        _Logger.LogError($"gex.Coven is open, waiting for close failed");
                         break;
                     }
 
@@ -200,13 +212,13 @@ namespace gex.CovenUpdater {
                     }
 
                     try {
-                        //Directory.Delete("staging", true);
+                        Directory.Delete("staging", true);
                     } catch (Exception ex) {
                         _Logger.LogError(ex, $"failed to delete staging directory");
                     }
 
                     _Logger.LogInformation($"done! [version={res.Value.Tag}]");
-
+                    await Task.Delay(TimeSpan.FromSeconds(5), cancel);
                 } while (false);
 
                 _ApplicationLifetime.StopApplication();

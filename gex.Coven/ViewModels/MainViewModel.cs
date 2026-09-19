@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using gex.Common.Code;
 using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Services.Parser;
@@ -8,6 +9,7 @@ using gex.Common.Services.Util;
 using gex.Coven.Code;
 using gex.Coven.Models.Config;
 using gex.Coven.Services;
+using gex.Coven.Services.Util;
 using gex.Coven.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -84,12 +86,37 @@ namespace gex.Coven.ViewModels {
                 DataContext = DisplayLogger.Get()
             };
 
+            WindowManager.Register(win);
+
             win.Show();
         }
 
         [RelayCommand]
         public void OpenUpdater() {
-            _Logger.LogInformation($"yeah we're updating now");
+            string updaterName = "gex.CovenUpdater";
+            if (OperatingSystem.IsWindows()) {
+                updaterName += ".exe";
+            }
+
+            string updaterPath = Path.Join(ShellUtil.GetWorkingDirectory(), updaterName);
+            if (File.Exists(updaterPath) == false) {
+                Toasts.Show("Failed to find updater",
+                    $"Failed to find {updaterName} in {ShellUtil.GetWorkingDirectory()}",
+                    ToastType.ERROR, TimeSpan.FromSeconds(-1)
+                );
+                return;
+            }
+
+            ProcessStartInfo start = new();
+            start.FileName = updaterName;
+            start.WorkingDirectory = ShellUtil.GetWorkingDirectory();
+
+            Process proc = new();
+            proc.StartInfo = start;
+            proc.Start();
+
+            _Logger.LogInformation($"closing all windows for updater");
+            WindowManager.CloseAll();
         }
 
     }
