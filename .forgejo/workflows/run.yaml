@@ -49,7 +49,7 @@ jobs:
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishWindows
             - run: rm gex.Coven/dist/win-x64/UserOptions.json
             - run: dotnet publish gex.CovenUpdater/gex.CovenUpdater.csproj -c PublishWindows
-            - run: cp gex.CovenUpdater/dist/win-x64/gex.CovenUpdater gex.Coven/dist/win-x64/
+            - run: cp gex.CovenUpdater/dist/win-x64/gex.CovenUpdater.exe gex.Coven/dist/win-x64/
             - run: |
                 cd gex.Coven/dist/win-x64/
                 zip -r ../../../coven_builds/gex.Coven_win-x64.zip .
