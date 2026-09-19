@@ -40,7 +40,7 @@ jobs:
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishLinux
             - run: rm gex.Coven/dist/linux-x64/UserOptions.json
-            - run: dotnet publish gex.CovenUpdater/gex.CovenUpdater -c PublishLinux
+            - run: dotnet publish gex.CovenUpdater/gex.CovenUpdater.csproj -c PublishLinux
             - run: cp gex.CovenUpdater/dist/linux-x64/gex.CovenUpdater gex.Coven/dist/linux-x64/
             - run: |
                 cd gex.Coven/dist/linux-x64/
@@ -48,7 +48,7 @@ jobs:
             - run: dotnet clean
             - run: dotnet publish gex.Coven/gex.Coven.csproj -c PublishWindows
             - run: rm gex.Coven/dist/win-x64/UserOptions.json
-            - run: dotnet publish gex.CovenUpdater/gex.CovenUpdater -c PublishWindows
+            - run: dotnet publish gex.CovenUpdater/gex.CovenUpdater.csproj -c PublishWindows
             - run: cp gex.CovenUpdater/dist/win-x64/gex.CovenUpdater gex.Coven/dist/win-x64/
             - run: |
                 cd gex.Coven/dist/win-x64/
