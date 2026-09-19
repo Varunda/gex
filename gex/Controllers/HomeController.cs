@@ -405,5 +405,17 @@ namespace gex.Controllers {
             return View();
         }
 
+        [HttpGet("gex.lua")]
+        public IActionResult GexLua() {
+            FileStream fs = System.IO.File.OpenRead("gex.lua");
+            return File(fs, "text/plain");
+        }
+
+        [HttpGet("BYAR.lua")]
+        public IActionResult BYARLua() {
+            FileStream fs = System.IO.File.OpenRead("BYAR.lua");
+            return File(fs, "text/plain");
+        }
+
     }
 }
