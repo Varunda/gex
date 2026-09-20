@@ -318,6 +318,9 @@ namespace gex.Controllers.Api {
         /// <param name="limit">how many results to return. capped at 100</param>
         /// <param name="orderBy">field to order by. can only be: duration, player_count or start_time</param>
         /// <param name="orderByDir">how to order the results. can only be: asc, desc</param>
+        /// <param name="includeTeams">if the resulting <see cref="ApiMatch"/>s will include <see cref="ApiMatch.Teams"/></param>
+        /// <param name="includeAllyTeams">if the resulting <see cref="ApiMatch"/>s will include <see cref="ApiMatch.AllyTeams"/></param>
+        /// <param name="includePlayers">if the resulting <see cref="ApiMatch"/>s will include <see cref="ApiMatch.Players"/></param>
         /// <param name="cancel"></param>
         /// <response code="200">
         ///     the response will contain a list of <see cref="ApiMatch"/>s that meet the conditions set in the parameters.
@@ -366,6 +369,10 @@ namespace gex.Controllers.Api {
             [FromQuery] int limit = 24,
             [FromQuery] string orderBy = "start_time",
             [FromQuery] string orderByDir = "desc",
+
+            [FromQuery] bool includeTeams = true,
+            [FromQuery] bool includeAllyTeams = true,
+            [FromQuery] bool includePlayers = true,
 
             CancellationToken cancel = default
         ) {
@@ -459,9 +466,17 @@ namespace gex.Controllers.Api {
             List<ApiMatch> ret = [];
             List<BarMatch> matches = await _MatchRepository.Search(parms, offset, limit, currentUser?.ID, cancel);
             foreach (BarMatch m in matches) {
-                m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
-                m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
-                m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+                if (includeTeams == true) {
+                    m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
+                }
+
+                if (includePlayers == true) {
+                    m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
+                }
+
+                if (includeAllyTeams == true) {
+                    m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+                }
 
                 ApiMatch api = new(m);
                 api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
