@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:vm="using:gex.Coven.ViewModels"
+             xmlns:controls="using:gex.Coven.Controls"
+             x:Class="gex.Coven.Controls.MatchWindow.MatchViewTeams"
+             x:DataType="vm:MatchWindowViewModel">
+
+    <ItemsControl ItemsSource="{Binding Match.AllyTeams}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Border Margin="10">
+                    <StackPanel>
+                        <Border Padding="5" Background="{StaticResource ControlBackgroundBrush}">
+                            <TextBlock Text="{Binding Name}" 
+                                       HorizontalAlignment="Center"
+                                       TextElement.Foreground="{StaticResource ControlForegroundBrush}">
+                            </TextBlock>
+                        </Border>
+
+                        <TableView ItemsSource="{Binding Teams}">
+                            <TableView.Columns>
+                                <TableViewColumn Header="Faction" Width="Auto">
+                                    <TableViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <controls:FactionImage Faction="{Binding Faction}"></controls:FactionImage>
+                                                <TextBlock Text="{Binding Faction}"></TextBlock>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </TableViewColumn.CellTemplate>
+                                </TableViewColumn>
+
+                                <TableViewColumn Header="Name" Width="*">
+                                    <TableViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock TextElement.Foreground="{Binding HexColor}" Text="{Binding Name}"></TextBlock>
+                                        </DataTemplate>
+                                    </TableViewColumn.CellTemplate>
+                                </TableViewColumn>
+                            </TableView.Columns>
+                        </TableView>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

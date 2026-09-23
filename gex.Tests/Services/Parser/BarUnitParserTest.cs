@@ -141,6 +141,9 @@ namespace gex.Tests.Services.Parser {
             BarWeaponDefinition def = weapon.WeaponDefinition;
             Assert.AreEqual("emg", def.DefinitionName);
             Assert.AreEqual("Rapid-fire close-quarters g2g plasma guns", def.Name);
+            Assert.AreEqual(9d, def.DefaultDamage);
+            Assert.AreEqual(90d, def.DefaultDps);
+
             Assert.AreEqual(8d, def.AreaOfEffect);
             Assert.AreEqual(3d, def.Burst);
             Assert.AreEqual(0.1d, def.BurstRate);
@@ -489,6 +492,8 @@ namespace gex.Tests.Services.Parser {
             BarUnitWeapon weapon = unit.Weapons[0];
             Assert.AreEqual("cor_bot_rocket", weapon.WeaponDefinition.DefinitionName);
             BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual(44d, def.DefaultDamage);
+            Assert.AreEqual(22d, def.DefaultDps);
             Assert.AreEqual(true, def.IsStockpile);
             Assert.AreEqual(2d, def.StockpileTime);
             Assert.AreEqual(4, def.StockpileLimit);
@@ -553,6 +558,9 @@ namespace gex.Tests.Services.Parser {
             BarWeaponDefinition def = weapon.WeaponDefinition;
             Assert.AreEqual("lightning", def.DefinitionName);
             Assert.AreEqual("Close-quarters g2g lightning rifle", def.Name);
+            Assert.AreEqual(22d, def.DefaultDamage);
+            Assert.AreEqual(129.411d, def.DefaultDps, 0.001);
+
             Assert.AreEqual(8d, def.AreaOfEffect);
             Assert.AreEqual(10d, def.Burst);
             Assert.AreEqual(0.03333d, def.BurstRate);
@@ -596,6 +604,9 @@ namespace gex.Tests.Services.Parser {
             BarWeaponDefinition def = weapon.WeaponDefinition;
             Assert.AreEqual("clusternapalm", def.DefinitionName);
             Assert.AreEqual("HeavyCannon", def.Name);
+            Assert.AreEqual(45d, def.DefaultDamage);
+            Assert.AreEqual(22.5d, def.DefaultDps);
+
             Assert.AreEqual(150d, def.AreaOfEffect);
             Assert.AreEqual(0d, def.Burst);
             Assert.AreEqual(0d, def.BurstRate);
@@ -749,6 +760,9 @@ namespace gex.Tests.Services.Parser {
             BarWeaponDefinition def = weapon.WeaponDefinition;
             Assert.AreEqual("shocker_low", def.DefinitionName);
             Assert.AreEqual("Long-Range g2g Heavy Cluster Plasma Cannon", def.Name);
+            Assert.AreEqual(500d, def.DefaultDamage);
+            Assert.AreEqual(166.6666667d, def.DefaultDps, 0.001);
+
             Assert.AreEqual(150d, def.AreaOfEffect);
             Assert.AreEqual(4d, def.Burst);
             Assert.AreEqual(0.06d, def.BurstRate);
@@ -910,7 +924,117 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(1, weapon.Count);
             Assert.AreEqual("0 0 1", weapon.MainDirection);
             Assert.AreEqual(210d, weapon.MaxAngleDif);
+        }
 
+        [TestMethod]
+        public async Task Parse_Legamph_Telchine() {
+            BarUnit unit = await _ParseUnit("legamph");
+
+            // basic
+            Assert.AreEqual("legamph", unit.DefinitionName);
+            Assert.AreEqual(2750d, unit.Health);
+            Assert.AreEqual(600d, unit.MetalCost);
+            Assert.AreEqual(13200d, unit.EnergyCost);
+            Assert.AreEqual(16980d, unit.BuildTime);
+            Assert.AreEqual(48d, unit.Speed);
+            Assert.AreEqual(450d, unit.TurnRate);
+            Assert.AreEqual(0.1035, unit.Acceleration);
+            Assert.AreEqual(0.6486d, unit.Deceleration);
+            Assert.AreEqual(3d, unit.SizeX);
+            Assert.AreEqual(3d, unit.SizeZ);
+
+            // eco
+            Assert.AreEqual(0d, unit.EnergyProduced);
+            Assert.AreEqual(0d, unit.EnergyStorage);
+            Assert.AreEqual(0d, unit.EnergyUpkeep);
+            Assert.AreEqual(0d, unit.ExtractsMetal);
+            Assert.AreEqual(false, unit.MetalExtractor);
+            Assert.AreEqual(0d, unit.MetalProduced);
+            Assert.AreEqual(0d, unit.MetalStorage);
+
+            // builder
+            Assert.AreEqual(0d, unit.BuildDistance);
+            Assert.AreEqual(0d, unit.BuildPower);
+            Assert.AreEqual(0d, unit.CapturePower);
+
+            // los
+            Assert.AreEqual(450d, unit.SightDistance);
+            Assert.AreEqual(450d * 1.5d, unit.AirSightDistance);
+            Assert.AreEqual(0d, unit.RadarDistance);
+            Assert.AreEqual(700d, unit.SonarDistance);
+            Assert.AreEqual(0d, unit.JamDistance);
+
+            // transport
+            Assert.AreEqual(0d, unit.TransportCapacity);
+            Assert.AreEqual(0d, unit.TransportMass);
+            Assert.AreEqual(0d, unit.TransportSize);
+
+            // misc
+            Assert.AreEqual("Johanthan Crimson, Tuerk", unit.ModelAuthor);
+            Assert.AreEqual(0d, unit.CloakCostStill);
+            Assert.AreEqual(0d, unit.CloakCostMoving);
+            Assert.AreEqual("smallExplosionGeneric-phib", unit.ExplodeAs);
+            Assert.AreEqual(5d, unit.SelfDestructCountdown);
+            Assert.AreEqual("smallExplosionGenericSelfd-phib", unit.SelfDestructWeapon);
+            Assert.AreEqual(0d, unit.AutoHeal);
+            Assert.AreEqual(0d, unit.IdleAutoHeal);
+            Assert.AreEqual(0d, unit.IdleTime);
+            Assert.AreEqual(0.5d, unit.DamageModifier);
+            Assert.AreEqual(false, unit.OnOffAble);
+
+            Assert.IsNotNull(unit.DeadFeature);
+            Assert.AreEqual(true, unit.DeadFeature.Blocking);
+            Assert.AreEqual("corpses", unit.DeadFeature.Category);
+            Assert.AreEqual(1056, unit.DeadFeature.Damage);
+            Assert.AreEqual(330, unit.DeadFeature.Metal);
+            Assert.AreEqual(true, unit.DeadFeature.Reclaimable);
+            Assert.AreEqual(-1, unit.DeadFeature.Resurrectable);
+
+            Assert.IsNotNull(unit.HeapFeature);
+            Assert.AreEqual(false, unit.HeapFeature.Blocking);
+            Assert.AreEqual("heaps", unit.HeapFeature.Category);
+            Assert.AreEqual(920, unit.HeapFeature.Damage);
+            Assert.AreEqual(115, unit.HeapFeature.Metal);
+            Assert.AreEqual(true, unit.HeapFeature.Reclaimable);
+            Assert.AreEqual(0, unit.HeapFeature.Resurrectable);
+
+            // weapons
+            Assert.AreEqual(2, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[1];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("SURFACE", weapon.TargetCategory);
+            Assert.AreEqual("0 0 1", weapon.MainDirection);
+            Assert.AreEqual(180d, weapon.MaxAngleDif);
+
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual("heat_ray", def.DefinitionName);
+            Assert.AreEqual("Heavy g2g Cleansing Heat Ray", def.Name);
+            Assert.AreEqual(33d, def.DefaultDamage);
+            Assert.AreEqual(330d, def.DefaultDps);
+        }
+
+        [TestMethod]
+        public async Task Parse_Legbastion_Bastion() {
+            BarUnit unit = await _ParseUnit("legbastion");
+
+            // basic
+            Assert.AreEqual("legbastion", unit.DefinitionName);
+
+            // weapons
+            Assert.AreEqual(1, unit.Weapons.Count);
+
+            BarUnitWeapon weapon = unit.Weapons[0];
+            Assert.AreEqual(1, weapon.Count);
+            Assert.AreEqual("SURFACE", weapon.TargetCategory);
+            Assert.AreEqual("", weapon.MainDirection);
+            Assert.AreEqual(360d, weapon.MaxAngleDif);
+
+            BarWeaponDefinition def = weapon.WeaponDefinition;
+            Assert.AreEqual("t2heatray", def.DefinitionName);
+            Assert.AreEqual("Heavy Sustained Sweepfire Heat Ray", def.Name);
+            Assert.AreEqual(155d, def.DefaultDamage);
+            Assert.AreEqual(1291.6666667d, def.DefaultDps, 0.001);
         }
 
     }

@@ -1,0 +1,34 @@
+﻿using Dapper.ColumnMapper;
+using gex.Common.Code;
+
+namespace gex.Common.Models.Event {
+
+    [DapperColumnsMapped]
+    public class GameEventUnitDamage : GameEvent {
+
+        [JsonActionLogPropertyName("unitID")]
+        [ColumnMapping("unit_id")]
+        public int UnitID { get; set; }
+
+        [JsonActionLogPropertyName("defID")]
+        [ColumnMapping("definition_id")]
+        public int DefinitionID { get; set; }
+
+        [JsonActionLogPropertyName("teamID")]
+        [ColumnMapping("team_id")]
+        public int TeamID { get; set; }
+
+        [JsonActionLogPropertyName("dealt")]
+        [ColumnMapping("damage_dealt")]
+        public double DamageDealt { get; set; }
+
+        [JsonActionLogPropertyName("taken")]
+        [ColumnMapping("damage_taken")]
+        public double DamageTaken { get; set; }
+
+        [JsonActionLogPropertyName("experience")]
+        [ColumnMapping("experience")]
+        public double Experience { get; set; } = -1; // default to -1 for older games
+
+    }
+}

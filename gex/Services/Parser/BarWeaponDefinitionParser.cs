@@ -32,6 +32,7 @@ namespace gex.Services.Parser {
             weapon.Burst = _Double(wep, "burst", 0);
             weapon.BurstRate = _Double(wep, "burstrate", 0);
             weapon.Projectiles = _Int(wep, "projectiles", 1);
+            weapon.BeamTime = _Double(wep, "beamtime", 0d);
             weapon.Range = _Double(wep, "range", 0);
             weapon.EdgeEffectiveness = _Double(wep, "edgeeffectiveness", 0);
             weapon.FlightTime = _Double(wep, "flighttime", 0);
@@ -101,6 +102,35 @@ namespace gex.Services.Parser {
                     }
                 }
 
+                weapon.DefaultDamage = weapon.Damages.GetValueOrDefault("default");
+                if (weapon.Damages.ContainsKey("default") == false) {
+                    weapon.DefaultDamage = weapon.Damages.GetValueOrDefault("vtol");
+                }
+
+                // show stockpile time instead of reload time for stockpile weapons
+                double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
+
+                // for sweep fire guns, the reload time is not included in the DPS calc
+                // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luaui/Widgets/gui_info.lua#L479
+                // unitDefInfo[unitDefID].maxdps = (weaponDef.damages[0] * weaponDef.customParams.sweepfire) / math.max(weaponDef.minIntensity, 0.5)
+                double dps = (weapon.SweepFire == 0) 
+                    ? (weapon.DefaultDamage / Math.Max(0.01, reloadTime))
+                    : (weapon.DefaultDamage * weapon.SweepFire);
+
+                if (weapon.WeaponType == "BeamLaser") {
+                    // how many frames the beam will stay on
+                    int beamFrames = (int)Math.Floor(Math.Max(1, weapon.BeamTime * 30d));
+
+                    if (weapon.SweepFireFireTime != 0) {
+                        double reload = weapon.SweepFireReloadTime == 0 ? weapon.ReloadTime : weapon.SweepFireReloadTime;
+                        dps = weapon.DefaultDamage * 30 * weapon.SweepFireFireTime / beamFrames / reload;
+                    }
+                }
+
+                if (weapon.Burst != 0) { dps *= weapon.Burst; }
+                if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
+
+                weapon.DefaultDps = dps;
             } else {
                 object? shieldObj = wep["shield"];
                 if (shieldObj == null || shieldObj is not Dictionary<object, object> shield) {

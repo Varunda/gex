@@ -40,7 +40,6 @@ namespace gex.Coven.Services.Db {
                 PRAGMA journal_mode=WAL;
             ");
             await cmd.ExecuteNonQueryAsync();
-            await conn.CloseAsync();
 
             _Logger.LogTrace($"Getting current DB version");
             int version = await GetVersion();

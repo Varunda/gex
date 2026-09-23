@@ -10,20 +10,7 @@ namespace gex.Coven.Views {
 
         public DisplayLoggerView() {
             InitializeComponent();
-            this.DataContext = App.Current.Services.GetService<DisplayLoggerService>()?.Get() ?? new DisplayLoggerViewModel();
-        }
-
-        public override void EndInit() {
-            base.EndInit();
-
-            TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
-            if (tl == null) {
-                return;
-            }
-
-            if (this.Root != null) {
-                this.Root.MaxHeight = tl.MaxHeight;
-            }
+            this.DataContext = App.Current?.Services?.GetService<DisplayLoggerService>()?.Get() ?? new DisplayLoggerViewModel();
         }
 
     }

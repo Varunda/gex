@@ -1,6 +1,6 @@
 ﻿
 using gex.Common.Code.ExtensionMethods;
-using gex.Models.Event;
+using gex.Common.Models.Event;
 using gex.Services.Db.Event;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -17,6 +17,7 @@
     <None Remove="resources\github_data\language\en\units.json" />
     <None Remove="resources\github_data\movedefs.lua" />
     <None Remove="resources\images\texture-mq\hellas_basin_v1.4.jpg" />
+    <None Remove="resources\maps\hooked_1.1.1.sd7" />
     <None Remove="resources\missing_player_36.sdfz" />
     <None Remove="resources\start_spot_outside_start_box.sdfz" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
@@ -28,7 +29,9 @@
     <None Remove="resources\unit_data\corfgate.lua" />
     <None Remove="resources\unit_data\corkorg.lua" />
     <None Remove="resources\unit_data\cormex.lua" />
+    <None Remove="resources\unit_data\legamph.lua" />
     <None Remove="resources\unit_data\legbart.lua" />
+    <None Remove="resources\unit_data\legbastion.lua" />
     <None Remove="resources\unit_data\legeallterrainmech.lua" />
     <None Remove="resources\unit_data\legeheatraymech.lua" />
     <None Remove="resources\unit_data\legelrpcmech.lua" />
@@ -75,6 +78,9 @@
     <Content Include="resources\images\texture-mq\hellas_basin_v1.4.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="resources\maps\hooked_1.1.1.sd7">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="resources\missing_player_36.sdfz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -108,8 +114,14 @@
     <Content Include="resources\unit_data\cormex.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="resources\unit_data\legamph.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="resources\unit_data\legbart.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\unit_data\legbastion.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\unit_data\legeallterrainmech.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -1,4 +1,5 @@
 ﻿using gex.Common.Code.Constants;
+using gex.Common.Models;
 using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;

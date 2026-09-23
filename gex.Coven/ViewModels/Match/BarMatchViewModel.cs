@@ -34,6 +34,8 @@ namespace gex.Coven.ViewModels {
             _GamemodeID = match.Gamemode;
             _StartTime = match.StartTime;
             _FileName = match.FileName;
+            _Engine = match.Engine;
+            _GameVersion = match.GameVersion;
 
             _DurationMs = (int)TimeSpan.FromSeconds(match.DurationFrameCount / 30f).TotalMilliseconds;
             _Duration = TimeSpan.FromSeconds(match.DurationFrameCount / 30f).GetRelativeFormat();
@@ -73,6 +75,12 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private string _FileName = "";
+
+        [ObservableProperty]
+        private string _Engine = "";
+
+        [ObservableProperty]
+        private string _GameVersion = "";
 
         [ObservableProperty]
         private ObservableCollection<BarMatchAllyTeamViewModel> _AllyTeams = [];

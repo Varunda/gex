@@ -1,7 +1,9 @@
-<Window xmlns="https://github.com/avaloniaui"
+<husk:AppWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:gex.Coven.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+        xmlns:local="using:gex.Coven.Windows"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="using:gex.Coven.Models"
 		xmlns:controls="using:gex.Coven.Controls"
@@ -39,33 +41,55 @@
                     header
                 -->
 
-                <Grid ColumnDefinitions="Auto, *" RowDefinitions="*, *, *, *, *">
+                <Grid Margin="4,8"
+                      ColumnDefinitions="Auto, *"
+                      ColumnSpacing="8"
+                      RowDefinitions="*, *, *, *, *, *, *">
+
                     <Label Content="Map" Grid.Column="0"/>
-                    <TextBlock Text="{Binding Match.Map}" Grid.Column="1"></TextBlock>
+                    <SelectableTextBlock Text="{Binding Match.Map}" Grid.Column="1"
+                               VerticalAlignment="Center">
+                    </SelectableTextBlock>
 
                     <Label Content="When" Grid.Row="1"/>
                     <controls:DateTimeView When="{Binding Match.StartTime}" 
+                                           VerticalAlignment="Center"
                                            Grid.Row="1" Grid.Column="1">
                     </controls:DateTimeView>
 
                     <Label Content="Duration" Grid.Row="2"/>
                     <TextBlock Text="{Binding Match.Duration}"
+                               VerticalAlignment="Center"
                                Grid.Row="2" Grid.Column="1">
                     </TextBlock>
 
                     <Label Content="Filename" Grid.Row="3"></Label>
-                    <TextBlock Text="{Binding Match.FileName}"
+                    <SelectableTextBlock Text="{Binding Match.FileName}"
+                               VerticalAlignment="Center"
                                Grid.Row="3" Grid.Column="1">
-                    </TextBlock>
+                    </SelectableTextBlock>
 
                     <Label Content="ID" Grid.Row="4"></Label>
                     <SelectableTextBlock Text="{Binding Match.GameID}"
+                                         VerticalAlignment="Center"
                                Grid.Row="4" Grid.Column="1">
+                    </SelectableTextBlock>
+
+                    <Label Content="Engine" Grid.Row="5"></Label>
+                    <SelectableTextBlock Text="{Binding Match.Engine}"
+                                         VerticalAlignment="Center"
+                                         Grid.Row="5" Grid.Column="1">
+                    </SelectableTextBlock>
+
+                    <Label Content="Game version" Grid.Row="6"></Label>
+                    <SelectableTextBlock Text="{Binding Match.GameVersion}"
+                                         VerticalAlignment="Center"
+                                         Grid.Row="6" Grid.Column="1">
                     </SelectableTextBlock>
                     
                 </Grid>
 
-                <Border Background="{StaticResource ControlBackgroundBrush}" Padding="0,1"/>
+                <husk:Divider Margin="4,12"/>
 
                 <StackPanel Margin="4,8">
                     <Button Command="{Binding LaunchReplay}" Classes="btn-primary">
@@ -98,45 +122,7 @@
                            HorizontalAlignment="Center"/>
                 </Border>
 
-                <ItemsControl ItemsSource="{Binding Match.AllyTeams}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="10">
-                                <StackPanel>
-                                    <Border Padding="5" Background="Gray">
-                                        <TextBlock Text="{Binding Name}" 
-                                                   HorizontalAlignment="Center"
-                                                   TextElement.Foreground="White">
-                                        </TextBlock>
-                                    </Border>
-
-                                    <TableView ItemsSource="{Binding Teams}">
-                                        <TableView.Columns>
-                                            <TableViewColumn Header="Faction">
-                                                <TableViewColumn.CellTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <controls:FactionImage Faction="{Binding Faction}"></controls:FactionImage>
-                                                            <TextBlock Text="{Binding Faction}"></TextBlock>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </TableViewColumn.CellTemplate>
-                                            </TableViewColumn>
-
-                                            <TableViewColumn Header="Name">
-                                                <TableViewColumn.CellTemplate>
-                                                    <DataTemplate>
-                                                        <TextBlock TextElement.Foreground="{Binding HexColor}" Text="{Binding Name}"></TextBlock>
-                                                    </DataTemplate>
-                                                </TableViewColumn.CellTemplate>
-                                            </TableViewColumn>
-                                        </TableView.Columns>
-                                    </TableView>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <matchwindow:MatchViewTeams></matchwindow:MatchViewTeams>
 
                 <!--
                     Team stats
@@ -150,50 +136,9 @@
                     </TextBlock>
                 </Border>
 
-                <ComboBox x:Name="TeamStatDropdown" ItemsSource="{Binding TeamStatKeys}"
-                          SelectedIndex="0"
-                          SelectionChanged="TeamStatDropdown_SelectionChanged">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="system:String">
-                            <TextBlock Text="{Binding .}"></TextBlock>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-
-                <Label Content="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}"></Label>
-
-                <lvc:CartesianChart x:Name="TeamStatChart" 
-                                    LegendPosition="Right" Height="400"
-                                    SeriesSource="{Binding SelectedTeamStat.Series}">
-
-                    <lvc:CartesianChart.Tooltip>
-                        <tt:YCovenTooltip/>
-                    </lvc:CartesianChart.Tooltip>
-
-                    <lvc:CartesianChart.XAxes>
-                        <lvc:XamlTimeSpanAxis 
-                            Labels="{Binding SelectedTeamStat.Labels}">
-                        </lvc:XamlTimeSpanAxis>
-                    </lvc:CartesianChart.XAxes>
-
-                    <lvc:CartesianChart.YAxes>
-                        <lvc:XamlAxis MinLimit="0"></lvc:XamlAxis>
-                    </lvc:CartesianChart.YAxes>
-
-                    <lvc:CartesianChart.SeriesTemplate>
-                        <DataTemplate>
-                            <lvc:XamlLineSeries x:DataType="models:ChartSeries"
-                                                  SeriesName="{Binding Name}"
-                                                  Values="{Binding Values}"
-                                                  GeometryFill="{Binding GeometryFill}"
-                                                  GeometryStroke="{Binding GeometryStroke}"
-                                                  Fill="{Binding GeometryFill}"
-                                                  Stroke="{Binding Color}">
-                            </lvc:XamlLineSeries>
-                        </DataTemplate>
-                    </lvc:CartesianChart.SeriesTemplate>
-
-                </lvc:CartesianChart>
+                <matchwindow:MatchViewTeamStats
+                    DataContext="{Binding TeamStatsViewModel}">
+                </matchwindow:MatchViewTeamStats>
 
                 <!--
                     Chat
@@ -215,4 +160,4 @@
         
     </Grid>
 
-</Window>
+</husk:AppWindow>

@@ -27,6 +27,7 @@ namespace gex.Coven.ViewModels.Match {
 
                 _Teams.Add(new BarMatchTeamViewModel(match, team));
                 if (_ColorBrush == Brushes.Transparent) {
+                    _HexColor = _Teams[0].HexColor;
                     _ColorBrush = _Teams[0].ColorBrush;
                     _BackgroundColorBrush = new SolidColorBrush(((SolidColorBrush)_ColorBrush).Color, 0.2d);
                 }
@@ -40,6 +41,9 @@ namespace gex.Coven.ViewModels.Match {
 
         [ObservableProperty]
         private bool _Won = false;
+
+        [ObservableProperty]
+        private string _HexColor = "";
 
         [ObservableProperty]
         private IBrush _ColorBrush = Brushes.Transparent;

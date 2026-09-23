@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using gex.Common.Models;
 using gex.Common.Models.Match;
@@ -27,6 +28,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NReco.Logging.File;
 using R86.Avalonia.Hosting;
+using SkiaSharp;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -43,9 +45,15 @@ public partial class App : HostedApplication<App> {
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
 
+        Stream fontStream = AssetLoader.Open(new Uri("avares://gex.Coven/Assets/Fonts/AtkinsonHyperlegible-Regular.ttf"));
+
         LiveCharts.Configure(config => {
+            config.UseDefaults();
             config.AddSkiaSharp();
             config.AddDefaultTheme();
+            config.HasTextSettings(new TextSettings() {
+                DefaultTypeface = SKTypeface.FromStream(fontStream)
+            });
         });
     }
 

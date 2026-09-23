@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Event;
 using gex.Common.Models.Options;
-using gex.Models.Event;
-using gex.Services.BarApi;
+using gex.Common.Services.Parser;
 using gex.Services.Storage;
 using gex.Tests.Util;
 using Microsoft.Extensions.Options;
@@ -28,9 +28,13 @@ namespace gex.Tests.Services.BarApi {
                 })
             );
 
-            ActionLogParser parser = new ActionLogParser(new TestLogger<ActionLogParser>(), storage);
+            string gameID = "aa_actions_with_nan_and_inf";
 
-            Result<GameOutput, string> output = await parser.Parse("aa_actions_with_nan_and_inf", CancellationToken.None);
+            Result<string, string> actionLog = await storage.GetActionLog(gameID, CancellationToken.None);
+
+            ActionLogParser parser = new ActionLogParser(new TestLogger<ActionLogParser>());
+
+            Result<GameOutput, string> output = parser.Parse("aa_actions_with_nan_and_inf", actionLog.Value, CancellationToken.None);
             Assert.IsTrue(output.IsOk, $"output failed: {output.Error}");
         }
 

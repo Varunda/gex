@@ -1,8 +1,8 @@
-﻿using gex.Models.Api;
-using gex.Models.Discord;
+﻿using gex.Models.Discord;
 using gex.Common.Models.Lobby;
 using gex.Models.Queues;
 using Microsoft.Extensions.DependencyInjection;
+using gex.Common.Models;
 
 namespace gex.Services.Queues {
 

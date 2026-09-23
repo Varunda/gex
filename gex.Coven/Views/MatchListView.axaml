@@ -33,12 +33,23 @@
                         </MenuItem.HeaderTemplate>
                     </MenuItem>
 
-                    <MenuItem>
+                    <MenuItem Command="{Binding LaunchReplay}">
                         <MenuItem.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <ti:TablerIcon Icon="IconPlayerPlay" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
                                     <TextBlock Text="Launch replay"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </MenuItem.HeaderTemplate>
+                    </MenuItem>
+
+                    <MenuItem Command="{Binding StartGexReplay}">
+                        <MenuItem.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ti:TablerIcon Icon="IconPlayerPlay" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
+                                    <TextBlock Text="Replay action"/>
                                 </StackPanel>
                             </DataTemplate>
                         </MenuItem.HeaderTemplate>

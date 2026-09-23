@@ -304,6 +304,7 @@
     import { CommanderData } from "../compute/ComputeCommanderData";
     import { FactoryData, TeamFactories } from "../compute/FactoryData";
     import { UnitPositionFrame } from "../compute/UnitPositionFrame";
+    import { ArmyValuePosition } from "../compute/ArmyValuePosition";
 
     import AccountUtil from "util/Account";
     import Toaster from "Toaster";
@@ -375,6 +376,7 @@
                     commanderHeatmap: false as boolean,
                     deathHeatmap: true as boolean,
                     buildingHeatmap: false as boolean,
+                    armyValueHeatmap: false as boolean,
                     radars: true as boolean,
                     staticDefense: true as boolean,
                     factories: true as boolean,
@@ -389,6 +391,7 @@
                     commanderHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                     unitDeatHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                     buildingHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
+                    armyValueHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                 }
 
             }
@@ -1400,6 +1403,70 @@
                         return iter.teamID == team.teamID && buildingUnitDefIds.has(iter.definitionID);
                     }).map(iter => {
                         return [iter.unitX, iter.unitZ];
+                    });
+
+                    worker.postMessage([locs, team, this.imgW, this.imgH, this.mapW, this.mapH]);
+                }
+                
+                worker.onmessage = (ev: any) => {
+                    if (this.roots.buildingHeatmap == null) {
+                        return;
+                    }
+
+                    const heatmap: d3.ContourMultiPolygon[] = ev.data[0];
+                    const team: BarMatchTeam = ev.data[1];
+                    const max: number = Math.max(...heatmap.map(iter => iter.value));
+
+                    const lerp = d3.interpolateBasisClosed([5, 10, 30, 40]);
+
+                    this.roots.buildingHeatmap.append("g")
+                        .attr("id", `map-building-heatmap-${team.teamID}`)
+                        .selectAll("path")
+                        .data(heatmap)
+                        .enter()
+                        .append("path")
+                            .classed("map-building-heatmap", true)
+                            .style("pointer-events", "none")
+                            .style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
+                            .attr("d", d3.geoPath())
+                            .attr("fill", (d) => {
+                                return `${team.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
+                            });
+                };
+            },
+
+            /**
+             * add per-entity heatmaps of where the army value was spread
+             */
+            addArmyValuePositionHeatmap: function(): void {
+                if (this.svg == null) { return console.warn(`cannot add building heatmap: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot add building heatmap: root is null`); }
+
+                const armyUnitDefIds: Set<number> = new Set();
+                const metalValue: Map<string, number> = new Map();
+                for (const unitDef of this.output.unitDefinitions) {
+                    metalValue.set(unitDef[1].definitionName, unitDef[1].metalCost);
+                    if (unitDef[1].weaponCount > 0) {
+                        armyUnitDefIds.add(unitDef[0]);
+                    }
+                }
+
+                this.roots.armyValueHeatmap = this.root.append("g");
+
+                const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/ArmyValuePositionHeatmap/view.js`));
+
+                const armyValues: ArmyValuePosition[] = [];
+
+                for (const team of this.match.teams) {
+
+                    const armyValue: ArmyValuePosition = new ArmyValuePosition();
+                    armyValue.entityID = `team-${team.teamID}`;
+
+                    const locs: [number, number, number][] = this.output.unitsCreated.filter(iter => {
+                        return iter.teamID == team.teamID && armyUnitDefIds.has(iter.definitionID);
+                    }).map(iter => {
+                        const mv: number = metalValue.get(iter.definitionName) ?? 1;
+                        return [iter.unitX, iter.unitZ, mv];
                     });
 
                     worker.postMessage([locs, team, this.imgW, this.imgH, this.mapW, this.mapH]);

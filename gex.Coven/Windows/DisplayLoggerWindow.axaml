@@ -8,12 +8,14 @@
         Title="gex.Coven - Logs"
         Icon="/Assets/icon-32x32.png">
 
-    <StackPanel>
-        <Border Background="Gray">
-            <TextBlock TextElement.FontSize="24" Text="Logs" HorizontalAlignment="Center"></TextBlock>
-        </Border>
+    <Grid ColumnDefinitions="*" RowDefinitions="*">
+        <StackPanel>
+            <Border Background="Gray">
+                <TextBlock TextElement.FontSize="24" Text="Logs" HorizontalAlignment="Center"></TextBlock>
+            </Border>
 
-        <views:DisplayLoggerView></views:DisplayLoggerView>
-    </StackPanel>
+            <views:DisplayLoggerView VerticalAlignment="Top"></views:DisplayLoggerView>
+        </StackPanel>
+    </Grid>
 
 </Window>

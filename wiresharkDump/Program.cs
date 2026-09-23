@@ -43,7 +43,11 @@ namespace wiresharkDump {
             List<WiresharkPacket> packets = new();
 
             foreach (JsonElement elem in json.EnumerateArray()) {
-                packets.Add(WiresharkPacket.FromJson(elem));
+                try {
+                    packets.Add(WiresharkPacket.FromJson(elem));
+                } catch (Exception ex) {
+                    Console.Error.WriteLine($"failed to parse JSON object: {ex.Message}\n{ex.ToString()}\n{elem}");
+                }
             }
 
             string output = "";

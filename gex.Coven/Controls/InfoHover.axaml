@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:gex.Coven.Controls"
+                    xmlns:tablericons="using:TablerIcons">
+
+    <Design.PreviewWith>
+        <StackPanel Width="400" Spacing="10">
+            <StackPanel Background="{DynamicResource SystemRegionBrush}">
+                <controls:InfoHover Icon="IconCheck" Text="test hover" />
+            </StackPanel>
+        </StackPanel>
+    </Design.PreviewWith>
+
+    <ControlTheme x:Key="{x:Type controls:InfoHover}"
+                  TargetType="controls:InfoHover">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel ToolTip.Tip="{TemplateBinding Text}" ZIndex="1">
+                    <TextBlock Text="?" Padding="4,0"/>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

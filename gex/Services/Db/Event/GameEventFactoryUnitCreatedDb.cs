@@ -1,10 +1,10 @@
 ﻿using gex.Code.ExtensionMethods;
 using gex.Common.Services.Db;
-using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Data.Common;
 using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models.Event;
 
 namespace gex.Services.Db.Event {
 

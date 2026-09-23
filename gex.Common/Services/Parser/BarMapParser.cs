@@ -125,8 +125,10 @@ namespace gex.Common.Services.Parser {
                 string? extractorRadius = table.GetValueOrDefault("extractorradius")?.ToString();
                 string? tidalStrength = table.GetValueOrDefault("tidalstrength")?.ToString();
 
+                string? version = table.GetValueOrDefault("version")?.ToString();
+
                 BarMap map = new();
-                map.Name = name;
+                map.Name = name + (version == null ? "" : $" {version}");
                 map.Description = table.GetValueOrDefault("description")?.ToString() ?? "";
                 map.Author = table.GetValueOrDefault("author")?.ToString() ?? "";
                 map.FileName = mapName;
@@ -151,7 +153,7 @@ namespace gex.Common.Services.Parser {
                 if (double.TryParse(maxWind, out double maxWindD) == false) {
                     return $"failed to parse maxWind (which is '{maxWind}') to a valid double";
                 } else {
-                    map.MinimumWind = maxWindD;
+                    map.MaximumWind = maxWindD;
                 }
 
                 if (double.TryParse(extractorRadius, out double extractorRadiusD) == false) {
@@ -166,7 +168,7 @@ namespace gex.Common.Services.Parser {
                     map.MaxMetal = maxMetalD;
                 }
 
-                if (double.TryParse(minWind, out double tidalStrD) == false) {
+                if (double.TryParse(tidalStrength, out double tidalStrD) == false) {
                     return $"failed to parse tidalStrength (which is '{tidalStrength}') to a valid double";
                 } else {
                     map.TidalStrength = tidalStrD;

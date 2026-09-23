@@ -242,12 +242,15 @@ export class BarWeaponDefinition {
 
         def.fireRate = 1 / Math.max(0.0001, def.reloadTime);
 
+        /*
         def.defaultDamage = (def.damages.get("default") ?? def.damages.get("vtol") ?? 0) * Math.max(1, def.sweepFire);
         if (def.projectiles != 1) {
             def.defaultDamage *= def.projectiles;
         }
+        */
 
         def.defaultBurstDamage = def.defaultDamage * Math.max(1, def.burst);
+        /*
         def.defaultDps = def.sweepFire == 0 ? (def.defaultDamage / Math.max(0.01, def.reloadTime)) : def.defaultDamage;
         if (def.sweepFireFireTime != 0 && def.sweepFireReloadTime != 0) {
             def.defaultDps = def.defaultDamage * 30 * def.sweepFireFireTime / Math.max(0.01, def.sweepFireReloadTime);
@@ -256,6 +259,7 @@ export class BarWeaponDefinition {
         if (def.burst != 0) {
             def.defaultDps *= def.burst;
         }
+        */
 
         def.timedAreaDamage = def.timedAreaDamage; // * 0.7333;
 

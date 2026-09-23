@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="using:gex.Coven.Controls"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:gex.Coven.ViewModels"
+             xmlns:models="using:gex.Coven.Models.Chart"
+             xmlns:system="using:System"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:match="using:gex.Coven.ViewModels.Match"
+             xmlns:tt="using:gex.Coven.Code"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="gex.Coven.Controls.MatchWindow.MatchViewTeamStats"
+             x:DataType="match:BarMatchViewTeamStats">
+
+    <Design.DataContext>
+        <match:BarMatchViewTeamStats />
+    </Design.DataContext>
+
+    <Grid ColumnDefinitions="190, *" RowDefinitions="*" ColumnSpacing="12" Margin="4">
+        <StackPanel Grid.Column="0">
+
+            <ToggleButton IsChecked="true" Margin="0,0,0,8">
+                Show per sec
+            </ToggleButton>
+
+            <Expander Header="Basic" IsExpanded="{Binding IsSectionBasicsOpened}">
+
+                <StackPanel>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Army value">Army value</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units made">Units made</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units killed">Units killed</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Damage dealt">Damage dealt</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Damage taken">Damage taken</Button>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="Unit value" IsVisible="{Binding HasExtraStats}" 
+                      IsExpanded="{Binding IsSectionUnitValueOpened}">
+
+                <StackPanel>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Total value">Total value</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Defense value">Defense value</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Eco value">Eco value</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Util value">Util value</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Other value">Other value</Button>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="Build power" IsVisible="{Binding HasExtraStats}" 
+                      IsExpanded="{Binding IsSectionBuildPowerOpened}">
+
+                <StackPanel>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Build power total">Build power total</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Build power used">Build power used</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Build power usage">Build power used %</Button>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="M eco" IsExpanded="{Binding IsSectionMetalEcoOpened}">
+                <StackPanel>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal produced">Metal produced</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal excess">Metal excess</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal received">Metal receieved</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal sent">Metal sent</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal current">Metal current</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Metal excess %">Metal excess %</Button>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="E eco" IsExpanded="{Binding IsSectionEnergyEcoOpened}">
+                <StackPanel>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy produced">Energy produced</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy excess">Energy excess</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy received">Energy receieved</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy sent">Energy sent</Button>
+                    <Button IsVisible="{Binding HasExtraStats}" Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy current">Energy current</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Energy excess %">Energy excess %</Button>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="Unit" IsExpanded="{Binding IsSectionUnitOpened}">
+                <StackPanel>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units captured">Units captured</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units sent">Units sent</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units received">Units received</Button>
+                    <Button Command="{Binding SelectTeamStatsKey}" CommandParameter="Units lost to capture">Units lost to capture</Button>
+                </StackPanel>
+            </Expander>
+
+            <TextBlock IsVisible="{Binding !HasExtraStats}" TextWrapping="Wrap">
+                Some stats are hidden because this game has not been replayed for extra info
+            </TextBlock>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1">
+            <Label Content="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}" FontSize="24" TextElement.FontSize="24"></Label>
+
+            <lvc:CartesianChart LegendPosition="Right" Height="600"
+                                SeriesSource="{Binding SelectedTeamStat.Series}"
+                                VisualElements="{Binding MilestoneVisualElements}">
+
+                <lvc:CartesianChart.Tooltip>
+                    <tt:YCovenTooltip/>
+                </lvc:CartesianChart.Tooltip>
+
+                <lvc:CartesianChart.XAxes>
+                    <lvc:XamlTimeSpanAxis 
+                        Labels="{Binding SelectedTeamStat.Labels}">
+                    </lvc:XamlTimeSpanAxis>
+                </lvc:CartesianChart.XAxes>
+
+                <lvc:CartesianChart.YAxes>
+                    <lvc:XamlAxis MinLimit="0"></lvc:XamlAxis>
+                </lvc:CartesianChart.YAxes>
+
+                <lvc:CartesianChart.SeriesTemplate>
+                    <DataTemplate>
+                        <lvc:XamlLineSeries x:DataType="models:ChartSeries"
+                                            ZIndex="0"
+                                            SeriesName="{Binding Name}"
+                                            Values="{Binding Values}"
+                                            GeometryFill="{Binding GeometryFill}"
+                                            GeometryStroke="{Binding GeometryStroke}"
+                                            Fill="{Binding GeometryFill}"
+                                            Stroke="{Binding Color}">
+                        </lvc:XamlLineSeries>
+                    </DataTemplate>
+                </lvc:CartesianChart.SeriesTemplate>
+
+            </lvc:CartesianChart>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿using gex.Models.Api;
+﻿using gex.Common.Models;
 using System.Threading.Tasks;
 
 namespace gex.Code.Hubs {

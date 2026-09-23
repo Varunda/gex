@@ -13,6 +13,7 @@ namespace gex.Coven.Services.Bar {
         public static void AddCovenBarServices(this IServiceCollection services) {
             services.AddSingleton<IPrDownloaderService, CovenPrDownloaderService>();
             services.AddSingleton<IBarEngineDownloader, CovenBarEngineDownloader>();
+            services.AddSingleton<CovenGameRunner>();
         }
 
     }

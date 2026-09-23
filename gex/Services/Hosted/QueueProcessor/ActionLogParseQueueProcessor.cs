@@ -1,14 +1,14 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Event;
 using gex.Common.Models.Match;
 using gex.Common.Models.Options;
+using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
 using gex.Common.Services.Repository.Match;
 using gex.Models.Db;
-using gex.Models.Event;
 using gex.Models.Map;
 using gex.Models.Options;
 using gex.Models.Queues;
-using gex.Services.BarApi;
 using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Db.Map;
@@ -125,7 +125,13 @@ namespace gex.Services.Hosted.QueueProcessor {
                 return false;
             }
 
-            Result<GameOutput, string> game = await _ActionLogParser.Parse(entry.GameID, cancel);
+            Result<string, string> actionLog = await _OutputStorage.GetActionLog(entry.GameID, cancel);
+            if (actionLog.IsOk == false) {
+                _Logger.LogError($"failed to load action log from storage [gameID={entry.GameID}] [error={actionLog.Error}]");
+                return false;
+            }
+
+            Result<GameOutput, string> game = _ActionLogParser.Parse(entry.GameID, actionLog.Value, cancel);
             if (game.IsOk == false) {
                 _Logger.LogError($"failed to process action log [gameID={entry.GameID}] [error={game.Error}]");
                 return false;

@@ -19,54 +19,54 @@
             <TextBlock Text="{Binding Messages.Count, StringFormat='{}{0} messages'}"></TextBlock>
         </Border>
 
-            <TableView ItemsSource="{Binding Messages}">
-                <TableView.Columns>
-                    <TableViewColumn Header="Timestamp" Width="12*">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <controls:DateTimeView When="{Binding Timestamp}" Format="yyyy-MM-dd hh:mm:ss.fff tt"
-                                                       TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
-                                                       TextElement.FontSize="14"></controls:DateTimeView>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
+        <TableView ItemsSource="{Binding Messages}" MaxHeight="1000">
+            <TableView.Columns>
+                <TableViewColumn Header="Timestamp" Width="12*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <controls:DateTimeView When="{Binding Timestamp}" Format="yyyy-MM-dd hh:mm:ss.fff tt"
+                                                   TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                                   TextElement.FontSize="14"></controls:DateTimeView>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
 
-                    <TableViewColumn Header="Category" Width="17*">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Category}"
-                                           ToolTip.Tip="{Binding Category}" FontSize="14">
-                                </TextBlock>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
+                <TableViewColumn Header="Category" Width="17*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Category}"
+                                       ToolTip.Tip="{Binding Category}" FontSize="14">
+                            </TextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
 
-                    <TableViewColumn Header="Level" Width="4*">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Level}"
-                                           Background="{Binding BackgroundColor}"
-                                           Foreground="{Binding Foreground}"
-                                           HorizontalAlignment="Left"
-                                           VerticalAlignment="Top"
-                                           Padding="2"
-                                           TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
-                                           TextElement.FontSize="14"></TextBlock>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
+                <TableViewColumn Header="Level" Width="4*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Level}"
+                                       Background="{Binding BackgroundColor}"
+                                       Foreground="{Binding Foreground}"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Top"
+                                       Padding="2"
+                                       TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                       TextElement.FontSize="14"></TextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
 
-                    <TableViewColumn Header="Message" Width="67*">
-                        <TableViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <SelectableTextBlock TextWrapping="Wrap" Text="{Binding Message}"
-                                           TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
-                                           TextElement.FontSize="14"></SelectableTextBlock>
-                            </DataTemplate>
-                        </TableViewColumn.CellTemplate>
-                    </TableViewColumn>
-                </TableView.Columns>
-            </TableView>
+                <TableViewColumn Header="Message" Width="67*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <SelectableTextBlock TextWrapping="Wrap" Text="{Binding Message}"
+                                       TextElement.FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular"
+                                       TextElement.FontSize="14"></SelectableTextBlock>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+            </TableView.Columns>
+        </TableView>
     </DockPanel>
 
 </UserControl>

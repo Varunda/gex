@@ -10,6 +10,7 @@ using gex.Coven.Models.Config;
 using gex.Coven.Services;
 using gex.Coven.Services.Util;
 using gex.Coven.ViewModels;
+using Huskui.Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -19,28 +20,19 @@ using System.Threading.Tasks;
 
 namespace gex.Coven.Windows {
 
-    public partial class MatchWindow : Window {
+    public partial class MatchWindow : AppWindow {
 
         public MatchWindow() {
             InitializeComponent();
         }
 
-        private void TeamStatDropdown_SelectionChanged(object? sender, SelectionChangedEventArgs e) {
-            if (DataContext is not MatchWindowViewModel vm) {
-                return;
-            }
 
-            if (e.AddedItems.Count < 1) {
-                return;
-            }
-
-            if (e.AddedItems[0] is not string key) {
-                return;
-            }
-
-            vm.SelectTeamStatsKey(key);
-        }
-
+        /// <summary>
+        ///     helper method to open a match window
+        /// </summary>
+        /// <param name="gameID"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         public static async Task LoadMatchAndShow(string gameID, CancellationToken cancel) {
             ILogger<MatchWindow> logger = App.Current.Services.GetRequiredService<ILogger<MatchWindow>>();
             BarMatchRepository matchRepository = App.Current.Services.GetRequiredService<BarMatchRepository>();

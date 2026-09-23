@@ -14,6 +14,7 @@ namespace gex.Coven.Services.Util {
             services.AddSingleton<IBarMatchBuilderUtil, CovenBarMatchBuilderUtil>();
             services.AddSingleton<BarMatchProcessorUtil>();
             services.AddSingleton<CovenVersionUtil>();
+            services.AddSingleton<StorageUtil>();
         }
 
     }

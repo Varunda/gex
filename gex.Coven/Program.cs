@@ -58,6 +58,7 @@ sealed class Program {
         // services
         hostBuilder.Services.AddSingleton<LuaRunner>();
         hostBuilder.Services.AddSingleton<BarDemofileParser>();
+        hostBuilder.Services.AddSingleton<ActionLogParser>();
         hostBuilder.Services.AddSingleton<StartSpotDataParser>();
         hostBuilder.Services.AddSingleton<BarMapParser>();
         hostBuilder.Services.AddSingleton<MatchListViewModel>();

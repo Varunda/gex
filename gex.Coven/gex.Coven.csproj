@@ -45,12 +45,12 @@
 	<ItemGroup>
 		<ProjectReference Include="..\gex.Common\gex.Common.csproj" />
 
-		<PackageReference Include="Avalonia" Version="12.1.2" />
-		<PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
-		<PackageReference Include="Avalonia.Headless" Version="12.1.2" />
-		<PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.2" />
-		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
-		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+		<PackageReference Include="Avalonia" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Headless" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
 		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
 			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
 			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
@@ -58,7 +58,7 @@
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="dotnet-file-associator" Version="0.1.4" />
 		<PackageReference Include="DynamicData" Version="9.4.33" />
-		<PackageReference Include="Huskui.Avalonia" Version="2.0.0" />
+		<PackageReference Include="Huskui.Avalonia" Version="2.1.1" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.11" />
@@ -77,12 +77,10 @@
 	-->
 	<Target Name="DeleteFiles" AfterTargets="Publish">
 		<ItemGroup>
-			<FilesToDelete Include="$(PublishDir)*.pdb;"/>
+			<FilesToDelete Include="$(PublishDir)*.pdb;" />
 		</ItemGroup>
 		<Delete Files="@(FilesToDelete)">
-			<Output
-				TaskParameter="DeletedFiles"
-				ItemName="FilesDeleted"/>
+			<Output TaskParameter="DeletedFiles" ItemName="FilesDeleted" />
 		</Delete>
 		<Message Text="Deleted PDB files: @(FilesDeleted)" Importance="high" />
 	</Target>

@@ -1,0 +1,77 @@
+<husk:AppWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:vm="using:gex.Coven.ViewModels"
+        xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="gex.Coven.Windows.HeadlessReplayWindow"
+        x:DataType="vm:HeadlessReplayViewModel"
+        MaxWidth="480" MaxHeight="500"
+        Title="{Binding Title}" SizeToContent="WidthAndHeight">
+
+    <StackPanel>
+        <Grid ColumnDefinitions="Auto, *" RowDefinitions="*, *, *, *"
+              ColumnSpacing="8" RowSpacing="4" VerticalAlignment="Top">
+
+            <Label Grid.Row="0" Grid.Column="0">Game ID</Label>
+            <TextBlock Text="{Binding GameID}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"/>
+
+            <Label Grid.Row="1" Grid.Column="0">Status</Label>
+            <TextBlock Text="{Binding Status}" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
+
+            <Label Grid.Row="2" Grid.Column="0">Progress</Label>
+            <TextBlock Text="{Binding LastFrame}" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"/>
+
+            <Label Grid.Row="3" Grid.Column="0">Duration frames</Label>
+            <TextBlock Text="{Binding FramesDuration}" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center"/>
+        </Grid>
+
+        <husk:Divider Margin="4,12"/>
+
+        <StackPanel>
+            <ProgressBar Value="{Binding Progress}"
+                         IsIndeterminate="{Binding ProgressLoading}"
+                         Height="24" MaxWidth="400" Width="400"
+                         Margin="4,0"
+                         Background="{Binding ProgressBrush}"
+                         HorizontalAlignment="Center">
+            </ProgressBar>
+
+            <StackPanel IsVisible="{Binding !ProgressLoading}">
+                <Label>ETA</Label>
+                <TextBlock Text="{Binding Eta, StringFormat='{}{0:0}s left'}"
+                           VerticalAlignment="Center">
+                </TextBlock>
+
+                <Label>FPS</Label>
+                <TextBlock Text="{Binding Fps, StringFormat='{}{0:0} FPS'}"
+                            VerticalAlignment="Center">
+                </TextBlock>
+            </StackPanel>
+        </StackPanel>
+
+        <Button HorizontalAlignment="Left" VerticalAlignment="Center"
+                Margin="4,8"
+                Command="{Binding CancelReplay}">
+            Cancel
+        </Button>
+
+        <husk:Divider Margin="4,12"/>
+
+        <Label>Game output</Label>
+        <ScrollViewer MaxHeight="300">
+            <ItemsControl ItemsSource="{Binding Stdout}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding .}"
+                                   FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular">
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+    </StackPanel>
+
+</husk:AppWindow>

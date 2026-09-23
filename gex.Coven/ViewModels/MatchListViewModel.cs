@@ -18,6 +18,7 @@ using gex.Common.Services.Util;
 using gex.Coven.Models.Config;
 using gex.Coven.Models.Ui;
 using gex.Coven.Services;
+using gex.Coven.Services.Bar;
 using gex.Coven.Services.Util;
 using gex.Coven.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,8 +47,7 @@ namespace gex.Coven.ViewModels {
         private readonly DemofileWatcher _DemofileWatcher;
         private readonly IBarMatchBuilderUtil _MatchBuilder;
         private readonly BarMatchProcessorUtil _ProcessorUtil;
-        private readonly BarMapParser _MapParser;
-        private readonly IBarMapDb _MapDb;
+        private readonly StorageUtil _StorageUtil;
 
         public MatchListViewModel() {
             _Logger = App.Current?.Services?.GetService<ILogger<MainViewModel>>() ?? default!;
@@ -56,8 +57,7 @@ namespace gex.Coven.ViewModels {
             _DemofileWatcher = App.Current?.Services?.GetService<DemofileWatcher>() ?? default!;
             _MatchBuilder = App.Current?.Services?.GetService<IBarMatchBuilderUtil>() ?? default!;
             _ProcessorUtil = App.Current?.Services?.GetService<BarMatchProcessorUtil>() ?? default!;
-            _MapParser = App.Current?.Services?.GetService<BarMapParser>() ?? default!;
-            _MapDb = App.Current?.Services?.GetService<IBarMapDb>() ?? default!;
+            _StorageUtil = App.Current?.Services?.GetService<StorageUtil>() ?? default!;
 
             IObservable<Func<BarMatchViewModel, bool>> filterPredicate = 
                 this.WhenAnyPropertyChanged(nameof(FilterMap), nameof(FilterPlayer), nameof(FilterGamemode))
@@ -274,6 +274,48 @@ namespace gex.Coven.ViewModels {
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
             await MatchWindow.LoadMatchAndShow(vm.GameID, cts.Token);
+        }
+
+        /// <summary>
+        ///     launch a replay for viewing
+        /// </summary>
+        [RelayCommand]
+        public void LaunchReplay() {
+            BarMatchViewModel? vm = SelectedMatch;
+            if (vm == null) {
+                return;
+            }
+
+            DemofileLaunchReplayWindow win = new() {
+                DataContext = new DemofileLaunchReplayViewModel() {
+
+                }
+            };
+            WindowManager.Register(win);
+            win.Show();
+        }
+
+        /// <summary>
+        ///     start processing a replay in headless
+        /// </summary>
+        [RelayCommand]
+        public void StartGexReplay() {
+            BarMatchViewModel? vm = SelectedMatch;
+            if (vm == null) {
+                return;
+            }
+
+            if (_StorageUtil.HasActionLog(vm.GameID) == true) {
+                _Logger.LogInformation($"not replaying game, action log already exists [gameID={vm.GameID}]");
+                //return;
+            }
+
+            HeadlessReplayWindow win = new();
+            win.DataContext = new HeadlessReplayViewModel() {
+                Match = vm.Match
+            };
+            WindowManager.Register(win);
+            win.Show();
         }
 
         /// <summary>

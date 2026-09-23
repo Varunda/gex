@@ -1,8 +1,8 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Event;
 using gex.Common.Models.Match;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Repositories;
-using gex.Models.Event;
 using gex.Models.Health;
 using gex.Models.Options;
 using gex.Models.Queues;

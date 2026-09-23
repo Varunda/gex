@@ -1,4 +1,4 @@
-﻿using gex.Models.Api;
+﻿using gex.Common.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

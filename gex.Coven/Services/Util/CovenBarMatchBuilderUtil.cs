@@ -88,6 +88,9 @@ namespace gex.Coven.Services.Util {
                             Result<BarMap, string> mapData = await _MapParser.Parse(mapPath, cancel);
                             if (mapData.IsOk == true) {
                                 map = mapData.Value;
+                                if (map.Name != match.Map) {
+                                    throw new InvalidOperationException($"tried to parse map '{match.Map}', but got '{map.Name}' instead");
+                                }
 
                                 await _BarMapDb.Upsert(mapData.Value, cancel);
                                 _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");

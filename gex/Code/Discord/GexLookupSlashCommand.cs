@@ -519,14 +519,7 @@ namespace gex.Code.Discord {
 
                         // show stockpile time instead of reload time for stockpile weapons
                         double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
-
-                        // for sweep fire guns, the reload time is not included in the DPS calc
-                        // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luaui/Widgets/gui_info.lua#L479
-                        // unitDefInfo[unitDefID].maxdps = (weaponDef.damages[0] * weaponDef.customParams.sweepfire) / math.max(weaponDef.minIntensity, 0.5)
-                        double dps = (weapon.SweepFire == 0) ? (damage / Math.Max(0.01, reloadTime)) : (damage * weapon.SweepFire);
-                        if (weapon.SweepFireFireTime != 0 && weapon.SweepFireReloadTime != 0) {
-                            dps = damage * 30 * weapon.SweepFireFireTime / Math.Max(0.01, weapon.SweepFireReloadTime);
-                        }
+                        double dps = weapon.DefaultDps;
 
                         if (weapon.Burst != 0) { dps *= weapon.Burst; }
                         if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
@@ -550,7 +543,7 @@ namespace gex.Code.Discord {
                                     string type = iter.Key == "commanders" ? "comms"
                                         : iter.Key == "vtol" ? "air"
                                         : iter.Key;
-                                    return $"{Math.Round(iter.Value / wep.GetDefaultDamage() * 100d)}% to {type}";
+                                    return $"{Math.Round(iter.Value / damage * 100d)}% to {type}";
                                 })
                             )}]";
                         }
@@ -559,7 +552,13 @@ namespace gex.Code.Discord {
                             embed.Description += $", {weapon.ImpulseFactor} impulse";
 
                             if (weapon.SweepFireReloadTime != 0 && weapon.SweepFireFireTime != 0) {
-                                embed.Description += $", {weapon.SweepFireFireTime} fire time, {weapon.SweepFireReloadTime} reload time";
+                                embed.Description += $", {weapon.SweepFireReloadTime}s sweep fire reload time";
+                            }
+                            if (weapon.SweepFireFireTime != 0) {
+                                embed.Description += $", {weapon.SweepFireFireTime}s sweep fire fire time";
+                            }
+                            if (weapon.BeamTime != 0) {
+                                embed.Description += $", {(int)Math.Floor(weapon.BeamTime * 30d)} beam frames";
                             }
                         }
 

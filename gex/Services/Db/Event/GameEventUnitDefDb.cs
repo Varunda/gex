@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using gex.Code.ExtensionMethods;
 using gex.Common.Services.Db;
-using gex.Models.Event;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Data.Common;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using gex.Common.Models.Event;
 
 namespace gex.Services.Db.Event {
 

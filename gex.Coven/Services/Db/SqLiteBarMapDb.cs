@@ -100,7 +100,6 @@ namespace gex.Coven.Services.Db {
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);
-            await conn.CloseAsync();
         }
 
     }

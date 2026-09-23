@@ -33,7 +33,6 @@ public class SqLiteBarMatchDb : IBarMatchDb {
         using DbCommand cmd = await _DbHelper.Command(conn, @"SELECT * FROM bar_match;", cancel);
 
         List<BarMatch> matches = await _Reader.ReadList(cmd, cancel);
-        await conn.CloseAsync();
 
         return matches;
     }
@@ -52,7 +51,6 @@ public class SqLiteBarMatchDb : IBarMatchDb {
         await cmd.PrepareAsync(cancel);
 
         BarMatch? match = await _Reader.ReadSingle(cmd, cancel);
-        await conn.CloseAsync();
 
         return match;
     }

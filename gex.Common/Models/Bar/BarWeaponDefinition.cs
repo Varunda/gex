@@ -28,6 +28,8 @@ namespace gex.Common.Models.Bar {
 
         public int Projectiles { get; set; }
 
+        public double BeamTime { get; set; }
+
         public double SweepFire { get; set; }
 
         public double SweepFireFireTime { get; set; }
@@ -101,6 +103,10 @@ namespace gex.Common.Models.Bar {
         public BarWeaponDefinition? ClusterWeapon { get; set; } = null;
 
         public Dictionary<string, double> Damages { get; set; } = [];
+
+        public double DefaultDamage { get; set; } = 0d;
+
+        public double DefaultDps { get; set; } = 0d;
 
         public BarUnitShield? ShieldData { get; set; } = null;
 

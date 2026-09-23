@@ -1,4 +1,5 @@
 ﻿using gex.Code;
+using gex.Common.Models;
 using gex.Common.Models.Lobby;
 using gex.Models;
 using gex.Models.Api;

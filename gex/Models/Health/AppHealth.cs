@@ -1,4 +1,5 @@
-﻿using gex.Models.Api;
+﻿using gex.Common.Models;
+using gex.Models.Api;
 using System;
 using System.Collections.Generic;
 
