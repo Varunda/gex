@@ -37,4 +37,5 @@ export class SearchPlayer {
     public positionLabel?: string;
     public minOS?: number;
     public maxOS?: number;
+    public faction?: string;
 }

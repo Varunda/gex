@@ -382,6 +382,7 @@ namespace gex.Services.Db.Match {
                 for (int i = 0; i < parms.Players.Count; ++i) {
                     SearchPlayer iter = parms.Players[i];
                     joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
+                    joinPlayersStr += $"INNER JOIN bar_match_team teams{i} ON players{i}.game_id = teams{i}.game_id AND players{i}.team_id = teams{i}.team_id";
 
                     if (iter.UserID != null) {
                         conditions.Add($"players{i}.user_id = @UserID{i}");
@@ -389,17 +390,17 @@ namespace gex.Services.Db.Match {
                     }
 
                     if (iter.Position != null) {
-                        conditions.Add($"players{i}.starting_position_x BETWEEN @StartXMin{i} AND @StartXMax{i}");
+                        conditions.Add($"teams{i}.starting_position_x BETWEEN @StartXMin{i} AND @StartXMax{i}");
                         cmd.AddParameter($"StartXMin{i}", iter.Position.Value.X - (iter.PositionRadius ?? 150));
                         cmd.AddParameter($"StartXMax{i}", iter.Position.Value.X + (iter.PositionRadius ?? 150));
 
-                        conditions.Add($"players{i}.starting_position_z BETWEEN @StartZMin{i} AND @StartZMax{i}");
+                        conditions.Add($"teams{i}.starting_position_z BETWEEN @StartZMin{i} AND @StartZMax{i}");
                         cmd.AddParameter($"StartZMin{i}", iter.Position.Value.Z - (iter.PositionRadius ?? 150));
                         cmd.AddParameter($"StartZMax{i}", iter.Position.Value.Z + (iter.PositionRadius ?? 150));
                     }
 
                     if (iter.PositionLabel != null) {
-                        conditions.Add($"LOWER(players{i}.start_spot_label) = LOWER(@StartSpot{i})");
+                        conditions.Add($"LOWER(teams{i}.start_spot_label) = LOWER(@StartSpot{i})");
                         cmd.AddParameter($"StartSpot{i}", iter.PositionLabel);
                     }
 
@@ -411,6 +412,16 @@ namespace gex.Services.Db.Match {
                     if (iter.MaxOS != null) {
                         conditions.Add($"players{i}.skill < @PlayerMaxOS{i}");
                         cmd.AddParameter($"PlayerMaxOS{i}", iter.MaxOS.Value);
+                    }
+
+                    if (iter.Faction != null) {
+                        conditions.Add($"teams{i}.faction = @TeamFaction{i}");
+                        cmd.AddParameter($"TeamFaction{i}", iter.Faction);
+                    }
+
+                    if (iter.OpeningLab != null) {
+                        conditions.Add($"teams{i}.opening_lab_unit_definition_name = @TeamOpeningLab{i}");
+                        cmd.AddParameter($"TeamOpeningLab{i}", iter.OpeningLab);
                     }
                 }
             }

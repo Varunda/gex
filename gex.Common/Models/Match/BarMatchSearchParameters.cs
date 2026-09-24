@@ -210,6 +210,10 @@ namespace gex.Common.Models.Match {
 
         public float? MaxOS { get; set; }
 
+        public string? Faction { get; set; } = null;
+
+        public string? OpeningLab { get; set; } = null;
+
         public static SearchPlayer Parse(string s, IFormatProvider? provider) {
             if (TryParse(s, provider, out SearchPlayer? result) == false) {
                 throw new FormatException();

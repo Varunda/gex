@@ -25,6 +25,7 @@ namespace gex.Common.Services.Db.Readers {
             team.Handicap = reader.GetFloat("handicap");
             team.StartSpot = reader.GetNullableString("start_spot");
             team.StartSpotLabel = reader.GetNullableString("start_spot_label");
+            team.OpeningLabUnitDefinitionName = reader.GetNullableString("opening_lab_unit_definition_name");
 
             return team;
         }

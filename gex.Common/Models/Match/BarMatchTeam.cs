@@ -56,5 +56,10 @@ namespace gex.Common.Models.Match {
         /// </summary>
         public string? StartSpotLabel { get; set; }
 
+        /// <summary>
+        ///     unit def name of the opening lab, name of unit defs accepted is hard coded
+        /// </summary>
+        public string? OpeningLabUnitDefinitionName { get; set; } = null;
+
     }
 }

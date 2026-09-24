@@ -227,6 +227,7 @@ namespace gex.Services.Util {
             processing.Features.Add("teams");
             processing.Features.Add("player_left");
             processing.Features.Add("text_ping");
+            processing.Features.Add("player_opening_lab");
             await _MatchProcessingRepository.Upsert(processing);
 
             await _MatchRepository.Insert(match, cancel);

@@ -17,6 +17,8 @@ using gex.Common.Models.User;
 using gex.Common.Models.Match;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Code;
+using System.Collections.ObjectModel;
+using gex.Common.Models.Bar.Commands;
 
 namespace gex.Common.Services.Parser {
 
@@ -44,6 +46,13 @@ namespace gex.Common.Services.Parser {
             _UserRepository = userRepository;
             _PolygonStartboxUtil = polygonStartboxUtil;
         }
+
+        private static readonly IReadOnlySet<string> LAB_DEFINITION_NAMES = new ReadOnlySet<string>(new HashSet<string>([
+            // air lab, bot lab, hover, naval hover, vehicle, navy
+            "armap", "armlab", "armhp", "armfhp", "armvp", "armsy",
+            "corap", "corlab", "corhp", "corfhp", "corvp", "corsy",
+            "legap", "leglab", "leghp", "legfhp", "legvp", "legsy",
+        ]));
 
         /// <summary>
         ///     parse the bytes of a demo file returning a parsed <see cref="BarMatch"/>
@@ -360,6 +369,57 @@ namespace gex.Common.Services.Parser {
                     }
                 }
 
+                //
+                // handles the team opeing lab code
+                //
+                void HandleOpeningLab(BarCommand command, int commandId, byte playerNum, DemofilePacket packet) {
+                    if (packet.GameTime - match.StartOffset > (60 * 10)) {
+                        return;
+                    }
+
+                    int? unitDefID = null;
+                    if (command.ID == BarCommandId.INSERT && command is BarCommandInsert insert) {
+                        if (insert.Command != null && insert.Command.ID == -1 && insert.Command is BarCommandBuild build) {
+                            unitDefID = build.UnitDefinitionID;
+                        }
+                    } else if (command.ID == BarCommandId.BUILD && command is BarCommandBuild build) {
+                        unitDefID = build.UnitDefinitionID;
+                    }
+
+                    if (unitDefID == null) {
+                        return;
+                    }
+
+                    BarMatchPlayer? player = match.Players.FirstOrDefault(iter => iter.PlayerID == playerNum);
+                    if (player == null) {
+                        return;
+                    }
+
+                    BarMatchTeam? team = match.Teams.FirstOrDefault(iter => iter.TeamID == player.TeamID);
+                    if (team == null) {
+                        _Logger.LogWarning($"missing team of player for opener [gameID={header.GameID}] [playerID={player.PlayerID}] [teamID={player.TeamID}]");
+                        return;
+                    }
+
+                    if (team.OpeningLabUnitDefinitionName != null) {
+                        return;
+                    }
+
+                    string? unitDef = unitDefDict.GetValueOrDefault(unitDefID.Value);
+                    if (unitDef == null) {
+                        _Logger.LogWarning($"unknown unit definition ID found [unitDefID={unitDefID}]");
+                        return;
+                    }
+
+                    if (LAB_DEFINITION_NAMES.Contains(unitDef) == false) {
+                        //_Logger.LogTrace($"unit def is not a lab [unitDef={unitDef}] [teamID={team.TeamID}] [player={player.Name}/{player.PlayerID}]");
+                        return;
+                    }
+
+                    _Logger.LogTrace($"opening lab found [unitDef={unitDef}] [teamID={team.TeamID}] [player={player.Name}] [time={packet.GameTime - match.StartOffset}]");
+                    team.OpeningLabUnitDefinitionName = unitDef;
+                }
+
                 int packetCount = 0;
                 int frameCount = 0;
                 int maxFrame = 0;
@@ -431,7 +491,13 @@ namespace gex.Common.Services.Parser {
                     }
 
                     // COMMAND (11)
-                    else if (packet.PacketType == BarPacketType.COMMAND && options.IncludeCommands == true) {
+                    else if (packet.PacketType == BarPacketType.COMMAND && (options.IncludeCommands == true || options.ParseOpeningLab == true)) {
+                        // if not wanting commands, then gex is parsing opening labs, but if beyond 10 minutes,
+                        //  there's no need, as only a lab made within the first 10 minutes counts
+                        if (options.IncludeCommands == false && (packet.GameTime - match.StartOffset) > (10 * 60)) {
+                            continue;
+                        }
+
                         ByteArrayReader pr = new(packet.Data);
 
                         short size = pr.ReadInt16LE();
@@ -455,7 +521,11 @@ namespace gex.Common.Services.Parser {
                         command.UnitIDs = selectedUnitIds.GetValueOrDefault(playerNum) ?? [];
                         command.FullGameTime = packet.GameTime;
                         command.PlayerID = playerNum;
-                        match.Commands.Add(command);
+                        if (options.IncludeCommands == true) {
+                            match.Commands.Add(command);
+                        }
+
+                        HandleOpeningLab(command, commandId, playerNum, packet);
                     }
 
                     // SELECT command (12)
@@ -476,7 +546,13 @@ namespace gex.Common.Services.Parser {
                     }
 
                     // AI_COMMAND (14)
-                    else if (packet.PacketType == BarPacketType.AI_COMMAND && options.IncludeCommands == true) {
+                    else if (packet.PacketType == BarPacketType.AI_COMMAND && (options.IncludeCommands == true || options.ParseOpeningLab == true)) {
+                        // if not wanting commands, then gex is parsing opening labs, but if beyond 10 minutes,
+                        //  there's no need, as only a lab made within the first 10 minutes counts
+                        if (options.IncludeCommands == false && (packet.GameTime - match.StartOffset) > (10 * 60)) {
+                            continue;
+                        }
+
                         ByteArrayReader pr = new(packet.Data);
                         short size = pr.ReadInt16LE();
                         byte playerNum = pr.ReadByte();
@@ -503,12 +579,21 @@ namespace gex.Common.Services.Parser {
                         command.UnitIDs = [unitID];
                         command.FullGameTime = packet.GameTime;
                         command.PlayerID = playerNum;
-                        match.Commands.Add(command);
+                        if (options.IncludeCommands == true) {
+                            match.Commands.Add(command);
+                        }
 
+                        HandleOpeningLab(command, commandId, playerNum, packet);
                     }
 
                     // AI_COMMANDS (15)
-                    else if (packet.PacketType == BarPacketType.AI_COMMANDS && options.IncludeCommands == true) {
+                    else if (packet.PacketType == BarPacketType.AI_COMMANDS && (options.IncludeCommands == true || options.ParseOpeningLab == true)) {
+                        // if not wanting commands, then gex is parsing opening labs, but if beyond 10 minutes,
+                        //  there's no need, as only a lab made within the first 10 minutes counts
+                        if (options.IncludeCommands == false && (packet.GameTime - match.StartOffset) > (10 * 60)) {
+                            continue;
+                        }
+
                         ByteArrayReader pr = new(packet.Data);
 
                         short size = pr.ReadInt16LE();
@@ -551,7 +636,12 @@ namespace gex.Common.Services.Parser {
                             }
                             command.FullGameTime = packet.GameTime;
 
-                            match.Commands.Add(command);
+                            if (options.IncludeCommands == true) {
+                                match.Commands.Add(command);
+                            }
+
+                            int commandId = (int)id;
+                            HandleOpeningLab(command, commandId, playerNum, packet);
                         }
                     }
 
@@ -1099,6 +1189,8 @@ namespace gex.Common.Services.Parser {
         public bool IncludeCommands { get; set; } = false;
 
         public bool IncludeMapDraws { get; set; } = false;
+
+        public bool ParseOpeningLab { get; set; } = true;
 
     }
 

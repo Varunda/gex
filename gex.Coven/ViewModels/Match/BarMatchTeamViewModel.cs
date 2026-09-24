@@ -26,6 +26,7 @@ namespace gex.Coven.ViewModels.Match {
             _StartPositionLabel = team.StartSpotLabel;
             _Faction = team.Faction;
             _Handicap = team.Handicap;
+            _OpeningLabUnitDefinitionName = team.OpeningLabUnitDefinitionName;
 
             IEnumerable<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == team.TeamID);
             if (players.Any()) {
@@ -60,6 +61,9 @@ namespace gex.Coven.ViewModels.Match {
 
         [ObservableProperty]
         private float _Handicap = 0f;
+
+        [ObservableProperty]
+        private string? _OpeningLabUnitDefinitionName = null;
 
     }
 }

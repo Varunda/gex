@@ -40,12 +40,14 @@ namespace gex.Services.Db.Match {
                     game_id, team_id, ally_team_id, faction, team_leader_id,
                     starting_position_x, starting_position_y, starting_position_z,
                     color, handicap,
-                    start_spot, start_spot_label
+                    start_spot, start_spot_label,
+                    opening_lab_unit_definition_name
                 ) VALUES (
                     @GameID, @TeamID, @AllyTeamID, @Faction, @TeamLeaderID,
                     @StartingPositionX, @StartingPositionY, @StartingPositionZ, 
                     @Color, @Handicap,
-                    @StartSpot, @StartSpotLabel
+                    @StartSpot, @StartSpotLabel,
+                    @OpeningLabUnitDef
                 );
             ", cancel);
 
@@ -61,6 +63,7 @@ namespace gex.Services.Db.Match {
             cmd.AddParameter("Handicap", team.Handicap);
             cmd.AddParameter("StartSpot", team.StartSpot);
             cmd.AddParameter("StartSpotLabel", team.StartSpotLabel);
+            cmd.AddParameter("OpeningLabUnitDef", team.OpeningLabUnitDefinitionName);
             await cmd.PrepareAsync(cancel);
 
             await cmd.ExecuteNonQueryAsync(cancel);

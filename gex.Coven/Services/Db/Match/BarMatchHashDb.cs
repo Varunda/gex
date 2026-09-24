@@ -55,7 +55,7 @@ namespace gex.Coven.Services.Db.Match {
         }
 
         public async Task Upsert(BarMatchHash hash, CancellationToken cancel) {
-            using DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
+            DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
             using DbCommand cmd = await _DbHelper.Command(conn, @"
                 INSERT INTO bar_match_hash (
                     id, filename, hash

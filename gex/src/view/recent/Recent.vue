@@ -248,6 +248,7 @@
                         <tr>
                             <th>User ID</th>
                             <th>Position</th>
+                            <th>Faction</th>
                             <th>Min OS</th>
                             <th colspan="2">Max OS</th>
                         </tr>
@@ -267,6 +268,10 @@
 
                             <td>
                                 {{ player.positionLabel }}
+                            </td>
+
+                            <td>
+                                {{ player.faction }}
                             </td>
 
                             <td>
@@ -293,6 +298,16 @@
 
                             <td>
                                 <input class="form-control" v-model="player.positionLabel">
+                            </td>
+
+                            <td>
+                                <select class="form-control" v-model="player.faction">
+                                    <option :value="null">--</option>
+                                    <option>Cortex</option>
+                                    <option>Armada</option>
+                                    <option>Legion</option>
+                                    <option>Random</option>
+                                </select>
                             </td>
 
                             <td>
@@ -329,6 +344,7 @@
 
             <div v-else-if="recent.state == 'loading'">
                 Loading...
+                <busy class="busy busy-sm"></busy>
             </div>
 
             <div v-else-if="recent.state == 'loaded'">
@@ -426,6 +442,7 @@
     import ToggleButton from "components/ToggleButton";
     import ApiError from "components/ApiError";
     import DateTimeInput from "components/DateTimeInput.vue";
+    import Busy from "components/Busy.vue";
 
     import { BarMatch, SearchKeyValue } from "model/BarMatch";
     import { BarMatchApi } from "api/BarMatchApi";
@@ -560,7 +577,7 @@
                     fillAttr: "username",
 
                     // big government doesn't want you to know this,
-                    // but despite it being named |itemClass|, you can in fact put classes in here
+                    // but despite it being named |itemClass|, this supports space seperated classes
                     itemClass: "bg-dark border",
                     // now this one does require you to not have spaces
                     selectClass: "fw-bold",
@@ -903,7 +920,7 @@
         },
 
         components: {
-            InfoHover, GexMenu,
+            InfoHover, GexMenu, Busy,
             MatchList, DropdownSearch, ToggleButton, ApiError, DateTimeInput
         }
     });

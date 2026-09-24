@@ -33,6 +33,15 @@
                                     </TableViewColumn.CellTemplate>
                                 </TableViewColumn>
 
+                                <TableViewColumn Header="Opening lab" Width="Auto">
+                                    <TableViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding OpeningLabUnitDefinitionName}"/>
+                                        </DataTemplate>
+                                    </TableViewColumn.CellTemplate>
+                                    
+                                </TableViewColumn>
+
                                 <TableViewColumn Header="Name" Width="*">
                                     <TableViewColumn.CellTemplate>
                                         <DataTemplate>

@@ -30,8 +30,13 @@
 
         <div v-else-if="user.state == 'nocontent'">
             <div class="alert alert-danger">
-                No user with ID {{ userID }} exists
+                No user with ID {{ userID }} found
+                <div class="text-muted">
+                    This can mean Gex has not seen this user in a public PvP game, or the user does not exist at all
+                </div>
             </div>
+
+            <a :href="'https://server4.beyondallreason.info/profile/' + userID" class="btn btn-link" target="_blank" ref="nofollow">BAR website account</a>
         </div>
 
         <div v-else-if="user.state == 'loaded' && matches.state == 'loaded'">

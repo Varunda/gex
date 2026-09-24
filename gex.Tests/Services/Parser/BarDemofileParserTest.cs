@@ -28,7 +28,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Tests.Services.Repository {
+namespace gex.Tests.Services.Parser {
 
     [TestClass]
     public class BarDemofileParserTest {
@@ -377,6 +377,47 @@ namespace gex.Tests.Services.Repository {
             Assert.IsNotNull(allyTeam1);
             Assert.AreEqual(1, allyTeam1.AllyTeamID);
             Assert.AreEqual(2, allyTeam1.PlayerCount);
+        }
+
+        [TestMethod]
+        public async Task Test_Team_OpeningLab() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/2025.04.08_map_draw.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("8105f8689c304bc7f873d57ad3fd3f80", match.ID);
+
+            Assert.AreEqual(16, match.Teams.Count);
+            Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 0)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 1)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corvp", match.Teams.FirstOrDefault(iter => iter.TeamID == 2)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 3)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 4)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corap", match.Teams.FirstOrDefault(iter => iter.TeamID == 5)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 6)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 7)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 8)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 9)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armvp", match.Teams.FirstOrDefault(iter => iter.TeamID == 10)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armvp", match.Teams.FirstOrDefault(iter => iter.TeamID == 11)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 12)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 13)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 14)?.OpeningLabUnitDefinitionName);
+            Assert.AreEqual("corap", match.Teams.FirstOrDefault(iter => iter.TeamID == 15)?.OpeningLabUnitDefinitionName);
         }
 
         /// <summary>

@@ -40,15 +40,15 @@ namespace gex.Common.Models.Match {
 
         public byte Gamemode { get; set; } = BarGamemode.DEFAULT;
 
-        public JsonElement HostSettings { get; set; } = default;
+        public JsonElement HostSettings { get; set; } = JsonSerializer.Deserialize<JsonElement>("{}");
 
-        public JsonElement GameSettings { get; set; } = default;
+        public JsonElement GameSettings { get; set; } = JsonSerializer.Deserialize<JsonElement>("{}");
 
-        public JsonElement MapSettings { get; set; } = default;
+        public JsonElement MapSettings { get; set; } = JsonSerializer.Deserialize<JsonElement>("{}");
 
-        public JsonElement SpadsSettings { get; set; } = default;
+        public JsonElement SpadsSettings { get; set; } = JsonSerializer.Deserialize<JsonElement>("{}");
 
-        public JsonElement Restrictions { get; set; } = default;
+        public JsonElement Restrictions { get; set; } = JsonSerializer.Deserialize<JsonElement>("{}");
 
         public List<BarMatchTeam> Teams { get; set; } = [];
 
