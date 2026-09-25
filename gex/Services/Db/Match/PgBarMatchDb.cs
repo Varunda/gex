@@ -382,7 +382,7 @@ namespace gex.Services.Db.Match {
                 for (int i = 0; i < parms.Players.Count; ++i) {
                     SearchPlayer iter = parms.Players[i];
                     joinPlayersStr += $"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ";
-                    joinPlayersStr += $"INNER JOIN bar_match_team teams{i} ON players{i}.game_id = teams{i}.game_id AND players{i}.team_id = teams{i}.team_id";
+                    joinPlayersStr += $"INNER JOIN bar_match_team teams{i} ON players{i}.game_id = teams{i}.game_id AND players{i}.team_id = teams{i}.team_id ";
 
                     if (iter.UserID != null) {
                         conditions.Add($"players{i}.user_id = @UserID{i}");
