@@ -13,6 +13,7 @@ using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Coven.Models;
 using gex.Coven.Models.Config;
+using gex.Coven.Models.Match;
 using gex.Coven.Services;
 using gex.Coven.Services.Bar;
 using gex.Coven.Services.Util;
@@ -72,6 +73,8 @@ namespace gex.Coven.ViewModels {
                 }
             }
 
+            Entities = BarMatchEntity.GetEntities(match);
+
             _Title = $"{_Match.StartTime:yyyy-MM-dd} | {_Match.Map}: ";
 
             if (_Match.GamemodeID == BarGamemode.DUEL) {
@@ -89,14 +92,18 @@ namespace gex.Coven.ViewModels {
                 _Title += $"{string.Join(" v ", _Match.AllyTeams.Select(iter => iter.TeamCount))}";
             }
 
+            _Milestones = new BarMatchMilestonesViewModel(this);
+
             _ChatMessagesViewModel = new BarMatchChatMessagesViewModel(match);
-            _TeamStatsViewModel = new(match, Output);
+            _TeamStatsViewModel = new BarMatchViewTeamStats(this);
         }
 
         [ObservableProperty]
         private BarMatchViewModel _Match = new();
 
         public GameOutput? Output { get; private set; } = null;
+
+        public List<BarMatchEntity> Entities { get; private set; } = [];
 
         [ObservableProperty]
         private string _Title = "gex.Coven";
@@ -107,15 +114,15 @@ namespace gex.Coven.ViewModels {
         [ObservableProperty]
         private BarMatchChatMessagesViewModel _ChatMessagesViewModel = new();
 
+        [ObservableProperty]
+        private BarMatchMilestonesViewModel _Milestones = new();
+
         [RelayCommand]
         public void LaunchReplay() {
-            CovenGameRunner runner = App.Current.Services.GetRequiredService<CovenGameRunner>();
-
             DemofileLaunchReplayWindow win = new() {
-                DataContext = new DemofileLaunchReplayViewModel() {
-
-                }
+                DataContext = new DemofileLaunchReplayViewModel() { }
             };
+
             WindowManager.Register(win);
             win.Show();
         }

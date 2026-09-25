@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore.Painting;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace gex.Coven.Models.Chart {
 
-    public class ChartSeries {
+    public partial class ChartSeries : ObservableObject {
 
         public string Name { get; set; } = "default change me";
 
@@ -19,6 +20,9 @@ namespace gex.Coven.Models.Chart {
         public Paint? GeometryFill { get; set; } = null;
 
         public Paint? GeometryStroke { get; set; } = null;
+
+        [ObservableProperty]
+        private bool _Visible = true;
 
     }
 }

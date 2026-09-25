@@ -8,7 +8,7 @@
              xmlns:system="using:System"
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              xmlns:match="using:gex.Coven.ViewModels.Match"
-             xmlns:tt="using:gex.Coven.Code"
+             xmlns:tt="using:gex.Coven.Code.Chart"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="gex.Coven.Controls.MatchWindow.MatchViewTeamStats"
              x:DataType="match:BarMatchViewTeamStats">
@@ -96,17 +96,23 @@
         <StackPanel Grid.Column="1">
             <Label Content="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}" FontSize="24" TextElement.FontSize="24"></Label>
 
-            <lvc:CartesianChart LegendPosition="Right" Height="600"
-                                SeriesSource="{Binding SelectedTeamStat.Series}"
-                                VisualElements="{Binding MilestoneVisualElements}">
+            <lvc:CartesianChart x:Name="ChartRoot"
+                                LegendPosition="Right" Height="600"
+                                SeriesSource="{Binding SelectedTeamStatSeries}"
+                                PointerPressedCommand="{Binding ChartClicked}"
+                                VisualElements="{Binding VisibleMilestones}">
 
                 <lvc:CartesianChart.Tooltip>
                     <tt:YCovenTooltip/>
                 </lvc:CartesianChart.Tooltip>
 
+                <lvc:CartesianChart.Legend>
+                    <tt:CovenLegend/>
+                </lvc:CartesianChart.Legend>
+
                 <lvc:CartesianChart.XAxes>
-                    <lvc:XamlTimeSpanAxis 
-                        Labels="{Binding SelectedTeamStat.Labels}">
+                    <lvc:XamlTimeSpanAxis MinLimit="0"
+                        Labels="{Binding SelectedTeamStatLabels}">
                     </lvc:XamlTimeSpanAxis>
                 </lvc:CartesianChart.XAxes>
 
@@ -123,6 +129,7 @@
                                             GeometryFill="{Binding GeometryFill}"
                                             GeometryStroke="{Binding GeometryStroke}"
                                             Fill="{Binding GeometryFill}"
+                                            IsVisible="{Binding Visible}"
                                             Stroke="{Binding Color}">
                         </lvc:XamlLineSeries>
                     </DataTemplate>

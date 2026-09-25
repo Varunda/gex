@@ -6,8 +6,15 @@ using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models.Event;
 using gex.Common.Models.Match;
 using gex.Coven.Code;
+using gex.Coven.Code.Chart;
 using gex.Coven.Models.Chart;
+using gex.Coven.Models.Match;
+using LiveChartsCore.Drawing;
 using LiveChartsCore.Kernel;
+using LiveChartsCore.Kernel.Events;
+using LiveChartsCore.Kernel.Sketches;
+using LiveChartsCore.SkiaSharpView.Drawing;
+using LiveChartsCore.SkiaSharpView.Drawing.Layouts;
 using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,69 +36,75 @@ namespace gex.Coven.ViewModels.Match {
 
         }
 
-        public BarMatchViewTeamStats(BarMatch match, GameOutput? output) {
+        public BarMatchViewTeamStats(MatchWindowViewModel vm) {
             _Logger = App.Current?.Services?.GetService<ILogger<MatchWindowViewModel>>() ?? default!;
 
-            Match = new BarMatchViewModel(match);
-            Output = output;
+            Match = vm.Match;
+            Output = vm.Output;
 
-            _AddTeamStats(match, "Damage dealt", iter => (decimal)iter.DamageDealt);
-            _AddTeamStats(match, "Damage taken", iter => (decimal)iter.DamageReceived);
+            BarMatch match = vm.Match.Match;
 
-            _AddTeamStats(match, "Energy excess", iter => (decimal)iter.EnergyExcess);
-            _AddTeamStats(match, "Energy excess %",
+            _AddTeamStats(match, vm.Entities, "Damage dealt", iter => (decimal)iter.DamageDealt);
+            _AddTeamStats(match, vm.Entities, "Damage taken", iter => (decimal)iter.DamageReceived);
+
+            _AddTeamStats(match, vm.Entities, "Energy excess", iter => (decimal)iter.EnergyExcess);
+            _AddTeamStats(match, vm.Entities, "Energy excess %",
                 iter => (decimal)(iter.EnergyExcess / Math.Max(1d, iter.EnergyProduced)) * 100m);
-            _AddTeamStats(match, "Energy produced", iter => (decimal)iter.EnergyProduced);
-            _AddTeamStats(match, "Energy received", iter => (decimal)iter.EnergyReceived);
-            _AddTeamStats(match, "Energy sent", iter => (decimal)iter.EnergySend);
-            _AddTeamStats(match, "Energy used", iter => (decimal)iter.EnergyUsed);
+            _AddTeamStats(match, vm.Entities, "Energy produced", iter => (decimal)iter.EnergyProduced);
+            _AddTeamStats(match, vm.Entities, "Energy received", iter => (decimal)iter.EnergyReceived);
+            _AddTeamStats(match, vm.Entities, "Energy sent", iter => (decimal)iter.EnergySend);
+            _AddTeamStats(match, vm.Entities, "Energy used", iter => (decimal)iter.EnergyUsed);
 
-            _AddTeamStats(match, "Metal excess", iter => (decimal)iter.MetalExcess);
-            _AddTeamStats(match, "Metal produced", iter => (decimal)iter.MetalProduced);
-            _AddTeamStats(match, "Metal excess %",
+            _AddTeamStats(match, vm.Entities, "Metal excess", iter => (decimal)iter.MetalExcess);
+            _AddTeamStats(match, vm.Entities, "Metal produced", iter => (decimal)iter.MetalProduced);
+            _AddTeamStats(match, vm.Entities, "Metal excess %",
                 iter => (decimal)(iter.MetalExcess / Math.Max(1d, iter.MetalProduced)) * 100m);
-            _AddTeamStats(match, "Metal received", iter => (decimal)iter.MetalReceived);
-            _AddTeamStats(match, "Metal sent", iter => (decimal)iter.MetalSend);
-            _AddTeamStats(match, "Metal used", iter => (decimal)iter.MetalUsed);
+            _AddTeamStats(match, vm.Entities, "Metal received", iter => (decimal)iter.MetalReceived);
+            _AddTeamStats(match, vm.Entities, "Metal sent", iter => (decimal)iter.MetalSend);
+            _AddTeamStats(match, vm.Entities, "Metal used", iter => (decimal)iter.MetalUsed);
 
-            _AddTeamStats(match, "Units captured", iter => (decimal)iter.UnitsCaptured);
-            _AddTeamStats(match, "Units died", iter => (decimal)iter.UnitsDied);
-            _AddTeamStats(match, "Units killed", iter => (decimal)iter.UnitsKilled);
-            _AddTeamStats(match, "Units lost to capture", iter => (decimal)iter.UnitsOutCaptured);
-            _AddTeamStats(match, "Units made", iter => (decimal)iter.UnitsProduced);
-            _AddTeamStats(match, "Units received", iter => (decimal)iter.UnitsReceived);
-            _AddTeamStats(match, "Units sent", iter => (decimal)iter.UnitsSent);
+            _AddTeamStats(match, vm.Entities, "Units captured", iter => (decimal)iter.UnitsCaptured);
+            _AddTeamStats(match, vm.Entities, "Units died", iter => (decimal)iter.UnitsDied);
+            _AddTeamStats(match, vm.Entities, "Units killed", iter => (decimal)iter.UnitsKilled);
+            _AddTeamStats(match, vm.Entities, "Units lost to capture", iter => (decimal)iter.UnitsOutCaptured);
+            _AddTeamStats(match, vm.Entities, "Units made", iter => (decimal)iter.UnitsProduced);
+            _AddTeamStats(match, vm.Entities, "Units received", iter => (decimal)iter.UnitsReceived);
+            _AddTeamStats(match, vm.Entities, "Units sent", iter => (decimal)iter.UnitsSent);
             
-            if (output != null) {
+            if (Output != null) {
                 _HasExtraStats = true;
-                _AddOutputTeamStats(match, "Army value", iter => (decimal)iter.ArmyValue);
-                _AddOutputTeamStats(match, "Total value", iter => (decimal)iter.TotalValue);
-                _AddOutputTeamStats(match, "Eco value", iter => (decimal)iter.EcoValue);
-                _AddOutputTeamStats(match, "Util value", iter => (decimal)iter.UtilValue);
-                _AddOutputTeamStats(match, "Defense value", iter => (decimal)iter.DefenseValue);
-                _AddOutputTeamStats(match, "Other value", iter => (decimal)iter.OtherValue);
-                _AddOutputTeamStats(match, "Build power total", iter => (decimal)iter.BuildPowerAvailable);
-                _AddOutputTeamStats(match, "Build power used", iter => (decimal)iter.BuildPowerUsed);
-                _AddOutputTeamStats(match, "Build power usage",
+                _AddOutputTeamStats(match, vm.Entities, "Army value", iter => (decimal)iter.ArmyValue);
+                _AddOutputTeamStats(match, vm.Entities, "Total value", iter => (decimal)iter.TotalValue);
+                _AddOutputTeamStats(match, vm.Entities, "Eco value", iter => (decimal)iter.EcoValue);
+                _AddOutputTeamStats(match, vm.Entities, "Util value", iter => (decimal)iter.UtilValue);
+                _AddOutputTeamStats(match, vm.Entities, "Defense value", iter => (decimal)iter.DefenseValue);
+                _AddOutputTeamStats(match, vm.Entities, "Other value", iter => (decimal)iter.OtherValue);
+                _AddOutputTeamStats(match, vm.Entities, "Build power total", iter => (decimal)iter.BuildPowerAvailable);
+                _AddOutputTeamStats(match, vm.Entities, "Build power used", iter => (decimal)iter.BuildPowerUsed);
+                _AddOutputTeamStats(match, vm.Entities, "Build power usage",
                     iter => (decimal)(iter.BuildPowerUsed / Math.Max(1d, iter.BuildPowerAvailable)) * 100m);
-                _AddOutputTeamStats(match, "Metal current", iter => (decimal)iter.MetalCurrent);
-                _AddOutputTeamStats(match, "Energy current", iter => (decimal)iter.EnergyCurrent);
+                _AddOutputTeamStats(match, vm.Entities, "Metal current", iter => (decimal)iter.MetalCurrent);
+                _AddOutputTeamStats(match, vm.Entities, "Energy current", iter => (decimal)iter.EnergyCurrent);
             }
 
             _TeamStatKeys = new ObservableCollection<string>(_TeamStats.Keys);
-            _SelectedTeamStatKey = _TeamStatKeys[0];
-            _SelectedTeamStat = _TeamStats.GetValueOrDefault(_SelectedTeamStatKey)!;
+            SelectTeamStatsKey(_TeamStatKeys[0]);
 
-            MilestoneVisualElements.Add(new LineVisualElement(10, ColorUtil.ToPaint(Match.AllyTeams[0].HexColor), "test 1"));
-            MilestoneVisualElements.Add(new LineVisualElement(9, new SolidColorPaint(SKColors.Red), "test 2"));
-            MilestoneVisualElements.Add(new LineVisualElement(8, new SolidColorPaint(SKColors.Red), "test 3"));
-            MilestoneVisualElements.Add(new LineVisualElement(7, new SolidColorPaint(SKColors.Red), "test 4"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
-            MilestoneVisualElements.Add(new LineVisualElement(6, new SolidColorPaint(SKColors.Red), "test 5"));
+            BarMatchTeamStats? firstFrame = match.TeamStats.FirstOrDefault(iter => iter.Frame == 0);
+            BarMatchTeamStats? nextFrame = match.TeamStats.OrderBy(iter => iter.Frame)
+                .FirstOrDefault(iter => iter.Frame > (firstFrame?.Frame ?? 0));
+
+            long frameDelta = (nextFrame?.Frame ?? 4500) - (firstFrame?.Frame ?? 0);
+
+            foreach (BarMatchMilestone milestone in vm.Milestones.Milestones.OrderBy(iter => iter.Frame)) {
+                MilestoneVisualElements.Add(new LineVisualElement(
+                    (double)milestone.Frame / (double)frameDelta,
+                    ColorUtil.ToPaint(milestone.Entity.HexColor),
+                    milestone.Action
+                ));
+            }
+
+            VisibleMilestones = new ObservableCollection<IChartElement>(MilestoneVisualElements);
         }
 
         public BarMatchViewModel Match { get; private set; } = new();
@@ -154,6 +167,59 @@ namespace gex.Coven.ViewModels.Match {
             OnPropertyChanged(nameof(IsSectionUnitOpened));
         }
 
+        [RelayCommand]
+        public void ChartClicked(PointerCommandArgs args) {
+            IChartLegend? legend = args.Chart.Legend;
+            if (legend == null) {
+                return;
+            }
+
+            if (legend is not CovenLegend leg) {
+                return;
+            }
+
+            double mx = args.PointerPosition.X;
+            double my = args.PointerPosition.Y;
+
+            if (mx < leg.Geometry.X || mx > leg.Geometry.X + leg.Geometry.Width) {
+                return;
+            }
+
+            if (my < leg.Geometry.Y || my > leg.Geometry.Y + leg.Geometry.Height) {
+                return;
+            }
+
+            if (leg.Content is not StackLayout content) {
+                return;
+            }
+
+            foreach (IDrawnElement<SkiaSharpDrawingContext> child in content.Children) {
+                if ((mx < child.X) || (my < child.Y)) {
+                    continue;
+                }
+
+                LvcSize size = child.Measure();
+                if ((mx > child.X + size.Width) || (my > child.Y + size.Height)) {
+                    continue;
+                }
+
+                if (child is LegendItem item) {
+                    ChartSeries? series = SelectedTeamStat.Series.FirstOrDefault(iter => iter.Name == item.Name);
+                    if (series == null) {
+                        _Logger.LogDebug($"failed to find series to toggle visibility of [name={item.Name}]");
+                    } else {
+                        series.Visible = !series.Visible;
+                    }
+
+                    VisibleMilestones = new ObservableCollection<IChartElement>(MilestoneVisualElements.Where(iter => {
+                        return true;
+                    }));
+
+                    break;
+                }
+            }
+        }
+
         /// <summary>
         ///     collection of all the team stats
         /// </summary>
@@ -179,7 +245,16 @@ namespace gex.Coven.ViewModels.Match {
         private string _SelectedTeamStatKey = "";
 
         [ObservableProperty]
+        private ObservableCollection<ChartSeries> _SelectedTeamStatSeries = new();
+
+        [ObservableProperty]
+        private ObservableCollection<string> _SelectedTeamStatLabels = new();
+
+        [ObservableProperty]
         private ObservableCollection<IChartElement> _MilestoneVisualElements = [];
+
+        [ObservableProperty]
+        private ObservableCollection<IChartElement> _VisibleMilestones = [];
 
         /// <summary>
         ///     select a team stats to show
@@ -198,6 +273,8 @@ namespace gex.Coven.ViewModels.Match {
 
             SelectedTeamStatKey = key;
             SelectedTeamStat = series;
+            SelectedTeamStatSeries = new ObservableCollection<ChartSeries>(series.Series);
+            SelectedTeamStatLabels = new ObservableCollection<string>(series.Labels);
         }
 
         /// <summary>
@@ -206,33 +283,33 @@ namespace gex.Coven.ViewModels.Match {
         /// <param name="match"></param>
         /// <param name="name"></param>
         /// <param name="selector"></param>
-        private void _AddTeamStats(BarMatch match, string name, Func<BarMatchTeamStats, decimal> selector) {
+        private void _AddTeamStats(BarMatch match, List<BarMatchEntity> entities, string name, Func<BarMatchTeamStats, decimal> selector) {
             ChartSeriesCollection coll = new();
             coll.Labels = match.TeamStats.Select(iter => iter.Frame).Distinct().Order().Select(iter => {
                 return TimeSpan.FromSeconds(iter / 30d).GetRelativeFormat();
             }).ToList();
 
-            foreach (BarMatchAllyTeamViewModel allyTeam in Match.AllyTeams) {
+            foreach (BarMatchEntity entity in entities) {
+                List<BarMatchTeamStats> ts = match.TeamStats.Where(iter => entity.TeamIDs.Contains(iter.TeamID)).OrderBy(iter => iter.Frame).ToList();
 
-                foreach (BarMatchTeamViewModel team in allyTeam.Teams) {
-                    List<BarMatchTeamStats> ts = match.TeamStats.Where(iter => iter.TeamID == team.TeamID).OrderBy(iter => iter.Frame).ToList();
+                List<int> frames = ts.Select(iter => iter.Frame).Distinct().Order().ToList();
 
-                    ChartSeries cs = new ChartSeries() {
-                        Name = team.Name,
-                        Values = [.. ts.Select(selector)],
-                        Color = SolidColorPaint.Parse(team.HexColor)!,
-                    };
+                ChartSeries cs = new() {
+                    Name = entity.Name,
+                    Values = [ ..frames.Select(frame => {
+                        return ts.Where(iter => iter.Frame == frame).Sum(selector);
+                    })],
+                    Color = ColorUtil.ToPaint(entity.HexColor)
+                };
 
-                    cs.Color.StrokeThickness = 2;
-
-                    coll.Series.Add(cs);
-                }
+                cs.Color.StrokeThickness = 2;
+                coll.Series.Add(cs);
             }
 
             TeamStats.Add(name, coll);
         }
 
-        private void _AddOutputTeamStats(BarMatch match, string name, Func<GameEventExtraStatUpdate, decimal> selector) {
+        private void _AddOutputTeamStats(BarMatch match, List<BarMatchEntity> entities, string name, Func<GameEventExtraStatUpdate, decimal> selector) {
             if (Output == null) {
                 return;
             }
@@ -242,20 +319,21 @@ namespace gex.Coven.ViewModels.Match {
                 return TimeSpan.FromSeconds(iter / 30d).GetRelativeFormat();
             }).ToList();
 
-            foreach (BarMatchAllyTeamViewModel allyTeam in Match.AllyTeams) {
-                foreach (BarMatchTeamViewModel team in allyTeam.Teams) {
-                    List<GameEventExtraStatUpdate> ts = Output.ExtraStats.Where(iter => iter.TeamID == team.TeamID).OrderBy(iter => iter.Frame).ToList();
+            foreach (BarMatchEntity entity in entities) {
+                List<GameEventExtraStatUpdate> ts = Output.ExtraStats.Where(iter => entity.TeamIDs.Contains(iter.TeamID)).OrderBy(iter => iter.Frame).ToList();
 
-                    ChartSeries cs = new ChartSeries() {
-                        Name = team.Name,
-                        Values = [.. ts.Select(selector)],
-                        Color = SolidColorPaint.Parse(team.HexColor)!,
-                    };
+                List<long> frames = ts.Select(iter => iter.Frame).Distinct().Order().ToList();
 
-                    cs.Color.StrokeThickness = 2;
+                ChartSeries cs = new() {
+                    Name = entity.Name,
+                    Values = [ ..frames.Select(frame => {
+                        return ts.Where(iter => iter.Frame == frame).Sum(selector);
+                    })],
+                    Color = ColorUtil.ToPaint(entity.HexColor)
+                };
 
-                    coll.Series.Add(cs);
-                }
+                cs.Color.StrokeThickness = 2;
+                coll.Series.Add(cs);
             }
 
             TeamStats.Add(name, coll);

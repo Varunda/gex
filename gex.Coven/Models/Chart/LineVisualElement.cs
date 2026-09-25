@@ -1,6 +1,7 @@
 ﻿using Avalonia.Platform;
 using gex.Coven.Code;
 using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel.Events;
 using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.Painting;
 using LiveChartsCore.SkiaSharpView.Drawing.Geometries;
@@ -18,8 +19,7 @@ namespace gex.Coven.Models.Chart {
 
         protected override AbsoluteLayout DrawnElement { get; }
 
-        public LineVisualElement(int frame, Paint fill, string text) {
-
+        public LineVisualElement(double frame, Paint fill, string text) {
             this.Frame = frame;
             this.Text = text;
             this.Fill = fill;
@@ -63,7 +63,7 @@ namespace gex.Coven.Models.Chart {
 
         public string Text { get; set; } = "";
 
-        public int Frame { get; set; }
+        public double Frame { get; set; }
 
         public Paint Fill { get; set; }
 

@@ -12,15 +12,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gex.Coven.Code {
+namespace gex.Coven.Code.Chart {
 
     public class YCovenTooltip : SKDefaultTooltip {
 
-        protected override void Initialize(Chart chart) {
+        protected override void Initialize(LiveChartsCore.Chart chart) {
             base.Initialize(chart);
         }
 
-        protected override Layout<SkiaSharpDrawingContext> GetLayout(IEnumerable<ChartPoint> foundPoints, Chart chart) {
+        protected override Layout<SkiaSharpDrawingContext> GetLayout(IEnumerable<ChartPoint> foundPoints, LiveChartsCore.Chart chart) {
 
             TableLayout table = new() {
                 HorizontalAlignment = Align.Middle,
@@ -47,8 +47,10 @@ namespace gex.Coven.Code {
                 double y = point.Coordinate.PrimaryValue;
                 string v = $"{y}";
 
-                if (y < 1000) {
+                if (y < 10) {
                     v = $"{y}";
+                } else if (y < 1000) {
+                    v = $"{Math.Round(y)}";
                 } else if (y < 1_000_000) {
                     v = $"{Math.Round(y / 1000d, 2)}K";
                 } else {
