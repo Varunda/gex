@@ -153,6 +153,7 @@ namespace gex.Coven.Services.Bar {
             startInfo.Arguments = arguments;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
+            startInfo.CreateNoWindow = true;
 
             return startInfo;
         }

@@ -318,6 +318,16 @@ namespace gex.Coven.ViewModels {
             win.Show();
         }
 
+        [RelayCommand]
+        public void ReparseDemofile() {
+            BarMatchViewModel? vm = SelectedMatch;
+            if (vm == null) {
+                return;
+            }
+
+
+        }
+
         /// <summary>
         ///     creates the filter used for the dynamic data list
         /// </summary>

@@ -2,6 +2,7 @@
 using LiveChartsCore.Drawing;
 using LiveChartsCore.Drawing.Layouts;
 using LiveChartsCore.Kernel;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView.Drawing;
 using LiveChartsCore.SkiaSharpView.Drawing.Geometries;
 using LiveChartsCore.SkiaSharpView.Drawing.Layouts;
@@ -22,6 +23,11 @@ namespace gex.Coven.Code.Chart {
 
         protected override Layout<SkiaSharpDrawingContext> GetLayout(IEnumerable<ChartPoint> foundPoints, LiveChartsCore.Chart chart) {
 
+            StackLayout stack = new() {
+                Orientation = ContainerOrientation.Vertical,
+                HorizontalAlignment = Align.Start,
+            };
+
             TableLayout table = new() {
                 HorizontalAlignment = Align.Middle,
                 VerticalAlignment = Align.Middle,
@@ -29,7 +35,36 @@ namespace gex.Coven.Code.Chart {
 
             float maxWidth = (float)LiveCharts.DefaultSettings.MaxTooltipsAndLegendsLabelsWidth;
 
+            List<string> labels = [];
+            if (chart.View is ICartesianChartView cart) {
+                labels = cart.XAxes.First()?.Labels?.ToList() ?? [];
+            }
+
+            int row = 0;
+
             IEnumerable<ChartPoint> sortedPoints = foundPoints.OrderByDescending(iter => iter.Coordinate.PrimaryValue);
+
+            if (sortedPoints.Any()) {
+                int x = (int)(sortedPoints.First()?.Coordinate.SecondaryValue ?? 0d);
+
+                if (x >= 0 && x < labels.Count) {
+                    string label = labels[x];
+
+                    LabelGeometry xLabel = new() {
+                        Text = $"{label}",
+                        Paint = chart.GetTheme().TooltipTextPaint,
+                        Padding = new(4, 4, 4, 8),
+                        TextSize = 16,
+                        MaxWidth = maxWidth,
+                        VerticalAlign = Align.Start,
+                        HorizontalAlign = Align.Start,
+                    };
+
+                    stack.Children.Add(xLabel);
+                }
+            }
+
+            stack.Children.Add(table);
 
             for (int i = 0; i < sortedPoints.Count(); ++i) {
                 ChartPoint point = sortedPoints.ElementAt(i);
@@ -68,12 +103,20 @@ namespace gex.Coven.Code.Chart {
                 };
 
                 IDrawnElement<SkiaSharpDrawingContext> mini = (IDrawnElement<SkiaSharpDrawingContext>)point.Context.Series.GetMiniatureGeometry(point);
-                table.AddChild(mini, i, 0);
-                table.AddChild(label, i, 1);
-                table.AddChild(value, i, 2);
+                // weird bug, setting Fill here makes the graph fill between the first and last points on the graph
+                RectangleGeometry rect = new() {
+                    Width = 12,
+                    Height = 12,
+                    Fill = mini.Stroke
+                };
+
+                table.AddChild(rect, row, 0);
+                table.AddChild(label, row, 1);
+                table.AddChild(value, row, 2);
+                ++row;
             }
 
-            return table;
+            return stack;
         }
 
     }

@@ -79,6 +79,17 @@
                         </MenuItem>
                     </MenuItem>
 
+                    <MenuItem Command="{Binding ReparseDemofile}">
+                        <MenuItem.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ti:TablerIcon Icon="IconReload" Width="16" Height="16" Margin="0,0,4,0"></ti:TablerIcon>
+                                    <TextBlock Text="Reparse"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </MenuItem.HeaderTemplate>
+                    </MenuItem>
+
                     <MenuItem>
                         <MenuItem.HeaderTemplate>
                             <DataTemplate>

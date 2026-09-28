@@ -54,8 +54,18 @@ namespace gex.Coven.Code.Chart {
                 bounded.Height = 24;
             }
 
+            // weird bug, setting Fill here makes the graph fill between the first and last points on the graph
+            RectangleGeometry rect = new() {
+                Width = 6,
+                Height = 6,
+                X = 0,
+                Y = 0,
+                Stroke = miniature.Stroke,
+                StrokeThickness = 6,
+            };
+
             Children = [ 
-                miniature,
+                rect,
                 new LabelGeometry() {
                     Text = label,
                     TextSize = 16,

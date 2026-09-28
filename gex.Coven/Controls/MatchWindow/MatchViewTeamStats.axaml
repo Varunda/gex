@@ -94,13 +94,13 @@
         </StackPanel>
 
         <StackPanel Grid.Column="1">
-            <Label Content="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}" FontSize="24" TextElement.FontSize="24"></Label>
+            <TextBlock Text="{Binding SelectedTeamStatKey, StringFormat='{}Viewing {0}'}" FontSize="24"/>
 
             <lvc:CartesianChart x:Name="ChartRoot"
                                 LegendPosition="Right" Height="600"
                                 SeriesSource="{Binding SelectedTeamStatSeries}"
                                 PointerPressedCommand="{Binding ChartClicked}"
-                                VisualElements="{Binding VisibleMilestones}">
+                                VisualElements="{Binding MilestoneVisualElements}">
 
                 <lvc:CartesianChart.Tooltip>
                     <tt:YCovenTooltip/>

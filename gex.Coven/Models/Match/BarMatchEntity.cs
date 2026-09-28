@@ -14,6 +14,8 @@ namespace gex.Coven.Models.Match {
 
         public string HexColor { get; set; } = "";
 
+        public int SortOrder { get; set; } = 0;
+
         public HashSet<int> TeamIDs { get; set; } = [];
 
         public static List<BarMatchEntity> GetEntities(BarMatch match) {
@@ -29,23 +31,52 @@ namespace gex.Coven.Models.Match {
                 ents.Add(new BarMatchEntity() {
                     Name = string.Join(" & ", names),
                     TeamIDs = [ team.TeamID ],
-                    HexColor = $"#{TeamColorLut.Lut.GetValueOrDefault(team.Color, team.Color).ToString("X2").PadLeft(6, '0')}"
+                    HexColor = $"#{TeamColorLut.Lut.GetValueOrDefault(team.Color, team.Color).ToString("X2").PadLeft(6, '0')}",
+                    SortOrder = team.TeamID,
                 });
             }
 
-            foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
-                BarMatchTeam? team = match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).OrderBy(iter => iter.TeamID).FirstOrDefault();
+            if (match.Gamemode == BarGamemode.SMALL_TEAM || match.Gamemode == BarGamemode.LARGE_TEAM
+                || match.Gamemode == BarGamemode.TEAM_FFA || match.Gamemode == BarGamemode.DEFAULT) {
 
-                ents.Add(new BarMatchEntity() {
-                    Name = $"Team {allyTeam.AllyTeamID + 1}",
-                    TeamIDs = new HashSet<int>(
-                        match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Select(iter => iter.TeamID)
-                    ),
-                    HexColor = $"#{TeamColorLut.Lut.GetValueOrDefault(team?.Color ?? 0, team?.Color ?? 0).ToString("X2").PadLeft(6, '0')}"
-                });
+                foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+                    BarMatchTeam? team = match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).OrderBy(iter => iter.TeamID).FirstOrDefault();
+
+                    ents.Add(new BarMatchEntity() {
+                        Name = $"Team {allyTeam.AllyTeamID + 1}",
+                        TeamIDs = new HashSet<int>(
+                            match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).Select(iter => iter.TeamID)
+                        ),
+                        HexColor = $"#{TeamColorLut.Lut.GetValueOrDefault(team?.Color ?? 0, team?.Color ?? 0).ToString("X2").PadLeft(6, '0')}",
+                        SortOrder = allyTeam.AllyTeamID,
+                    });
+                }
             }
 
             return ents;
+        }
+
+        public override bool Equals(object? obj) {
+            return obj is BarMatchEntity entity
+                   && Name == entity.Name
+                   && HexColor == entity.HexColor
+                   && EqualityComparer<HashSet<int>>.Default.Equals(TeamIDs, entity.TeamIDs);
+        }
+
+        public static bool operator == (BarMatchEntity? left, BarMatchEntity? right) {
+            if (left is null) {
+                return right is null;
+            }
+
+            return left.Equals(right);
+        }
+
+        public static bool operator != (BarMatchEntity? left, BarMatchEntity? right) {
+            return !(left == right);
+        }
+
+        public override int GetHashCode() {
+            return HashCode.Combine(Name, HexColor, TeamIDs);
         }
 
     }

@@ -103,7 +103,7 @@
                 -->
 
                 <Border Background="Gray" Margin="0 0 0 10">
-                    <TextBlock FontSize="18" Foreground="White" 
+                    <TextBlock FontSize="36" Foreground="White" 
                                HorizontalAlignment="Center"
                                Text="Map">
                     </TextBlock>
@@ -129,7 +129,7 @@
                 -->
 
                 <Border Background="Gray" Margin="0 0 0 10">
-                    <TextBlock TextElement.FontSize="18"
+                    <TextBlock FontSize="36"
                                HorizontalAlignment="Center"
                                Foreground="White"
                                Text="Team stats">
@@ -145,7 +145,7 @@
                 -->
 
                 <Border Background="Gray" Margin="0 0 0 10">
-                    <TextBlock TextElement.FontSize="18"
+                    <TextBlock TextElement.FontSize="36"
                                HorizontalAlignment="Center"
                                Foreground="White"
                                Text="Chat">

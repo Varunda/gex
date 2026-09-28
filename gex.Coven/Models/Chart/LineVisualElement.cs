@@ -78,11 +78,11 @@ namespace gex.Coven.Models.Chart {
             LvcPointD loc = port.ScaleDataToPixels(scale);
 
             DrawnElement.X = (float)loc.X;
-            DrawnElement.Y = 0;
-            DrawnElement.Height = 10000;
+            DrawnElement.Y = port.ControlSize.Height - (float)loc.Y;
+            DrawnElement.Height = port.ControlSize.Height - (float)loc.Y;
             DrawnElement.Width = 2;
 
-            _Line.Height = port.ControlSize.Height;
+            _Line.Height = (float)loc.Y - DrawnElement.Y;
         }
 
     }
