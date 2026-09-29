@@ -34,12 +34,12 @@ namespace gex.Services.Db.Event {
             cmd.AddParameter("Frame", ev.Frame);
             cmd.AddParameter("TeamID", ev.TeamID);
             cmd.AddParameter("MetalProduced", ev.MetalProduced);
-            cmd.AddParameter("MetalUsed", ev.Frame);
+            cmd.AddParameter("MetalUsed", ev.MetalUsed);
             cmd.AddParameter("MetalExcess", ev.MetalExcess);
             cmd.AddParameter("MetalSent", ev.MetalSent);
             cmd.AddParameter("MetalReceived", ev.MetalReceived);
             cmd.AddParameter("EnergyProduced", ev.EnergyProduced);
-            cmd.AddParameter("EnergyUsed", ev.Frame);
+            cmd.AddParameter("EnergyUsed", ev.EnergyUsed);
             cmd.AddParameter("EnergyExcess", ev.EnergyExcess);
             cmd.AddParameter("EnergySent", ev.EnergySent);
             cmd.AddParameter("EnergyReceived", ev.EnergyReceived);
