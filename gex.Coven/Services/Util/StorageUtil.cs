@@ -50,5 +50,20 @@ namespace gex.Coven.Services.Util {
             return Result<string, string>.Ok(contents);
         }
 
+        public async Task<Result<byte[], string>> GetDemofile(string filename, CancellationToken cancel) {
+            string path = filename;
+            if (File.Exists(path) == false) {
+                UserOptions userOptions = _UserOptions.Load();
+                path = Path.Join(userOptions.InstallFolder, "demos", filename);
+            }
+
+            if (File.Exists(path) == false) {
+                return $"failed to find demofile '{filename}'";
+            }
+
+            byte[] bytes = await File.ReadAllBytesAsync(path, cancel);
+            return bytes;
+        }
+
     }
 }

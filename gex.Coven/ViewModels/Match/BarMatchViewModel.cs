@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using gex.Common.Code.Constants;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models.Match;
+using gex.Coven.Services.Util;
 using gex.Coven.ViewModels.Match;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -48,6 +49,9 @@ namespace gex.Coven.ViewModels {
                 iter.GameTimestamp = Math.Max(0, iter.GameTimestamp - match.StartOffset);
                 return iter;
             }));
+
+            StorageUtil? storageUtil = App.Current?.Services?.GetService<StorageUtil>();
+            _HasActionLog = storageUtil?.HasActionLog(match.ID) ?? false;
         }
 
         public BarMatch Match { get; } = new();
@@ -81,6 +85,9 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private string _GameVersion = "";
+
+        [ObservableProperty]
+        private bool _HasActionLog = false;
 
         [ObservableProperty]
         private ObservableCollection<BarMatchAllyTeamViewModel> _AllyTeams = [];

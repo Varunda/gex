@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="gex.Coven.Windows.HeadlessReplayWindow"
         x:DataType="vm:HeadlessReplayViewModel"
-        MaxWidth="480" MaxHeight="500"
+        MaxWidth="720" MaxHeight="500"
         Title="{Binding Title}" SizeToContent="WidthAndHeight">
 
     <StackPanel>
@@ -17,19 +17,22 @@
             <Label Grid.Row="0" Grid.Column="0">Game ID</Label>
             <TextBlock Text="{Binding GameID}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"/>
 
-            <Label Grid.Row="1" Grid.Column="0">Status</Label>
-            <TextBlock Text="{Binding Status}" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
+            <Label Grid.Row="1" Grid.Column="0">Engine downloaded?</Label>
+            <CheckBox IsChecked="{Binding EngineDownloaded, Mode=OneWay}" Grid.Row="1" Grid.Column="1" IsEnabled="False" />
 
-            <Label Grid.Row="2" Grid.Column="0">Progress</Label>
-            <TextBlock Text="{Binding LastFrame}" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"/>
+            <Label Grid.Row="2" Grid.Column="0">Game version downloaded?</Label>
+            <CheckBox IsChecked="{Binding GameDownloaded, Mode=OneWay}" Grid.Row="2" Grid.Column="1" IsEnabled="False" />
 
-            <Label Grid.Row="3" Grid.Column="0">Duration frames</Label>
-            <TextBlock Text="{Binding FramesDuration}" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center"/>
+            <Label Grid.Row="3" Grid.Column="0">Map downloaded?</Label>
+            <CheckBox IsChecked="{Binding MapDownloaded, Mode=OneWay}" Grid.Row="3" Grid.Column="1" IsEnabled="False" />
         </Grid>
 
         <husk:Divider Margin="4,12"/>
 
         <StackPanel>
+
+            <TextBlock Text="{Binding Status}" HorizontalAlignment="Center"/>
+
             <ProgressBar Value="{Binding Progress}"
                          IsIndeterminate="{Binding ProgressLoading}"
                          Height="24" MaxWidth="400" Width="400"
@@ -38,17 +41,23 @@
                          HorizontalAlignment="Center">
             </ProgressBar>
 
-            <StackPanel IsVisible="{Binding !ProgressLoading}">
+            <Grid IsVisible="{Binding !ProgressLoading}" 
+                  RowDefinitions="*, *" ColumnDefinitions="*, *"
+                  ColumnSpacing="32"
+                  HorizontalAlignment="Center">
+
                 <Label>ETA</Label>
                 <TextBlock Text="{Binding Eta, StringFormat='{}{0:0}s left'}"
-                           VerticalAlignment="Center">
+                           Grid.Row="1"
+                           HorizontalAlignment="Center">
                 </TextBlock>
 
-                <Label>FPS</Label>
+                <Label Grid.Column="1">FPS</Label>
                 <TextBlock Text="{Binding Fps, StringFormat='{}{0:0} FPS'}"
-                            VerticalAlignment="Center">
+                           Grid.Row="1" Grid.Column="1"
+                           HorizontalAlignment="Center">
                 </TextBlock>
-            </StackPanel>
+            </Grid>
         </StackPanel>
 
         <Button HorizontalAlignment="Left" VerticalAlignment="Center"
@@ -65,6 +74,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding .}"
+                                   FontSize="8"
                                    FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular">
                         </TextBlock>
                     </DataTemplate>

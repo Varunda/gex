@@ -6,19 +6,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using DynamicData.Binding;
-using gex.Common.Code.Constants;
 using gex.Common.Models;
-using gex.Common.Models.Map;
 using gex.Common.Models.Match;
-using gex.Common.Services.Db;
-using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Models.Config;
 using gex.Coven.Models.Ui;
 using gex.Coven.Services;
-using gex.Coven.Services.Bar;
 using gex.Coven.Services.Util;
 using gex.Coven.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,13 +21,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,6 +39,7 @@ namespace gex.Coven.ViewModels {
         private readonly IBarMatchBuilderUtil _MatchBuilder;
         private readonly BarMatchProcessorUtil _ProcessorUtil;
         private readonly StorageUtil _StorageUtil;
+        private readonly ToastService _Toasts;
 
         public MatchListViewModel() {
             _Logger = App.Current?.Services?.GetService<ILogger<MainViewModel>>() ?? default!;
@@ -58,6 +50,7 @@ namespace gex.Coven.ViewModels {
             _MatchBuilder = App.Current?.Services?.GetService<IBarMatchBuilderUtil>() ?? default!;
             _ProcessorUtil = App.Current?.Services?.GetService<BarMatchProcessorUtil>() ?? default!;
             _StorageUtil = App.Current?.Services?.GetService<StorageUtil>() ?? default!;
+            _Toasts = App.Current?.Services?.GetService<ToastService>() ?? default!;
 
             IObservable<Func<BarMatchViewModel, bool>> filterPredicate = 
                 this.WhenAnyPropertyChanged(nameof(FilterMap), nameof(FilterPlayer), nameof(FilterGamemode))
@@ -318,14 +311,51 @@ namespace gex.Coven.ViewModels {
             win.Show();
         }
 
+        /// <summary>
+        ///     command to reparse a demofile in the list (in case an error occured)
+        /// </summary>
         [RelayCommand]
-        public void ReparseDemofile() {
+        public async Task ReparseDemofile() {
             BarMatchViewModel? vm = SelectedMatch;
             if (vm == null) {
                 return;
             }
 
+            _Toasts.Show("Reparsing", $"Reparsing {vm.Match.FileName}", Code.ToastType.INFO, TimeSpan.FromSeconds(5));
+            try {
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
 
+                Result<byte[], string> bytes = await _StorageUtil.GetDemofile(vm.Match.FileName, cts.Token);
+                if (bytes.IsOk == false) {
+                    _Toasts.Show("Reparse failed", $"failed to load demofile: {bytes.Error}", Code.ToastType.WARN, TimeSpan.FromSeconds(15));
+                    return;
+                }
+
+                Result<BarMatch, string> ret = await _Parser.Parse(Path.GetFileName(vm.Match.FileName), bytes.Value, new DemofileParserOptions(), cts.Token);
+                if (ret.IsOk == false) {
+                    _Logger.LogWarning($"failed to parse demofile [gameID={vm.Match.ID}]");
+                    return;
+                }
+
+                // delete only if the demofile was found and could be parsed
+                await _ProcessorUtil.DeleteByGameID(vm.GameID, cts.Token);
+
+                await _ProcessorUtil.Insert(ret.Value, cts.Token);
+                _Toasts.Show("Reparsed!", $"Reparsed {vm.Match.FileName} successfully", Code.ToastType.INFO, TimeSpan.FromSeconds(8));
+                _Logger.LogInformation($"reparse demofile [filename={vm.Match.FileName}] [gameID={ret.Value.ID}]");
+
+                Dispatcher.UIThread.Invoke(() => {
+                    _Source.Edit((list) => {
+                        List<BarMatchViewModel> vms = [ ..list.Where(iter => iter.GameID != ret.Value.ID) ];
+                        list.Clear();
+                        list.AddRange(vms);
+                        AddMatch(ret.Value);
+                    });
+                });
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to reparse demofile [gameID={vm.Match.ID}]");
+                _Toasts.Show("Reparse failed", $"exception while reparsing: {ex.Message}", Code.ToastType.ERROR, TimeSpan.FromSeconds(15));
+            }
         }
 
         /// <summary>

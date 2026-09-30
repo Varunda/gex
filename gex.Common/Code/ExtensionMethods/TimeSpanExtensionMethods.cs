@@ -5,6 +5,10 @@ namespace gex.Common.Code.ExtensionMethods {
     public static class TimeSpanExtensionMethods {
 
         public static string GetRelativeFormat(this TimeSpan span) {
+            if (span.TotalMilliseconds == 0) {
+                return "0s";
+            }
+
             if (span.TotalMilliseconds < 1000) {
                 return $"{span.TotalMilliseconds:n0}ms";
             }

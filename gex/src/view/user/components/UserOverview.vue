@@ -6,6 +6,100 @@
         </h2>
 
         <div class="d-flex mb-3 flex-wrap" style="gap: 2rem;">
+
+            <div class="flex-grow-1 text-center flex-basis-0">
+                <h2 class="border-bottom d-inline-block px-3 pb-0 mb-2">
+                    Games on Gex
+                    <info-hover text="How many public PvP games Gex has seen this user in"></info-hover>
+                </h2>
+
+                <h3 class="mb-4">
+                    {{ playCount }}
+                </h3>
+            </div>
+
+            <div class="flex-grow-1 text-center flex-basis-0">
+                <h2 class="border-bottom d-inline-block px-3 pb-0 mb-2">
+                    Playtime
+                    <info-hover text="Just includes time playing, not in lobby or spectating"></info-hover>
+                </h2>
+
+                <h3 class="mb-4">
+                    {{ totalPlaySeconds | mduration }}
+                </h3>
+            </div>
+
+            <div class="flex-grow-1 text-center flex-basis-0">
+                <h2 class="border-bottom d-inline-block px-3 pb-0 mb-2">
+                    Win/Loss
+                </h2>
+
+                <h3 class="mb-4">
+                    <span>
+                        {{ winCount / (lossCount + winCount) * 100 | locale(0) }}%
+                    </span>
+
+                    (<span style="color: var(--bs-success-text-emphasis)">{{ winCount }}</span> /
+                    <span style="color: var(--bs-danger-text-emphasis)">{{ lossCount }}</span>)
+                </h3>
+            </div>
+
+                <!--
+            <div class="flex-grow-1 text-center flex-basis-0">
+                <table class="table table-sm table-borderless" style="table-layout: fixed">
+                    <tbody>
+                        <tr v-for="gamemode in groupedFactionData" :key="gamemode.gamemode">
+                            <td style="text-align: end;">
+                                {{ gamemode.gamemode | gamemode }}
+                            </td>
+
+                            <td style="text-align: start">
+                                <span style="color: var(--bs-success-text-emphasis)">
+                                    {{gamemode.sum.winCount}}
+                                </span>
+                                /
+                                <span style="color: var(--bs-danger-text-emphasis)">
+                                    {{ (gamemode.sum.playCount - gamemode.sum.winCount) }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+                -->
+
+        </div>
+
+        <hr class="border"/>
+
+        <div class="d-flex mb-3 flex-wrap" style="gap: 2rem;">
+            <div class="flex-grow-1 text-center flex-basis-0">
+                <h2 class="border-bottom d-inline-block px-3 pb-2 mb-2">
+                    Favorite gamemode
+                </h2>
+
+                <div :style="gamemodeStyle">
+                    <h4 class="mb-1">
+                        {{ mostPlayedGamemode.gamemode | gamemode }}
+                    </h4>
+
+                    <h4 class="d-flex">
+                        <span class="flex-grow-1">
+                            {{ mostPlayedGamemode.sum.playCount | locale(0) }} played
+                        </span>
+
+                        <span class="flex-grow-1">
+                            {{ mostPlayedGamemode.sum.winCount / mostPlayedGamemode.sum.playCount * 100 | locale(0) }}% won
+                        </span>
+                    </h4>
+
+                    <div style="height: 300px; max-height: 300px; width: 300px; max-width: 300px;" class="ms-auto me-auto">
+                        <canvas id="most-played-gamemode" width="300" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+
             <div class="flex-grow-1 text-center flex-basis-0">
                 <h2 class="border-bottom d-inline-block px-3 pb-2 mb-2">
                     Favorite faction
@@ -29,32 +123,6 @@
 
                     <div style="height: 300px; max-height: 300px; width: 300px; max-width: 300px;" class="ms-auto me-auto">
                         <canvas id="most-played-faction" width="300" height="300"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex-grow-1 text-center flex-basis-0">
-                <h2 class="border-bottom d-inline-block px-3 pb-2 mb-2">
-                    Favorite gamemode
-                </h2>
-
-                <div :style="gamemodeStyle">
-                    <h4 class="mb-1">
-                        {{ mostPlayedGamemode.gamemode | gamemode }}
-                    </h4>
-
-                    <h4 class="d-flex">
-                        <span class="flex-grow-1">
-                            {{ mostPlayedGamemode.sum.playCount | locale(0) }} played
-                        </span>
-
-                        <span class="flex-grow-1">
-                            {{ mostPlayedGamemode.sum.winCount / mostPlayedGamemode.sum.playCount * 100 | locale(0) }}% won
-                        </span>
-                    </h4>
-
-                    <div style="height: 300px; max-height: 300px; width: 300px; max-width: 300px;" class="ms-auto me-auto">
-                        <canvas id="most-played-gamemode" width="300" height="300"></canvas>
                     </div>
                 </div>
             </div>
@@ -119,7 +187,7 @@
 
         <div class="mb-4">
             <h4 class="wt-header bg-light text-dark mb-3">
-                <b>Gamemode ratings</b>
+                <b>Gamemodes</b>
             </h4>
 
             <div class="d-flex flex-wrap justify-content-around border-bottom pb-3 mb-3" style="gap: 1rem;">
@@ -224,6 +292,7 @@
     import "chartjs-adapter-luxon";
 
     import { FactionIcon } from "components/app/FactionIcon";
+    import InfoHover from "components/InfoHover.vue";
 
     import { BarUser } from "model/BarUser";
     import { BarUserMapStats } from "model/BarUserMapStats";
@@ -530,6 +599,22 @@
                 return [...this.user.skill].sort((a, b) => a.gamemode - b.gamemode);
             },
 
+            playCount: function(): number {
+                return this.matches.length;
+            },
+
+            winCount: function(): number {
+                return this.user.factionStats.reduce((acc, iter) => acc += iter.winCount, 0);
+            },
+
+            lossCount: function(): number {
+                return this.groupedFactionData.reduce((acc, iter) => acc += (iter.sum.playCount - iter.sum.winCount), 0);
+            },
+
+            totalPlaySeconds: function(): number {
+                return this.matches.map(iter => iter.durationFrameCount).reduce((acc, iter) => acc += iter, 0) / 30;
+            },
+
             gamemodeStyle: function(): any {
                 return {
                     //"background-image": `linear-gradient(to bottom, transparent, var(--bs-body-bg) 50%), url("/img/banner/large_team.jpg")`,
@@ -562,8 +647,14 @@
                 const skill: Map<number, number> = new Map();
                 const count: Map<number, number> = new Map();
                 const diff: Map<number, number> = new Map();
+                const wrongSkill: Map<number, number> = new Map();
 
                 for (const match of this.matches) {
+                    if (match.wrongSkillValues == true) {
+                        wrongSkill.set(match.gamemode, (wrongSkill.get(match.gamemode) ?? 0) + 1);
+                        continue;
+                    }
+
                     if (skill.has(match.gamemode) == false) {
                         skill.set(match.gamemode, 0);
                         count.set(match.gamemode, 0);
@@ -646,9 +737,11 @@
                         cortex: iter[1].find(iter => iter.faction == FactionUtil.CORTEX) ?? null,
                         legion: iter[1].find(iter => iter.faction == FactionUtil.LEGION) ?? null,
                         random: iter[1].find(iter => iter.faction == FactionUtil.RANDOM) ?? null,
+                        count: c,
                         sum: sum,
                         averageSkill: (skill.get(iter[0]) ?? 0) / Math.max(1, c),
-                        averageSkillDiff: (diff.get(iter[0]) ?? 0)
+                        averageSkillDiff: (diff.get(iter[0]) ?? 0),
+                        wrongSkillCount: wrongSkill.get(iter[0]) ?? 0
                     }
                 }).sort((a, b) => {
                     return b.sum.playCount - a.sum.playCount;
@@ -715,9 +808,8 @@
         },
 
         components: {
-            FactionIcon,
+            FactionIcon, InfoHover
         }
-
     });
     export default UserOverview;
 

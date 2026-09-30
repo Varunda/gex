@@ -91,8 +91,17 @@ namespace gex.Coven.Services.Db.Match {
             throw new NotImplementedException();
         }
 
-        public Task DeleteByGameID(string gameID) {
-            throw new NotImplementedException();
+        public async Task DeleteByGameID(string gameID) {
+            using DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
+            using DbCommand cmd = await _DbHelper.Command(conn, @"
+                DELETE FROM bar_match_team WHERE game_id = @GameID;
+            ");
+
+            cmd.AddParameter("GameID", gameID);
+            await cmd.PrepareAsync();
+
+            await cmd.ExecuteNonQueryAsync();
         }
+
     }
 }

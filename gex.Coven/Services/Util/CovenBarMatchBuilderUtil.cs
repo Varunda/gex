@@ -4,6 +4,7 @@ using gex.Common.Models.Match;
 using gex.Common.Services.Db;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Util;
 using gex.Coven.Models.Config;
@@ -29,12 +30,14 @@ namespace gex.Coven.Services.Util {
         private readonly IBarMapDb _BarMapDb;
         private readonly UserOptionsService _UserOptions;
         private readonly BarMapParser _MapParser;
+        private readonly StorageUtil _StorageUtil;
 
         public CovenBarMatchBuilderUtil(ILogger<CovenBarMatchBuilderUtil> logger,
             BarMatchRepository matchRepository, BarMatchPlayerRepository playerRepository,
             IBarMatchAllyTeamDb allyTeamDb, BarMatchTeamRepository teamRepository,
             IBarMatchAiPlayerDb aiPlayerDb, IBarMapDb barMapDb,
-            UserOptionsService userOptions, BarMapParser mapParser) {
+            UserOptionsService userOptions, BarMapParser mapParser,
+            StorageUtil storageUtil) {
 
             _MatchRepository = matchRepository;
             _PlayerRepository = playerRepository;
@@ -45,6 +48,7 @@ namespace gex.Coven.Services.Util {
             _BarMapDb = barMapDb;
             _UserOptions = userOptions;
             _MapParser = mapParser;
+            _StorageUtil = storageUtil;
         }
 
         /// <inheritdoc/>
@@ -95,10 +99,10 @@ namespace gex.Coven.Services.Util {
                                 await _BarMapDb.Upsert(mapData.Value, cancel);
                                 _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");
                             } else {
-                                _Logger.LogError($"failed to parse map [map={map}] [mapDir={mapPath}] [error={mapData.Error}]");
+                                _Logger.LogError($"failed to parse map [map={map?.Name}] [mapDir={mapPath}] [error={mapData.Error}]");
                             }
                         } catch (Exception ex) {
-                            _Logger.LogError(ex, $"failed to parse map [map={map}] [mapPath={mapPath}]");
+                            _Logger.LogError(ex, $"failed to parse map [map={map?.Name}] [mapPath={mapPath}]");
 
                         }
                     } else {

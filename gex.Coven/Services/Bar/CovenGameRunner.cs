@@ -70,6 +70,8 @@ namespace gex.Coven.Services.Bar {
                     _Logger.LogDebug($"downloaded engine [engine={match.Engine}] [timer={dlTimer.ElapsedMilliseconds}ms]");
                 }
 
+                EngineDownloaded?.Invoke(this, match.ID);
+
                 int attempts = 3;
 
                 do {
@@ -97,6 +99,8 @@ namespace gex.Coven.Services.Bar {
                     return;
                 }
 
+                GameVersionDownloaded?.Invoke(this, match.ID);
+
                 // ensure map is downloaded
                 if (_PrDownloader.HasMap(match.Engine, match.Map) == false) {
                     _Logger.LogDebug($"missing map, fetching [gameID={gameID}] [engine={match.Engine}] [map={match.Map}]");
@@ -121,6 +125,8 @@ namespace gex.Coven.Services.Bar {
                     File.Copy(mapPath, Path.Join(enginePath, "maps", mapName));
                 }
 
+                MapDownloaded?.Invoke(this, match.ID);
+
                 if (headless == true) {
                     // actually run the process now that everything is setup
                     Process bar = new();
@@ -143,7 +149,7 @@ namespace gex.Coven.Services.Bar {
                     status.DurationFrames = match.DurationFrameCount;
                     status.Simulating = false;
                     status.Fps = 0d;
-                    HeadlessProgressUpdate?.Invoke(this, status);
+                    ProgressUpdate?.Invoke(this, status);
 
                     long previousTimerUpdate = 0;
                     long previousFrame = 0;
@@ -167,7 +173,7 @@ namespace gex.Coven.Services.Bar {
                         } else {
                             output.AppendLine(e.Data);
                             _Logger.LogTrace(e.Data);
-                            HeadlessStdoutLine?.Invoke(this, gameID, e.Data);
+                            StdoutLine?.Invoke(this, gameID, e.Data);
 
                             HeadlessRunStatus status = new();
                             status.GameID = gameID;
@@ -226,7 +232,7 @@ namespace gex.Coven.Services.Bar {
                                 previousFrame = frame;
                             }
 
-                            HeadlessProgressUpdate?.Invoke(this, status);
+                            ProgressUpdate?.Invoke(this, status);
                         }
                     };
                     bar.ErrorDataReceived += (sender, e) => {
@@ -248,7 +254,7 @@ namespace gex.Coven.Services.Bar {
                                 return;
                             }
 
-                            HeadlessStderrLine?.Invoke(this, gameID, e.Data);
+                            StderrLine?.Invoke(this, gameID, e.Data);
 
                             _Logger.LogError(e.Data);
                         }
@@ -263,6 +269,12 @@ namespace gex.Coven.Services.Bar {
 
                             bar.BeginOutputReadLine();
                             bar.BeginErrorReadLine();
+
+                            // this callback is Dispose-able, so even tho we don't use this, we still want to capture it for Disposale
+                            using CancellationTokenRegistration cancelCallback = cancel.Register(() => {
+                                _Logger.LogInformation($"killing BAR instance due to cancellation [gameID={gameID}]");
+                                bar.Kill();
+                            });
 
                             await bar.WaitForExitAsync();
 
@@ -283,7 +295,7 @@ namespace gex.Coven.Services.Bar {
                         string contents = File.ReadAllText(actionsJson);
                         await _StorageUtil.SaveActionLog(gameID, contents, CancellationToken.None);
                         _Logger.LogInformation($"saved action log [gameID={gameID}]");
-                        HeadlessDone?.Invoke(this, gameID);
+                        Done?.Invoke(this, gameID);
                     }, cancel);
                 } else {
                     // actually run the process now that everything is setup
@@ -321,16 +333,25 @@ namespace gex.Coven.Services.Bar {
         }
 
         public delegate void HeadlessProgressUpdateHandler(object sender, HeadlessRunStatus status);
-        public event HeadlessProgressUpdateHandler? HeadlessProgressUpdate;
+        public event HeadlessProgressUpdateHandler? ProgressUpdate;
 
         public delegate void HeadlessDoneHandler(object sender, string gameID);
-        public event HeadlessDoneHandler? HeadlessDone;
+        public event HeadlessDoneHandler? Done;
 
         public delegate void HeadlessStdoutLineHandler(object sender, string gameID, string line);
-        public event HeadlessStdoutLineHandler? HeadlessStdoutLine;
+        public event HeadlessStdoutLineHandler? StdoutLine;
 
         public delegate void HeadlessStderrLineHandler(object sender, string gameID, string line);
-        public event HeadlessStderrLineHandler? HeadlessStderrLine;
+        public event HeadlessStderrLineHandler? StderrLine;
+
+        public delegate void HeadlessEngineDownloadedHandler(object sender, string gameID);
+        public event HeadlessEngineDownloadedHandler? EngineDownloaded;
+
+        public delegate void HeadlessGameVersionDownloadedHandler(object sender, string gameID);
+        public event HeadlessGameVersionDownloadedHandler GameVersionDownloaded;
+
+        public delegate void HeadlessMapDownloadedHandler(object sender, string gameID);
+        public event HeadlessMapDownloadedHandler MapDownloaded;
 
     }
 }

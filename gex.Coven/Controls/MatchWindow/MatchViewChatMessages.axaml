@@ -30,7 +30,14 @@
                     </TableViewColumn.CellTemplate>
                 </TableViewColumn>
 
-                <TableViewColumn Header="Message" Binding="{Binding Message}" Width="4*"/>
+                <TableViewColumn Header="Message" Width="6*">
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <SelectableTextBlock Text="{Binding Message}"/>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                    
+                </TableViewColumn>
             </TableView.Columns>
         </TableView>
     </ScrollViewer>

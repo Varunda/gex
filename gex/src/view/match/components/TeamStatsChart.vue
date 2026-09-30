@@ -45,7 +45,7 @@
             <div v-else class="d-flex flex-row">
                 <div class="flex-grow-0 me-2" style="text-wrap: nowrap">
 
-                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-dark border' ]">
+                    <button class="btn w-100 mb-3" @click="perSecond = !perSecond" :class="[ perSecond ? 'btn-primary' : 'btn-secondary border' ]">
                         Show per sec
                     </button>
 

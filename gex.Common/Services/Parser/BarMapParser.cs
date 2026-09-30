@@ -128,7 +128,10 @@ namespace gex.Common.Services.Parser {
                 string? version = table.GetValueOrDefault("version")?.ToString();
 
                 BarMap map = new();
-                map.Name = name + (version == null ? "" : $" {version}");
+                map.Name = name; // + (version == null ? "" : $" {version}");
+                if (version != null && map.Name.EndsWith(version) == false) {
+                    map.Name += $" {version}";
+                }
                 map.Description = table.GetValueOrDefault("description")?.ToString() ?? "";
                 map.Author = table.GetValueOrDefault("author")?.ToString() ?? "";
                 map.FileName = mapName;

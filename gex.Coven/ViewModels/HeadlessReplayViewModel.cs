@@ -39,13 +39,16 @@ namespace gex.Coven.ViewModels {
 
         public async Task StartReplay() {
             Title = "gex.Coven - Headless replay: Loading game";
-            Status = "Loading game";
+            Status = "Starting...";
             GameID = Match.ID;
 
-            _GameRunner.HeadlessProgressUpdate += _GameRunner_HeadlessProgressUpdate;
-            _GameRunner.HeadlessDone += _GameRunner_HeadlessDone;
-            _GameRunner.HeadlessStdoutLine += _GameRunner_HeadlessStdoutLine;
-            _GameRunner.HeadlessStderrLine += _GameRunner_HeadlessStderrLine;
+            _GameRunner.ProgressUpdate += _GameRunner_ProgressUpdate;
+            _GameRunner.Done += _GameRunner_Done;
+            _GameRunner.StdoutLine += _GameRunner_StdoutLine;
+            _GameRunner.StderrLine += _GameRunner_StderrLine;
+            _GameRunner.EngineDownloaded += _GameRunner_EngineDownloaded;
+            _GameRunner.GameVersionDownloaded += _GameRunner_GameVersionDownloaded;
+            _GameRunner.MapDownloaded += _GameRunner_MapDownloaded;
 
             _Logger.LogInformation($"starting replay [gameID={GameID}]");
             await _GameRunner.LaunchReplay(Match, true, _CancelTokenSource.Token);
@@ -56,7 +59,34 @@ namespace gex.Coven.ViewModels {
             Progress = 100;
         }
 
-        private void _GameRunner_HeadlessDone(object sender, string gameID) {
+        private void _GameRunner_MapDownloaded(object sender, string gameID) {
+            if (gameID != GameID) {
+                return;
+            }
+
+            Status = "Launching game...";
+            MapDownloaded = true;
+        }
+
+        private void _GameRunner_GameVersionDownloaded(object sender, string gameID) {
+            if (gameID != GameID) {
+                return;
+            }
+
+            Status = "Downloading map...";
+            GameDownloaded = true;
+        }
+
+        private void _GameRunner_EngineDownloaded(object sender, string gameID) {
+            if (gameID != GameID) {
+                return;
+            }
+
+            Status = "Downloading game version...";
+            EngineDownloaded = true;
+        }
+
+        private void _GameRunner_Done(object sender, string gameID) {
             if (gameID != GameID) {
                 return;
             }
@@ -65,7 +95,7 @@ namespace gex.Coven.ViewModels {
             OnRequestClose?.Invoke(this, new EventArgs());
         }
 
-        private void _GameRunner_HeadlessProgressUpdate(object sender, Common.Models.HeadlessRunStatus status) {
+        private void _GameRunner_ProgressUpdate(object sender, Common.Models.HeadlessRunStatus status) {
             // multiple replays can be run at the same time, ensure this only handles the one in this window
             if (status.GameID != GameID) {
                 return;
@@ -80,9 +110,9 @@ namespace gex.Coven.ViewModels {
             Eta = ((double)FramesDuration - LastFrame) / Math.Max(0.01d, Fps);
 
             if (status.Simulating == true) {
-                Status = "Simulating";
+                Status = "Simulating game";
                 ProgressLoading = false;
-                ProgressBrush = Brushes.Blue;
+                ProgressBrush = Brushes.Azure;
             } else {
                 Progress = 100;
                 ProgressLoading = true;
@@ -95,7 +125,7 @@ namespace gex.Coven.ViewModels {
             Title = $"gex.Coven - Headless replay: {Status}";
         }
 
-        private void _GameRunner_HeadlessStdoutLine(object sender, string gameID, string line) {
+        private void _GameRunner_StdoutLine(object sender, string gameID, string line) {
             if (gameID != GameID) {
                 return;
             }
@@ -106,7 +136,7 @@ namespace gex.Coven.ViewModels {
             }
         }
 
-        private void _GameRunner_HeadlessStderrLine(object sender, string gameID, string line) {
+        private void _GameRunner_StderrLine(object sender, string gameID, string line) {
             if (gameID != GameID) {
                 return;
             }
@@ -157,6 +187,15 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private IBrush _ProgressBrush = Brushes.Teal;
+
+        [ObservableProperty]
+        private bool _EngineDownloaded = false;
+
+        [ObservableProperty]
+        private bool _GameDownloaded = false;
+
+        [ObservableProperty]
+        private bool _MapDownloaded = false;
 
         [ObservableProperty]
         private ObservableCollection<string> _Stdout = [];

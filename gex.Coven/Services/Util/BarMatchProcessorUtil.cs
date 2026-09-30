@@ -35,7 +35,6 @@ namespace gex.Coven.Services.Util {
 
         public async Task Insert(BarMatch match, CancellationToken cancel) {
             _Logger.LogDebug($"adding new match to DB [gameID={match.ID}]");
-            await _MatchRepository.Insert(match, cancel);
 
             foreach (BarMatchTeam team in match.Teams) {
                 await _TeamRepository.Insert(team, cancel);
@@ -53,7 +52,19 @@ namespace gex.Coven.Services.Util {
                 await _AllyTeamDb.Insert(at);
             }
 
+            await _MatchRepository.Insert(match, cancel);
+
             _Logger.LogInformation($"inserted match into DB [gameID={match.ID}]");
+        }
+
+        public async Task DeleteByGameID(string gameID, CancellationToken cancel) {
+            _Logger.LogDebug($"deleting match [gameID={gameID}]");
+            await _TeamRepository.DeleteByGameID(gameID);
+            await _PlayerRepository.DeleteByGameID(gameID);
+            await _AiPlayerDb.DeleteByGameID(gameID);
+            await _AllyTeamDb.DeleteByGameID(gameID);
+            await _MatchRepository.Delete(gameID);
+            _Logger.LogInformation($"deleting match [gameID={gameID}]");
         }
 
     }

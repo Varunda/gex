@@ -22,7 +22,6 @@ namespace gex.Coven.Services.Db.Patches {
             ");
 
             await cmd.ExecuteNonQueryAsync();
-            await conn.CloseAsync();
         }
 
     }

@@ -213,7 +213,7 @@ namespace gex.Coven.ViewModels.Match {
 
                         BarMatchEntity? entity = _AllEntities.FirstOrDefault(iter => iter.Name == item.Name);
                         if (entity == null) {
-                            _Logger.LogDebug($"failed to find entity to toggle visilbity of [name={item.Name}] [gameID={Match.GameID}]");
+                            _Logger.LogDebug($"failed to find entity to toggle visibility of [name={item.Name}] [gameID={Match.GameID}]");
                         } else {
                             if (series.Visible == true) {
                                 ShownEntities.Add(entity);
@@ -359,6 +359,9 @@ namespace gex.Coven.ViewModels.Match {
             _UpdateMilestones();
         }
 
+        /// <summary>
+        ///     update the visible milestones based on the <see cref="ShownEntities"/>
+        /// </summary>
         private void _UpdateMilestones() {
             MilestoneVisualElements.Clear();
             foreach (BarMatchMilestone milestone in _Milestones.OrderBy(iter => iter.Frame)) {

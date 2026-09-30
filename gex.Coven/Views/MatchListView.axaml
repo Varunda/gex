@@ -335,10 +335,18 @@
                 <TableViewColumn Header="View" Width="5*">
                     <TableViewColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Content="View" Classes="Primary" VerticalAlignment="Top"
-                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).OpenCommand}"
-                                    CommandParameter="{Binding GameID}">
-                            </Button>
+                            <StackPanel Orientation="Vertical">
+                                <Button Content="View" Classes="Primary" VerticalAlignment="Top"
+                                        Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).OpenCommand}"
+                                        CommandParameter="{Binding GameID}">
+                                </Button>
+
+                                <StackPanel Margin="0,12,0,0">
+                                    <ti:TablerIcon Icon="IconCircleCheck" Width="24" Height="24"
+                                                   Brush="Green" IsVisible="{Binding HasActionLog}"
+                                                   ToolTip.Tip="This can has been replayed for in-depth stats"/>
+                                </StackPanel>
+                            </StackPanel>
                         </DataTemplate>
                     </TableViewColumn.CellTemplate>
                 </TableViewColumn>
