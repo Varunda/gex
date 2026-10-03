@@ -8,7 +8,7 @@
         xmlns:models="using:gex.Coven.Models"
 		xmlns:controls="using:gex.Coven.Controls"
         xmlns:m="using:gex.Common.Models.Match"
-        xmlns:matchwindow="using:gex.Coven.Controls.MatchWindow"
+        xmlns:matchwindow="using:gex.Coven.Views.MatchWindow"
         xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
         xmlns:sys="clr-namespace:System;assembly=netstandard"
         xmlns:system="using:System"
@@ -139,6 +139,19 @@
                 <matchwindow:MatchViewTeamStats
                     DataContext="{Binding TeamStatsViewModel}">
                 </matchwindow:MatchViewTeamStats>
+
+
+                <Border Background="Gray" Margin="0 0 0 10">
+                    <TextBlock FontSize="36"
+                               HorizontalAlignment="Center"
+                               Foreground="White"
+                               Text="Combat stats">
+                    </TextBlock>
+                </Border>
+
+                <matchwindow:MatchViewUnitCombatStats
+                    DataContext="{Binding UnitStats}">
+                </matchwindow:MatchViewUnitCombatStats>
 
                 <!--
                     Chat

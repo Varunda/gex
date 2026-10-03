@@ -8,7 +8,8 @@ using gex.Coven.ViewModels;
 using gex.Coven.ViewModels.Match;
 using System;
 
-namespace gex.Coven.Controls.MatchWindow {
+namespace gex.Coven.Views.MatchWindow {
+
     public partial class MatchViewMap : UserControl {
 
         public MatchViewMap() {

@@ -11,7 +11,7 @@ using gex.Coven.ViewModels.Match;
 using System;
 using System.Globalization;
 
-namespace gex.Coven.Controls.MatchWindow {
+namespace gex.Coven.Views.MatchWindow {
 
     public partial class MatchViewMapOverlay : UserControl {
 

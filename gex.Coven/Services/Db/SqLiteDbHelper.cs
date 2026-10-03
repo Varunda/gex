@@ -61,21 +61,28 @@ namespace gex.Coven.Services.Db {
                 conn.Open();
                 return conn;
             } else if (server == SqLiteDb.WRITE) {
+
+                // debug
+                //
 #if DEBUG
                 StackTrace st = new(true);
                 string source = "";
                 string trace = st.ToString();
                 string[] traces = trace.Split("\n");
                 if (traces[0].Trim().StartsWith("at gex.Coven.Services.Db.SqLiteDbHelper.Connection(") && traces.Length > 1) {
-                    source = traces[1].Replace("   at ", "");
+                    source = traces[1].Replace("   at ", "").Trim();
                 }
 
                 if (string.IsNullOrEmpty(source)) {
                     _Logger?.LogTrace($"getting write connection to DB. stack trace:\n{st}");
+                    Trace.WriteLine($"getting write connection to DB. stack trace:\n{st}");
                 } else {
                     _Logger?.LogTrace($"getting write connection to DB. source: {source}");
+                    Trace.WriteLine($"getting write connection to DB. source: {source}");
                 }
 #endif
+                //
+                // end debug
 
                 bool aquired = _Signal.Wait(TimeSpan.FromSeconds(10));
                 if (aquired == false) {
@@ -83,13 +90,31 @@ namespace gex.Coven.Services.Db {
                     throw new TimeoutException($"failed to aquire write connection");
                 }
 
+                // debug
+#if DEBUG
+                Trace.WriteLine($"lock aquired. source: {source}");
+#endif
+                // end debug
+
+
                 DbConnection connection = new SqliteConnection($"Data Source={_DbPath}");
                 connection.Open();
+
+                bool disposed = false;
                 connection.Disposed += (object? sender, EventArgs args) => {
+                    if (disposed == true) {
+                        return;
+                    }
+
+                    disposed = true;
+
+                    // debug
 #if DEBUG
-                    _Logger?.LogTrace($"lock released");
-                    Trace.WriteLine($"lock released on write connection for SqLite DB");
+                    _Logger?.LogTrace($"lock released [source={source}]");
+                    Trace.WriteLine($"lock released on write connection for SqLite DB [source={source}]");
 #endif
+                    // end debug
+
                     _Signal.Release();
                 };
 

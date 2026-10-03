@@ -104,6 +104,7 @@ namespace gex.Coven.ViewModels {
             ReplayStarted = status.Simulating;
             LastFrame = status.Frame;
             FramesDuration = status.DurationFrames;
+            FramesLeft = FramesDuration - LastFrame;
             Fps = status.Fps;
 
             Progress = (double)LastFrame / FramesDuration * 100d;
@@ -120,6 +121,11 @@ namespace gex.Coven.ViewModels {
                 if (status.LoadingStep != "") {
                     Status += $": {status.LoadingStep}";
                 }
+            }
+
+            if (LastFrame > (Match.DurationFrameCount * 2)) {
+                _Logger.LogWarning($"match is still going despite being past the frame count, killing [frame={LastFrame}] [frame count={Match.DurationFrameCount}]");
+                _CancelTokenSource.Cancel();
             }
 
             Title = $"gex.Coven - Headless replay: {Status}";
@@ -172,6 +178,9 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private long _FramesDuration = 0;
+
+        [ObservableProperty]
+        private long _FramesLeft = 0;
 
         [ObservableProperty]
         private double _Progress = 0d;

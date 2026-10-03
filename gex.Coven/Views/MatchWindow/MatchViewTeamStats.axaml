@@ -10,7 +10,7 @@
              xmlns:match="using:gex.Coven.ViewModels.Match"
              xmlns:tt="using:gex.Coven.Code.Chart"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="gex.Coven.Controls.MatchWindow.MatchViewTeamStats"
+             x:Class="gex.Coven.Views.MatchWindow.MatchViewTeamStats"
              x:DataType="match:BarMatchViewTeamStats">
 
     <Design.DataContext>

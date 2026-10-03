@@ -92,7 +92,7 @@ namespace gex.Coven.ViewModels {
         private int? _FilterGamemode = null;
 
         [ObservableProperty]
-        private MatchListSortField _TableSortField = MatchListSortField.StartTime;
+        private string _TableSortField = "StartTime";
 
         [ObservableProperty]
         private Models.Ui.SortDirection _TableSortDirection = Models.Ui.SortDirection.Desc;
@@ -171,17 +171,22 @@ namespace gex.Coven.ViewModels {
         /// <param name="sender"></param>
         /// <param name="match"></param>
         private async void _DemofileWatcher_NewMatchReady(object sender, BarMatch match) {
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            try {
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
 
-            BarMatch? existingMatch = await _MatchRepository.GetByID(match.ID, cts.Token);
-            if (existingMatch != null) {
-                _Logger.LogWarning($"match already exists [gameID={match.ID}]");
-                return;
+                BarMatch? existingMatch = await _MatchRepository.GetByID(match.ID, cts.Token);
+                if (existingMatch != null) {
+                    _Logger.LogWarning($"match already exists [gameID={match.ID}]");
+                    return;
+                }
+
+                await _ProcessorUtil.DeleteByGameID(match.ID, cts.Token);
+                await _ProcessorUtil.Insert(match, cts.Token);
+
+                AddMatch(match);
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to handle new match [gameID={match.ID}]");
             }
-
-            await _ProcessorUtil.Insert(match, cts.Token);
-
-            AddMatch(match);
         }
 
         /// <summary>
@@ -189,14 +194,14 @@ namespace gex.Coven.ViewModels {
         /// </summary>
         [RelayCommand]
         public void TableSort_StartTime() {
-            if (TableSortField == MatchListSortField.StartTime) {
+            if (TableSortField == "StartTime") {
                 if (TableSortDirection == Models.Ui.SortDirection.Asc) {
                     TableSortDirection = Models.Ui.SortDirection.Desc;
                 } else {
                     TableSortDirection = Models.Ui.SortDirection.Asc;
                 }
             } else {
-                TableSortField = MatchListSortField.StartTime;
+                TableSortField = "StartTime";
             }
         }
 
@@ -205,14 +210,14 @@ namespace gex.Coven.ViewModels {
         /// </summary>
         [RelayCommand]
         public void TableSort_Duration() {
-            if (TableSortField == MatchListSortField.Duration) {
+            if (TableSortField == "Duration") {
                 if (TableSortDirection == Models.Ui.SortDirection.Asc) {
                     TableSortDirection = Models.Ui.SortDirection.Desc;
                 } else {
                     TableSortDirection = Models.Ui.SortDirection.Asc;
                 }
             } else {
-                TableSortField = MatchListSortField.Duration;
+                TableSortField = "Duration";
             }
         }
 
@@ -413,12 +418,12 @@ namespace gex.Coven.ViewModels {
                 return SortExpressionComparer<BarMatchViewModel>.Descending(iter => iter.StartTime);
             }
 
-            if (model.TableSortField == MatchListSortField.StartTime) {
+            if (model.TableSortField == "StartTime") {
                 if (model.TableSortDirection == Models.Ui.SortDirection.Asc) {
                     return SortExpressionComparer<BarMatchViewModel>.Ascending(iter => iter.StartTime);
                 } 
                 return SortExpressionComparer<BarMatchViewModel>.Descending(iter => iter.StartTime);
-            } else if (model.TableSortField == MatchListSortField.Duration) {
+            } else if (model.TableSortField == "Duration") {
                 if (model.TableSortDirection == Models.Ui.SortDirection.Asc) {
                     return SortExpressionComparer<BarMatchViewModel>.Ascending(iter => iter.DurationMs);
                 } 

@@ -27,10 +27,12 @@ namespace NReco.Logging.File {
 	[ProviderAlias("File")]
 	public class FileLoggerProvider : ILoggerProvider, ISupportExternalScope {
 
+        private readonly static string _UsernameToRedact = Environment.UserName;
+		private readonly static char ps = Path.DirectorySeparatorChar;
+
 		private string LogFileName;
 
-		private readonly ConcurrentDictionary<string, FileLogger> loggers =
-			new ConcurrentDictionary<string, FileLogger>();
+		private readonly ConcurrentDictionary<string, FileLogger> loggers = new ConcurrentDictionary<string, FileLogger>();
 		private readonly BlockingCollection<string> entryQueue = new BlockingCollection<string>(1024);
 		private readonly Task processQueueTask;
 		private readonly FileWriter fWriter;
@@ -124,7 +126,9 @@ namespace NReco.Logging.File {
 		internal void WriteEntry(string message) {
 			if (!entryQueue.IsAddingCompleted) {
 				try {
-					entryQueue.Add(message);
+					entryQueue.Add(
+						message.Replace($"{ps}{_UsernameToRedact}{ps}", $"{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase)
+					);
 					return;
 				} catch (InvalidOperationException) { }
 			}

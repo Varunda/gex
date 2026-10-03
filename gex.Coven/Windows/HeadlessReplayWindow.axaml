@@ -42,7 +42,7 @@
             </ProgressBar>
 
             <Grid IsVisible="{Binding !ProgressLoading}" 
-                  RowDefinitions="*, *" ColumnDefinitions="*, *"
+                  RowDefinitions="*, *" ColumnDefinitions="*, *, *"
                   ColumnSpacing="32"
                   HorizontalAlignment="Center">
 
@@ -55,6 +55,12 @@
                 <Label Grid.Column="1">FPS</Label>
                 <TextBlock Text="{Binding Fps, StringFormat='{}{0:0} FPS'}"
                            Grid.Row="1" Grid.Column="1"
+                           HorizontalAlignment="Center">
+                </TextBlock>
+
+                <Label Grid.Column="2">Frames left</Label>
+                <TextBlock Text="{Binding FramesLeft}"
+                           Grid.Row="1" Grid.Column="2"
                            HorizontalAlignment="Center">
                 </TextBlock>
             </Grid>
@@ -74,7 +80,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding .}"
-                                   FontSize="8"
+                                   FontSize="10"
                                    FontFamily="fonts:Coven#Atkinson Hyperlegible Mono Regular">
                         </TextBlock>
                     </DataTemplate>

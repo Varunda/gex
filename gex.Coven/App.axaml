@@ -31,9 +31,14 @@
                     <ResourceDictionary.MergedDictionaries>
                         <ResourceInclude Source="/Controls/DateTimeView.axaml"/>
                         <ResourceInclude Source="/Controls/FactionImage.axaml"/>
-                        <ResourceInclude Source="/Controls/MatchWindow/MatchWindowChat.axaml"/>
                         <ResourceInclude Source="/Controls/MapNameImage.axaml"/>
                         <ResourceInclude Source="/Controls/InfoHover.axaml"/>
+                        <ResourceInclude Source="/Controls/TableHeaderSorter.axaml"/>
+
+                        <ResourceInclude Source="/Table/Controls/CovenTableView.axaml"/>
+                        <ResourceInclude Source="/Table/Controls/CovenTableViewCell.axaml"/>
+                        <ResourceInclude Source="/Table/Controls/CovenTableViewColumnHeader.axaml"/>
+                        <ResourceInclude Source="/Table/Controls/CovenTableViewRow.axaml"/>
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
             </Style.Resources>
@@ -104,11 +109,9 @@
             <Setter Property="FontSize" Value="16"/>
         </Style>
 
-        <!--
-        <Style Selector="Expander">
-            <Setter Property="Padding" Value="4"/>
+        <Style Selector="CheckBox">
+            <Setter Property="Theme" Value="{StaticResource AlternativeCheckBoxTheme}"/>
         </Style>
-        -->
 
     </Application.Styles>
 </Application>

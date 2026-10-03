@@ -161,7 +161,11 @@ namespace gex.Coven.Services {
                 string md5 = string.Join("", MD5.HashData(bytes).Select(iter => iter.ToString("x2"))).ToLower();
                 BarMatchHash? existingHash = await _MatchHashDb.GetByHash(md5, CancellationToken.None);
                 if (existingHash != null) {
-                    continue;
+                    // ensure the match is in the db, not just the hash
+                    BarMatch? match = await _MatchRepository.GetByID(existingHash.GameID, CancellationToken.None);
+                    if (match != null) {
+                        continue;
+                    }
                 }
 
                 _Logger.LogInformation($"loading new match [file={demofile}] [hash={md5}]");

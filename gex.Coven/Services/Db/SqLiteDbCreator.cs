@@ -31,15 +31,19 @@ namespace gex.Coven.Services.Db {
         }
 
         public async Task Execute() {
-            using DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
-            if (conn is SqliteConnection sqConn) {
-                _Logger.LogInformation($"starting sqlite db creator [version={sqConn.ServerVersion}]");
-            }
+            {
+                using DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
+                if (conn is SqliteConnection sqConn) {
+                    _Logger.LogInformation($"starting sqlite db creator [version={sqConn.ServerVersion}]");
+                }
 
-            using DbCommand cmd = await _DbHelper.Command(conn, @"
-                PRAGMA journal_mode=WAL;
-            ");
-            await cmd.ExecuteNonQueryAsync();
+                using DbCommand cmd = await _DbHelper.Command(conn, @"
+                    PRAGMA journal_mode=WAL;
+                ");
+                await cmd.ExecuteNonQueryAsync();
+                await conn.CloseAsync();
+                conn.Dispose();
+            }
 
             _Logger.LogTrace($"Getting current DB version");
             int version = await GetVersion();

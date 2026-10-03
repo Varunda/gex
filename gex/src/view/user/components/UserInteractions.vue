@@ -140,6 +140,19 @@
                     </span>
                 </a-body>
             </a-col>
+
+            <a-col>
+                <a-header>
+                    <b>View matches</b>
+                    <info-hover text="View matches that both players were in"></info-hover>
+                </a-header>
+
+                <a-body v-slot="entry">
+                    <a :href="'/recent/?offset=0&search=' + entry.recentUrl" target="_blank" ref="nofollow">
+                        View recent
+                    </a>
+                </a-body>
+            </a-col>
         </a-table>
 
         <div>
@@ -172,11 +185,17 @@
 
     import { BarUserInteractions } from "model/BarUserInteractions";
     import { BarUser } from "model/BarUser";
+    import { SearchOptions } from "model/SearchOptions";
 
     import ATable, { ABody, AFilter, AFooter, AHeader, ACol } from "components/ATable";
     import DateTimeInput from "components/DateTimeInput.vue";
+    import InfoHover from "components/InfoHover.vue";
 
     import "filters/LocaleFilter";
+
+    type BarUserInteractionsWithRecent = BarUserInteractions & {
+        recentUrl: string
+    };
 
     export const UserInteractions = Vue.extend({
         props: {
@@ -217,13 +236,25 @@
         },
 
         computed: {
-            selected: function(): Loading<BarUserInteractions[]> {
+            selected: function(): Loading<BarUserInteractionsWithRecent[]> {
                 if (this.interactions.state != "loaded") {
-                    return this.interactions;
+                    return Loadable.rewrap(this.interactions);
                 }
 
                 return Loadable.loaded(this.interactions.data.filter(iter => {
                     return iter.gamemode == this.selectedGamemode
+                }).map(iter => {
+
+                    const search: SearchOptions = new SearchOptions();
+                    search.users = [
+                        { userID: this.user.userID, username: this.user.username },
+                        { userID: iter.targetUserID, username: iter.targetUsername }
+                    ]
+
+                    return {
+                        ...iter,
+                        recentUrl: btoa(JSON.stringify(search))
+                    }
                 }));
             },
 
@@ -235,7 +266,8 @@
 
         components: {
             ATable, AHeader, ABody, AFooter, AFilter, ACol,
-            DateTimeInput
+            DateTimeInput,
+            InfoHover
         }
     });
     export default UserInteractions;

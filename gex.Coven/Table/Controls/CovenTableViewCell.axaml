@@ -1,0 +1,12 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:gex.Coven.Table.Controls"
+                    x:ClassModifier="internal">
+
+  <Thickness x:Key="TableViewCellPadding">2,0</Thickness>
+
+  <ControlTheme x:Key="{x:Type controls:CovenTableViewCell}" TargetType="controls:CovenTableViewCell">
+    <Setter Property="Padding" Value="{DynamicResource TableViewCellPadding}" />
+  </ControlTheme>
+
+</ResourceDictionary>

@@ -7,7 +7,7 @@ local UNIT_DEF_IS_COMMANDER = {}
 local UNIT_DEF_BUILD_POWER = {}
 local UNIT_DEF_HEALTH = {}
 local frame = 0
-local timer
+local timer = Spring.GetTimer()
 local commanders = {}
 
 local units_died_in_frame = {}

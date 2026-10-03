@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:common="using:gex.Common.Models"
              xmlns:controls="using:gex.Coven.Controls.MatchWindow"
-             x:Class="gex.Coven.Controls.MatchWindow.MatchViewChatMessages"
+             x:Class="gex.Coven.Views.MatchWindow.MatchViewChatMessages"
              x:Name="root">
 
     <ScrollViewer MaxHeight="600">

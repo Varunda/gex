@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
+             xmlns:match="using:gex.Coven.ViewModels.Match"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="match:BarMatchViewUnitStats"
+             x:Class="gex.Coven.Views.MatchWindow.MatchViewUnitCombatStats"
+             x:Name="Root">
+
+    <StackPanel Margin="16 8">
+
+        <TextBlock Text="{Binding SelectedEntity.Name, StringFormat='Viewing {0}'}"/>
+
+        <husk:Divider/>
+
+        <StackPanel Margin="0, 8" Orientation="Horizontal" Spacing="4">
+            <ItemsControl ItemsSource="{Binding Entities}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Command="{Binding #Root.((match:BarMatchViewUnitStats)DataContext).SelectEntity}" CommandParameter="{Binding Name}">
+                            <TextBlock Text="{Binding Name}" Foreground="{Binding HexColor}"/>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <husk:Divider/>
+
+        <TextBlock Text="combat stats"/>
+
+        <TableView ItemsSource="{Binding SelectedUnitStats}">
+            <TableView.Columns>
+
+                <TableViewColumn>
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Mobile units"/>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}"/>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+                <TableViewColumn>
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Made"/>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Made}"/>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                </TableViewColumn>
+
+            </TableView.Columns>
+        </TableView>
+    </StackPanel>
+
+</UserControl>

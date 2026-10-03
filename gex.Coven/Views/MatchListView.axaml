@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:table="using:gex.Coven.Table.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,12 +13,42 @@
              x:DataType="viewmodels:MatchListViewModel"
              x:Class="gex.Coven.Views.MatchListView">
 
-    <Grid Margin="5" RowDefinitions="Auto, *" Name="MatchListRoot">
+    <Grid Margin="5" RowDefinitions="Auto, *, *" Name="MatchListRoot">
         <Border Background="Gray">
             <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center"></TextBlock>
         </Border>
+        
+        <table:CovenTableView Grid.Row="1" ItemsSource="{Binding Filtered}" SelectedItem="{Binding SelectedMatch}">
+            <table:CovenTableView.Columns>
 
-        <TableView Grid.Row="1" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary" SelectedItem="{Binding SelectedMatch}">
+                <table:CovenTableViewColumn>
+                    <table:CovenTableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <controls:TableHeaderSorter
+                                FieldName="StartTime" HeaderName="When"
+                                HeaderDescription="Sort by when the match started"
+                                SortFieldValue="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField}"
+                                SortDirection="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection}"
+                                SortCommand="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_StartTime}">
+                            </controls:TableHeaderSorter>
+                        </DataTemplate>
+                    </table:CovenTableViewColumn.HeaderTemplate>
+
+                    <table:CovenTableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <controls:DateTimeView When="{Binding StartTime}"></controls:DateTimeView>
+                        </DataTemplate>
+                    </table:CovenTableViewColumn.CellTemplate>
+                </table:CovenTableViewColumn>
+
+                <table:CovenTableViewColumn Header="hello!" Binding="{Binding Engine}">
+                    
+                </table:CovenTableViewColumn>
+
+            </table:CovenTableView.Columns>
+        </table:CovenTableView>
+
+        <TableView Grid.Row="2" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary" SelectedItem="{Binding SelectedMatch}">
 
             <TableView.ContextMenu>
                 <ContextMenu>
@@ -111,49 +142,13 @@
                 <TableViewColumn Width="15*">
                     <TableViewColumn.HeaderTemplate>
                         <DataTemplate>
-                            <Button Tag="When" 
-                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_StartTime}"
-                                    ToolTip.Tip="Sort by when this match took place">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="When"/>
-
-                                    <ti:TablerIcon Width="16" Height="16"
-                                                   Icon="IconSortAscending">
-
-                                        <ti:TablerIcon.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:MatchListSortField.StartTime}">
-                                                </Binding>
-
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:SortDirection.Asc}">
-                                                </Binding>
-                                            </MultiBinding>
-                                        </ti:TablerIcon.IsVisible>
-                                    </ti:TablerIcon>
-
-                                    <ti:TablerIcon Width="16" Height="16"
-                                                   Icon="IconSortDescending">
-
-                                        <ti:TablerIcon.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:MatchListSortField.StartTime}">
-                                                </Binding>
-
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:SortDirection.Desc}">
-                                                </Binding>
-                                            </MultiBinding>
-                                        </ti:TablerIcon.IsVisible>
-                                    </ti:TablerIcon>
-                                </StackPanel>
-                            </Button>
+                            <controls:TableHeaderSorter
+                                FieldName="StartTime" HeaderName="When"
+                                HeaderDescription="Sort by when the match started"
+                                SortFieldValue="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField}"
+                                SortDirection="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection}"
+                                SortCommand="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_StartTime}">
+                            </controls:TableHeaderSorter>
                         </DataTemplate>
                     </TableViewColumn.HeaderTemplate>
 
@@ -282,49 +277,13 @@
                 <TableViewColumn Binding="{Binding Duration}" Width="10*">
                     <TableViewColumn.HeaderTemplate>
                         <DataTemplate>
-                            <Button Tag="Duration" 
-                                    Command="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_Duration}"
-                                    ToolTip.Tip="Sort by duration">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Duration"/>
-
-                                    <ti:TablerIcon Width="16" Height="16"
-                                                   Icon="IconSortAscending">
-
-                                        <ti:TablerIcon.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:MatchListSortField.Duration}">
-                                                </Binding>
-
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:SortDirection.Asc}">
-                                                </Binding>
-                                            </MultiBinding>
-                                        </ti:TablerIcon.IsVisible>
-                                    </ti:TablerIcon>
-
-                                    <ti:TablerIcon Width="16" Height="16"
-                                                   Icon="IconSortDescending">
-
-                                        <ti:TablerIcon.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:MatchListSortField.Duration}">
-                                                </Binding>
-
-                                                <Binding Path="#MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection"
-                                                         Converter="{StaticResource EnumToBoolConverter}"
-                                                         ConverterParameter="{x:Static ui:SortDirection.Desc}">
-                                                </Binding>
-                                            </MultiBinding>
-                                        </ti:TablerIcon.IsVisible>
-                                    </ti:TablerIcon>
-                                </StackPanel>
-                            </Button>
+                            <controls:TableHeaderSorter
+                                FieldName="Duration" HeaderName="Duration" 
+                                HeaderDescription="Sort by match duration"
+                                SortFieldValue="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortField}"
+                                SortDirection="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSortDirection}"
+                                SortCommand="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).TableSort_Duration}">
+                            </controls:TableHeaderSorter>
                         </DataTemplate>
                     </TableViewColumn.HeaderTemplate>
                 </TableViewColumn>

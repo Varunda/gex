@@ -348,10 +348,10 @@ namespace gex.Coven.Services.Bar {
         public event HeadlessEngineDownloadedHandler? EngineDownloaded;
 
         public delegate void HeadlessGameVersionDownloadedHandler(object sender, string gameID);
-        public event HeadlessGameVersionDownloadedHandler GameVersionDownloaded;
+        public event HeadlessGameVersionDownloadedHandler? GameVersionDownloaded;
 
         public delegate void HeadlessMapDownloadedHandler(object sender, string gameID);
-        public event HeadlessMapDownloadedHandler MapDownloaded;
+        public event HeadlessMapDownloadedHandler? MapDownloaded;
 
     }
 }

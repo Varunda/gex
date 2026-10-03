@@ -96,6 +96,7 @@ namespace gex.Coven.ViewModels {
 
             _ChatMessagesViewModel = new BarMatchChatMessagesViewModel(match);
             _TeamStatsViewModel = new BarMatchViewTeamStats(this);
+            _UnitStats = new BarMatchViewUnitStats(this);
         }
 
         [ObservableProperty]
@@ -116,6 +117,9 @@ namespace gex.Coven.ViewModels {
 
         [ObservableProperty]
         private BarMatchMilestonesViewModel _Milestones = new();
+
+        [ObservableProperty]
+        private BarMatchViewUnitStats _UnitStats = new();
 
         [RelayCommand]
         public void LaunchReplay() {

@@ -87,6 +87,7 @@ namespace gex.Controllers {
             Result<string, string> mapPath = await _MapImageRepository.GetMapPath(mapName, size);
 
             if (mapPath.IsOk == false) {
+                _Logger.LogWarning($"failed to load map image [map={mapName}] [size={size}] [error={mapPath.Error}]");
                 return StatusCode(500, $"failed to load map image: {mapPath.Error}]");
             }
 

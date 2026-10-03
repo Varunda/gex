@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 using gex.Coven.ViewModels.Match;
 using System.Collections;
 
-namespace gex.Coven.Controls.MatchWindow {
+namespace gex.Coven.Views.MatchWindow {
 
     public partial class MatchViewChatMessages : UserControl {
 

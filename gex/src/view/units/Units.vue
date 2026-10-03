@@ -301,7 +301,10 @@
                 const win = this.frames.create({
                     name: windowName,
                     title: `${unit.displayName} (${unit.definitionName})`,
-                    left: 20, top: 20, width: 640, height: 400,
+                    left: 64 + (this.windows.size * 24),
+                    top: 64 + (this.windows.size * 24),
+                    width: 640,
+                    height: 400,
                     movable: true,
                     resizable: true,
                     style: {
@@ -357,7 +360,12 @@
                     const misc: GroupedUnits = new GroupedUnits("Misc", 6);
 
                     for (const unit of this.units.data) {
-                        if (this.search != "" && unit.displayName.toLowerCase().indexOf(this.search.toLowerCase()) == -1) {
+                        if (this.search != "" &&
+                            unit.displayName.toLowerCase().indexOf(this.search.toLowerCase()) == -1
+                            && unit.description.toLowerCase().indexOf(this.search.toLowerCase()) == -1
+                            && unit.definitionName.toLowerCase().indexOf(this.search.toLowerCase()) == -1
+                        ) {
+
                             continue;
                         }
 
@@ -389,7 +397,9 @@
                 for (const set of sets) {
                     if (this.search != "") {
                         set.units = set.units.filter(iter => {
-                            return iter.displayName.toLowerCase().indexOf(this.search.toLowerCase()) > -1;
+                            return iter.displayName.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+                                || iter.description.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+                                || iter.definitionName.toLowerCase().indexOf(this.search.toLowerCase()) > -1;
                         });
                     }
 

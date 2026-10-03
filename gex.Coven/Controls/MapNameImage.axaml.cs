@@ -110,11 +110,15 @@ namespace gex.Coven.Controls {
             ImageSource.ContinueWith((Task<Bitmap?> task) => {
                 Bitmap? bitmap = task.Result;
 
+                if (bitmap == null) {
+                    _Logger?.LogWarning($"no bitmap after ImageSource was completed [map={map}] [size={size}]");
+                }
+
                 try {
                     bitmap?.Save(path, new JpegBitmapEncoderOptions() {
                         Quality = 100
                     });
-                    _Logger?.LogDebug($"cached image being loaded [map={map}] [size={size}] [path={path}]");
+                    _Logger?.LogDebug($"cached image being saved [map={map}] [size={size}] [path={path}]");
                 } catch (Exception ex) {
                     _Logger?.LogError(ex, $"failed to save loaded bitmap [path={path}]");
                 }

@@ -521,9 +521,6 @@ namespace gex.Code.Discord {
                         double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
                         double dps = weapon.DefaultDps;
 
-                        if (weapon.Burst != 0) { dps *= weapon.Burst; }
-                        if (weapon.Projectiles != 1) { dps *= weapon.Projectiles; }
-
                         embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} (";
                         if (weapon.Burst != 0) {
                             embed.Description += $"{weapon.Burst}x burst, ";
