@@ -158,7 +158,8 @@
         props: {
             gamemode: { type: Object as PropType<GroupedFactionGamemode>, required: true },
             user: { type: Object as PropType<BarUser>, required: true },
-            matches: { type: Array as PropType<BarMatch[]>, required: true }
+            matches: { type: Array as PropType<BarMatch[]>, required: true },
+            RecentMatchCount: { type: Number, required: true }
         },
 
         data: function() {
@@ -375,7 +376,7 @@
                     .sort((a, b) => {
                         return b.startTime.getTime() - a.startTime.getTime();
                     })
-                    .slice(0, this.matchCount)
+                    .slice(0, this.RecentMatchCount)
                     .sort((a, b) => {
                         return a.startTime.getTime() - b.startTime.getTime();
                     });
@@ -417,6 +418,12 @@
                 }).length;
             },
 
+        },
+
+        watch: {
+            RecentMatchCount: function(): void {
+                this.makeCharts();
+            }
         },
         
         components: {

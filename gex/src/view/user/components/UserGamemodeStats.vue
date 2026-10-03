@@ -4,8 +4,16 @@
             Gamemode stats
         </h2>
 
+        <div class="mb-3">
+            <label>
+                Recent game count
+                <info-hover text="How many games to show in the recent games graph for each gamemode"></info-hover>
+            </label>
+            <input v-model.number="recentMatchCount" class="form-control" style="max-width: 360px">
+        </div>
+
         <user-gamemode-stat-view v-for="gamemode in groupedFactionData"
-            :key="gamemode.gamemode" :gamemode="gamemode" :user="user" :matches="matches">
+            :key="gamemode.gamemode" :gamemode="gamemode" :user="user" :matches="matches" :recent-match-count="recentMatchCount">
         </user-gamemode-stat-view>
     </div>
     
@@ -36,7 +44,7 @@
 
         data: function() {
             return {
-
+                recentMatchCount: 20 as number
             }
         },
 
