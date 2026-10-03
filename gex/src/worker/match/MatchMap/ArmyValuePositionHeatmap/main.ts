@@ -9,7 +9,7 @@ import { ArmyValuePosition } from "view/match/compute/ArmyValuePosition";
 
 //
 onmessage = (ev) => {
-    const locs: ArmyValuePosition[] = ev.data[0];
+    const locs: [number, number, number][] = ev.data[0];
     const team: BarMatchTeam = ev.data[1]
     const imgW: number = ev.data[2];
     const imgH: number = ev.data[3];
@@ -24,19 +24,12 @@ onmessage = (ev) => {
     function toImgX(x: number): number { return x / mapW * imgW; };
     function toImgZ(z: number): number { return z / mapH * imgH; };
 
-    console.time(`match-map: building army value position density`);
+    console.time(`match-map: army value heatmap density`);
 
-    const heatmaps: d3.ContourMultiPolygon[][] = [];
-    for (const pos of locs) {
-        const heatmap = density.size([imgW, imgH])
-            .bandwidth(30)(pos.entries.map(iter => {
-                return [iter.x, iter.z, iter.metalValue];
-            })
-        );
-        heatmaps.push(heatmap);
-    }
+    const heatmap = density.size([imgW, imgH])
+        .bandwidth(30)(locs);
 
-    console.timeEnd(`match-map: building headmap density`);
+    console.timeEnd(`match-map: army value heatmap density`);
 
-    postMessage([heatmaps, team]);
+    postMessage([heatmap, team]);
 };

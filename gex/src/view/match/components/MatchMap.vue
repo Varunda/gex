@@ -147,7 +147,7 @@
         <img id="map-dims" :src="mapUrl" style="display: none;">
 
         <div class="mt-2 mx-2">
-            <div class="d-flex">
+            <div class="d-flex" style="gap: 0.5rem">
                 <button v-if="playback.playing == false" class="btn btn-sm btn-primary" @click="startUnitPositionPlayback" :disabled="!hasEvents">
                     Play
                 </button>
@@ -156,7 +156,7 @@
                     Pause
                 </button>
 
-                <span class="ms-3 flex-grow-1">
+                <span class="flex-grow-1">
                     Viewing units at {{ playback.frame / 30 | mduration }}
                 </span>
 
@@ -167,6 +167,11 @@
                 <toggle-button v-if="hasEvents" v-model="playback.scaleStrategicIcons" class="btn-sm">
                     Scale icons
                 </toggle-button>
+
+                <button v-if="hasEvents" class="btn btn-sm btn-primary" @click="generateArmyValuePositionHeatmap(playback.frame)">
+                    Show AV heatmap
+                    <info-hover text="Show a heatmap of the Army Value on this frame"></info-hover>
+                </button>
             </div>
 
             <div class="mt-1">
@@ -438,6 +443,12 @@
                     const ratio: number = this.imgW / this.imgH;
                     console.log(`MatchMap> image is ${this.imgW} x ${this.imgH}, ratio=${ratio}`);
 
+                    if (this.imgH > 1000) {
+                        this.imgH = 1000;
+                        this.imgW = 1000 * ratio;
+                        console.log(`MatchMap> capping map height to 1000 [imgW=${this.imgW}] [imgH=${this.imgH}]`);
+                    }
+
                     if (this.imgW > this.ScreenWidth) {
                         console.log(`MatchMap> screen is only ${this.ScreenWidth}px, image is ${this.imgW}, capping`);
 
@@ -586,14 +597,6 @@
                 this.addRadars();
                 this.addStaticDefense();
                 this.addAntiNuke();
-
-                /*
-                this.root.append("rect")
-                    .classed("map-no-remove", true)
-                    .attr("x", 0).attr("y", 0)
-                    .attr("width", this.imgW).attr("height", this.imgH)
-                    .style("fill", "#0a224244");
-                    */
             },
 
             makeInitialUnitDef: function(): void {
@@ -811,6 +814,11 @@
                 this.map.staticDefense = false;
                 this.map.factories = false;
                 this.map.antiNuke = false;
+
+                if (this.roots.armyValueHeatmap != null) {
+                    this.roots.armyValueHeatmap.remove();
+                    this.roots.armyValueHeatmap = null;
+                }
 
                 // if no unit defs are ticked to display, show them all by default
                 const toggledUnitDefs: UnitDefToggle[] = this.playback.selectedUnitDefs.filter(iter => iter.ticked == true);
@@ -1438,42 +1446,64 @@
             /**
              * add per-entity heatmaps of where the army value was spread
              */
-            addArmyValuePositionHeatmap: function(): void {
+            generateArmyValuePositionHeatmap: function(frame: number): void {
                 if (this.svg == null) { return console.warn(`cannot add building heatmap: svg is null`); }
                 if (this.root == null) { return console.warn(`cannot add building heatmap: root is null`); }
 
+                if (this.roots.armyValueHeatmap != null) {
+                    this.roots.armyValueHeatmap.remove();
+                    this.roots.armyValueHeatmap = null;
+                }
+
                 const armyUnitDefIds: Set<number> = new Set();
-                const metalValue: Map<string, number> = new Map();
+                const metalValue: Map<number, number> = new Map();
                 for (const unitDef of this.output.unitDefinitions) {
-                    metalValue.set(unitDef[1].definitionName, unitDef[1].metalCost);
+                    metalValue.set(unitDef[1].definitionID, unitDef[1].metalCost);
                     if (unitDef[1].weaponCount > 0) {
                         armyUnitDefIds.add(unitDef[0]);
                     }
                 }
 
-                this.roots.armyValueHeatmap = this.root.append("g");
+                // all unit positions from this frame
+                const unitPos: UnitPositionFrame[] = this.computedData.position.filter(iter => iter.frame == frame);
+                if (unitPos.length == 0) {
+                    return console.warn(`MatchMap> cannot render unit position on frame ${frame}, no positions available!`);
+                }
+
+                // map of unit ids and their position on this frame
+                const map: Map<number, UnitPositionFrame> = new Map();
+                for (const iter of unitPos) {
+                    map.set(iter.unitID, iter);
+                }
+
+                this.roots.armyValueHeatmap = this.root.append("g")
+                    .attr("id", "map-army-values");
 
                 const worker: Worker = new Worker(new URL(`${location.protocol}${location.host}/dist/worker/match/MatchMap/ArmyValuePositionHeatmap/view.js`));
 
-                const armyValues: ArmyValuePosition[] = [];
-
                 for (const team of this.match.teams) {
+                    const locs: [number, number, number][] = unitPos.filter(iter => {
+                        const definitionID: number | undefined = this.unitIdToDefId.get(iter.unitID);
+                        if (definitionID == undefined) {
+                            return false;
+                        }
 
-                    const armyValue: ArmyValuePosition = new ArmyValuePosition();
-                    armyValue.entityID = `team-${team.teamID}`;
-
-                    const locs: [number, number, number][] = this.output.unitsCreated.filter(iter => {
-                        return iter.teamID == team.teamID && armyUnitDefIds.has(iter.definitionID);
+                        return iter.teamID == team.teamID && armyUnitDefIds.has(definitionID);
                     }).map(iter => {
-                        const mv: number = metalValue.get(iter.definitionName) ?? 1;
-                        return [iter.unitX, iter.unitZ, mv];
+                        const definitionID: number | undefined = this.unitIdToDefId.get(iter.unitID);
+                        if (definitionID == undefined) {
+                            throw `MatchMap> missing definitionID for unitID ${iter.unitID} when generating army value heatmap`;
+                        }
+
+                        const mv: number = metalValue.get(definitionID) ?? 1;
+                        return [iter.x, iter.z, mv];
                     });
 
                     worker.postMessage([locs, team, this.imgW, this.imgH, this.mapW, this.mapH]);
                 }
                 
                 worker.onmessage = (ev: any) => {
-                    if (this.roots.buildingHeatmap == null) {
+                    if (this.roots.armyValueHeatmap == null) {
                         return;
                     }
 
@@ -1483,15 +1513,15 @@
 
                     const lerp = d3.interpolateBasisClosed([5, 10, 30, 40]);
 
-                    this.roots.buildingHeatmap.append("g")
-                        .attr("id", `map-building-heatmap-${team.teamID}`)
+                    this.roots.armyValueHeatmap.append("g")
+                        .attr("id", `map-army-value-${team.teamID}`)
                         .selectAll("path")
                         .data(heatmap)
                         .enter()
                         .append("path")
-                            .classed("map-building-heatmap", true)
+                            .classed("map-army-value-heatmap", true)
                             .style("pointer-events", "none")
-                            .style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
+                            //.style("opacity", this.map.buildingHeatmap == true ? "1" : "0")
                             .attr("d", d3.geoPath())
                             .attr("fill", (d) => {
                                 return `${team.hexColor}${Math.floor(lerp(d.value / max)).toString(16).padStart(2, "0")}`
@@ -2036,6 +2066,18 @@
                         .style("pointer-events", "none");
                 } else {
                     this.root?.selectAll(".map-anti-nuke")
+                        .style("opacity", "1")
+                        .style("pointer-events", "auto");
+                }
+            },
+
+            "map.armyValueHeatmap": function(): void {
+                if (this.map.armyValueHeatmap == false) {
+                    this.root?.selectAll(".map-army-value-heatmap")
+                        .style("opacity", "0")
+                        .style("pointer-events", "none");
+                } else {
+                    this.root?.selectAll(".map-army-value-heatmap")
                         .style("opacity", "1")
                         .style("pointer-events", "auto");
                 }
