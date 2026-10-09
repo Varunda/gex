@@ -37,6 +37,7 @@ namespace gex.Tests.Services.Parser {
                 Header = true,
                 HeightMap = true,
                 Smts = true,
+                Normals = true,
             }, cts.Token);
 
             Assert.IsTrue(ret.IsOk, $"got parse error: {ret.Error}");

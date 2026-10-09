@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkiaSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -32,9 +33,17 @@ namespace gex.Common.Models.Map {
 
         public string Author { get; set; } = "";
 
+        public string NormalMapFilename { get; set; } = "";
+
+        public string SpecularMapFilename { get; set; } = "";
+
         public BarMapFileHeader Header { get; set; } = new();
 
         public BarMapSmt? Smt { get; set; } = null;
+
+        public SKBitmap? NormalMap { get; set; } = null;
+
+        public SKBitmap? SpeculaMap { get; set; } = null;
         
     }
 }

@@ -157,7 +157,8 @@ namespace gex.Controllers.Api {
             }, cancel);
 
             if (result.IsOk == false) {
-                return ApiInternalError($"");
+                _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
+                return ApiInternalError($"failed to parse map: {result.Error}");
             }
 
             BarMapData data = result.Value;
@@ -216,7 +217,8 @@ namespace gex.Controllers.Api {
             }, cancel);
 
             if (result.IsOk == false) {
-                return ApiInternalError($"");
+                _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
+                return ApiInternalError($"failed to parse map: {result.Error}");
             }
 
             if (result.Value.Smt is null) {
@@ -230,7 +232,104 @@ namespace gex.Controllers.Api {
             long saveMs = timer.ElapsedMilliseconds;
             _Logger.LogInformation($"successfully saved map texture image [mapFilename={mapFilename}] [parse={parseMs}ms] [save={saveMs}ms]");
 
-            return File(texturePath, "image/png");
+            return File(System.IO.File.OpenRead(texturePath), "image/png");
+        }
+
+        /// <summary>
+        ///     get the normal image of a map
+        /// </summary>
+        /// <param name="mapFilename"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("{mapFilename}/normal")]
+        public async Task<IActionResult> GetMapNormal(string mapFilename, CancellationToken cancel = default) {
+            Directory.CreateDirectory(Path.Join(_StorageOptions.Value.MapLocation, "normal"));
+
+            string texturePath = Path.Join(_StorageOptions.Value.MapLocation, "normal", $"{mapFilename}.png");
+            if (System.IO.File.Exists(texturePath)) {
+                return File(System.IO.File.OpenRead(texturePath), "image/png");
+            }
+
+            string mapPath = Path.Join(_StorageOptions.Value.MapLocation, "maps", (mapFilename + ".sd7").EscapeRecoilFilesytemCharacters());
+            if (System.IO.File.Exists(mapPath) == false) {
+                return NotFound($"{nameof(BarMap)} {mapFilename}");
+            }
+
+            _Logger.LogInformation($"missing normal map for map [mapFilename={mapFilename}]");
+            Stopwatch timer = Stopwatch.StartNew();
+
+            Result<BarMapData, string> result = await _MapParser.Parse(mapPath, new BarMapParser.ParseOptions() {
+                HeightMap = false,
+                Header = true,
+                Smts = false,
+                Normals = true,
+            }, cancel);
+
+            if (result.IsOk == false) {
+                _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
+                return ApiInternalError($"failed to parse map: {result.Error}");
+            }
+
+            if (result.Value.NormalMap == null) {
+                throw new InvalidOperationException($"missing NormalMap");
+            }
+
+            long parseMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            using SKData png = result.Value.NormalMap.Encode(SKEncodedImageFormat.Png, 100);
+            await System.IO.File.WriteAllBytesAsync(texturePath, png.ToArray(), CancellationToken.None);
+            long saveMs = timer.ElapsedMilliseconds;
+            _Logger.LogInformation($"successfully saved normal map image [mapFilename={mapFilename}] [parse={parseMs}ms] [save={saveMs}ms]");
+
+            return File(System.IO.File.OpenRead(texturePath), "image/png");
+        }
+
+        /// <summary>
+        ///     get the specular image for a map
+        /// </summary>
+        /// <param name="mapFilename"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("{mapFilename}/specular")]
+        public async Task<IActionResult> GetMapSpecular(string mapFilename, CancellationToken cancel = default) {
+            Directory.CreateDirectory(Path.Join(_StorageOptions.Value.MapLocation, "specular"));
+
+            string texturePath = Path.Join(_StorageOptions.Value.MapLocation, "specular", $"{mapFilename}.png");
+            if (System.IO.File.Exists(texturePath)) {
+                return File(System.IO.File.OpenRead(texturePath), "image/png");
+            }
+
+            string mapPath = Path.Join(_StorageOptions.Value.MapLocation, "maps", (mapFilename + ".sd7").EscapeRecoilFilesytemCharacters());
+            if (System.IO.File.Exists(mapPath) == false) {
+                return NotFound($"{nameof(BarMap)} {mapFilename}");
+            }
+
+            _Logger.LogInformation($"missing normal map for map [mapFilename={mapFilename}]");
+            Stopwatch timer = Stopwatch.StartNew();
+
+            Result<BarMapData, string> result = await _MapParser.Parse(mapPath, new BarMapParser.ParseOptions() {
+                HeightMap = false,
+                Header = true,
+                Specular = true,
+            }, cancel);
+
+            if (result.IsOk == false) {
+                _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
+                return ApiInternalError($"failed to parse map: {result.Error}");
+            }
+
+            if (result.Value.SpeculaMap == null) {
+                throw new InvalidOperationException($"missing SpecularMap");
+            }
+
+            long parseMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            using SKData png = result.Value.SpeculaMap.Encode(SKEncodedImageFormat.Png, 100);
+            await System.IO.File.WriteAllBytesAsync(texturePath, png.ToArray(), CancellationToken.None);
+            long saveMs = timer.ElapsedMilliseconds;
+            _Logger.LogInformation($"successfully saved normal map image [mapFilename={mapFilename}] [parse={parseMs}ms] [save={saveMs}ms]");
+
+            return File(System.IO.File.OpenRead(texturePath), "image/png");
         }
 
         /// <summary>

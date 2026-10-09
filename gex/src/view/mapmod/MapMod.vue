@@ -4,7 +4,7 @@
         <div id="overlay"></div>
         <div id="map-list">
 
-            <select v-if="mapList.state == 'loaded'" v-model="mapFilename">
+            <select v-if="mapList.state == 'loaded'" v-model="mapFilename" class="form-select">
                 <option :value="null">pick a map</option>
                 <option v-for="map in mapListData" :key="map.fileName" :value="map.fileName">{{ map.name }}</option>
             </select>
@@ -62,10 +62,10 @@
     import { MapApi } from "api/MapApi";
 
     import * as three from "three";
-    import * as axios from "axios";
     import { MapControls } from "three/examples/jsm/controls/MapControls";
     import Stats from "three/examples/jsm/libs/stats.module";
     import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
+    import { Water } from "three/examples/jsm/objects/Water";
 
     const timer: three.Timer = new three.Timer();
     timer.connect(document);
@@ -77,7 +77,11 @@
         invert: false as boolean,
         sunIntensity: 1 as number,
         lightColor: 0xfffffff as number,
-        waterHeight: 0 as number
+        showWater: true as boolean,
+        waterHeight: 0 as number,
+        waterDistortion: 3.7 as number,
+        useNormal: true as boolean,
+        useEmissive: true as boolean,
     };
 
     let overlay = document.getElementById("overlay");
@@ -89,7 +93,9 @@
     let material: three.MeshStandardMaterial | null = null;
     let light: three.AmbientLight | null = null;
     let mapMesh: three.Mesh | null = null;
-    let water: three.Mesh | null = null;
+    let water: Water | null = null;
+    let normalMap: three.Texture | null = null;
+    let specularMap: three.Texture | null = null;
 
     function render(): void {
         stats.begin();
@@ -118,7 +124,7 @@
 
         data: function() {
             return {
-                mapFilename: "Pillar_of_Doom_V1" as string,
+                mapFilename: "hooked_1.1.1" as string,
                 mapData: Loadable.idle() as Loading<BarMapData>,
 
                 mapList: Loadable.idle() as Loading<BarMap[]>,
@@ -129,10 +135,14 @@
         },
 
         mounted: function(): void {
+            document.title = `Gex / Map view`;
             this.$nextTick(() => {
                 this.loadMaps();
                 this.makeThree();
-                this.loadMapData();
+
+                if (this.mapFilename != "") {
+                    this.loadMapData();
+                }
             });
         },
 
@@ -156,17 +166,20 @@
                 this.setupGui(root);
 
                 scene = new three.Scene();
-                camera = new three.PerspectiveCamera(75, root.clientWidth / root.clientHeight, 0.01, 1000);
+                camera = new three.PerspectiveCamera(75, root.clientWidth / root.clientHeight, 0.01, 2000000);
 
                 renderer = new three.WebGLRenderer();
                 renderer.setSize(root.clientWidth, root.clientHeight);
+                renderer.setAnimationLoop(render);
+                renderer.toneMapping = three.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 0.9;
                 root.append(renderer.domElement);
 
                 controls = new MapControls(camera, renderer.domElement);
                 controls.dampingFactor = 1;
 
                 controls.addEventListener("change", () => {
-                    render();
+                    //render();
                 });
 
                 camera.position.z = 5;
@@ -195,24 +208,23 @@
                 scene?.add(light);
 
                 const waterGeo = new three.BoxGeometry(1, 0.01, 1);
-                const waterTexture = new three.MeshBasicMaterial({
-                    color: 0x0000ff
-                })
-                water = new three.Mesh(waterGeo, waterTexture);
+                water = new Water(waterGeo, {
+                    textureHeight: 512,
+                    textureWidth: 512,
+                    sunDirection: new three.Vector3(),
+                    waterNormals: new three.TextureLoader().load('/img/waternormals.jpg', (texture) => {
+                        texture.wrapS = texture.wrapT = three.RepeatWrapping;
+                    }),
+                    sunColor: 0xffffff,
+                    waterColor: 0x006994cc,
+                    distortionScale: 3.7
+                });
                 scene?.add(water);
 
                 render();
             },
 
             loadMapData: async function(): Promise<void> {
-                this.mapData = Loadable.loading();
-                this.mapData = await MapApi.getMapData(this.mapFilename);
-                console.log(`MapMod> mapData request complete`);
-
-                if (this.mapData.state != "loaded") {
-                    return;
-                }
-
                 material?.dispose();
                 material = null;
 
@@ -221,6 +233,20 @@
                 }
                 mapMesh?.dispose();
                 mapMesh = null;
+
+                if (this.mapFilename == "") {
+                    return;
+                }
+
+                this.mapData = Loadable.loading();
+                this.mapData = await MapApi.getMapData(this.mapFilename);
+                console.log(`MapMod> mapData request complete`);
+
+                if (this.mapData.state != "loaded") {
+                    return;
+                }
+
+                document.title = `Gex / Map view / ${this.mapData.data.name}`;
 
                 const header: BarMapFileHeader = this.mapData.data.header;
                 this.heightMapData = header.heightMap;
@@ -235,15 +261,27 @@
                 }
 
                 const loader: three.TextureLoader = new three.TextureLoader();
-                const url: string = `/api/map/${this.mapFilename}`;
+                const url: string = `/api/map/${encodeURI(this.mapFilename)}`;
                 const texture = await loader.loadAsync(url + "/texture");
 
-                material = new three.MeshStandardMaterial( {
+                material = new three.MeshStandardMaterial({
                     side: three.DoubleSide,
                     map: texture,
                     displacementMap: heightMap,
-                    displacementScale: 10
+                    displacementScale: 10,
+
+                    normalMap: loader.load(url + "/normal"),
+                    normalScale: new three.Vector2(1.5, 1.5),
+
+                    emissiveMap: loader.load(url + "/specular"),
+                    emissiveIntensity: 100,
+
+                    metalness: 0.1,
+                    roughness: 0.92
                 });
+                normalMap = material.normalMap;
+                specularMap = material.emissiveMap;
+
                 mapMesh = new three.Mesh(mapGeometry, material);
                 scene?.add(mapMesh);
                 console.log(`MapMod> rendering`);
@@ -256,6 +294,7 @@
                     container: root,
                     injectStyles: true
                 });
+
                 gui.add(settings, "displacementScale").min(1).max(100).onChange((value: number) => {
                     if (material != null) {
                         material.displacementScale = value;
@@ -263,7 +302,7 @@
                     render();
                 });
 
-                gui.add(settings, "sunIntensity").min(0.01).max(100).onChange((value: number) => {
+                gui.add(settings, "sunIntensity").min(0.01).max(5).step(0.1).onChange((value: number) => {
                     if (light != null) {
                         light.intensity = value;
                     }
@@ -284,8 +323,47 @@
                     render();
                 });
 
-                gui.add(settings, "invert").onChange((value: boolean) => {
+                gui.add(settings, "waterDistortion").min(0).max(100).onChange((value: number) => {
+                    if (water != null) {
+                        water.material.uniforms["distortionScale"].value = value;
+                    }
+                });
 
+                gui.add(settings, "showWater").onChange((value: boolean) => {
+                    if (water != null) {
+                        water.visible = value;
+                    }
+                    render();
+                });
+
+                gui.add(settings, "useNormal").onChange((value: boolean) => {
+                    if (material == null) {
+                        return;
+                    }
+
+                    if (value == true) {
+                        material.normalMap = normalMap;
+                    } else {
+                        material.normalMap = null;
+                    }
+
+                    material.needsUpdate = true;
+                    render();
+                });
+
+                gui.add(settings, "useEmissive").onChange((value: boolean) => {
+                    if (material == null) {
+                        return;
+                    }
+
+                    if (value == true) {
+                        material.emissiveMap = specularMap;
+                    } else {
+                        material.emissiveMap = null;
+                    }
+
+                    material.needsUpdate = true;
+                    render();
                 });
             },
 
@@ -325,7 +403,7 @@
 
                 material.displacementMap = heightMap;
                 material.needsUpdate = true;
-                render();
+                //render();
             }
 
         },

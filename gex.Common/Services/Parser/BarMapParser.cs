@@ -4,8 +4,10 @@ using gex.Common.Models.Map;
 using gex.Common.Models.Options;
 using gex.Common.Services;
 using ImageMagick;
+using ImageMagick.Formats;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pfim;
 using SevenZip;
 using SevenZip.Extensions;
 using SkiaSharp;
@@ -14,6 +16,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -143,6 +146,14 @@ namespace gex.Common.Services.Parser {
                 string? extractorRadius = table.GetValueOrDefault("extractorradius")?.ToString();
                 string? tidalStrength = table.GetValueOrDefault("tidalstrength")?.ToString();
 
+                object? resourcesObj = table["resources"];
+                if (resourcesObj == null) {
+                    return $"missing 'resources' property in mapinfo table";
+                }
+                if (resourcesObj is not Dictionary<object, object> resources) {
+                    return $"expected property 'resources' to be a table, is a {resourcesObj.GetType().FullName} instead";
+                }
+
                 string? version = table.GetValueOrDefault("version")?.ToString();
 
                 BarMapData map = new();
@@ -153,6 +164,8 @@ namespace gex.Common.Services.Parser {
                 map.Description = table.GetValueOrDefault("description")?.ToString() ?? "";
                 map.Author = table.GetValueOrDefault("author")?.ToString() ?? "";
                 map.FileName = mapName;
+                map.NormalMapFilename = resources.GetValueOrDefault("detailnormaltex")?.ToString() ?? "";
+                map.SpecularMapFilename = resources.GetValueOrDefault("speculartex")?.ToString() ?? "";
 
                 Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, options, cancel);
                 if (header.IsOk == false) {
@@ -170,6 +183,32 @@ namespace gex.Common.Services.Parser {
                     map.Smt = smtResult.Value;
                 }
                 long parseSmtMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+                if (options.Normals == true) {
+                    string normalPath = Path.Join(mapWorkingFolder, "maps", map.NormalMapFilename);
+
+                    if (File.Exists(normalPath) == false) {
+                        _Logger.LogError($"missing normal path [map={map.Name}] [normalMapFilename={map.NormalMapFilename}]");
+                    }
+
+                    using FileStream readFs = File.OpenRead(normalPath);
+                    using IImage dds = Pfimage.FromStream(readFs);
+
+                    map.NormalMap = DdsToSKBitmap.Convert(dds);
+                }
+
+                if (options.Specular == true) {
+                    string specularMap = Path.Join(mapWorkingFolder, "maps", map.SpecularMapFilename);
+
+                    if (File.Exists(specularMap) == false) {
+                        _Logger.LogError($"missing normal path [map={map.Name}] [specularMapFilename={map.SpecularMapFilename}]");
+                    }
+
+                    using FileStream readFs = File.OpenRead(specularMap);
+                    using IImage dds = Pfimage.FromStream(readFs);
+
+                    map.SpeculaMap = DdsToSKBitmap.Convert(dds);
+                }
 
                 // 2025-04-25 TODO: can this value change? will it always be 64?
                 map.Width = header.Value.Width / 64;
@@ -355,7 +394,7 @@ namespace gex.Common.Services.Parser {
 
             // tiles aren't ordered, they can be in any order, so we use the data from the header to put the tiles in the correct spot
             byte[] output = new byte[outputWidth * outputHeight * 4];
-            for (int i = 0; i < tiles.Count; ++i) {
+            for (int i = 0; i < tileIndexes.Length; ++i) {
                 int refIndex = tileIndexes[i];
                 byte[] tileData = tiles[refIndex];
                 int tileX = i % tilesWide;
@@ -377,18 +416,7 @@ namespace gex.Common.Services.Parser {
             }
 
             SKBitmap bitmap = new(outputWidth, outputHeight);
-            for (int i = 0; i < output.Length; i += 4) {
-                int pixelOffset = i / 4;
-                int col = pixelOffset % outputWidth;
-                int row = pixelOffset / outputWidth;
-
-                bitmap.SetPixel(col, row, new SKColor(
-                    red: output[i + 0],
-                    green: output[i + 1],
-                    blue: output[i + 2],
-                    alpha: output[i + 3]
-                ));
-            }
+            bitmap.Pixels = RgbaArrayToSKBitmap.Convert(output, bitmap.Pixels);
 
             smt.Bitmap = bitmap;
             return smt;
@@ -449,6 +477,10 @@ namespace gex.Common.Services.Parser {
             public bool HeightMap { get; set; } = false;
 
             public bool Smts { get; set; } = false;
+
+            public bool Normals { get; set; } = false;
+
+            public bool Specular { get; set; } = false;
 
         }
 
