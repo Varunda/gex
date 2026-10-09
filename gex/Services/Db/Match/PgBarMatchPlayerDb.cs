@@ -68,21 +68,6 @@ namespace gex.Services.Db.Match {
                 },
                 cancel
             );
-            /*
-            using DbCommand cmd =  await _DbHelper.Command(conn, @"
-                SELECT *
-                    FROM bar_match_player
-                    WHERE game_id = @GameID
-            ");
-
-            cmd.AddParameter("GameID", gameID);
-            await cmd.PrepareAsync(cancel);
-
-            List<BarMatchPlayer> players = await _Reader.ReadList(cmd, cancel);
-            await conn.CloseAsync();
-
-            return players;
-            */
         }
 
         /// <summary>
@@ -114,9 +99,24 @@ namespace gex.Services.Db.Match {
                 SELECT *
                     FROM bar_match_player
                     WHERE user_id = @UserID;
-            ");
+            ", cancel);
 
             cmd.AddParameter("UserID", userID);
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatchPlayer> players = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return players;
+        }
+
+        public async Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match_player;
+            ", cancel);
+
             await cmd.PrepareAsync(cancel);
 
             List<BarMatchPlayer> players = await _Reader.ReadList(cmd, cancel);

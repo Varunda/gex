@@ -22,9 +22,9 @@ namespace gex.Coven.ViewModels.Match {
 
         public BarMatchMapViewModel() { }
 
-        public BarMatchMapViewModel(BarMatch match) {
-            _Map = match.Map;
-            _Match = match;
+        public BarMatchMapViewModel(MatchWindowViewModel vm) {
+            _Map = vm.Match.Match.Map;
+            _Match = vm.Match.Match;
         }
 
         [ObservableProperty]

@@ -24,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -415,6 +414,10 @@ namespace gex.Controllers {
         public IActionResult BYARLua() {
             FileStream fs = System.IO.File.OpenRead("BYAR.lua");
             return File(fs, "text/plain");
+        }
+
+        public IActionResult MapMod() {
+            return View();
         }
 
     }

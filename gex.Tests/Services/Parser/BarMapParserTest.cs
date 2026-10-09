@@ -7,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,11 +33,15 @@ namespace gex.Tests.Services.Parser {
             BarMapParser parser = services.BuildServiceProvider().GetRequiredService<BarMapParser>();
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-            Result<BarMap, string> ret = await parser.Parse("./resources/maps/hooked_1.1.1.sd7", cts.Token);
+            Result<BarMapData, string> ret = await parser.Parse("./resources/maps/hooked_1.1.1.sd7", new BarMapParser.ParseOptions() {
+                Header = true,
+                HeightMap = true,
+                Smts = true,
+            }, cts.Token);
 
             Assert.IsTrue(ret.IsOk, $"got parse error: {ret.Error}");
 
-            BarMap map = ret.Value;
+            BarMapData map = ret.Value;
             Assert.IsNotNull(map);
 
             Assert.AreEqual("Hooked 1.1.1", map.Name);

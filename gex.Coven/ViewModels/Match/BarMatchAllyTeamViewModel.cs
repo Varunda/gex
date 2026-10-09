@@ -17,8 +17,8 @@ namespace gex.Coven.ViewModels.Match {
         }
 
         public BarMatchAllyTeamViewModel(BarMatch match, BarMatchAllyTeam allyTeam) {
-            _Name = $"Team {allyTeam.AllyTeamID + 1}";
-            _Won = allyTeam.Won;
+            Name = $"Team {allyTeam.AllyTeamID + 1}";
+            Won = allyTeam.Won;
 
             foreach (BarMatchTeam team in match.Teams.OrderBy(iter => iter.TeamID)) {
                 if (team.AllyTeamID != allyTeam.AllyTeamID) {
@@ -26,36 +26,40 @@ namespace gex.Coven.ViewModels.Match {
                 }
 
                 _Teams.Add(new BarMatchTeamViewModel(match, team));
-                if (_ColorBrush == Brushes.Transparent) {
-                    _HexColor = _Teams[0].HexColor;
-                    _ColorBrush = _Teams[0].ColorBrush;
-                    _BackgroundColorBrush = new SolidColorBrush(((SolidColorBrush)_ColorBrush).Color, 0.2d);
+                if (ColorBrush == Brushes.Transparent) {
+                    HexColor = _Teams[0].HexColor;
+                    ColorBrush = _Teams[0].ColorBrush;
+                    BackgroundColorBrush = new SolidColorBrush(((SolidColorBrush)ColorBrush).Color, 0.2d);
                 }
             }
 
-            _TeamCount = _Teams.Count;
+            TeamCount = _Teams.Count;
         }
 
         [ObservableProperty]
-        private string _Name = "";
+        public partial string Name { get; set; } = "";
 
         [ObservableProperty]
-        private bool _Won = false;
+        public partial bool Won { get; set; } = false;
 
         [ObservableProperty]
-        private string _HexColor = "";
+        public partial string HexColor { get; set; } = "";
 
         [ObservableProperty]
-        private IBrush _ColorBrush = Brushes.Transparent;
+        public partial IBrush ColorBrush { get; set; } = Brushes.Transparent;
 
         [ObservableProperty]
-        private IBrush _BackgroundColorBrush = Brushes.Transparent;
+        public partial IBrush BackgroundColorBrush { get; set; } = Brushes.Transparent;
 
         [ObservableProperty]
-        private int _TeamCount = 0;
+        public partial int TeamCount { get; set; } = 0;
 
         [ObservableProperty]
         private ObservableCollection<BarMatchTeamViewModel> _Teams = new ObservableCollection<BarMatchTeamViewModel>();
+
+        public bool HasUserID(long userID) {
+            return Teams.FirstOrDefault(iter => iter.UserIDs.Contains(userID)) != null;
+        }
 
     }
 }

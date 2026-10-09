@@ -51,7 +51,6 @@ namespace gex {
                         return c.Request.Path.StartsWithSegments("/api");
                     };
                 })
-                //.AddNpgsql()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(AppActivitySource.ActivitySourceName))
                 .AddSource(AppActivitySource.ActivitySourceName)
                 .Build();
@@ -85,7 +84,6 @@ namespace gex {
 
                     _Host = CreateHostBuilder(args).Build();
                     logger = _Host.Services.GetRequiredService<ILogger<Program>>();
-                    MapDapperTypes(logger);
 
                     hostBuilt = true;
                     Console.WriteLine($"Took {timer.ElapsedMilliseconds}ms to build program");
@@ -204,27 +202,6 @@ namespace gex {
                 });
 
             return host;
-        }
-
-        /// <summary>
-        ///		automatically perform Dapper mapping using an attribute
-        /// </summary>
-        /// <param name="logger"></param>
-        private static void MapDapperTypes(ILogger<Program> logger) {
-            /*
-            Type[] types = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(iter => iter.GetCustomAttribute<DapperColumnsMappedAttribute>() != null).ToArray();
-
-            foreach (Type t in types) {
-                logger.LogDebug($"adding dapper column mapping [type={t.FullName}]");
-                SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
-            }
-
-            SqlMapper.AddTypeHandler(new DapperSqlMappers.UIntHandler());
-            SqlMapper.AddTypeHandler(new DapperSqlMappers.ULongHandler());
-            SqlMapper.AddTypeHandler(new DapperSqlMappers.JsonbHandler());
-            SqlMapper.AddTypeHandler(new DapperSqlMappers.MapSymmetryAxisHandler());
-            */
         }
 
         /// <summary>

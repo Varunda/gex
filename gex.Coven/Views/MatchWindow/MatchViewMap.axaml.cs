@@ -16,21 +16,5 @@ namespace gex.Coven.Views.MatchWindow {
             InitializeComponent();
         }
 
-        protected override void OnLoaded(RoutedEventArgs e) {
-            base.OnLoaded(e);
-
-            if (DataContext == null) {
-                return;
-            }
-
-            if (DataContext is BarMatchViewModel bvm) {
-                DataContext = new BarMatchMapViewModel(bvm.Match);
-            }
-
-            if (DataContext is not BarMatchMapViewModel vm) {
-                throw new InvalidOperationException($"DataContext is not a {nameof(BarMatchMapViewModel)} [type={DataContext.GetType().Name}]");
-            }
-        }
-
     }
 }

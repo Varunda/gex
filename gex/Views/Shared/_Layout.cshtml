@@ -90,7 +90,7 @@
     </style>
 
     @if (ViewBag.HideHeader != true) {
-        <nav class="navbar navbar-expand-lg bg-body-tertiary py-1 mb-2 container-fluid-negative px-3">
+        <nav id="nav" class="navbar navbar-expand-lg bg-body-tertiary py-1 mb-2 container-fluid-negative px-3">
             <div class="navbar-collapse">
                 <a class="navbar-brand py-0" href="/">
                     <img src="/img/logo0.png" style="height: 100%; width: 48px;" title="homepage" />
@@ -175,7 +175,7 @@
         </nav>
     }
 
-    <div style="font-family: 'Atkinson Hyperlegible'">
+    <div style="font-family: 'Atkinson Hyperlegible'" id="root">
         <main role="main">
             @RenderBody()
         </main>

@@ -291,66 +291,6 @@ namespace gex.Coven.ViewModels.Match {
             }
 
             List<ChartSeries> sortedSeries = new(coll.Series);
-            sortedSeries.Sort((ChartSeries a, ChartSeries b) => {
-                // a=ally team, b=ally team => smaller ally team
-                // a=ally team, b=team      => if b is in team a, then a>b, else b>a
-                // a=team,      b=ally team => if a is in team b, then b>a, else a>b
-                // a=team,      b=team      => if a and b are on the same team, sort by label, else smaller team
-
-                BarMatchEntity? aEnt = _AllEntities.FirstOrDefault(iter => iter.Name == a.Name);
-                if (aEnt == null) {
-                    return 1;
-                }
-                BarMatchEntity? bEnt = _AllEntities.FirstOrDefault(iter => iter.Name == b.Name);
-                if (bEnt == null) {
-                    return -1;
-                }
-
-                int res = 0;
-
-                int aId = aEnt.SortOrder;
-                int bId = bEnt.SortOrder;
-
-                bool aIsAt = aEnt.TeamIDs.Count > 1;
-                bool bIsAt = bEnt.TeamIDs.Count > 1;
-
-                if (aIsAt == true && bIsAt == true) {
-                    res = aId - bId;
-                } else if (aIsAt == true && bIsAt == false) {
-                    int bTeam = Match.Match.Teams.FirstOrDefault(iter => iter.TeamID == bId)?.AllyTeamID ?? -1;
-
-                    if (bTeam == aId) {
-                        res = -1; // A is an ally team, and B is part of this team, so A is smaller (higher in list)
-                    } else {
-                        // A is an ally team, but B is not part of this team, so smaller team wins
-                        // if A is ally team 1, and B is on ally team 2, B goes after A (1)
-                        res = aId - bTeam;
-                    }
-                } else if (aIsAt == false && bIsAt == true) {
-                    int aTeam = Match.Match.Teams.FirstOrDefault(iter => iter.TeamID == aId)?.AllyTeamID ?? -1;
-
-                    if (aTeam == bId) {
-                        res = 1; // B is an ally team, and A is part of this team, so B is smaller (higher in list)
-                    } else {
-                        // B is an ally team, but A is not part of this team, so smaller team wins
-                        // if B is ally team 1, and A is on ally team 2, then B goes after A (1)
-                        res = aTeam - bId;
-                    }
-                } else if (aIsAt == false && bIsAt == false) {
-                    int aTeam = Match.Match.Teams.FirstOrDefault(iter => iter.TeamID == aId)?.AllyTeamID ?? -1;
-                    int bTeam = Match.Match.Teams.FirstOrDefault(iter => iter.TeamID == bId)?.AllyTeamID ?? -1;
-
-                    if (aTeam == bTeam) {
-                        res = aEnt.Name.CompareTo(b.Name);
-                    } else {
-                        res = aTeam - bTeam;
-                    }
-                } else {
-                    throw new InvalidOperationException($"unchecked logic state");
-                }
-
-                return res;
-            });
 
             SelectedTeamStatKey = key;
             SelectedTeamStat = coll;

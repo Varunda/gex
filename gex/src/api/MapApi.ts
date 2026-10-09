@@ -1,6 +1,7 @@
 import { BarMap } from "model/BarMap";
 import ApiWrapper from "./ApiWrapper";
 import { Loading } from "Loading";
+import { BarMapData } from "model/BarMapData";
 
 
 export class MapApi extends ApiWrapper<BarMap> {
@@ -13,6 +14,10 @@ export class MapApi extends ApiWrapper<BarMap> {
 
     public static getAll(): Promise<Loading<BarMap[]>> {
         return MapApi.get().readList(`/api/map/all`, BarMap.parse);
+    }
+
+    public static getMapData(mapFilename: string): Promise<Loading<BarMapData>> {
+        return MapApi.get().readSingle(`/api/map/${mapFilename}/data`, BarMapData.parse);
     }
 
     public static updateStartSpotPositionRoleOverride(mapFilename: string, version: number, position: string, role: string, maxRadius: number | null): Promise<Loading<void>> {

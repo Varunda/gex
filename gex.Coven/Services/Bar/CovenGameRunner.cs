@@ -4,6 +4,7 @@ using gex.Common.Models.Match;
 using gex.Common.Services.Bar;
 using gex.Coven.Models.Config;
 using gex.Coven.Services.Util;
+using HarfBuzzSharp;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -70,6 +71,12 @@ namespace gex.Coven.Services.Bar {
                     _Logger.LogDebug($"downloaded engine [engine={match.Engine}] [timer={dlTimer.ElapsedMilliseconds}ms]");
                 }
 
+                if (_EngineDownloader.HasEngine(match.Engine) == false) {
+                    FatalError?.Invoke(this, match.ID, $"failed to download engine '{match.Engine}'");
+                    _Logger.LogError($"failed to download engine [engine={match.Engine}] [gameID={match.ID}]");
+                    return;
+                }
+
                 EngineDownloaded?.Invoke(this, match.ID);
 
                 int attempts = 3;
@@ -124,6 +131,40 @@ namespace gex.Coven.Services.Bar {
                 if (File.Exists(engineMapPath) == false) {
                     File.Copy(mapPath, Path.Join(enginePath, "maps", mapName));
                 }
+
+                // ensure the widget (what the fuck is a wupget) is in the right place
+                string widgetsDirectory = Path.Join(enginePath, "LuaUI", "Widgets");
+                if (Directory.Exists(widgetsDirectory) == false) {
+                    Directory.CreateDirectory(widgetsDirectory);
+                }
+
+                string widgetSource = Path.Join(ShellUtil.GetWorkingDirectory(), "cache", "gex.lua");
+                if (File.Exists(widgetSource) == false) {
+                    throw new InvalidOperationException($"missing gex.lua [path={widgetSource}]");
+                }
+
+                string widgetLocation = Path.Join(widgetsDirectory, "gex.lua");
+                if (File.Exists(widgetLocation)) {
+                    File.Delete(widgetLocation);
+                }
+                File.Copy(widgetSource, widgetLocation);
+
+                string luaUiConfigDirectory = Path.Join(enginePath, "LuaUI", "Config");
+                _Logger.LogDebug($"ensuring data dir contains LuaUI config that enables gex [gameID={gameID}] [luaUi={luaUiConfigDirectory}]");
+                if (Directory.Exists(luaUiConfigDirectory) == false) {
+                    Directory.CreateDirectory(luaUiConfigDirectory);
+                }
+
+                string sourceByar = Path.Join(ShellUtil.GetWorkingDirectory(), "cache", "BYAR.lua");
+                if (File.Exists(sourceByar) == false) {
+                    throw new InvalidOperationException($"missing BYAR.lua [path={sourceByar}]");
+                }
+
+                string luaUiConfig = Path.Join(luaUiConfigDirectory, "BYAR.lua");
+                if (File.Exists(luaUiConfig) == true) {
+                    File.Delete(luaUiConfig);
+                }
+                File.Copy(sourceByar, luaUiConfig);
 
                 MapDownloaded?.Invoke(this, match.ID);
 
@@ -352,6 +393,9 @@ namespace gex.Coven.Services.Bar {
 
         public delegate void HeadlessMapDownloadedHandler(object sender, string gameID);
         public event HeadlessMapDownloadedHandler? MapDownloaded;
+
+        public delegate void HeadlessFatalErrorHandler(object sender, string gameID, string error);
+        public event HeadlessFatalErrorHandler? FatalError;
 
     }
 }

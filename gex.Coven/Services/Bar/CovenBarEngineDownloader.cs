@@ -24,9 +24,11 @@ namespace gex.Coven.Services.Bar {
 
         private const string BASE_URL = "https://github.com/beyond-all-reason/spring/releases/download";
 
+        // {0} => version, {1} => windows/linux
         private List<string> VERSION_PATH_TEMPLATES = [
-            "{0}/spring_bar_.rel2501.{0}_{1}-64-minimal-portable.7z", // {0} => version, {1} => windows/linux
-            "{0}/recoil_{0}_amd64-{1}.7z"
+            "{0}/spring_bar_.rel2501.{0}_{1}-64-minimal-portable.7z",
+            "{0}/recoil_{0}_amd64-{1}.7z",
+            "spring_bar_{{BAR105}}{0}/spring_bar_.BAR105.{0}_{1}-64-minimal-portable.7z"
         ];
 
         static CovenBarEngineDownloader() {
@@ -44,7 +46,16 @@ namespace gex.Coven.Services.Bar {
             UserOptions userOptions = _UserOptionsService.Load();
             string enginePath = Path.Join(userOptions.InstallFolder, "engine", version);
 
-            return Directory.Exists(enginePath);
+            if (Directory.Exists(enginePath) == false) {
+                return false;
+            }
+
+            string appPath = Path.Join(enginePath, "spring");
+            if (OperatingSystem.IsWindows()) {
+                appPath += ".exe";
+            }
+
+            return File.Exists(appPath);
         }
 
         public async Task DownloadEngine(string version, CancellationToken cancel) {
@@ -61,12 +72,17 @@ namespace gex.Coven.Services.Bar {
 
             HttpResponseMessage? response = null;
             foreach (string template in VERSION_PATH_TEMPLATES) {
+                if (version.Contains(' ')) {
+                    version = version.Split(' ')[0];
+                }
+
                 string versionPath = string.Format(template, version, OperatingSystem.IsWindows() ? "windows" : "linux");
                 _Logger.LogTrace($"trying to get engine version [template={template}] [versionPath={versionPath}]");
                 response = await _Http.GetAsync(BASE_URL + "/" + versionPath, cancel);
 
                 if (response.IsSuccessStatusCode == false) {
                     _Logger.LogWarning($"failed to download engine [version={version}] [status code={response.StatusCode}]");
+                    response = null;
                 } else {
                     _Logger.LogInformation($"successfully downloaded engine [version={version}] [url={versionPath}]");
                     break;
@@ -81,6 +97,10 @@ namespace gex.Coven.Services.Bar {
             string outputPath = enginePath + Path.DirectorySeparatorChar + "engine.7z";
             using (FileStream output = File.OpenWrite(outputPath)) {
                 await response.Content.CopyToAsync(output, cancel);
+            }
+
+            if (File.Exists(outputPath) == false) {
+                throw new InvalidOperationException($"missing engine archive at '{outputPath}' after download");
             }
 
             using ArchiveReader reader = new ArchiveReader(outputPath);

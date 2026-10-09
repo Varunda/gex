@@ -406,6 +406,8 @@
     import AccountUtil from "util/Account";
     import Toaster from "Toaster";
 
+    import * as three from "three";
+
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
 

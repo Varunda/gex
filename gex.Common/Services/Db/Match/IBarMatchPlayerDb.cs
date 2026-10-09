@@ -6,6 +6,7 @@ namespace gex.Common.Services.Db.Match {
         Task<List<BarMatchPlayer>> GetByGameID(string gameID, CancellationToken cancel);
         Task<List<BarMatchPlayer>> GetByGameIDs(IEnumerable<string> IDs, CancellationToken cancel);
         Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel);
+        Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel);
         Task Insert(BarMatchPlayer player);
     }
 }

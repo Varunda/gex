@@ -15,17 +15,21 @@
 
         <husk:Divider/>
 
-        <StackPanel Margin="0, 8" Orientation="Horizontal" Spacing="4">
-            <ItemsControl ItemsSource="{Binding Entities}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Command="{Binding #Root.((match:BarMatchViewUnitStats)DataContext).SelectEntity}" CommandParameter="{Binding Name}">
-                            <TextBlock Text="{Binding Name}" Foreground="{Binding HexColor}"/>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Entities}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" ItemSpacing="8"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Command="{Binding #Root.((match:BarMatchViewUnitStats)DataContext).SelectEntity}" CommandParameter="{Binding Name}">
+                        <TextBlock Text="{Binding Name}" Foreground="{Binding HexColor}"/>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <husk:Divider/>
 

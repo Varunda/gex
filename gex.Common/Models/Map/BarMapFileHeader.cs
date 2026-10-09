@@ -31,7 +31,11 @@
 
         public int FeatureMapOffset { get; set; }
 
+        public int ExtraHeaderCount { get; set; }
+
         public ushort[] HeightMap { get; set; } = [];
+
+        public int[] TileIndexes { get; set; } = [];
 
     }
 }

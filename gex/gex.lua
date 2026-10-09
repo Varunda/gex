@@ -37,7 +37,7 @@ for uDefID, uDef in pairs(UnitDefs) do
 end
 
 function writeJson(action, data, includeFrame)
-    file = io.open("actions.json", "a")
+    file = io.open("./LuaUI/Config/actions.json", "a")
     io.output(file)
 
     writeJsonRaw(action, data, includeFrame)
@@ -797,7 +797,7 @@ function widget:Initialize()
     -- https://github.com/beyond-all-reason/Beyond-All-Reason/blob/fa2cd41dd049ac9cda9422e4860a7b2d8e39efa6/luarules/gadgets/dev_replay_data.lua#L3
     widgetHandler:RegisterGlobal("UnitDamagedReplay", UnitDamagedReplay);
 
-    file = io.open("actions.json", "w")
+    file = io.open("./LuaUI/Config/actions.json", "w")
     io.output(file)
     io.write("{\"action\":\"init\",\"frame\":0,\"version\":1}\n")
 

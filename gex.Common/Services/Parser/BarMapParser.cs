@@ -3,14 +3,18 @@ using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Options;
 using gex.Common.Services;
+using ImageMagick;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SevenZip;
 using SevenZip.Extensions;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.PortableExecutable;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,6 +33,10 @@ namespace gex.Common.Services.Parser {
             _LuaRunner = luaRunner;
         }
 
+        public Task<Result<BarMapData, string>> Parse(string location, CancellationToken cancel) {
+            return Parse(location, new ParseOptions(), cancel);
+        }
+
         /// <summary>
         ///		parse a .sd7 map at the location given
         /// </summary>
@@ -36,8 +44,7 @@ namespace gex.Common.Services.Parser {
         /// <param name="cancel"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<Result<BarMap, string>> Parse(string location, CancellationToken cancel) {
-
+        public async Task<Result<BarMapData, string>> Parse(string location, ParseOptions options, CancellationToken cancel) {
             Stopwatch timer = Stopwatch.StartNew();
             Stopwatch stepTimer = Stopwatch.StartNew();
 
@@ -67,7 +74,7 @@ namespace gex.Common.Services.Parser {
 
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // NOTE: because Gex is actually running the Lua,
-                // the mapinfo files will normalize all keys to lowercase,	as that's what the Lua file does
+                // the mapinfo files will normalize all keys to lowercase, as that's what the Lua file does
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                 string lua = await File.ReadAllTextAsync(mapInfoFile, cancel);
@@ -99,6 +106,7 @@ namespace gex.Common.Services.Parser {
                 string mapFile = table.GetValueOrDefault("mapfile")?.ToString()
                     ?? "maps/" + name + ".smf"; // if the mapfile is not given, looks like it defaults to the map name
 
+                // get the smf
                 string? smfLocation = GetSmfLocation(mapWorkingFolder, mapFile);
                 if (smfLocation == null) {
                     return $"failed to find .smf file with name of '{mapFile}' in '{mapWorkingFolder}'";
@@ -106,8 +114,18 @@ namespace gex.Common.Services.Parser {
                 if (File.Exists(smfLocation) == false) {
                     throw new Exception($"expected smfLocation '{smfLocation}' to exist");
                 }
-
                 long findSmfMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+                // get the smt file
+                string? smtLocation = GetSmtLocation(mapWorkingFolder, mapFile);
+                if (options.Smts == true) {
+                    if (smtLocation == null) {
+                        return $"failed to find .smt file with a name of '{mapFile}' in '{mapWorkingFolder}'";
+                    }
+                    if (File.Exists(smtLocation) == false) {
+                        throw new InvalidOperationException($"expected smtLocation '{smtLocation}' to exist");
+                    }
+                }
 
                 object? atmoObj = table["atmosphere"];
                 if (atmoObj == null) {
@@ -127,7 +145,7 @@ namespace gex.Common.Services.Parser {
 
                 string? version = table.GetValueOrDefault("version")?.ToString();
 
-                BarMap map = new();
+                BarMapData map = new();
                 map.Name = name; // + (version == null ? "" : $" {version}");
                 if (version != null && map.Name.EndsWith(version) == false) {
                     map.Name += $" {version}";
@@ -136,11 +154,22 @@ namespace gex.Common.Services.Parser {
                 map.Author = table.GetValueOrDefault("author")?.ToString() ?? "";
                 map.FileName = mapName;
 
-                Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, cancel);
+                Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, options, cancel);
                 if (header.IsOk == false) {
                     return $"failed to read .smf at '{smfLocation}': {header.Error}";
                 }
                 long parseSmfMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+                map.Header = header.Value;
+
+                if (options.Smts == true) {
+                    Result<BarMapSmt, string> smtResult = await ParseSmt(smtLocation!, map.Header.TileIndexes, map.Header.Width / 128, map.Header.Height / 128, 32);
+                    if (smtResult.IsOk == false) {
+                        return $"failed to parse smt at '{smtLocation}': {smtResult.Error}";
+                    }
+
+                    map.Smt = smtResult.Value;
+                }
+                long parseSmtMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 // 2025-04-25 TODO: can this value change? will it always be 64?
                 map.Width = header.Value.Width / 64;
@@ -178,7 +207,7 @@ namespace gex.Common.Services.Parser {
                 }
 
                 _Logger.LogDebug($"parsed map steps [map name={map.Name}] [unzip={unzipMs}ms]"
-                    + $" [run lua={runLuaMs}ms] [find smf={findSmfMs}] [parse smf={parseSmfMs}ms]");
+                    + $" [run lua={runLuaMs}ms] [find smf={findSmfMs}] [parse smf={parseSmfMs}ms] [parse smt={parseSmtMs}ms]");
                 _Logger.LogInformation($"parsed map info successfully [map name={map.Name}] [timer={timer.ElapsedMilliseconds}ms] [location={location}]");
 
                 return map;
@@ -191,7 +220,7 @@ namespace gex.Common.Services.Parser {
             }
         }
 
-        private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, CancellationToken cancel) {
+        private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, ParseOptions options, CancellationToken cancel) {
             if (File.Exists(location) == false) {
                 return $"failed to open SMF at '{location}'";
             }
@@ -220,8 +249,149 @@ namespace gex.Common.Services.Parser {
             header.MinHeight = reader.ReadFloat32LE();
             header.MaxHeight = reader.ReadFloat32LE();
             header.HeightMapOffset = reader.ReadInt32LE();
+            header.TypeMapOffset = reader.ReadInt32LE();
+            header.TileIndexOffset = reader.ReadInt32LE();
+            header.MiniMapOffset = reader.ReadInt32LE();
+            header.MetalMapOffset = reader.ReadInt32LE();
+            header.FeatureMapOffset = reader.ReadInt32LE();
+            header.ExtraHeaderCount = reader.ReadInt32LE();
+
+            for (int i = 0; i < header.ExtraHeaderCount; ++i) {
+                int size = reader.ReadInt32LE();
+                int type = reader.ReadInt32LE();
+
+                Span<byte> _ = reader.Read(size);
+            }
+
+            if (options.HeightMap == true) {
+                reader.Seek(header.HeightMapOffset);
+                int heightMapSize = (header.Width + 1) * (header.Height + 1);
+                header.HeightMap = new ushort[heightMapSize];
+
+                Span<byte> rawHeights = reader.Read(heightMapSize * 2);
+                ByteArrayReader heightReader = new(rawHeights.ToArray());
+                for (int i = 0; i < heightMapSize; ++i) {
+                    ushort val = heightReader.ReadUInt16LE();
+                    header.HeightMap[i] = val;
+                }
+            }
+
+            if (options.Smts == true) {
+                reader.Seek(header.TileIndexOffset);
+                int tileCount = reader.ReadInt32LE();
+                int totalTileCount = reader.ReadInt32LE();
+                int tileCountHere = reader.ReadInt32LE();
+
+                string smtFileName = Encoding.ASCII.GetString(reader.ReadUntilNull());
+                int tileIndexMapSize = (header.Width / 4) * (header.Height / 4);
+
+                byte[] tileIndexMap = reader.Read(tileIndexMapSize * 4).ToArray();
+                if (tileIndexMap.Length % 4 != 0) {
+                    throw new InvalidOperationException($"tileIndexMap must be divisible by 4, length was {tileIndexMap.Length}");
+                }
+
+                header.TileIndexes = new int[tileIndexMap.Length / 4];
+                for (int i = 0; i < tileIndexMap.Length; i += 4) {
+                    header.TileIndexes[i / 4] = 0
+                        | (tileIndexMap[i + 3] << 24)
+                        | (tileIndexMap[i + 2] << 16)
+                        | (tileIndexMap[i + 1] << 8)
+                        | (tileIndexMap[i + 0] << 0);
+                }
+            }
 
             return header;
+        }
+
+        private async Task<Result<BarMapSmt, string>> ParseSmt(string location, int[] tileIndexes,
+            int mapWidthUnits, int mapHeightUnits, int mipmapSize = 32, CancellationToken cancel = default) {
+
+            if (File.Exists(location) == false) {
+                return $"failed to open SMT at '{location}'";
+            }
+
+            byte[] bytes = await File.ReadAllBytesAsync(location, cancel);
+            ByteArrayReader reader = new(bytes);
+
+            string magic = reader.ReadAsciiString(16);
+            if (magic != "spring tilefile\0") {
+                return $"wrong file magic (got '{magic}')";
+            }
+
+            int version = reader.ReadInt32LE();
+            if (version != 1) {
+                return $"unsupported SMT version {version}";
+            }
+
+            int tileCount = reader.ReadInt32LE();
+            int tileSize = reader.ReadInt32LE();
+            int compressionType = reader.ReadInt32LE();
+
+            int startIndex = mipmapSize == 32 ? 0
+                : mipmapSize == 16 ? 512
+                : mipmapSize == 8 ? 640
+                : 672;
+            int dxt1Size = mipmapSize * mipmapSize / 2;
+            int rowLength = mipmapSize * 4;
+
+            BarMapSmt smt = new();
+            smt.TileCount = tileCount;
+            smt.TileSize = tileSize;
+            smt.CompressionType = compressionType;
+            smt.Version = version;
+
+            List<byte[]> tiles = [];
+            for (int i = 0; i < tileCount; ++i) {
+                Span<byte> dxt1 = reader.Read(680).Slice(startIndex, dxt1Size);
+                byte[] uncompressed = Dxt1.Decompress(mipmapSize, mipmapSize, dxt1);
+                tiles.Add(uncompressed);
+            }
+
+            int tilesWide = mapWidthUnits * 32;
+            int tilesHigh = mapHeightUnits * 32;
+            int outputWidth = mipmapSize * tilesWide;
+            int outputHeight = mipmapSize * tilesHigh;
+            int outputStride = mipmapSize * tilesWide * 4;
+
+            // tiles aren't ordered, they can be in any order, so we use the data from the header to put the tiles in the correct spot
+            byte[] output = new byte[outputWidth * outputHeight * 4];
+            for (int i = 0; i < tiles.Count; ++i) {
+                int refIndex = tileIndexes[i];
+                byte[] tileData = tiles[refIndex];
+                int tileX = i % tilesWide;
+                int tileY = i / tilesWide;
+
+                int destXByte = tileX * mipmapSize * 4;
+                int destYRow = tileY * mipmapSize;
+
+                for (int row = 0; row < mipmapSize; ++row) {
+                    int srcOffset = row * rowLength;
+                    int destOffset = (destYRow + row) * outputStride + destXByte;
+
+                    Span<byte> rowData = tileData.AsSpan().Slice(srcOffset, rowLength);
+
+                    for (int rr = 0; rr < rowData.Length; ++rr) {
+                        output[destOffset + rr] = rowData[rr];
+                    }
+                }
+            }
+
+            SKBitmap bitmap = new(outputWidth, outputHeight);
+            for (int i = 0; i < output.Length; i += 4) {
+                int pixelOffset = i / 4;
+                int col = pixelOffset % outputWidth;
+                int row = pixelOffset / outputWidth;
+
+                bitmap.SetPixel(col, row, new SKColor(
+                    red: output[i + 0],
+                    green: output[i + 1],
+                    blue: output[i + 2],
+                    alpha: output[i + 3]
+                ));
+            }
+
+            smt.Bitmap = bitmap;
+            return smt;
         }
 
         /// <summary>
@@ -231,37 +401,55 @@ namespace gex.Common.Services.Parser {
         /// <param name="mapName">name of the map according to the mapinfo.lua</param>
         /// <returns></returns>
         private string? GetSmfLocation(string workingDir, string mapName) {
+            return GetFileWithExtensionLocation(workingDir, mapName, "smf");
+        }
+
+        private string? GetSmtLocation(string workingDir, string mapName) {
+            return GetFileWithExtensionLocation(workingDir, mapName, "smt");
+        }
+
+        private static string? GetFileWithExtensionLocation(string workingDir, string mapName, string fileExt) {
             string mapsFolder = Path.Join(workingDir, "maps");
 
             string[] files = Directory.GetFiles(mapsFolder);
 
             foreach (string file in files) {
-                if (file.EndsWith(".smf")) {
+                if (file.EndsWith($".{fileExt}")) {
                     return file;
                 }
             }
 
-            string smfLocation = Path.Join(workingDir, mapName);
-            if (File.Exists(smfLocation) == true) {
-                return smfLocation;
+            string loc = Path.Join(workingDir, mapName);
+            if (File.Exists(loc) == true) {
+                return loc;
             }
 
-            smfLocation = Path.Join(workingDir, mapName.ToLower());
-            if (File.Exists(smfLocation) == true) {
-                return smfLocation;
+            loc = Path.Join(workingDir, mapName.ToLower());
+            if (File.Exists(loc) == true) {
+                return loc;
             }
 
-            smfLocation = Path.Join(workingDir, mapName.Replace(" ", "_"));
-            if (File.Exists(smfLocation) == true) {
-                return smfLocation;
+            loc = Path.Join(workingDir, mapName.Replace(" ", "_"));
+            if (File.Exists(loc) == true) {
+                return loc;
             }
 
-            smfLocation = Path.Join(workingDir, mapName.ToLower().Replace(" ", "_"));
-            if (File.Exists(smfLocation) == true) {
-                return smfLocation;
+            loc = Path.Join(workingDir, mapName.ToLower().Replace(" ", "_"));
+            if (File.Exists(loc) == true) {
+                return loc;
             }
 
             return null;
+        }
+
+        public class ParseOptions {
+
+            public bool Header { get; set; } = true;
+
+            public bool HeightMap { get; set; } = false;
+
+            public bool Smts { get; set; } = false;
+
         }
 
     }

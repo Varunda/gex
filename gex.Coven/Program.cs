@@ -94,6 +94,7 @@ sealed class Program {
 
         // add hosted services here
         hostBuilder.Services.AddHostedService<HostedDbStartup>();
+        hostBuilder.Services.AddHostedService<HostedGexLuaStartup>();
 
         // end hosted services
         App host = hostBuilder.Build();

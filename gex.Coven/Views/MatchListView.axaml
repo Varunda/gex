@@ -2,6 +2,7 @@
              xmlns:table="using:gex.Coven.Table.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="using:gex.Coven.Controls"
              xmlns:converters="using:Avalonia.Controls.Converters"
@@ -9,15 +10,36 @@
              xmlns:viewmodels="using:gex.Coven.ViewModels"
              xmlns:ti="using:TablerIcons"
              xmlns:ui="using:gex.Coven.Models.Ui"
+             xmlns:utils="using:Avalonia.Controls.Utils"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="viewmodels:MatchListViewModel"
              x:Class="gex.Coven.Views.MatchListView">
 
-    <Grid Margin="5" RowDefinitions="Auto, *, *" Name="MatchListRoot">
+    <Grid Margin="5" RowDefinitions="Auto, *" Name="MatchListRoot">
         <Border Background="Gray">
-            <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center"></TextBlock>
+            <Grid ColumnDefinitions="*, Auto" RowDefinitions="*">
+                <TextBlock TextElement.FontSize="32" Text="Matches" HorizontalAlignment="Center"></TextBlock>
+
+                <StackPanel Grid.Column="1" Spacing="12" Orientation="Horizontal">
+                    <!-- top -->
+                    <Button Command="{Binding ScrollToTop}"
+                            ToolTip.Tip="Scroll to top"
+                            Background="Transparent">
+
+                        <ti:TablerIcon Icon="IconArrowNarrowUp" Width="16" Height="16"/>
+                    </Button>
+
+                    <Button Command="{Binding ReloadDemofiles}"
+                            ToolTip.Tip="Reload all games"
+                            Background="Transparent">
+
+                        <ti:TablerIcon Icon="IconReload" Width="16" Height="16"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Border>
         
+        <!--
         <table:CovenTableView Grid.Row="1" ItemsSource="{Binding Filtered}" SelectedItem="{Binding SelectedMatch}">
             <table:CovenTableView.Columns>
 
@@ -47,8 +69,9 @@
 
             </table:CovenTableView.Columns>
         </table:CovenTableView>
+        -->
 
-        <TableView Grid.Row="2" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary" SelectedItem="{Binding SelectedMatch}">
+        <TableView Grid.Row="1" ItemsSource="{Binding Filtered}" Classes="Border BorderSecondary" SelectedItem="{Binding SelectedMatch}">
 
             <TableView.ContextMenu>
                 <ContextMenu>
@@ -162,7 +185,7 @@
                 <!--
                     map
                 -->
-                <TableViewColumn Width="15*">
+                <TableViewColumn Width="12*">
                     <TableViewColumn.HeaderTemplate>
                         <DataTemplate>
                             <Grid ColumnDefinitions="*" RowDefinitions="*" HorizontalAlignment="Stretch">
@@ -194,13 +217,14 @@
                 <!--
                     gamemode
                 -->
-                <TableViewColumn Header="Gamemode" Width="55*">
-
+                <TableViewColumn Header="Gamemode" Width="45*">
                     <TableViewColumn.HeaderTemplate>
                         <DataTemplate>
-                            <Grid ColumnDefinitions="*, *" RowDefinitions="*, *" HorizontalAlignment="Stretch" ColumnSpacing="4" RowSpacing="4">
+                            <Grid ColumnDefinitions="*, *" RowDefinitions="*, *" 
+                                  HorizontalAlignment="Stretch" ColumnSpacing="4" RowSpacing="4">
 
                                 <Label Content="Gamemode" Grid.Row="0" Grid.Column="0"/>
+
                                 <ComboBox Grid.Row="1" Grid.Column="0"
                                           ItemsSource="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).GamemodeList}"
                                           SelectedValue="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).FilterGamemode}"
@@ -226,7 +250,28 @@
                     <TableViewColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Vertical">
-                                <TextBlock Text="{Binding Gamemode}" FontSize="20"></TextBlock>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Gamemode}" FontSize="20"/>
+                                    <TextBlock Text="{Binding TeamSizes, StringFormat=' - {0}'}" FontSize="20"/>
+
+                                    <TextBlock Text=" - Won" VerticalAlignment="Center">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="Won" Converter="{x:Static ObjectConverters.Equal}" ConverterParameter="{x:True}"/>
+                                                <Binding Path="Won" Converter="{x:Static ObjectConverters.IsNotNull}"/>
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+
+                                    <TextBlock Text=" - Lost" VerticalAlignment="Center">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="Won" Converter="{x:Static ObjectConverters.Equal}" ConverterParameter="{x:False}"/>
+                                                <Binding Path="Won" Converter="{x:Static ObjectConverters.IsNotNull}"/>
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+                                </StackPanel>
 
                                 <ItemsControl ItemsSource="{Binding AllyTeams}">
                                     <ItemsControl.ItemsPanel>
@@ -286,6 +331,44 @@
                             </controls:TableHeaderSorter>
                         </DataTemplate>
                     </TableViewColumn.HeaderTemplate>
+                </TableViewColumn>
+
+                <!--
+                    tags
+                -->
+                <TableViewColumn Width="13*">
+                    <TableViewColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="Tags"/>
+
+                                <TextBox Text="{Binding #MatchListRoot.((viewmodels:MatchListViewModel)DataContext).FilteredTagsInput}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </TableViewColumn.HeaderTemplate>
+
+                    <TableViewColumn.CellTemplate>
+                        <DataTemplate>
+                            <ItemsControl ItemsSource="{Binding Tags}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="8"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <husk:Tag Content="{Binding Name}"
+                                                  Background="{Binding FillBrush}" Foreground="{Binding TextBrush}"
+                                                  BorderBrush="{Binding TextBrush}" BorderThickness="1"
+                                                  Margin="0, 4">
+                                        </husk:Tag>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DataTemplate>
+                    </TableViewColumn.CellTemplate>
+                    
                 </TableViewColumn>
 
                 <!--

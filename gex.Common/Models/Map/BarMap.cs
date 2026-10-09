@@ -7,6 +7,23 @@ namespace gex.Common.Models.Map {
     [DapperColumnsMapped]
     public class BarMap {
 
+        public BarMap() { }
+
+        public BarMap(BarMapData data) {
+            ID = data.ID;
+            Name = data.Name;
+            FileName = data.FileName;
+            Description = data.Description;
+            TidalStrength = data.TidalStrength;
+            MaxMetal = data.MaxMetal;
+            ExtractorRadius = data.ExtractorRadius;
+            MinimumWind = data.MinimumWind;
+            MaximumWind = data.MaximumWind;
+            Width = data.Width;
+            Height = data.Height;
+            Author = data.Author;
+        }
+
         [ColumnMapping("id")]
         public int ID { get; set; }
 

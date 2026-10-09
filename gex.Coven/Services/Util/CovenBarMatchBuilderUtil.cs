@@ -1,4 +1,5 @@
-﻿using gex.Common.Models;
+﻿using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Services.Db;
@@ -82,21 +83,21 @@ namespace gex.Coven.Services.Util {
                     UserOptions userOptions = _UserOptions.Load();
                     _Logger.LogDebug($"map is not in DB, attempting to load from files [map={match.Map}]");
                     string mapName = match.Map;
-                    string mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.Replace(" ", "_") + ".sd7");
+                    string mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.EscapeRecoilFilesytemCharacters() + ".sd7");
                     if (File.Exists(mapPath) == false) {
-                        mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.ToLower().Replace(" ", "_") + ".sd7");
+                        mapPath = Path.Join(userOptions.InstallFolder, "maps", mapName.ToLower().EscapeRecoilFilesytemCharacters() + ".sd7");
                     }
 
                     if (File.Exists(mapPath)) {
                         try {
-                            Result<BarMap, string> mapData = await _MapParser.Parse(mapPath, cancel);
+                            Result<BarMapData, string> mapData = await _MapParser.Parse(mapPath, cancel);
                             if (mapData.IsOk == true) {
-                                map = mapData.Value;
+                                map = new BarMap(mapData.Value);
                                 if (map.Name != match.Map) {
                                     throw new InvalidOperationException($"tried to parse map '{match.Map}', but got '{map.Name}' instead");
                                 }
 
-                                await _BarMapDb.Upsert(mapData.Value, cancel);
+                                await _BarMapDb.Upsert(map, cancel);
                                 _Logger.LogInformation($"parsed map, saving to DB [map={mapName}]");
                             } else {
                                 _Logger.LogError($"failed to parse map [map={map?.Name}] [mapDir={mapPath}] [error={mapData.Error}]");

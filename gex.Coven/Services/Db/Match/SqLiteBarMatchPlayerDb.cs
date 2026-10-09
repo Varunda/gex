@@ -39,6 +39,14 @@ namespace gex.Coven.Services.Db.Match {
             throw new NotImplementedException();
         }
 
+        public async Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection();
+            return await conn.QueryListAsync<BarMatchPlayer>(
+                "SELECT * FROM bar_match_player;",
+                cancel
+            );
+        }
+
         public async Task Insert(BarMatchPlayer player) {
             using DbConnection conn = _DbHelper.Connection(SqLiteDb.WRITE);
             using DbCommand cmd = await _DbHelper.Command(conn, @"

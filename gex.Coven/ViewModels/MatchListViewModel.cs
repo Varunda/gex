@@ -53,7 +53,7 @@ namespace gex.Coven.ViewModels {
             _Toasts = App.Current?.Services?.GetService<ToastService>() ?? default!;
 
             IObservable<Func<BarMatchViewModel, bool>> filterPredicate = 
-                this.WhenAnyPropertyChanged(nameof(FilterMap), nameof(FilterPlayer), nameof(FilterGamemode))
+                this.WhenAnyPropertyChanged(nameof(FilterMap), nameof(FilterPlayer), nameof(FilterGamemode), nameof(FilteredTagsInput))
                 .Throttle(TimeSpan.FromMilliseconds(300))
                 .Select(CreateFilter);
 
@@ -83,22 +83,29 @@ namespace gex.Coven.ViewModels {
         public ReadOnlyObservableCollection<BarMatchViewModel> Filtered => _Filtered;
 
         [ObservableProperty]
-        private string? _FilterMap = null;
+        public partial string? FilterMap { get; set; } = null;
 
         [ObservableProperty]
-        private string? _FilterPlayer = null;
+        public partial string? FilterPlayer { get; set; } = null;
 
         [ObservableProperty]
-        private int? _FilterGamemode = null;
+        public partial int? FilterGamemode { get; set; } = null;
 
         [ObservableProperty]
-        private string _TableSortField = "StartTime";
+        public partial ObservableCollection<string> AvailableTags { get; set; } = [];
 
         [ObservableProperty]
-        private Models.Ui.SortDirection _TableSortDirection = Models.Ui.SortDirection.Desc;
+        public partial string FilteredTagsInput { get; set; } = "";
 
         [ObservableProperty]
-        private BarMatchViewModel? _SelectedMatch = null;
+        public partial string TableSortField { get; set; } = "StartTime";
+
+        [ObservableProperty]
+        public partial Models.Ui.SortDirection TableSortDirection { get; set; } = Models.Ui.SortDirection.Desc;
+
+        [ObservableProperty]
+        public partial BarMatchViewModel? SelectedMatch { get; set; } = null;
+
 
         /// <summary>
         ///     init method that loads all matches from the repo
@@ -106,31 +113,7 @@ namespace gex.Coven.ViewModels {
         private async void Init() {
             try {
                 _DemofileWatcher.NewMatchReady += _DemofileWatcher_NewMatchReady;
-
-                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
-                List<BarMatch> matches = await _MatchRepository.GetAll(cts.Token);
-
-                foreach (BarMatch match in matches) {
-                    Result<Maybe<BarMatch>, string> built = await _MatchBuilder.BuildMatch(match.ID, new IBarMatchBuilderUtil.BuildOptions() {
-                        IncludeAiPlayers = true,
-                        IncludeAllyTeams = true,
-                        IncludePlayers = true,
-                        IncludeTeams = true,
-                    }, null, cts.Token);
-
-                    if (built.IsOk == false) {
-                        _Logger.LogError($"failed to build match [gameID={match.ID}] [error={built.Error}]");
-                        AddMatch(match);
-                    } else {
-                        if (built.Value.Has()) {
-                            AddMatch(built.Value.Get());
-                        } else {
-                            _Logger.LogWarning($"missing match from DB [gameID={match.ID}]");
-                            AddMatch(match);
-                        }
-                    }
-                }
-
+                await ReloadDemofiles();
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed during init");
             }
@@ -142,7 +125,14 @@ namespace gex.Coven.ViewModels {
         /// <param name="match"></param>
         public void AddMatch(BarMatch match) {
             Dispatcher.UIThread.Invoke(() => {
-                _Source.Add(new BarMatchViewModel(match));
+                BarMatchViewModel vm = new(match);
+                _Source.Add(vm);
+
+                foreach (string tag in vm.Tags.Select(iter => iter.Name)) {
+                    if (AvailableTags.Contains(tag) == false) {
+                        AvailableTags.Add(tag);
+                    }
+                }
             });
         }
 
@@ -285,9 +275,7 @@ namespace gex.Coven.ViewModels {
             }
 
             DemofileLaunchReplayWindow win = new() {
-                DataContext = new DemofileLaunchReplayViewModel() {
-
-                }
+                DataContext = new DemofileLaunchReplayViewModel() { }
             };
             WindowManager.Register(win);
             win.Show();
@@ -363,6 +351,39 @@ namespace gex.Coven.ViewModels {
             }
         }
 
+        [RelayCommand]
+        public void ScrollToTop() {
+
+        }
+
+        [RelayCommand]
+        public async Task ReloadDemofiles() {
+            _Source.Clear();
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
+            List<BarMatch> matches = await _MatchRepository.GetAll(cts.Token);
+
+            foreach (BarMatch match in matches) {
+                Result<Maybe<BarMatch>, string> built = await _MatchBuilder.BuildMatch(match.ID, new IBarMatchBuilderUtil.BuildOptions() {
+                    IncludeAiPlayers = true,
+                    IncludeAllyTeams = true,
+                    IncludePlayers = true,
+                    IncludeTeams = true,
+                }, null, cts.Token);
+
+                if (built.IsOk == false) {
+                    _Logger.LogError($"failed to build match [gameID={match.ID}] [error={built.Error}]");
+                    AddMatch(match);
+                } else {
+                    if (built.Value.Has()) {
+                        AddMatch(built.Value.Get());
+                    } else {
+                        _Logger.LogWarning($"missing match from DB [gameID={match.ID}]");
+                        AddMatch(match);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         ///     creates the filter used for the dynamic data list
         /// </summary>
@@ -375,10 +396,13 @@ namespace gex.Coven.ViewModels {
 
             if (string.IsNullOrWhiteSpace(model.FilterMap)
                 && string.IsNullOrWhiteSpace(model.FilterPlayer)
-                && model.FilterGamemode == null) {
+                && model.FilterGamemode == null
+                && string.IsNullOrWhiteSpace(model.FilteredTagsInput.Trim())) {
 
                 return (_) => true;
             }
+
+            List<string> tags = (string.IsNullOrWhiteSpace(model.FilteredTagsInput.Trim()) ? [] : model.FilteredTagsInput.Trim().Split(" ")).ToList();
 
             return (match) => {
                 if (string.IsNullOrWhiteSpace(model.FilterMap) == false) {
@@ -407,6 +431,15 @@ namespace gex.Coven.ViewModels {
                     if (match.GamemodeID != model.FilterGamemode) {
                         return false;
                     }
+                }
+
+                if (string.IsNullOrEmpty(model.FilteredTagsInput) == false) {
+                    foreach (string tag in tags) {
+                        if (match.Tags.FirstOrDefault(iter => iter.Name.Contains(tag.Trim(), StringComparison.OrdinalIgnoreCase)) == null) {
+                            return false;
+                        }
+                    }
+
                 }
 
                 return true;

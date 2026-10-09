@@ -723,7 +723,7 @@
                     const uz = this.toImgZ(pos.z);
 
                     if (this.playback.useStrategicIcons == true) {
-                        const unitGroup = this.root.append("g")
+                        const unitGroup = g.append("g")
                             .attr("id", `map-unit-pos_${pos.unitID}`)
                             .attr("transform", `translate(${ux}, ${uz})`)
                             .attr("width", sizePx).attr("height", sizePx)

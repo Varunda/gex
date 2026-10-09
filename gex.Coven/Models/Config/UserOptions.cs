@@ -15,6 +15,8 @@ namespace gex.Coven.Models.Config {
 
         public bool AutoUpdate { get; set; } = false;
 
+        public long? TargetUserId { get; set; } = null;
+
         public CovenRepositoryOptions Repository { get; set; } = new();
 
     }

@@ -469,16 +469,19 @@ namespace gex.Services.BarApi {
 
             string actionLogLocation = Path.Join(dataDir, "actions.json");
             if (File.Exists(actionLogLocation) == false) {
-                _HeadlessRunStatusRepository.Remove(gameID);
-                return $"failed to find action log after game ran! {actionLogLocation} was missing";
+                actionLogLocation = Path.Join(dataDir, "LuaUI", "Config", "actions.json");
+                if (File.Exists(actionLogLocation) == false) {
+                    _HeadlessRunStatusRepository.Remove(gameID);
+                    return $"failed to find action log after game ran! {actionLogLocation} was missing";
+                }
             }
+
+            _Logger.LogDebug($"found action log [gameID={gameID}] [path={actionLogLocation}]");
 
             // save action log
             using FileStream actionLog = File.OpenRead(actionLogLocation);
             await _OutputStorage.SaveActionLog(gameID, actionLog, cancel);
             actionLog.Close();
-
-            //File.Copy(actionLogLocation, gameLogLocation + Path.DirectorySeparatorChar + "actions.json");
 
             _Logger.LogDebug($"game ran and output copied, deleting data dir [gameID={gameID}] [dataDir={dataDir}]");
             try {

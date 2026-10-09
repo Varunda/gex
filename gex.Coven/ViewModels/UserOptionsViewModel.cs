@@ -3,6 +3,8 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DotnetFileAssociator;
+using gex.Common.Models.User;
+using gex.Common.Services.Repository.Match;
 using gex.Coven.Code;
 using gex.Coven.Models.Config;
 using gex.Coven.Models.Match;
@@ -30,6 +32,7 @@ namespace gex.Coven.ViewModels {
         private readonly UserOptionsService _UserOptionsService;
         private readonly ToastService _ToastService;
         private readonly BarMatchIgnoredFilesDb _IgnoredFilesDb;
+        private readonly BarMatchPlayerRepository _MatchPlayerRepository;
 
         private readonly UserOptions _UserOptions;
 
@@ -39,68 +42,87 @@ namespace gex.Coven.ViewModels {
             _ToastService = default!;
             _UserOptions = default!;
             _IgnoredFilesDb = default!;
-            _IsAdmin = false;
+            _MatchPlayerRepository = default!;
+            IsAdmin = false;
         }
 
         public UserOptionsViewModel(ILogger<UserOptionsViewModel> logger,
             UserOptionsService userOptionsService, ToastService toastService,
-            BarMatchIgnoredFilesDb ignoredFilesDb) {
+            BarMatchIgnoredFilesDb ignoredFilesDb, BarMatchPlayerRepository matchPlayerRepository) {
 
             _Logger = logger;
             _UserOptionsService = userOptionsService;
             _ToastService = toastService;
             _IgnoredFilesDb = ignoredFilesDb;
+            _MatchPlayerRepository = matchPlayerRepository;
 
             _UserOptions = _UserOptionsService.Load();
-            _IsAdmin = IsAdminUtil.IsAdmin();
-
-            _InstallFolder = _UserOptions.InstallFolder;
-            _VersionCheckUpdates = _UserOptions.CheckForUpdates;
-            _VersionAutoUpdate = _UserOptions.AutoUpdate;
+            IsAdmin = IsAdminUtil.IsAdmin();
+            InstallFolder = _UserOptions.InstallFolder;
+            VersionCheckUpdates = _UserOptions.CheckForUpdates;
+            VersionAutoUpdate = _UserOptions.AutoUpdate;
+            TargetUserId = _UserOptions.TargetUserId;
 
             Init();
         }
 
         [ObservableProperty]
-        private string _InstallFolder = "";
+        public partial string InstallFolder { get; set; } = "";
 
         [ObservableProperty]
-        private ObservableCollection<BarMatchIgnoredFile> _IgnoredFiles = [];
+        public partial ObservableCollection<BarMatchIgnoredFile> IgnoredFiles { get; set; } = [];
 
         [ObservableProperty]
-        private bool _SdfzAssociated = false;
+        public partial bool SdfzAssociated { get; set; } = false;
 
         [ObservableProperty]
-        private bool _IsAdmin;
+        public partial bool IsAdmin { get; set; }
 
         [ObservableProperty]
-        private bool _VersionCheckUpdates;
+        public partial bool VersionCheckUpdates { get; set; }
 
         [ObservableProperty]
-        private bool _VersionAutoUpdate;
+        public partial bool VersionAutoUpdate { get; set; }
+
+        [ObservableProperty]
+        public partial long? TargetUserId { get; set; }
+
+        [ObservableProperty]
+        private ObservableCollection<BarUser> _TargetUserOptions = new ObservableCollection<BarUser>();
+
+        [ObservableProperty]
+        public partial BarUser? SelectedTargetUser { get; set; }
 
         private async void Init() {
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
-            List<BarMatchIgnoredFile> ignored = await _IgnoredFilesDb.GetAll(cts.Token);
-            IgnoredFiles = new ObservableCollection<BarMatchIgnoredFile>(ignored);
+            try {
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+                List<BarMatchIgnoredFile> ignored = await _IgnoredFilesDb.GetAll(cts.Token);
+                IgnoredFiles = new ObservableCollection<BarMatchIgnoredFile>(ignored);
 
-            string appLoc = Environment.ProcessPath ?? "";
-            SdfzAssociated = FileAssociator.IsFileAssociationSet(appLoc, ".sdfz");
+                string appLoc = Environment.ProcessPath ?? "";
+                SdfzAssociated = FileAssociator.IsFileAssociationSet(appLoc, ".sdfz");
+
+                await RefreshTargetUserOptions();
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed in Init");
+            }
         }
 
         protected override void OnPropertyChanged(PropertyChangedEventArgs e) {
             base.OnPropertyChanged(e);
 
+            TargetUserId = SelectedTargetUser?.UserID;
+
             _UserOptions.InstallFolder = InstallFolder;
             _UserOptions.AutoUpdate = VersionAutoUpdate;
             _UserOptions.CheckForUpdates = VersionCheckUpdates;
+            _UserOptions.TargetUserId = TargetUserId;
             _UserOptionsService.Save(_UserOptions);
         }
 
         /// <summary>
         ///     command to open a folder picker to pick the install folder
         /// </summary>
-        /// <returns></returns>
         [RelayCommand]
         public async Task OpenReplayFolderDialog() {
             TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
@@ -140,9 +162,32 @@ namespace gex.Coven.ViewModels {
         }
 
         /// <summary>
+        ///     refresh the target user options, useful when first loading games
+        /// </summary>
+        [RelayCommand]
+        public async Task RefreshTargetUserOptions() {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
+
+            TargetUserOptions = new ObservableCollection<BarUser>(
+                (await _MatchPlayerRepository.GetAll(cts.Token))
+                .Select(iter => new BarUser() { UserID = iter.UserID, Username = iter.Name })
+                .DistinctBy(iter => iter.UserID)
+                .OrderBy(iter => iter.Username)
+            );
+        }
+
+        /// <summary>
+        ///     clear the target user data
+        /// </summary>
+        [RelayCommand]
+        public void ClearTargetUserId() {
+            SelectedTargetUser = null;
+            TargetUserId = null;
+        }
+
+        /// <summary>
         ///     command to open the selected install folder
         /// </summary>
-        /// <returns></returns>
         [RelayCommand]
         public async Task OpenReplayFolderExplorer() {
             TopLevel? tl = TopLevel.GetTopLevel(App.MainWindow);
@@ -176,6 +221,9 @@ namespace gex.Coven.ViewModels {
             IgnoredFiles = new ObservableCollection<BarMatchIgnoredFile>(list);
         }
 
+        /// <summary>
+        ///     add the file association to .sdfz files
+        /// </summary>
         [RelayCommand]
         public void AddFileAssociation() {
             string? appLoc = Environment.ProcessPath;
@@ -192,6 +240,9 @@ namespace gex.Coven.ViewModels {
             }
         }
 
+        /// <summary>
+        ///     remove the file association from .sdfz files
+        /// </summary>
         [RelayCommand]
         public void RemoveFileAssociation() {
             string? appLoc = Environment.ProcessPath;

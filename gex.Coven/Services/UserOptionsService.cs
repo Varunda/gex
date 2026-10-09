@@ -99,6 +99,8 @@ namespace gex.Coven.Services {
             } catch (Exception ex) {
                 _Logger.LogError(ex, $"failed to write UserOptions to path [path={_Path}]");
             }
+
+            _Logger.LogInformation($"user options saved");
         }
 
     }

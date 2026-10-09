@@ -49,6 +49,7 @@ namespace gex.Coven.ViewModels {
             _GameRunner.EngineDownloaded += _GameRunner_EngineDownloaded;
             _GameRunner.GameVersionDownloaded += _GameRunner_GameVersionDownloaded;
             _GameRunner.MapDownloaded += _GameRunner_MapDownloaded;
+            _GameRunner.FatalError += _GameRunner_FatalError;
 
             _Logger.LogInformation($"starting replay [gameID={GameID}]");
             await _GameRunner.LaunchReplay(Match, true, _CancelTokenSource.Token);
@@ -57,6 +58,14 @@ namespace gex.Coven.ViewModels {
             ProgressBrush = Brushes.Teal;
             ProgressLoading = true;
             Progress = 100;
+        }
+
+        private void _GameRunner_FatalError(object sender, string gameID, string error) {
+            if (gameID != GameID) {
+                return;
+            }
+
+            _Logger.LogError($"fatal error while trying to run a game [gameID={gameID}] [error={error}]");
         }
 
         private void _GameRunner_MapDownloaded(object sender, string gameID) {
@@ -136,9 +145,11 @@ namespace gex.Coven.ViewModels {
                 return;
             }
 
-            Stdout.Insert(0, line);
-            if (Stdout.Count > 100) {
-                Stdout.RemoveAt(Stdout.Count - 1);
+            lock (Stdout) {
+                Stdout.Insert(0, line);
+                if (Stdout.Count > 100) {
+                    Stdout.RemoveAt(Stdout.Count - 1);
+                }
             }
         }
 
@@ -147,9 +158,11 @@ namespace gex.Coven.ViewModels {
                 return;
             }
 
-            Stdout.Add(line);
-            if (Stdout.Count > 100) {
-                Stdout.RemoveAt(0);
+            lock (Stdout) {
+                Stdout.Insert(0, line);
+                if (Stdout.Count > 100) {
+                    Stdout.RemoveAt(Stdout.Count - 1);
+                }
             }
         }
 

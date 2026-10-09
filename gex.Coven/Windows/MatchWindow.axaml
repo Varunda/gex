@@ -110,7 +110,7 @@
                 </Border>
 
                 <Grid RowDefinitions="*" ColumnDefinitions="1024" HorizontalAlignment="Center">
-                    <matchwindow:MatchViewMap DataContext="{Binding Match}"/>
+                    <matchwindow:MatchViewMap DataContext="{Binding MapViewModel}"/>
                 </Grid>
 
                 <!--

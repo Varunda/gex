@@ -30,10 +30,6 @@ namespace gex.Coven.Views.MatchWindow {
                 return;
             }
 
-            if (DataContext is BarMatchViewModel bvm) {
-                DataContext = new BarMatchMapViewModel(bvm.Match);
-            }
-
             if (DataContext is not BarMatchMapViewModel vm) {
                 throw new InvalidOperationException($"DataContext is not a {nameof(BarMatchMapViewModel)} [type={DataContext.GetType().Name}]");
             }

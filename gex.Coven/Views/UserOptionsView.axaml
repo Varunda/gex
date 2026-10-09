@@ -4,8 +4,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:husk="https://github.com/d3ara1n/Huskui.Avalonia"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:tablericons="using:TablerIcons"
              xmlns:vm="using:gex.Coven.ViewModels"
+             xmlns:ti="using:TablerIcons"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="2000"
              x:DataType="vm:UserOptionsViewModel"
              x:Class="gex.Coven.Views.UserOptionsView"
@@ -34,6 +34,77 @@
                         <TextBox Text="{Binding InstallFolder}" IsReadOnly="True" Grid.Column="0"></TextBox>
                         <Button Command="{Binding OpenReplayFolderDialog}" Grid.Column="1">Select</Button>
                         <Button Command="{Binding OpenReplayFolderExplorer}" Grid.Column="2">Open</Button>
+                    </Grid>
+                </StackPanel>
+            </husk:Card>
+
+            <husk:Card Padding="24" 
+                       HorizontalAlignment="Center"
+                       Width="1280" MaxWidth="1280">
+                <StackPanel>
+                    <TextBlock FontSize="{StaticResource LargeFontSize}"
+                               FontWeight="{StaticResource ControlStrongFontWeight}"
+                               Padding="0,0,0,12"
+                               Text="Target user">
+                    </TextBlock>
+
+                    <TextBlock FontSize="{StaticResource NormalFontSize}"
+                               Text="The user to use when checking for a win or a loss in a match"
+                               Padding="0,0,0,4"
+                               TextWrapping="Wrap">
+                    </TextBlock>
+
+                    <Grid ColumnDefinitions="Auto, *, Auto" RowDefinitions="*, *" ColumnSpacing="4" RowSpacing="8">
+
+                        <AutoCompleteBox ItemsSource="{Binding TargetUserOptions}"
+                                  Grid.Row="0" Grid.ColumnSpan="3"
+                                  PlaceholderText="No target user selected"
+                                  FilterMode="Contains"
+                                  ValueMemberBinding="{Binding Username}"
+                                  SelectedItem="{Binding SelectedTargetUser}"
+                                  MinimumPrefixLength="0">
+                        </AutoCompleteBox>
+
+                        <!--
+                        <ComboBox ItemsSource="{Binding TargetUserOptions}"
+                                  PlaceholderText="No target user selected"
+                                  Grid.Row="0" Grid.ColumnSpan="3"
+                                  SelectedValueBinding="{Binding UserID}"
+                                  SelectedValue="{Binding TargetUserId}">
+
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Username}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        -->
+
+                        <Button Command="{Binding RefreshTargetUserOptions}"
+                                Grid.Row="1"
+                                HorizontalAlignment="Left"
+                                ToolTip.Tip="Refresh user options">
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Reload"/>
+                                <ti:TablerIcon Icon="IconReload" Width="16" Height="16"/>
+                            </StackPanel>
+                        </Button>
+
+                        <TextBlock Text="{Binding TargetUserId, StringFormat='User ID: {0}'}"
+                                   Grid.Row="1" Grid.Column="1"
+                                   VerticalAlignment="Center">
+                        </TextBlock>
+
+                        <Button Command="{Binding ClearTargetUserIdCommand}"
+                                Grid.Row="1" Grid.Column="2"
+                                ToolTip.Tip="Clear the target user ID">
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Clear"/>
+                                <ti:TablerIcon Icon="IconX" Width="16" Height="16"/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
                 </StackPanel>
             </husk:Card>
@@ -149,9 +220,9 @@
                                             Command="{Binding #Root.((vm:UserOptionsViewModel)DataContext).RemoveIgnoredFile}"
                                             CommandParameter="{Binding .}">
 
-                                            <tablericons:TablerIcon Icon="IconTrash"
-                                                                    Width="16" Height="16">
-                                            </tablericons:TablerIcon>
+                                            <ti:TablerIcon Icon="IconTrash"
+                                                           Width="16" Height="16">
+                                            </ti:TablerIcon>
                                         </Button>
                                     </DataTemplate>
                                 </TableViewColumn.CellTemplate>

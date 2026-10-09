@@ -18,6 +18,10 @@ namespace gex.Common.Code {
 
         public int Index => _Index;
 
+        /// <summary>
+        ///     set the index to a specific offset within the reader
+        /// </summary>
+        /// <param name="offset"></param>
         public void Seek(int offset) {
             _Index = offset;
         }

@@ -81,6 +81,10 @@ namespace gex.Common.Services.Repository.Match {
             return _Db.GetByUserID(userID, cancel);
         }
 
+        public Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
+            return _Db.GetAll(cancel);
+        }
+
         public async Task Insert(BarMatchPlayer player) {
             string cacheKey = string.Format(CACHE_KEY_ID, player.GameID);
             _Cache.Remove(cacheKey);

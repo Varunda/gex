@@ -13,12 +13,15 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace gex.Coven.Controls {
 
     public partial class MapNameImage : TemplatedControl {
+
+        private readonly static SemaphoreSlim _PngWriteLock = new SemaphoreSlim(1, 1);
 
         #region properties
 
@@ -115,12 +118,18 @@ namespace gex.Coven.Controls {
                 }
 
                 try {
-                    bitmap?.Save(path, new JpegBitmapEncoderOptions() {
-                        Quality = 100
-                    });
+                    _PngWriteLock.Wait(TimeSpan.FromSeconds(10));
+
+                    if (File.Exists(path) == false) {
+                        bitmap?.Save(path, new JpegBitmapEncoderOptions() {
+                            Quality = 100
+                        });
+                    }
                     _Logger?.LogDebug($"cached image being saved [map={map}] [size={size}] [path={path}]");
                 } catch (Exception ex) {
                     _Logger?.LogError(ex, $"failed to save loaded bitmap [path={path}]");
+                } finally {
+                    _PngWriteLock.Release();
                 }
             });
         }

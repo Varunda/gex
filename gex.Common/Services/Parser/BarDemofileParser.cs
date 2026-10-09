@@ -293,6 +293,7 @@ namespace gex.Common.Services.Parser {
             match.GameVersion = hostSettings.GetValueOrDefault("gametype") ?? "";
             match.Map = hostSettings.GetValueOrDefault("mapname") ?? "";
             match.StartTime = DateTimeOffset.FromUnixTimeMilliseconds(header.StartTime * 1000).ToUniversalTime().DateTime;
+            match.StartTime = new DateTime(match.StartTime.Ticks, DateTimeKind.Utc);
             match.DurationMs = header.WallClockTime * 1000;
             long modSettingsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 

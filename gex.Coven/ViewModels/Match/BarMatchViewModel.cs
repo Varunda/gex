@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using gex.Common.Code.Constants;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models.Match;
+using gex.Coven.Models.Config;
+using gex.Coven.Services;
 using gex.Coven.Services.Util;
 using gex.Coven.ViewModels.Match;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,73 +30,111 @@ namespace gex.Coven.ViewModels {
 
         public BarMatchViewModel(BarMatch match) {
             Match = match;
-
-            _GameID = match.ID;
-            _Map = match.Map;
-            _Gamemode = BarGamemode.GetName(match.Gamemode);
-            _GamemodeID = match.Gamemode;
-            _StartTime = match.StartTime;
-            _FileName = match.FileName;
-            _Engine = match.Engine;
-            _GameVersion = match.GameVersion;
-
-            _DurationMs = (int)TimeSpan.FromSeconds(match.DurationFrameCount / 30f).TotalMilliseconds;
-            _Duration = TimeSpan.FromSeconds(match.DurationFrameCount / 30f).GetRelativeFormat();
+            GameID = match.ID;
+            Map = match.Map;
+            Gamemode = BarGamemode.GetName(match.Gamemode);
+            GamemodeID = match.Gamemode;
+            StartTime = match.StartTime;
+            FileName = match.FileName;
+            Engine = match.Engine;
+            GameVersion = match.GameVersion;
+            DurationMs = (int)TimeSpan.FromSeconds(match.DurationFrameCount / 30f).TotalMilliseconds;
+            Duration = TimeSpan.FromSeconds(match.DurationFrameCount / 30f).GetRelativeFormat();
 
             foreach (BarMatchAllyTeam at in match.AllyTeams.OrderBy(iter => iter.AllyTeamID)) {
-                _AllyTeams.Add(new BarMatchAllyTeamViewModel(match, at));
+                AllyTeams.Add(new BarMatchAllyTeamViewModel(match, at));
             }
 
-            _ChatMessages = new ObservableCollection<BarMatchChatMessage>(match.ChatMessages.Select(iter => {
+            ChatMessages = new ObservableCollection<BarMatchChatMessage>(match.ChatMessages.Select(iter => {
                 iter.GameTimestamp = Math.Max(0, iter.GameTimestamp - match.StartOffset);
                 return iter;
             }));
 
             StorageUtil? storageUtil = App.Current?.Services?.GetService<StorageUtil>();
-            _HasActionLog = storageUtil?.HasActionLog(match.ID) ?? false;
+            HasActionLog = storageUtil?.HasActionLog(match.ID) ?? false;
+
+            UserOptionsService? userOptionsService = App.Current?.Services?.GetService<UserOptionsService>();
+            UserOptions? userOptions = userOptionsService?.Load();
+            if (userOptions != null && userOptions.TargetUserId != null) {
+                foreach (BarMatchAllyTeamViewModel atvm in AllyTeams) {
+                    if (atvm.HasUserID(userOptions.TargetUserId.Value)) {
+                        Won = atvm.Won;
+                        break;
+                    }
+                }
+            }
+
+            if (GamemodeID == BarGamemode.FFA) {
+                TeamSizes = $"{AllyTeams.Count}-way FFA";
+            } else {
+                TeamSizes = $"{string.Join(" v ", AllyTeams.Select(iter => iter.TeamCount))}";
+            }
+
+            if (match.GameSettings.GetString("ranked_game", "0") == "1") {
+                Tags.Add(new BarMatchTag("Ranked", Brushes.Teal, null));
+            } else {
+                Tags.Add(new BarMatchTag("Unranked", Brushes.Orange, null));
+            }
+
+            if (match.GameSettings.GetString("zombies", "disabled") != "disabled") {
+                Tags.Add(new BarMatchTag("Zombies", Brushes.ForestGreen, null));
+            }
+
+            if (match.GameSettings.GetString("map_waterislava", "") == "1") {
+                Tags.Add(new BarMatchTag("Lava", Brushes.OrangeRed, null));
+            }
+
         }
 
         public BarMatch Match { get; } = new();
 
         [ObservableProperty]
-        private string _GameID = "";
+        public partial string GameID { get; set; } = "";
 
         [ObservableProperty]
-        private string _Map = "";
+        public partial string Map { get; set; } = "";
 
         [ObservableProperty]
-        private string _Gamemode = "";
+        public partial string Gamemode { get; set; } = "";
 
         [ObservableProperty]
-        private int _GamemodeID = 0;
+        public partial string TeamSizes { get; set; } = "";
 
         [ObservableProperty]
-        private DateTime _StartTime = DateTime.Now;
+        public partial int GamemodeID { get; set; } = 0;
 
         [ObservableProperty]
-        private long _DurationMs = 0;
+        public partial DateTime StartTime { get; set; } = DateTime.Now;
 
         [ObservableProperty]
-        private string _Duration = "";
+        public partial long DurationMs { get; set; } = 0;
 
         [ObservableProperty]
-        private string _FileName = "";
+        public partial string Duration { get; set; } = "";
 
         [ObservableProperty]
-        private string _Engine = "";
+        public partial string FileName { get; set; } = "";
 
         [ObservableProperty]
-        private string _GameVersion = "";
+        public partial string Engine { get; set; } = "";
 
         [ObservableProperty]
-        private bool _HasActionLog = false;
+        public partial string GameVersion { get; set; } = "";
 
         [ObservableProperty]
-        private ObservableCollection<BarMatchAllyTeamViewModel> _AllyTeams = [];
+        public partial bool HasActionLog { get; set; } = false;
 
         [ObservableProperty]
-        private ObservableCollection<BarMatchChatMessage> _ChatMessages = [];
+        public partial bool? Won { get; set; } = null;
 
+        [ObservableProperty]
+        public partial ObservableCollection<BarMatchAllyTeamViewModel> AllyTeams { get; set; } = [];
+
+        [ObservableProperty]
+        public partial ObservableCollection<BarMatchChatMessage> ChatMessages { get; set; } = [];
+
+        [ObservableProperty]
+        public partial ObservableCollection<BarMatchTag> Tags { get; set; } = [];
 
     }
 }
