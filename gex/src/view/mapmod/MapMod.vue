@@ -73,7 +73,7 @@
     const stats = new Stats();
 
     const settings = {
-        displacementScale: 10 as number,
+        displacementScale: 1 as number,
         invert: false as boolean,
         sunIntensity: 1 as number,
         lightColor: 0xfffffff as number,
@@ -175,16 +175,19 @@
                 renderer.toneMappingExposure = 0.9;
                 root.append(renderer.domElement);
 
+                camera.position.z = 1;
+                camera.rotation.x = -Math.PI / 2;
+
                 controls = new MapControls(camera, renderer.domElement);
                 controls.dampingFactor = 1;
+                controls.rotateUp(Math.PI / 2);
 
                 controls.addEventListener("change", () => {
                     //render();
                 });
 
-                camera.position.z = 5;
-                camera.position.x = 5;
-                camera.position.y = 5;
+                //camera.position.x = 2;
+                //camera.position.y = 2;
 
                 const xAxis: three.Line = new three.Line(
                     new three.BufferGeometry().setFromPoints([ new three.Vector3(-1000, 0, 0), new three.Vector3(1000, 0, 0), ]),
@@ -252,12 +255,12 @@
                 this.heightMapData = header.heightMap;
                 this.originalHeightMapData = header.heightMap;
 
-                const mapGeometry = new three.PlaneGeometry(header.width / 10, header.height / 10, header.width + 1, header.height + 1);
+                const mapGeometry = new three.PlaneGeometry(header.width / 100, header.height / 100, header.width + 1, header.height + 1);
                 mapGeometry.rotateX(-Math.PI / 2);
 
                 if (water != null) {
-                    water.scale.x = header.width / 10;
-                    water.scale.z = header.height / 10;
+                    water.scale.x = header.width / 100;
+                    water.scale.z = header.height / 100;
                 }
 
                 const loader: three.TextureLoader = new three.TextureLoader();
@@ -268,7 +271,7 @@
                     side: three.DoubleSide,
                     map: texture,
                     displacementMap: heightMap,
-                    displacementScale: 10,
+                    displacementScale: 1,
 
                     normalMap: loader.load(url + "/normal"),
                     normalScale: new three.Vector2(1.5, 1.5),

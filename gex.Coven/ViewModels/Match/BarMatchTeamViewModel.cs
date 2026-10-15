@@ -36,7 +36,7 @@ namespace gex.Coven.ViewModels.Match {
                 _Name = ai?.Name ?? "<no player>";
             }
 
-            UserIDs = new HashSet<long>(match.Players.Select(iter => iter.UserID));
+            UserIDs = new HashSet<long>(match.Players.Where(iter => iter.TeamID == team.TeamID).Select(iter => iter.UserID));
         }
 
         [ObservableProperty]
@@ -68,6 +68,8 @@ namespace gex.Coven.ViewModels.Match {
 
         [ObservableProperty]
         public partial HashSet<long> UserIDs { get; set; } = new();
+
+        public HashSet<string> UserIDStrings => new HashSet<string>(UserIDs.Select(iter => iter.ToString()));
 
     }
 }

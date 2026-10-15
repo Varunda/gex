@@ -160,7 +160,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\gex.Common\gex.Common.csproj" />
+    <!--
     <ProjectReference Include="..\gex.Coven\gex.Coven.csproj" />
+    -->
     <ProjectReference Include="..\gex\gex.csproj" />
   </ItemGroup>
 

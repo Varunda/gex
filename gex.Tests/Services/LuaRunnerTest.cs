@@ -18,6 +18,34 @@ namespace gex.Tests.Services {
 
         private LuaRunner _Make => new LuaRunner(new TestLogger<LuaRunner>());
 
+        //[TestMethod]
+        [Timeout(5000)]
+        public async Task Test_ErrorFails() {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(1));
+            CancellationToken cancel = cts.Token;
+
+            using NLua.Lua l = new();
+            l.DebugHook += (sender, args) => {
+                if (cancel.IsCancellationRequested == true) {
+                    l.Push("cancelled");
+                    //l.State.Error("cancelled");
+                    l.Close();
+                    return;
+                }
+            };
+            l.SetDebugHook(KeraLua.LuaHookMask.Line, 1);
+
+            Task task = Task.Run(() => {
+                try {
+                    l.DoString("local i = 0\nwhile true do i = i + 1\n end");
+                } catch (Exception ex) {
+                    Console.Error.WriteLine($"error: {ex.Message}");
+                }
+            }, cancel);
+
+            await task;
+        }
+
         /// <summary>
         ///     ensures compiled scripts cannot run
         /// </summary>
@@ -34,6 +62,7 @@ namespace gex.Tests.Services {
         ///     ensure a script is correctly stopped if execution exceeds runDuration
         /// </summary>
         [TestMethod]
+        [Timeout(5000)]
         public async Task Run_ForeverLoop_Exits() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
             Result<object[], string> ret = await _Make.Run("local i = 0\nwhile true do i = i + 1\n end", TimeSpan.FromSeconds(1), cts.Token);
@@ -46,6 +75,7 @@ namespace gex.Tests.Services {
         ///     ensure a script is correctly stopped when a cancellation token is cancelled
         /// </summary>
         [TestMethod]
+        [Timeout(12_000)]
         public async Task Run_CancelThrown() {
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
             Result<object[], string> ret = await _Make.Run("local i = 0\nwhile true do i = i + 1\n end", TimeSpan.FromSeconds(10), cts.Token);

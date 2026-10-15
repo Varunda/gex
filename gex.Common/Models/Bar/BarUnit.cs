@@ -183,6 +183,13 @@ namespace gex.Common.Models.Bar {
             return damage;
         }
 
+        public string GetDefaultDamageName() {
+            if (TargetCategory == "VTOL" && WeaponDefinition.Damages.ContainsKey("vtol")) {
+                return "vtol";
+            }
+            return "default";
+        }
+
     }
 
     public class BarUnitFeatureDefinition {

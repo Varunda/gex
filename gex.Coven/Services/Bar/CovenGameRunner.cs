@@ -327,10 +327,12 @@ namespace gex.Coven.Services.Bar {
                         }
 
                         string actionsJson = Path.Join(userOptions.InstallFolder, "engine", match.Engine, "actions.json");
-
                         if (File.Exists(actionsJson) == false) {
-                            _Logger.LogError($"missing actions.json after replaying a game [gameID={match.ID}] [path={actionsJson}]");
-                            return;
+                            actionsJson = Path.Join(luaUiConfigDirectory, "actions.json");
+                            if (File.Exists(actionsJson) == false) {
+                                _Logger.LogError($"failed to find action log after game ran! {actionsJson} was missing");
+                                return;
+                            }
                         }
 
                         string contents = File.ReadAllText(actionsJson);

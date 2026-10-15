@@ -46,6 +46,7 @@ namespace gex.Tests.Services.Parser {
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public async Task Parse_BadLua() {
             BarUnitParser parser = _MakeParser();
 

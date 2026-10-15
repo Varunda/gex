@@ -66,10 +66,15 @@ namespace gex {
                 meterProvider.AddMeter(metricName);
             }
 
-            meterProvider.AddPrometheusHttpListener(opt => {
-                // exposes prometheus metrics on 9184
-                opt.UriPrefixes = ["http://localhost:9184"];
-            }).Build();
+            Exception? prometheusStartupException = null;
+            try {
+                meterProvider.AddPrometheusHttpListener(opt => {
+                    // exposes prometheus metrics on 9184
+                    opt.UriPrefixes = ["http://localhost:9184"];
+                }).Build();
+            } catch (Exception ex) {
+                prometheusStartupException = ex;
+            }
 
             // Gex must be started in a background thread, as _Host.RunAsync will block until the whole server
             //      shuts down. If we were to await this Task, then it would be blocked until the server is done
@@ -84,6 +89,8 @@ namespace gex {
 
                     _Host = CreateHostBuilder(args).Build();
                     logger = _Host.Services.GetRequiredService<ILogger<Program>>();
+
+                    logger?.LogError(prometheusStartupException, $"failed to start prometheus HTTP listener");
 
                     hostBuilt = true;
                     Console.WriteLine($"Took {timer.ElapsedMilliseconds}ms to build program");

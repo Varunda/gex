@@ -385,7 +385,7 @@ namespace gex.Code.Discord {
             }
             embed.Description += "\n";
 
-            embed.Description += $"**Cost**: {_N(unit.MetalCost)} M | {_N(unit.EnergyCost)} E | {_N(unit.BuildTime)} B\n";
+            embed.Description += $"**Cost**: {_N(unit.MetalCost)} M | {_N(unit.EnergyCost)} E | {_N(unit.BuildTime)} BC\n";
             if (unit.Speed != 0 || unit.Acceleration != 0 || unit.TurnRate != 0) {
                 embed.Description += $"**Speed**: {_N(unit.Speed)} | {_N(900d * unit.Acceleration)} accel | {_N(30d * unit.TurnRate * (180d / 32768d))}° per sec turning\n";
 
@@ -535,12 +535,12 @@ namespace gex.Code.Discord {
                         embed.Description += $"{_N(damage)} dmg";
 
                         if (showExtra == true && weapon.Damages.Count > 1) {
-                            embed.Description += $" [{string.Join(", ", weapon.Damages.Where(iter => iter.Value != wep.GetDefaultDamage())
+                            embed.Description += $" [{string.Join(", ", weapon.Damages.Where(iter => iter.Key != wep.GetDefaultDamageName())
                                 .Select(iter => {
                                     string type = iter.Key == "commanders" ? "comms"
                                         : iter.Key == "vtol" ? "air"
                                         : iter.Key;
-                                    return $"{Math.Round(iter.Value / damage * 100d)}% to {type}";
+                                    return $"{Math.Round(iter.Value / Math.Max(1, damage) * 100d)}% to {type}";
                                 })
                             )}]";
                         }
