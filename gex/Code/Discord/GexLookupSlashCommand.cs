@@ -559,7 +559,12 @@ namespace gex.Code.Discord {
                             }
                         }
 
-                        embed.Description += $", {_D(reloadTime)}s reload)\n";
+                        if (showExtra == true && weapon.IsStockpile == true) {
+                            embed.Description += $", {_D(weapon.ReloadTime)}s refire";
+
+                        }
+
+                        embed.Description += $", {_D(reloadTime)}s {(weapon.IsStockpile ? "restock" : "reload")})\n";
 
                         if (weapon.ClusterWeapon != null) {
                             embed.Description += $"Cluster: {_N(weapon.ClusterWeapon.Damages.GetValueOrDefault("default", 0))} dmg, "
