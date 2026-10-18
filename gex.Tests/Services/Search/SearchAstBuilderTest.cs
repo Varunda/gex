@@ -18,6 +18,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField() {
+            // engine:105
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -43,6 +44,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_ImplicitTrue() {
+            // engine
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
             ];
@@ -66,6 +68,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_TwoBasicField_ImplicitTrue() {
+            // engine gamemode
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.WORD, "gamemode"),
@@ -73,6 +76,7 @@ namespace gex.Tests.Services.Search {
 
             SearchAst ast = _a(tokens);
 
+            // engine=true AND gamemode=true
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
@@ -95,6 +99,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_WithAlias() {
+            // engines: 105
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engines"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -122,6 +127,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_SimpleFields() {
+            // engine: 105 engine: 104
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -133,6 +139,7 @@ namespace gex.Tests.Services.Search {
 
             SearchAst ast1 = _a(tokens);
 
+            // engine=105 AND engine=104
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
@@ -155,6 +162,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_WithImplicitFieldName() {
+            // engine: 105 104
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -164,6 +172,7 @@ namespace gex.Tests.Services.Search {
 
             SearchAst ast1 = _a(tokens);
 
+            // engine=105 AND engine=104
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
@@ -186,6 +195,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_TwoField_WithImplicitFieldName() {
+            // engine: 105 104 min_os=10 15
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -199,6 +209,7 @@ namespace gex.Tests.Services.Search {
 
             SearchAst ast1 = _a(tokens);
 
+            // engine=105 AND engine=104 AND min_os=10 AND min_os=15
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
@@ -629,6 +640,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_Or() {
+            // engine:105 | engine:104
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -665,6 +677,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_Or_3_WithBraces() {
+            // { engine:105 | engine:104 | engine:103 }
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.OR_START, ""),
                 new SearchToken(SearchTokenType.WORD, "engine"),
@@ -712,6 +725,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_Or_3_NoBraces() {
+            // engine:105 | engine:104 | engine:103
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -757,6 +771,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_AndThenOr() {
+            // engine:105 gamemode:duel | gamemode:small
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -801,6 +816,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_BasicField_OrThenAnd() {
+            // gamemode:duel | gamemode:small engine=105
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "gamemode"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -848,6 +864,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_Not_BeforeOperator_SingleField() {
+            // engine != 105
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.NOT, "!"),
@@ -874,6 +891,7 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_Not_AfterOperator_SingleField() {
+            // engine=!105
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "engine"),
                 new SearchToken(SearchTokenType.OPERATOR, "="),
@@ -948,7 +966,61 @@ namespace gex.Tests.Services.Search {
                     ]),
                 ]
             );
+        }
 
+        /// <summary>
+        ///     test a NOT within an AND node is correctly interpreted
+        /// </summary>
+        [TestMethod]
+        public void Test_1() {
+            // player: alice beth ! cat map:supreme mode: duel
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.WORD, "beth"),
+                new SearchToken(SearchTokenType.NOT, "!"),
+                new SearchToken(SearchTokenType.WORD, "cat"),
+                new SearchToken(SearchTokenType.WORD, "map"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "supreme"),
+                new SearchToken(SearchTokenType.WORD, "mode"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "duel"),
+            ];
+
+            SearchAst ast = _a(tokens);
+
+            _CheckNodeTree(ast.Root,
+                SearchNodeType.AND,
+                [
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
+                    ]),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
+                    ]),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "!"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "cat"),
+                    ]),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "map"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "supreme"),
+                    ]),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
+                    ]),
+                ]
+            );
         }
 
         // ============================================================================================================

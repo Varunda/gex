@@ -4,16 +4,28 @@
             Gamemode stats
         </h2>
 
-        <div class="mb-3">
-            <label>
-                Recent game count
-                <info-hover text="How many games to show in the recent games graph for each gamemode"></info-hover>
-            </label>
-            <input v-model.number="recentMatchCount" class="form-control" style="max-width: 360px">
+        <div class="mb-3 d-flex flex-row align-items-center" style="gap: 2rem;">
+            <div class="">
+                <label>
+                    Recent game count
+                    <info-hover text="How many games to show in the recent games graph for each gamemode"></info-hover>
+                </label>
+                <input v-model.number="recentMatchCount" class="form-control" style="max-width: 360px">
+            </div>
+
+            <div class="form-check">
+                <label class="form-check-label" for="includeUnrankedGames">
+                    Include unranked games
+                    <info-hover text="Will unranked games be included in the recent game stats?"></info-hover>
+                </label>
+
+                <input v-model="includeUnranked" type="checkbox" class="form-check-input" id="includeUnrankedGames">
+
+            </div>
         </div>
 
         <user-gamemode-stat-view v-for="gamemode in groupedFactionData"
-            :key="gamemode.gamemode" :gamemode="gamemode" :user="user" :matches="matches" :recent-match-count="recentMatchCount">
+            :key="gamemode.gamemode" :gamemode="gamemode" :user="user" :matches="matches" :recent-match-count="recentMatchCount" :include-unranked="includeUnranked">
         </user-gamemode-stat-view>
     </div>
     
@@ -34,7 +46,9 @@
     import { FactionUtil } from "util/Faction";
 
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
+
     import UserGamemodeStatView from "./UserGamemodeStatView.vue";
+    import InfoHover from "components/InfoHover.vue";
 
     export const UserFactionStats = Vue.extend({
         props: {
@@ -44,7 +58,8 @@
 
         data: function() {
             return {
-                recentMatchCount: 20 as number
+                recentMatchCount: 20 as number,
+                includeUnranked: false as boolean,
             }
         },
 
@@ -161,7 +176,7 @@
         },
 
         components: {
-            UserGamemodeStatView
+            UserGamemodeStatView, InfoHover
         }
     });
     export default UserFactionStats;

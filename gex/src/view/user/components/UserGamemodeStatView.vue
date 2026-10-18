@@ -68,6 +68,13 @@
                         {{ winCount }}
                     </span>
                 </div>
+
+                <div class="d-inline border rounded px-2 py-1 mx-2 text-center">
+                    <label class="d-inline-block"><b>Win streak</b></label>
+                    <span>
+                        {{ longestWinStreak }}
+                    </span>
+                </div>
             </div>
 
             <div style="max-height: 240px">
@@ -75,7 +82,7 @@
             </div>
 
             <span class="text-muted">
-                This graph may not contain all matches due to ranked private games
+                This graph may not contain all matches due to ranked private games. Click on a point to open that match in a new tab.
             </span>
         </div>
         <div v-else>
@@ -96,8 +103,8 @@
 <script lang="ts">
     import Vue, { PropType } from "vue";
 
-    import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
-    import ChartDataLabels from "chartjs-plugin-datalabels";
+    import Chart, { ActiveElement, ChartDataset, ChartEvent, Element } from "chart.js/auto/auto.esm";
+    import ChartDataLabels, { Context } from "chartjs-plugin-datalabels";
     Chart.defaults.font.family = "Atkinson Hyperlegible";
     import "chartjs-adapter-luxon";
 
@@ -111,13 +118,12 @@
     import "filters/BarFactionFilter";
     import "filters/BarGamemodeFilter";
 
-    import { FactionUtil } from "util/Faction";
-    import { GamemodeUtil } from "util/Gamemode";
-    import ColorUtils from "util/Color";
     import TimeUtils from "util/Time";
     import LocaleUtil from "util/Locale";
 
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
+
+    import InfoHover from "components/InfoHover.vue";
 
     const FactionStatsRow = Vue.extend({
         props: {
@@ -159,7 +165,8 @@
             gamemode: { type: Object as PropType<GroupedFactionGamemode>, required: true },
             user: { type: Object as PropType<BarUser>, required: true },
             matches: { type: Array as PropType<BarMatch[]>, required: true },
-            RecentMatchCount: { type: Number, required: true }
+            RecentMatchCount: { type: Number, required: true },
+            IncludeUnranked: { type: Boolean, required: true }
         },
 
         data: function() {
@@ -168,7 +175,9 @@
 
                 showChart: true as boolean,
 
-                matchCount: 20 as number
+                matchCount: 20 as number,
+
+                winstreakMatches: new Set() as Set<string>
             }
         },
 
@@ -221,11 +230,52 @@
                         labels: this.recentMatches.map((iter, index, arr) => {
                             return TimeUtils.formatNoTimezone(iter.startTime, "LLL dd");
                         }),
+
                         datasets: [{
                             label: "Skill value",
-                            backgroundColor: "white",
-                            borderColor: "white",
+
+                            borderColor: (ctx: Context) => {
+                                // undefined is the line itself
+                                if (ctx.dataIndex == undefined) {
+                                    return "white";
+                                }
+
+                                const match: BarMatch | undefined = this.recentMatches.at(ctx.dataIndex);
+                                if (match == undefined) {
+                                    return "white";
+                                }
+
+                                if (this.winstreakMatches.has(match.id)) {
+                                    return "gold";
+                                }
+
+                                const winningAllyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(at => at.won == true);
+                                const player: BarMatchPlayer | undefined = match.players.find(p => p.userID == this.user.userID);
+                                if (winningAllyTeam == undefined || player == undefined) {
+                                    return "white";
+                                }
+
+                                return player.allyTeamID == winningAllyTeam.allyTeamID ? "green" : "red";
+                            },
+
+                            borderWidth: 2,
                             tension: 0.2,
+
+                            backgroundColor: (ctx: Context) => { 
+                                const match: BarMatch | undefined = this.recentMatches.at(ctx.dataIndex);
+                                if (match == undefined) {
+                                    return "white";
+                                }
+
+                                const winningAllyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(at => at.won == true);
+                                const player: BarMatchPlayer | undefined = match.players.find(p => p.userID == this.user.userID);
+                                if (winningAllyTeam == undefined || player == undefined) {
+                                    return "white";
+                                }
+
+                                return player.allyTeamID == winningAllyTeam.allyTeamID ? "green" : "red";
+                            },
+
                             data: this.recentMatches.map((iter, index) => {
                                 const player: BarMatchPlayer | undefined = iter.players.find(p => p.userID == this.user.userID);
                                 if (player == undefined) {
@@ -237,19 +287,22 @@
                                     y: player?.skill ?? 16.67
                                 }
                             }),
+
                             datalabels: {
                                 backgroundColor: "#000",
                                 borderColor: "#999",
                                 borderRadius: 5,
                                 borderWidth: 1,
                                 padding: 3,
+                                offset: 4,
+
                                 display: function(ctx) {
                                     if (ctx.dataIndex == 0 || ctx.dataIndex == ctx.dataset.data.length - 1) {
                                         return true;
                                     }
 
-                                    const value = ctx.dataset.data[ctx.dataIndex].y;
-                                    const prev = ctx.dataset.data[ctx.dataIndex - 1].y;
+                                    const value: number = ctx.dataset.data[ctx.dataIndex]!.y;
+                                    const prev: number = ctx.dataset.data[ctx.dataIndex - 1]!.y;
 
                                     if (Math.abs(value - prev) <= 0.05) {
                                         return false;
@@ -257,6 +310,7 @@
 
                                     return "auto";
                                 },
+
                                 align: function(ctx) {
                                     if (ctx.dataIndex == 0) {
                                         return "right";
@@ -264,15 +318,29 @@
                                     if (ctx.dataIndex == ctx.dataset.data.length - 1) {
                                         return "left";
                                     }
+
+                                    const max: number = Math.max(...ctx.dataset.data.map(iter => iter!.y as number));
+                                    const min: number = Math.min(...ctx.dataset.data.map(iter => iter!.y as number));
+
+                                    const diff: number = max - min;
+
+                                    const iterPoint: number = ctx.dataset.data[ctx.dataIndex]!.y;
+
+                                    // points more than 90% up the Y axis get put to the bottom
+                                    if ((iterPoint - min) / diff > 0.90) {
+                                        return "bottom";
+                                    }
+
                                     return "top";
                                 },
+
                                 color: function(ctx) {
                                     if (ctx.dataIndex == 0) {
                                         return "white";
                                     }
 
-                                    const value = ctx.dataset.data[ctx.dataIndex].y;
-                                    const prev = ctx.dataset.data[ctx.dataIndex - 1].y;
+                                    const value: number = ctx.dataset.data[ctx.dataIndex]!.y;
+                                    const prev: number = ctx.dataset.data[ctx.dataIndex - 1]!.y;
 
                                     if (value - prev >= 0) {
                                         return "#75b798"; // --bs-success-text-emphasis
@@ -283,6 +351,7 @@
                             }
                         }]
                     },
+
                     options: {
                         scales: {
                             x: {
@@ -317,13 +386,31 @@
                                 },
                                 grid: {
                                     color: "#777"
-                                }
+                                },
                             },
                         },
+
                         interaction: {
                             intersect: false,
-                            mode: "nearest"
+                            mode: "nearest",
                         },
+
+                        onClick: (event: ChartEvent, elements: ActiveElement[], chart: Chart) => {
+                            if (elements.length == 0) {
+                                return;
+                            }
+
+                            const index: number = elements[0].index;
+                            const match: BarMatch | undefined = this.recentMatches.at(index);
+                            if (match == undefined) {
+                                console.error(`UserGamemodeStatView> missing match at index [index=${index}]`);
+                                return;
+                            }
+
+                            console.log(`UserGamemodeStatView> viewing match [id=${match.id}]`);
+                            window.open(`/match/${match.id}`, "_blank");
+                        },
+
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
@@ -336,6 +423,7 @@
                                     },
                                 }
                             },
+
                             datalabels: {
                                 display: true,
                                 color: "white",
@@ -343,6 +431,7 @@
                                     family: "Atkinson Hyperlegible",
                                     size: 18,
                                 },
+
                                 formatter: (value, ctx) => {
                                     const index: number = ctx.dataIndex;
                                     if (index == 0 || index == ctx.dataset.data.length - 1) {
@@ -350,7 +439,7 @@
                                     }
 
                                     const point: { x: number, y: number} = value;
-                                    const prev: { x: number, y: number } = ctx.dataset.data[index - 1];
+                                    const prev: { x: number, y: number } = ctx.dataset.data[index - 1]!;
 
                                     const diff: number = point.y - prev.y;
                                     if (diff > 0) {
@@ -372,7 +461,7 @@
 
         computed: {
             recentMatches: function (): BarMatch[] {
-                return this.matches.filter(iter => iter.gamemode == this.gamemode.gamemode && iter.gameSettings.ranked_game == "1")
+                return [...this.matches.filter(iter => iter.gamemode == this.gamemode.gamemode && (this.IncludeUnranked == true || iter.gameSettings.ranked_game == "1") && iter.players.find(i2 => i2.userID == this.user.userID) != undefined)]
                     .sort((a, b) => {
                         return b.startTime.getTime() - a.startTime.getTime();
                     })
@@ -418,16 +507,58 @@
                 }).length;
             },
 
+            longestWinStreak: function(): number {
+                let longestStreak: number = 0;
+                let streak: number = 0;
+
+                let winstreakMatchIter: Set<string> = new Set();
+
+                for (const match of [...this.recentMatches].sort((a, b) => a.startTime.getTime() - b.startTime.getTime())) {
+                    const winningAllyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(at => at.won == true);
+                    if (winningAllyTeam == undefined) {
+                        continue;
+                    }
+
+                    const player: BarMatchPlayer | undefined = match.players.find(p => p.userID == this.user.userID);
+                    if (player == undefined) {
+                        continue;
+                    }
+
+                    if (player.allyTeamID == winningAllyTeam.allyTeamID) {
+                        streak += 1;
+                        winstreakMatchIter.add(match.id);
+                        if (streak > longestStreak) {
+                            longestStreak = streak;
+                            this.winstreakMatches = new Set(winstreakMatchIter);
+                        }
+                    } else {
+                        streak = 0;
+                        winstreakMatchIter.clear();
+                    }
+                }
+
+                if (streak > longestStreak) {
+                    longestStreak = streak;
+                    this.winstreakMatches = winstreakMatchIter;
+                }
+
+                return longestStreak;
+            }
+
         },
 
         watch: {
             RecentMatchCount: function(): void {
                 this.makeCharts();
+            },
+
+            IncludeUnranked: function(): void {
+                this.makeCharts();
             }
         },
         
         components: {
-            FactionStatsRow
+            FactionStatsRow, InfoHover
         }
     });
     export default UserGamemodeStatView;

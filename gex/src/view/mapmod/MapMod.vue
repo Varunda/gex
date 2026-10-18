@@ -186,9 +186,6 @@
                     //render();
                 });
 
-                //camera.position.x = 2;
-                //camera.position.y = 2;
-
                 const xAxis: three.Line = new three.Line(
                     new three.BufferGeometry().setFromPoints([ new three.Vector3(-1000, 0, 0), new three.Vector3(1000, 0, 0), ]),
                     new three.LineBasicMaterial( { color: 0xff0000 })
