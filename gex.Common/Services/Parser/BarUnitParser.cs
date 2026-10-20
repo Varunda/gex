@@ -1,5 +1,4 @@
-﻿using gex.Code.ExtensionMethods;
-using gex.Common.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Bar;
 using gex.Common.Services;
@@ -11,18 +10,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace gex.Services.Parser {
+namespace gex.Common.Services.Parser {
 
     public class BarUnitParser : BaseLuaTableParser {
 
         private readonly ILogger<BarUnitParser> _Logger;
         private readonly LuaRunner _LuaRunner;
         private readonly BarWeaponDefinitionParser _WeaponDefinitionParser;
-        private readonly BarFeatureDefintionParser _FeatureParser;
+        private readonly BarFeatureParser _FeatureParser;
 
         public BarUnitParser(ILogger<BarUnitParser> logger,
             BarWeaponDefinitionParser weaponDefinitionParser, LuaRunner luaRunner,
-            BarFeatureDefintionParser featureParser) {
+            BarFeatureParser featureParser) {
 
             _Logger = logger;
             _LuaRunner = luaRunner;
@@ -114,7 +113,7 @@ namespace gex.Services.Parser {
             if (buildOptions != null) {
                 foreach (KeyValuePair<object, object> iter in buildOptions) {
                     unit.BuildOptions.Add(iter.Value.ToString()!);
-                }
+                }Result<List<BarFeature>, string>.Ok([]);
             }
 
             // los
@@ -158,7 +157,7 @@ namespace gex.Services.Parser {
                 if (featureDefs is Dictionary<object, object> featureDefParms) {
                     Dictionary<object, object>? deadFeatureDef = _Dict(featureDefParms, "dead");
                     if (deadFeatureDef != null) {
-                        Result<BarUnitFeatureDefinition, string> deadFeature = _FeatureParser.Parse(deadFeatureDef);
+                        Result<BarFeature, string> deadFeature = _FeatureParser.Parse(deadFeatureDef);
                         if (deadFeature.IsOk == false) {
                             _Logger.LogError($"failed to parse dead featuredef [unitDef={unit.DefinitionName}] [error={deadFeature.Error}]");
                             Debug.Fail("how did this fail?");
@@ -169,7 +168,7 @@ namespace gex.Services.Parser {
 
                     Dictionary<object, object>? heapFeatureDef = _Dict(featureDefParms, "heap");
                     if (heapFeatureDef != null) {
-                        Result<BarUnitFeatureDefinition, string> heapFeature = _FeatureParser.Parse(heapFeatureDef);
+                        Result<BarFeature, string> heapFeature = _FeatureParser.Parse(heapFeatureDef);
                         if (heapFeature.IsOk == false) {
                             _Logger.LogError($"failed to parse heap featuredef [unitDef={unit.DefinitionName}] [error={heapFeature.Error}]");
                             Debug.Fail("how did this fail?");

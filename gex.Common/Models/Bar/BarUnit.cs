@@ -92,6 +92,7 @@ namespace gex.Common.Models.Bar {
 
         public double JamDistance { get; set; }
 
+
         // transport stuff
 
         public double TransportCapacity { get; set; }
@@ -152,9 +153,9 @@ namespace gex.Common.Models.Bar {
 
         public bool OnOffAble { get; set; }
 
-        public BarUnitFeatureDefinition? DeadFeature { get; set; }
+        public BarFeature? DeadFeature { get; set; }
 
-        public BarUnitFeatureDefinition? HeapFeature { get; set; }
+        public BarFeature? HeapFeature { get; set; }
 
         public List<BarUnitWeapon> Weapons { get; set; } = [];
 
@@ -189,33 +190,6 @@ namespace gex.Common.Models.Bar {
             }
             return "default";
         }
-
-    }
-
-    public class BarUnitFeatureDefinition {
-
-        public bool Blocking { get; set; }
-
-        public string? Category { get; set; }
-
-        /// <summary>
-        ///     health
-        /// </summary>
-        public double Damage { get; set; }
-
-        public double Metal { get; set; }
-
-        public bool Indestructible { get; set; }
-
-        public bool Reclaimable { get; set; }
-
-        /// <summary>
-        ///     3 different valid values:
-        ///     -1: can rez if the corpse is 1st level,
-        ///     0: cannot rez ever,
-        ///     1: can always rez
-        /// </summary>
-        public int Resurrectable { get; set; }
 
     }
 

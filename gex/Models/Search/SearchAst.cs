@@ -13,7 +13,7 @@ namespace gex.Models.Search {
         public SearchNode Root { get; set; }
 
         /// <summary>
-        ///     get a <see cref="IEnumerable{T}"/> that iterates thru the <see cref="Node"/>s starting from the left
+        ///     get a <see cref="IEnumerable{T}"/> that iterates thru the <see cref="SearchNode"/>s starting from the left
         /// </summary>
         /// <returns></returns>
         public IEnumerator<SearchNode> GetEnumerator() {

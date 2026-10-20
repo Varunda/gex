@@ -103,6 +103,10 @@ namespace gex.Common.Services {
 							return {}
 						end
 
+                        function VFS.FileExists(a)
+                            return false
+                        end
+
                         local Game = {
                             -- https://github.com/beyond-all-reason/RecoilEngine/blob/76c6f129e84e4dac3502b63942f515adf5da5d13/rts/Lua/LuaConstGame.cpp#L315
                             -- https://github.com/beyond-all-reason/RecoilEngine/blob/76c6f129e84e4dac3502b63942f515adf5da5d13/rts/Sim/MoveTypes/MoveDefHandler.h#L117

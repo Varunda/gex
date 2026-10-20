@@ -1,15 +1,9 @@
-﻿using gex.Code.ExtensionMethods;
-using gex.Common.Code.ExtensionMethods;
+﻿using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Bar;
-using gex.Common.Services;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace gex.Services.Parser {
+namespace gex.Common.Services.Parser {
 
     public class BarWeaponDefinitionParser : BaseLuaTableParser {
 

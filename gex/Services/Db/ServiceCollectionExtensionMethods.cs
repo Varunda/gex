@@ -75,6 +75,7 @@ namespace gex.Services.Db {
             services.AddSingleton<MapStatsDailyOpeningLabDb>();
             services.AddSingleton<MapStatsDailyUnitsMadeDb>();
             services.AddSingleton<MapStatsPositionLeaderboardDb>();
+            services.AddSingleton<BarMapParseCacheDb>();
 
             // map start spot data
             services.AddSingleton<StartSpotDataDb>();

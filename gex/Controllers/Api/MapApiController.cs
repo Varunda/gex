@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,11 +37,13 @@ namespace gex.Controllers.Api {
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
         private readonly IOptions<FileStorageOptions> _StorageOptions;
         private readonly BarMapParser _MapParser;
+        private readonly BarMapDataRepository _MapDataRepository;
 
         public MapApiController(ILogger<MapApiController> logger,
             BarMapRepository mapRepository, StartSpotDataRepository startSpotDataRepository,
             BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchTeamRepository teamRepository,
-            IOptions<FileStorageOptions> storageOptions, BarMapParser mapParser) {
+            IOptions<FileStorageOptions> storageOptions, BarMapParser mapParser,
+            BarMapDataRepository mapDataRepository) {
 
             _Logger = logger;
             _MapRepository = mapRepository;
@@ -49,6 +52,7 @@ namespace gex.Controllers.Api {
             _TeamRepository = teamRepository;
             _StorageOptions = storageOptions;
             _MapParser = mapParser;
+            _MapDataRepository = mapDataRepository;
         }
 
         /// <summary>
@@ -94,7 +98,32 @@ namespace gex.Controllers.Api {
         ///     get the <see cref="BarMapData"/> for a specific map, by loading it from the file system
         /// </summary>
         /// <param name="mapFilename">filename of the map (without the .sd7)</param>
+        /// <param name="includeHeader">will the <see cref="BarMapData.Header"/> be populated? defaults to true</param>
+        /// <param name="includeHeightMap">
+        ///     will <see cref="BarMapFileHeader.HeightMap"/> be populated?
+        ///     implies <paramref name="includeHeader"/> of true, defaults to false
+        /// </param>
+        /// <param name="includeMetalSpots">will <see cref="BarMapData.MetalSpots"/> be populated? defaults to false</param>
+        /// <param name="includeGeothermals">
+        ///     will <see cref="BarMapData.GeothermalCount"/> be provided, and <see cref="BarMapData.Features"/> include ONLY
+        ///     geothermal vents? this parameter is ignored if <paramref name="includeFeatures"/> or <paramref name="includeFeatureList"/> is true.
+        ///     defaults to false
+        /// </param>
+        /// <param name="includeFeatures">
+        ///     will the features of the map be parsed, providing the following? 
+        ///     <see cref="BarMapData.FeatureSet"/>, <see cref="BarMapData.ReclaimableEnergy"/>,
+        ///     <see cref="BarMapData.ReclaimableMetal"/> and <see cref="BarMapData.GeothermalCount"/>?
+        ///     NOTE: <see cref="BarMapData.Features"/> is NOT included in this, set <paramref name="includeFeatureList"/>
+        ///     if this data is wanted.
+        ///     <br/>
+        ///     defaults to false
+        /// </param>
+        /// <param name="includeFeatureList">
+        ///     will <see cref="BarMapData.Features"/> be returned? implies <paramref name="includeFeatures"/> of true.
+        ///     defaults to false
+        /// </param>
         /// <param name="cancel">cancellation token</param>
+        /// 
         /// <response code="200">
         ///     the response will contain the <see cref="BarMapData"/> for the <see cref="BarMapData.FileName"/>
         ///     of <paramref name="mapFilename"/>
@@ -107,24 +136,81 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpGet("{mapFilename}/data")]
         public async Task<ApiResponse<BarMapData>> GetMapData(string mapFilename,
-            CancellationToken cancel = default) {
+            [FromQuery] bool includeHeader = true,
+            [FromQuery] bool includeHeightMap = false,
+            [FromQuery] bool includeMetalSpots = false,
+            [FromQuery] bool includeGeothermals = false,
+            [FromQuery] bool includeFeatures = false,
+            [FromQuery] bool includeFeatureList = false,
+            CancellationToken cancel = default
+        ) {
 
+            BarMapData? data = await _MapDataRepository.GetByMapFilename(mapFilename, cancel);
+            if (data == null) {
+                return ApiNotFound<BarMapData>($"{nameof(BarMap)} {mapFilename}");
+            }
+
+            BarMapData copy = new(data);
+
+            if (includeHeader == false) {
+                copy.Header = new BarMapFileHeader();
+            }
+
+            if (includeHeightMap == false) {
+                copy.Header.HeightMap = [];
+            }
+
+            if (includeMetalSpots == false) {
+                copy.MetalSpots = null;
+            }
+
+            if (includeFeatureList == false) {
+                copy.Features = [];
+                copy.FeatureSet = null;
+            } else if (includeGeothermals == true) {
+                copy.Features = copy.Features.Where(iter => iter.Geothermal == true).ToList();
+
+                HashSet<string> geoventNames = new HashSet<string>(copy.Features.Select(iter => iter.Name));
+
+                copy.FeatureSet!.ObjectList = copy.FeatureSet.ObjectList
+                    .Where(iter => geoventNames.Contains(iter.FeatureName)).ToList();
+            }
+
+            return ApiOk<BarMapData>(copy);
+
+            /*
             string mapPath = Path.Join(_StorageOptions.Value.MapLocation, "maps", (mapFilename + ".sd7").EscapeRecoilFilesytemCharacters());
             if (System.IO.File.Exists(mapPath) == false) {
                 return ApiNotFound<BarMapData>($"{nameof(BarMap)} {mapFilename}");
             }
 
             Result<BarMapData, string> result = await _MapParser.Parse(mapPath, new BarMapParser.ParseOptions() {
-                HeightMap = true,
-                Header = true,
+                HeightMap = includeHeightMap,
+                Header = includeHeader || includeHeightMap,
                 Smts = false,
+                Metal = includeMetalSpots,
+                Features = includeFeatures || includeFeatureList || includeGeothermals
             }, cancel);
             if (result.IsOk == false) {
                 _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
                 return ApiInternalError<BarMapData>($"failed to parse map: {result.Error}");
             }
 
+            if (includeFeatureList == false) {
+                result.Value.Features = [];
+                result.Value.FeatureSet = null;
+            } else if (includeGeothermals == true) {
+                result.Value.Features = result.Value.Features.Where(iter => iter.Geothermal == true).ToList();
+
+                HashSet<string> geoventNames = new HashSet<string>(result.Value.Features.Select(iter => iter.Name));
+                geoventNames.Add("geovent");
+
+                result.Value.FeatureSet!.ObjectList = result.Value.FeatureSet.ObjectList
+                    .Where(iter => geoventNames.Contains(iter.FeatureName)).ToList();
+            }
+
             return ApiOk(result.Value);
+            */
         }
 
         /// <summary>

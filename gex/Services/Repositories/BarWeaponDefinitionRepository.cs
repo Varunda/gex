@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Bar;
-using gex.Services.Parser;
+using gex.Common.Services.Parser;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;

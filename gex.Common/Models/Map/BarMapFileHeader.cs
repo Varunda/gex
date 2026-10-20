@@ -1,4 +1,6 @@
-﻿namespace gex.Common.Models.Map {
+﻿using gex.Common.Models.Bar;
+
+namespace gex.Common.Models.Map {
 
     // https://springrts.com/wiki/Mapdev:SMF_format
     public class BarMapFileHeader {
@@ -36,6 +38,10 @@
         public ushort[] HeightMap { get; set; } = [];
 
         public int[] TileIndexes { get; set; } = [];
+
+        public byte[] MetalMap { get; set; } = [];
+
+        public List<BarFeatureInstance> FeatureInstances { get; set; } = [];
 
     }
 }

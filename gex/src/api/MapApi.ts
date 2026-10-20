@@ -17,7 +17,11 @@ export class MapApi extends ApiWrapper<BarMap> {
     }
 
     public static getMapData(mapFilename: string): Promise<Loading<BarMapData>> {
-        return MapApi.get().readSingle(`/api/map/${mapFilename}/data`, BarMapData.parse);
+        return MapApi.get().readSingle(`/api/map/${mapFilename}/data`
+                + `?includeHeader=true&includeHeightMap=true&includeSmt=true&includeMetalSpots=true&includeFeatures=false&includeFeatureList=false`
+                + `&includeGeothermals=true`,
+            BarMapData.parse
+        );
     }
 
     public static updateStartSpotPositionRoleOverride(mapFilename: string, version: number, position: string, role: string, maxRadius: number | null): Promise<Loading<void>> {

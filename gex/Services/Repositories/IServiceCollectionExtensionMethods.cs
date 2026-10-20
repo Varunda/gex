@@ -40,6 +40,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<MatchProcessingWebhookRepository>();
             services.AddSingleton<GameOutputRepository>();
             services.AddSingleton<BarIconTypeRepository>();
+            services.AddSingleton<BarMapDataRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

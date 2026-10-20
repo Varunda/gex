@@ -143,20 +143,21 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EditorConfigFiles Remove="C:\Users\Hdt\source\repos\gex\gex\.editorconfig" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="C:\Users\Hdt\source\repos\gex\gex\.editorconfig" />
+		<EditorConfigFiles Remove=".editorconfig" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\gex.Common\gex.Common.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<None Include="../SevenZip/runtimes/win-x64/native/7z.dll" Link="7z.dll" CopyToOutputDirectory="PreseveNewest" />
-		<None Include="../SevenZip/runtimes/linux-x64/native/7z.so" Link="7z.so" CopyToOutputDirectory="PreseveNewest" />
-	</ItemGroup>
+	<Target Name="CopyFiles" AfterTargets="Build">
+		<ItemGroup>
+			<SevenZipWin Include="../SevenZip/runtimes/win-x64/native/7z.dll" />
+			<SevenZipLinux Include="../SevenZip/runtimes/linux-x64/native/7z.so" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(SevenZipWin)" DestinationFolder="$(OutputPath)"/>
+		<Copy SourceFiles="@(SevenZipLinux)" DestinationFolder="$(OutputPath)"/>
+	</Target>
 
 </Project>

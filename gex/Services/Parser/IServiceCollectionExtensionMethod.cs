@@ -13,10 +13,11 @@ namespace gex.Services.Parser {
             services.AddSingleton<BarWeaponDefinitionParser>();
             services.AddSingleton<LuaCommandParser>();
             services.AddSingleton<BarMoveDefinitionParser>();
-            services.AddSingleton<BarFeatureDefintionParser>();
             services.AddSingleton<StartSpotDataParser>();
             services.AddSingleton<BarMapRotationParser>();
             services.AddSingleton<BarIconTypeParser>();
+            services.AddSingleton<BarFeatureParser>();
+            services.AddSingleton<BarFeatureSetParser>();
         }
 
     }

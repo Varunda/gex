@@ -1,10 +1,12 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Bar;
+using gex.Common.Models.Options;
 using gex.Common.Services;
+using gex.Common.Services.Parser;
 using gex.Models;
-using gex.Services.Parser;
 using gex.Tests.Util;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -25,7 +27,14 @@ namespace gex.Tests.Services.Parser {
             ILogger<BarWeaponDefinitionParser> logger2 = new TestLogger<BarWeaponDefinitionParser>();
             BarWeaponDefinitionParser defParser = new(logger2, runner);
 
-            BarFeatureDefintionParser featureDefParser = new(new TestLogger<BarFeatureDefintionParser>());
+            BarFeatureParser featureDefParser = new(
+                logger: new TestLogger<BarFeatureParser>(),
+                luaRunner: runner,
+                options: Options.Create<FileStorageOptions>(new FileStorageOptions() {
+
+                }),
+                cache: new NonCachingCache()
+            );
 
             ILogger<BarUnitParser> logger = new TestLogger<BarUnitParser>();
             BarUnitParser parser = new(logger, defParser, runner, featureDefParser);

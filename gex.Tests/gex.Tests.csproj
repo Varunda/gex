@@ -18,6 +18,8 @@
     <None Remove="resources\github_data\movedefs.lua" />
     <None Remove="resources\images\texture-mq\hellas_basin_v1.4.jpg" />
     <None Remove="resources\maps\hooked_1.1.1.sd7" />
+    <None Remove="resources\maps\pillar_of_doom_v1.sd7" />
+    <None Remove="resources\maps\supreme_isthmus_v2.1_removed_textures.sd7" />
     <None Remove="resources\missing_player_36.sdfz" />
     <None Remove="resources\start_spot_outside_start_box.sdfz" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
@@ -79,6 +81,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\maps\hooked_1.1.1.sd7">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\maps\pillar_of_doom_v1_removed_textures.sd7">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\maps\supreme_isthmus_v2.1_removed_textures.sd7">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\missing_player_36.sdfz">

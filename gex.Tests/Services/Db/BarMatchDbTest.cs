@@ -48,18 +48,18 @@ namespace gex.Tests.Services.Db {
             IBarMatchPlayerDb playerDb = svs.GetRequiredService<IBarMatchPlayerDb>();
 
             await db.Insert(new BarMatch() {
-                ID = "abc"
+                ID = "def"
             }, cts.Token);
 
             await teamDb.Insert(new BarMatchTeam() {
-                GameID = "abc",
+                GameID = "def",
                 TeamID = 0,
                 AllyTeamID = 0,
                 Faction = "Cortex",
             }, cts.Token);
 
             await playerDb.Insert(new BarMatchPlayer() {
-                GameID = "abc",
+                GameID = "def",
                 TeamID = 0,
                 AllyTeamID = 0,
                 Name = "user1",
@@ -69,14 +69,14 @@ namespace gex.Tests.Services.Db {
             });
 
             await teamDb.Insert(new BarMatchTeam() {
-                GameID = "abc",
+                GameID = "def",
                 TeamID = 1,
                 AllyTeamID = 1,
                 Faction = "Legion"
             }, cts.Token);
 
             await playerDb.Insert(new BarMatchPlayer() {
-                GameID = "abc",
+                GameID = "def",
                 TeamID = 1,
                 AllyTeamID = 1,
                 Name = "user2",

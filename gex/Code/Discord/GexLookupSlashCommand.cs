@@ -12,7 +12,6 @@ using gex.Services;
 using gex.Services.Db;
 using gex.Services.Db.Event;
 using gex.Services.Db.UserStats;
-using gex.Services.Parser;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +35,7 @@ using gex.Common.Models.Match;
 using gex.Services.Db.Match;
 using gex.Common.Services.Repository.Match;
 using gex.Common.Services.Db.Match;
+using gex.Common.Services.Parser;
 
 namespace gex.Code.Discord {
 
@@ -120,7 +120,8 @@ namespace gex.Code.Discord {
                     );
                 } else {
                     embed.Color = DiscordColor.Yellow;
-                    embed.Description = $"Found {users.Count} users that match `{name}`, please provide more characters\n-# Sorted based on last updated\n\n";
+                    embed.Description = $"Found {users.Count} users that match `{name}` (and no exact match), "
+                        + $"please provide more characters\n-# Sorted based on last updated\n\n";
 
                     for (int i = 0; i < users.Count; ++i) {
                         UserSearchResult user = users[i];

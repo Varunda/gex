@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Bar;
 using gex.Common.Services;
-using gex.Services.Parser;
+using gex.Common.Services.Parser;
 using gex.Tests.Util;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

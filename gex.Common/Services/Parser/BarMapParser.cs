@@ -1,25 +1,15 @@
 ﻿using gex.Common.Code;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
-using gex.Common.Models.Options;
-using gex.Common.Services;
-using ImageMagick;
-using ImageMagick.Formats;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Pfim;
 using SevenZip;
 using SevenZip.Extensions;
 using SkiaSharp;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace gex.Common.Services.Parser {
 
@@ -28,12 +18,18 @@ namespace gex.Common.Services.Parser {
         private readonly ILogger<BarMapParser> _Logger;
 
         private readonly LuaRunner _LuaRunner;
+        private readonly BarFeatureParser _FeatureParser;
+        private readonly BarFeatureSetParser _FeatureSetParser;
 
         public BarMapParser(ILogger<BarMapParser> logger,
-            LuaRunner luaRunner) {
+            LuaRunner luaRunner, BarFeatureParser featureParser,
+            BarFeatureSetParser featureSetParser) {
 
             _Logger = logger;
+
             _LuaRunner = luaRunner;
+            _FeatureParser = featureParser;
+            _FeatureSetParser = featureSetParser;
         }
 
         public Task<Result<BarMapData, string>> Parse(string location, CancellationToken cancel) {
@@ -59,11 +55,12 @@ namespace gex.Common.Services.Parser {
             // normalize path (convert windows style \ to /)
             location = Path.GetFullPath(location) ?? throw new Exception($"failed to normalized path");
 
-            string mapName = Path.GetFileName(location)!;
+            string mapName = location.EndsWith(".sd7") ? Path.GetFileNameWithoutExtension(location)! : Path.GetFileName(location)!;
             _Logger.LogDebug($"map name parsed [location={location}] [mapName={mapName}]");
 
-            using ArchiveReader reader = new ArchiveReader(location);
-            string mapWorkingFolder = Path.Join("temp", mapName);
+            using ArchiveReader reader = new(location);
+            DirectoryInfo tempDir = Directory.CreateTempSubdirectory($"gex-map-parse_{mapName}");
+            string mapWorkingFolder = Path.Join(tempDir.FullName, mapName);
             Directory.CreateDirectory(mapWorkingFolder);
 
             try {
@@ -119,6 +116,8 @@ namespace gex.Common.Services.Parser {
                 }
                 long findSmfMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+                BarMapData map = new();
+
                 // get the smt file
                 string? smtLocation = GetSmtLocation(mapWorkingFolder, mapFile);
                 if (options.Smts == true) {
@@ -140,11 +139,45 @@ namespace gex.Common.Services.Parser {
 
                 // but isn't this value minWind in the mapfile.lua? yes, but actually no
                 // because the Lua file will normalize all keys to lowercase when executed
+                // min wind
                 string? minWind = atmo.GetValueOrDefault("minwind")?.ToString();
+                if (double.TryParse(minWind, out double minWindD) == false) {
+                    return $"failed to parse minWind (which is '{minWind}') to a valid double";
+                } else {
+                    map.MinimumWind = minWindD;
+                }
+
+                // max wind
                 string? maxWind = atmo.GetValueOrDefault("maxwind")?.ToString();
+                if (double.TryParse(maxWind, out double maxWindD) == false) {
+                    return $"failed to parse maxWind (which is '{maxWind}') to a valid double";
+                } else {
+                    map.MaximumWind = maxWindD;
+                }
+
+                // max metal
                 string? maxMetal = table.GetValueOrDefault("maxmetal")?.ToString();
+                if (double.TryParse(maxMetal, out double maxMetalD) == false) {
+                    return $"failed to parse maxMetal (which is '{maxMetal}') to a valid double";
+                } else {
+                    map.MaxMetal = maxMetalD;
+                }
+
+                // extractor radius
                 string? extractorRadius = table.GetValueOrDefault("extractorradius")?.ToString();
+                if (double.TryParse(extractorRadius, out double extractorRadiusD) == false) {
+                    return $"failed to parse extractorRadius (which is '{extractorRadius}') to a valid double";
+                } else {
+                    map.ExtractorRadius = extractorRadiusD;
+                }
+
+                // tidal strength
                 string? tidalStrength = table.GetValueOrDefault("tidalstrength")?.ToString();
+                if (double.TryParse(tidalStrength, out double tidalStrD) == false) {
+                    return $"failed to parse tidalStrength (which is '{tidalStrength}') to a valid double";
+                } else {
+                    map.TidalStrength = tidalStrD;
+                }
 
                 object? resourcesObj = table["resources"];
                 if (resourcesObj == null) {
@@ -156,7 +189,6 @@ namespace gex.Common.Services.Parser {
 
                 string? version = table.GetValueOrDefault("version")?.ToString();
 
-                BarMapData map = new();
                 map.Name = name; // + (version == null ? "" : $" {version}");
                 if (version != null && map.Name.EndsWith(version) == false) {
                     map.Name += $" {version}";
@@ -167,6 +199,7 @@ namespace gex.Common.Services.Parser {
                 map.NormalMapFilename = resources.GetValueOrDefault("detailnormaltex")?.ToString() ?? "";
                 map.SpecularMapFilename = resources.GetValueOrDefault("speculartex")?.ToString() ?? "";
 
+                // parse header
                 Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, options, cancel);
                 if (header.IsOk == false) {
                     return $"failed to read .smf at '{smfLocation}': {header.Error}";
@@ -174,6 +207,7 @@ namespace gex.Common.Services.Parser {
                 long parseSmfMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
                 map.Header = header.Value;
 
+                // parse tile map
                 if (options.Smts == true) {
                     Result<BarMapSmt, string> smtResult = await ParseSmt(smtLocation!, map.Header.TileIndexes, map.Header.Width / 128, map.Header.Height / 128, 32);
                     if (smtResult.IsOk == false) {
@@ -184,6 +218,20 @@ namespace gex.Common.Services.Parser {
                 }
                 long parseSmtMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+                // extract metal spots from metal map
+                if (options.Metal == true) {
+                    Result<List<BarMapMetalSpot>, string> metalSpots 
+                        = await ExtractMetalSpots(header.Value.MetalMap, map.MaxMetal, map.Header.Width / 2, map.Header.Height / 2);
+
+                    if (metalSpots.IsOk == false) {
+                        return $"failed to extract map spots: {metalSpots.Error}";
+                    }
+
+                    map.MetalSpots = metalSpots.Value;
+                }
+                long metalMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+                // parse normal map
                 if (options.Normals == true) {
                     string normalPath = Path.Join(mapWorkingFolder, "maps", map.NormalMapFilename);
 
@@ -196,7 +244,9 @@ namespace gex.Common.Services.Parser {
 
                     map.NormalMap = DdsToSKBitmap.Convert(dds);
                 }
+                long parseNormal = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
+                // parse specular map
                 if (options.Specular == true) {
                     string specularMap = Path.Join(mapWorkingFolder, "maps", map.SpecularMapFilename);
 
@@ -209,44 +259,86 @@ namespace gex.Common.Services.Parser {
 
                     map.SpeculaMap = DdsToSKBitmap.Convert(dds);
                 }
+                long parseSpec = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+                // parse features
+                if (options.Features == true) {
+                    Result<List<BarFeature>, string> features = await GetFeatures(mapWorkingFolder, cancel);
+                    if (features.IsOk == false) {
+                        return features.Error;
+                    }
+                    map.Features = features.Value;
+
+                    Result<List<BarFeature>, string> defaultFeatures = await _FeatureParser.GetDefaultFeatures(cancel);
+                    if (defaultFeatures.IsOk == true) {
+                        map.Features.AddRange(defaultFeatures.Value);
+                    } else {
+                        _Logger.LogWarning($"failed to load default features [error={defaultFeatures.Error}]");
+                    }
+
+                    Result<BarFeatureSet, string> featureSet = await GetFeatureSet(mapWorkingFolder, cancel);
+                    if (featureSet.IsOk == false) {
+                        return featureSet.Error;
+                    }
+                    map.FeatureSet = featureSet.Value;
+
+                    map.ReclaimableMetal = 0;
+                    map.ReclaimableEnergy = 0;
+                    map.GeothermalCount = 0;
+
+                    HashSet<string> missingFeatureNames = new();
+
+                    Dictionary<string, BarFeature> featureDict = [];
+                    foreach (BarFeature feat in map.Features) {
+                        // both of these get used
+                        featureDict[feat.Name] = feat;
+                        featureDict[Path.GetFileNameWithoutExtension(feat.Object)] = feat;
+                    }
+
+                    if (featureDict.ContainsKey("geovent") == false) {
+                        featureDict["geovent"] = BarFeature.DEFAULT_GEOTHERML;
+                        map.Features.Add(BarFeature.DEFAULT_GEOTHERML);
+                    }
+                    if (featureDict.ContainsKey("treetype") == false) {
+                        featureDict["treetype"] = BarFeature.DEFAULT_TREE;
+                        map.Features.Add(BarFeature.DEFAULT_TREE);
+                    }
+
+                    map.FeatureSet.ObjectList.AddRange(header.Value.FeatureInstances);
+
+                    foreach (BarFeatureInstance inst in map.FeatureSet.ObjectList) {
+                        BarFeature? feat = featureDict.GetValueOrDefault(inst.FeatureName);
+
+                        if (feat == null) {
+                            if (missingFeatureNames.Contains(inst.FeatureName) == false) {
+                                _Logger.LogWarning($"missing feature definition [featureName={inst.FeatureName}] [map={map.Name}]");
+                                missingFeatureNames.Add(inst.FeatureName);
+                            }
+
+                            continue;
+                        }
+
+                        map.ReclaimableEnergy += feat.Energy;
+                        map.ReclaimableMetal += feat.Metal;
+
+                        if (feat.Geothermal == true) {
+                            map.GeothermalCount += 1;
+                        }
+                    }
+                }
+                long parseFeats = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
                 // 2025-04-25 TODO: can this value change? will it always be 64?
                 map.Width = header.Value.Width / 64;
                 map.Height = header.Value.Height / 64;
                 map.ID = header.Value.ID;
 
-                if (double.TryParse(minWind, out double minWindD) == false) {
-                    return $"failed to parse minWind (which is '{minWind}') to a valid double";
-                } else {
-                    map.MinimumWind = minWindD;
-                }
+                _Logger.LogDebug(
+                    $"parsed map steps [map name={map.Name}] [unzip={unzipMs}ms]"
+                    + $" [run lua={runLuaMs}ms] [find smf={findSmfMs}] [parse smf={parseSmfMs}ms] [parse smt={parseSmtMs}ms]"
+                    + $" [parse normal={parseNormal}ms] [parse spec={parseSpec}ms] [parse feats={parseFeats}ms]"
+                );
 
-                if (double.TryParse(maxWind, out double maxWindD) == false) {
-                    return $"failed to parse maxWind (which is '{maxWind}') to a valid double";
-                } else {
-                    map.MaximumWind = maxWindD;
-                }
-
-                if (double.TryParse(extractorRadius, out double extractorRadiusD) == false) {
-                    return $"failed to parse extractorRadius (which is '{extractorRadius}') to a valid double";
-                } else {
-                    map.ExtractorRadius = extractorRadiusD;
-                }
-
-                if (double.TryParse(maxMetal, out double maxMetalD) == false) {
-                    return $"failed to parse maxMetal (which is '{maxMetal}') to a valid double";
-                } else {
-                    map.MaxMetal = maxMetalD;
-                }
-
-                if (double.TryParse(tidalStrength, out double tidalStrD) == false) {
-                    return $"failed to parse tidalStrength (which is '{tidalStrength}') to a valid double";
-                } else {
-                    map.TidalStrength = tidalStrD;
-                }
-
-                _Logger.LogDebug($"parsed map steps [map name={map.Name}] [unzip={unzipMs}ms]"
-                    + $" [run lua={runLuaMs}ms] [find smf={findSmfMs}] [parse smf={parseSmfMs}ms] [parse smt={parseSmtMs}ms]");
                 _Logger.LogInformation($"parsed map info successfully [map name={map.Name}] [timer={timer.ElapsedMilliseconds}ms] [location={location}]");
 
                 return map;
@@ -259,6 +351,14 @@ namespace gex.Common.Services.Parser {
             }
         }
 
+        /// <summary>
+        ///     parse the SMF (spring mape file) of a map
+        /// </summary>
+        /// <param name="location">where the SMF is found</param>
+        /// <param name="options">options for parsing</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, ParseOptions options, CancellationToken cancel) {
             if (File.Exists(location) == false) {
                 return $"failed to open SMF at '{location}'";
@@ -339,9 +439,40 @@ namespace gex.Common.Services.Parser {
                 }
             }
 
+            if (options.Metal == true) {
+                reader.Seek(header.MetalMapOffset);
+                int metalMapSize = (header.Width / 2) * (header.Height / 2);
+
+                Span<byte> buff = reader.Read(metalMapSize);
+                header.MetalMap = buff.ToArray();
+            }
+
+            if (options.Features == true) {
+                reader.Seek(header.FeatureMapOffset);
+                Span<byte> buff = reader.ReadAll();
+
+                if (buff.Length >= 4) {
+                    Result<List<BarFeatureInstance>, string> instances = ParseFeatureData(buff.ToArray());
+                    if (instances.IsOk == false) {
+                        return instances.Error;
+                    }
+                    header.FeatureInstances = instances.Value;
+                }
+            }
+
             return header;
         }
 
+        /// <summary>
+        ///     parse the SMT of a map
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="tileIndexes"></param>
+        /// <param name="mapWidthUnits"></param>
+        /// <param name="mapHeightUnits"></param>
+        /// <param name="mipmapSize"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
         private async Task<Result<BarMapSmt, string>> ParseSmt(string location, int[] tileIndexes,
             int mapWidthUnits, int mapHeightUnits, int mipmapSize = 32, CancellationToken cancel = default) {
 
@@ -423,6 +554,244 @@ namespace gex.Common.Services.Parser {
         }
 
         /// <summary>
+        ///     get all the features within a map
+        /// </summary>
+        /// <param name="workingDir"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        private async Task<Result<List<BarFeature>, string>> GetFeatures(string workingDir, CancellationToken cancel) {
+            string featureFolder = Path.Join(workingDir, "features");
+
+            if (Directory.Exists(featureFolder) == false) {
+                _Logger.LogTrace($"no feature folder exists for map [workingDir={workingDir}] [featureFolder={featureFolder}]");
+                return Result<List<BarFeature>, string>.Ok([]);
+            }
+
+            List<BarFeature> features = [];
+
+            string[] files = Directory.GetFiles(featureFolder);
+            foreach (string file in files) {
+                if (file.EndsWith(".lua") == false) {
+                    _Logger.LogTrace($"found non-lua file in feature folder, skipping [featureFolder={featureFolder}]");
+                    continue;
+                }
+
+                string contents = await File.ReadAllTextAsync(file, cancel);
+
+                Result<List<BarFeature>, string> fileFeatures = await _FeatureParser.Parse(contents, cancel);
+                if (fileFeatures.IsOk == false) {
+                    _Logger.LogError($"failed to parse fileFeatures [file={file}] [featureFolder={featureFolder}] [error={fileFeatures.Error}]");
+                    // some maps have invalid lua (dsd 8 way :stare:), try next file
+                    continue;
+                }
+
+                features.AddRange(fileFeatures.Value);
+            }
+
+            return features;
+        }
+
+        /// <summary>
+        ///     get the <see cref="BarFeatureSet"/> of a map
+        /// </summary>
+        /// <param name="workingDir">root folder</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        private async Task<Result<BarFeatureSet, string>> GetFeatureSet(string workingDir, CancellationToken cancel) {
+            string setFile = Path.Join(workingDir, "mapconfig", "featureplacer", "set.lua");
+            if (File.Exists(setFile) == false) {
+                _Logger.LogTrace($"no set.lua for map [path={setFile}]");
+                return new BarFeatureSet();
+            }
+
+            string content = await File.ReadAllTextAsync(setFile, cancel);
+
+            return await _FeatureSetParser.Parse(content, cancel);
+        }
+
+        private Result<List<BarFeatureInstance>, string> ParseFeatureData(byte[] data) {
+            ByteArrayReader reader = new(data);
+
+            int featureCount = reader.ReadInt32LE();
+            int featureTypeCount = reader.ReadInt32LE();
+
+            List<string> featureNames = [];
+
+            for (int i = 0; i < featureCount; ++i) {
+                byte[] cstr = reader.ReadUntilNull();
+                string str = Encoding.ASCII.GetString(cstr); // trim \0 at end
+                featureNames.Add(str);
+            }
+
+            List<BarFeatureInstance> features = [];
+
+            for (int i = 0; i < featureTypeCount; ++i) {
+                int nameIndex = reader.ReadInt32LE();
+
+                if (nameIndex < 0 || nameIndex > featureNames.Count) {
+                    return $"name index is out of bounds [nameIndex={nameIndex}] [featureNames.Count={featureNames.Count}]";
+                }
+
+                float x = reader.ReadFloat32LE();
+                float y = reader.ReadFloat32LE();
+                float z = reader.ReadFloat32LE();
+                float rot = reader.ReadFloat32LE();
+                float scale = reader.ReadFloat32LE();
+
+                BarFeatureInstance feat = new();
+                feat.FeatureName = featureNames[nameIndex];
+                feat.X = x;
+                feat.Z = z;
+                feat.Rotation = rot;
+
+                features.Add(feat);
+            }
+
+            return features;
+        }
+
+        /// <summary>
+        ///     extract a list of <see cref="BarMapMetalSpot"/>s from a metalMap
+        /// </summary>
+        /// <param name="metalMap">metalMap</param>
+        /// <param name="maxMetal">what the maximum value (255) in the metalMap means</param>
+        /// <param name="width">width of the metal map</param>
+        /// <param name="height">height of the metal map</param>
+        /// <returns>
+        ///     a result containing a list of <see cref="BarMapMetalSpot"/>s,
+        ///     or a string containing an error why the metal spots could not be extracted
+        /// </returns>
+        private async Task<Result<List<BarMapMetalSpot>, string>> ExtractMetalSpots(byte[] metalMap, double maxMetal, int width, int height) {
+            if (width * height != metalMap.Length) {
+                return $"expected metalMap to have {width * height} elements ({width} x {height}), had {metalMap.Length} instead";
+            }
+
+            byte[][] metalGrid = new byte[height][];
+            for (int i = 0; i < height; ++i) {
+                metalGrid[i] = new byte[width];
+            }
+
+            for (int i = 0; i < metalMap.Length; ++i) {
+                int row = i / width;
+                int col = i % width;
+
+                metalGrid[row][col] = metalMap[i];
+            }
+
+            /*
+            string m = "";
+            for (int h = 0; h < metalGrid.Length; ++h) {
+                for (int w = 0; w < metalGrid[0].Length; ++w) {
+                    m += $"{metalGrid[h][w]:X2} ";
+                }
+                m += "\n";
+            }
+            _Logger.LogInformation(m);
+            */
+
+            List<BarMapMetalSpot> spots = [];
+
+            Stack<int> search = [];
+            HashSet<int> used = [];
+
+            // take a row and column pair and turn it into an index used in |search| and |used|
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int _i(int row, int col) => row * width + col;
+
+            // take a row and column pair, and add all adjacent squares for searching, 
+            //      unless that square was already searched or included in a metal spot already
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void _addAdj(int r, int c) {
+                if (r > 0) { _push(_i(r - 1, c)); }
+                if (r < height - 1) { _push(_i(r + 1, c)); }
+
+                if (c > 0) { _push(_i(r, c - 1)); }
+                if (c < width - 1) { _push(_i(r, c + 1)); }
+            }
+
+            // push an index (which is a row&col pair) to be search, and mark that index as search (in |used|)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void _push(int index) {
+                if (used.Contains(index) == false) {
+                    search.Push(index);
+                    used.Add(index);
+                }
+            }
+
+            // go thru each grid square, finding any coords that have a value greater than 0, and adding that square
+            //      and all adjacent squares (and all those adjacent to the adjacent squares, repeat) with a value
+            //      greater than 0 to a new metal spot's value.
+            //  a list of squares already visited is kept, and no square can be used more than 1
+
+            // 1. go thru each row and column pair (coord -> index)
+            // 2. if coord has a value greater than 0 add it and all adjacent (no diagonals) squares to search queue
+            // 3. if search queue is empty, go back to step (1)
+            // 4. get the next search search, if value is >0, then add it's value to the metal spot's worth, and add all adjacent squares
+            // 5. if the search queue isn't empty, go back to step (4)
+            for (int r = 0; r < metalGrid.Length; ++r) {
+                for (int c = 0; c < metalGrid[0].Length; ++c) {
+                    byte value = metalGrid[r][c];
+
+                    int index = _i(r, c);
+
+                    if (used.Contains(index) == true) {
+                        continue;
+                    }
+
+                    if (value == 0) {
+                        continue;
+                    }
+
+                    // a spot was found!
+                    _addAdj(r, c);
+
+                    BarMapMetalSpot spot = new();
+
+                    // bounding box of all the squares used to make this spot,
+                    //      used to create the center of the spot
+                    int minR = r;
+                    int maxR = r;
+                    int minC = c;
+                    int maxC = c;
+
+                    while (search.Count > 0) {
+                        int a = search.Pop();
+
+                        int ar = a / width;
+                        int ac = a % width;
+
+                        byte av = metalGrid[ar][ac];
+
+                        if (av > 0) {
+                            // adjust bounds
+                            minR = Math.Min(minR, ar);
+                            maxR = Math.Max(maxR, ar);
+                            minC = Math.Min(minC, ac);
+                            maxC = Math.Max(maxC, ac);
+
+                            _addAdj(ar, ac);
+                            spot.Worth += av;
+                            spot.SquareCount += 1;
+
+                            //_Logger.LogTrace($"adding worth to spot [ar={ar}] [ac={ac}] [av={av}]");
+                        }
+                    }
+
+                    spot.X = (maxC + minC) / 2d * 16d; // 16 = metal map square size
+                    spot.Z = (maxR + minR) / 2d * 16d;
+                    spots.Add(spot);
+                    //_Logger.LogDebug($"added new spot [x={spot.X}] [mmc={minC}/{maxC}] [z={spot.Z}] [mmr={minR}/{maxR}] [worth={spot.Worth}] [sq count={spot.SquareCount}]");
+                }
+            }
+
+            foreach (BarMapMetalSpot spot in spots) {
+                spot.Worth = spot.Worth * maxMetal / 1000d;
+            }
+
+            return spots;
+        }
+
+        /// <summary>
         ///		try different places to find the SMF
         /// </summary>
         /// <param name="workingDir">directory where the map was extracted to</param>
@@ -476,11 +845,15 @@ namespace gex.Common.Services.Parser {
 
             public bool HeightMap { get; set; } = false;
 
+            public bool Metal { get; set; } = false;
+
             public bool Smts { get; set; } = false;
 
             public bool Normals { get; set; } = false;
 
             public bool Specular { get; set; } = false;
+
+            public bool Features { get; set; } = false;
 
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace gex.Services.Parser {
+namespace gex.Common.Services.Parser {
 
     public class BaseLuaTableParser {
 
