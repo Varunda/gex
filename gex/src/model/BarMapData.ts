@@ -12,13 +12,15 @@ export class BarMapData {
     public width: number = 0;
     public height: number = 0;
     public author: string = "";
+    public metalSpots: BarMapMetalSpot[] | null = null;
 
     public header: BarMapFileHeader = new BarMapFileHeader();
 
     public static parse(elem: any): BarMapData {
         return {
             ...elem,
-            header: BarMapFileHeader.parse(elem.header)
+            header: BarMapFileHeader.parse(elem.header),
+            metalSpots: elem.metalSpots == null ? null : elem.metalSpots.map((iter: any) => BarMapMetalSpot.parse(iter)),
         };
     }
 
@@ -40,6 +42,20 @@ export class BarMapFileHeader {
         return {
             ...elem
         }
+    }
+
+}
+
+export class BarMapMetalSpot {
+
+    public x: number = 0;
+    public z: number = 0;
+    public worth: number = 0;
+
+    public static parse(elem: any): BarMapMetalSpot { 
+        return {
+            ...elem
+        };
     }
 
 }

@@ -63,6 +63,7 @@ namespace gex.Services.Db {
             services.AddSingleton<BarUserUnitsMadeDb>();
             services.AddSingleton<UserUnitsMadeNeedsUpdateDb>();
             services.AddSingleton<UserUnitsMadeLeaderboardDb>();
+            services.AddSingleton<BarUserSkillPercentileDb>();
 
             // map stats
             services.AddSingleton<IBarMapDb, PgBarMapDb>();

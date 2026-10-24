@@ -191,20 +191,30 @@
             </h4>
 
             <div class="d-flex flex-wrap justify-content-around border-bottom pb-3 mb-3" style="gap: 1rem;">
-                <div v-for="skill in skills" :key="skill.gamemode" class="hoverable text-center mx-2 rounded p-3">
-                    <h5 class="border-bottom py-1">
+                <div v-for="skill in skills" :key="skill.gamemode" class="hoverable skill-card">
+                    <h4 class="border-bottom py-1">
                         {{ skill.gamemode | gamemode }}
-                    </h5>
+                    </h4>
 
-                    <div>
-                        {{ skill.skill | locale(2) }}
-                        <span class="text-muted">
-                            &plusmn;{{ skill.skillUncertainty | locale(2) }}
+                    <div class="d-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto, auto; gap: 0.5rem;">
+                        <span style="grid-row: 1; grid-column: 1;">
+                            {{ skill.skill | locale(2) }}
+                            <small class="text-muted">
+                                &plusmn;{{ skill.skillUncertainty | locale(2) }}
+                            </small>
                         </span>
-                    </div>
 
-                    <div :title="skill.lastUpdated | moment">
-                        On {{ skill.lastUpdated | moment("yyyy-MM-dd") }}
+                        <span style="grid-row: 1; grid-column: 2;">
+                            <percentile-cell :value="skill.skill" :percent="skill.percentile" v-if="skill.percentile != null"></percentile-cell>
+
+                            <span v-else title="Uncertainty too high" class="text-muted">
+                                --
+                            </span>
+                        </span>
+
+                        <span :title="skill.lastUpdated | moment" style="grid-row: 2; grid-column: 1 / span 2;">
+                            Last played {{ skill.lastUpdated | timeAgoRelative }} ago
+                        </span>
                     </div>
                 </div>
             </div>
@@ -281,6 +291,19 @@
     .img-map-right {
         background-position: right -36px !important;
     }
+
+    .skill-card {
+        padding: 1rem;
+        text-align: center;
+        margin: 0 0.5rem;
+        border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+    }
+
+    .skill-card:hover {
+        background: #333;
+        transition: background 0.2s;
+
+    }
 </style>
 
 <script lang="ts">
@@ -293,6 +316,7 @@
 
     import { FactionIcon } from "components/app/FactionIcon";
     import InfoHover from "components/InfoHover.vue";
+    import PercentileCell from "./PercentileCell.vue";
 
     import { BarUser } from "model/BarUser";
     import { BarUserMapStats } from "model/BarUserMapStats";
@@ -309,6 +333,7 @@
     import "filters/LocaleFilter";
     import "filters/BarFactionFilter";
     import "filters/BarGamemodeFilter";
+    import "filters/TimeAgoRelativeFilter";
 
     import { FactionUtil } from "util/Faction";
     import { GamemodeUtil } from "util/Gamemode";
@@ -808,7 +833,7 @@
         },
 
         components: {
-            FactionIcon, InfoHover
+            FactionIcon, InfoHover, PercentileCell
         }
     });
     export default UserOverview;

@@ -95,9 +95,9 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///     get the <see cref="BarMapData"/> for a specific map, by loading it from the file system
+        ///     get the <see cref="BarMapData"/> for a specific map
         /// </summary>
-        /// <param name="mapFilename">filename of the map (without the .sd7)</param>
+        /// <param name="mapFilename">filename of the map (without the .sd7). case insensitive</param>
         /// <param name="includeHeader">will the <see cref="BarMapData.Header"/> be populated? defaults to true</param>
         /// <param name="includeHeightMap">
         ///     will <see cref="BarMapFileHeader.HeightMap"/> be populated?
@@ -177,40 +177,6 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk<BarMapData>(copy);
-
-            /*
-            string mapPath = Path.Join(_StorageOptions.Value.MapLocation, "maps", (mapFilename + ".sd7").EscapeRecoilFilesytemCharacters());
-            if (System.IO.File.Exists(mapPath) == false) {
-                return ApiNotFound<BarMapData>($"{nameof(BarMap)} {mapFilename}");
-            }
-
-            Result<BarMapData, string> result = await _MapParser.Parse(mapPath, new BarMapParser.ParseOptions() {
-                HeightMap = includeHeightMap,
-                Header = includeHeader || includeHeightMap,
-                Smts = false,
-                Metal = includeMetalSpots,
-                Features = includeFeatures || includeFeatureList || includeGeothermals
-            }, cancel);
-            if (result.IsOk == false) {
-                _Logger.LogWarning($"failed to parse map [mapFilename={mapFilename}] [error={result.Error}]");
-                return ApiInternalError<BarMapData>($"failed to parse map: {result.Error}");
-            }
-
-            if (includeFeatureList == false) {
-                result.Value.Features = [];
-                result.Value.FeatureSet = null;
-            } else if (includeGeothermals == true) {
-                result.Value.Features = result.Value.Features.Where(iter => iter.Geothermal == true).ToList();
-
-                HashSet<string> geoventNames = new HashSet<string>(result.Value.Features.Select(iter => iter.Name));
-                geoventNames.Add("geovent");
-
-                result.Value.FeatureSet!.ObjectList = result.Value.FeatureSet.ObjectList
-                    .Where(iter => geoventNames.Contains(iter.FeatureName)).ToList();
-            }
-
-            return ApiOk(result.Value);
-            */
         }
 
         /// <summary>

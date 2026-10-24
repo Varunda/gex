@@ -16,7 +16,7 @@ namespace gex.Models.Api {
 
         public string? CountryCode { get; set; }
 
-        public List<BarUserSkill> Skill { get; set; } = [];
+        public List<ApiBarUserSkill> Skill { get; set; } = [];
 
         public List<BarUserMapStats> MapStats { get; set; } = [];
 

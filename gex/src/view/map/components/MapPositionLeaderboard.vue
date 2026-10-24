@@ -97,6 +97,13 @@
             }
         },
 
+        mounted: function(): void {
+            const search: URLSearchParams = new URLSearchParams(location.search);
+            if (search.has("position")) {
+                this.selectedPosition = search.get("position");
+            }
+        },
+
         methods: {
 
         },
@@ -135,6 +142,23 @@
 
                 return this.entries.find(iter => iter.role == this.selectedPosition) ?? null;
             }
+        },
+
+        watch: {
+            selectedPosition: function(): void {
+                if (this.selectedPosition == null) {
+                    return;
+                }
+
+                const url = new URL(location.href);
+                const keys: string[] = Array.from(url.searchParams.keys());
+                for (const key of keys) {
+                    url.searchParams.delete(key);
+                }
+                url.searchParams.append("position", this.selectedPosition);
+                history.pushState({ path: url.href }, "", url);
+            }
+
         },
 
         components: {

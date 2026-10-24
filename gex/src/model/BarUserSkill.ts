@@ -5,6 +5,7 @@ export class BarUserSkill {
     public gamemode: number = 0;
     public skill: number = 0;
     public skillUncertainty: number = 0;
+    public percentile: number | null = null;
     public lastUpdated: Date = new Date();
 
     public static parse(elem: any): BarUserSkill {

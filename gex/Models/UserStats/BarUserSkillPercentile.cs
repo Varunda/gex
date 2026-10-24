@@ -1,6 +1,8 @@
 ﻿using Dapper.ColumnMapper;
 using gex.Common.Code;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace gex.Models.UserStats {
 
@@ -82,5 +84,55 @@ namespace gex.Models.UserStats {
         [ColumnMapping("p100")]
         public double P100 { get; set; }
         
+
+        public double CalculatePercentile(double skill) {
+            if (skill <= P0) {
+                return 0;
+            }
+
+            if (skill >= P100) {
+                return 100;
+            }
+
+            double min = P95;
+            double max = P100;
+
+            List<double> gaps = [
+                5, 5, 5, 5, 5,
+                5, 5, 5, 5, 5,
+                5, 5, 5, 5, 5,
+                5, 5, 5, 5, 3,
+                1, 1, 0
+            ];
+
+            List<double> values = [
+                P0, P5, P10, P15, P20, 
+                P25, P30, P35, P40, P45,
+                P50, P55, P60, P65, P70,
+                P75, P80, P85, P90, P95,
+                P98, P99, P100
+            ];
+
+            int i;
+            for (i = 1; i < values.Count; ++i) {
+                double iter = values[i];
+                if (skill < iter) {
+                    min = values[i - 1];
+                    max = values[i];
+                    break;
+                }
+            }
+
+            double range = max - min;
+            double offset = range - skill + min;
+            double percent = 1d - (offset / range);
+            double gap = gaps[i - 1];
+
+            double gapSum = gaps.Take(i - 1).Sum();
+
+            double percentile = gapSum + (gap * percent);
+            return percentile;
+        }
+
     }
 }

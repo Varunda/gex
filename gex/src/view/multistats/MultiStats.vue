@@ -1850,6 +1850,7 @@
 
                         const dist: number = Math.sqrt(Math.pow(prevFrame.x - pos.x, 2) + Math.pow(prevFrame.z - pos.z, 2));
                         inst.value += dist;
+                        prevPos.set(key, pos);
 
                         posMap.set(key, inst);
                     }
@@ -1882,7 +1883,7 @@
                             continue;
                         }
 
-                        const lifespan: number = (killedAtFrame - createdAtFrame) / 30;
+                        const lifespan: number = (killedAtFrame - createdAtFrame) / 30 / 60;
                         const dmgDealtInst: UnitInstance = {
                             unitID: unit.unitID,
                             defName: def?.definitionName ?? `<no def ${unit.definitionID}>`,

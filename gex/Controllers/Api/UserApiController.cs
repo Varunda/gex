@@ -47,6 +47,7 @@ namespace gex.Controllers.Api {
         private readonly IBarMatchAllyTeamDb _AllyTeamDb;
         private readonly BaseQueue<FixCountryCodeQueueEntry> _FixCountryCodeQueue;
         private readonly GameUnitsCreatedRepository _GameUnitsCreatedRepository;
+        private readonly BarUserSkillPercentileDb _SkillPercentileDb;
 
         public UserApiController(ILogger<UserApiController> logger,
             BarUserRepository userRepository, BarUserMapStatsDb mapStatsDb,
@@ -54,7 +55,7 @@ namespace gex.Controllers.Api {
             IBarMapDb mapDb, MapStatsStartSpotRepository startSpotRepository,
             BarMatchPlayerRepository matchPlayerRepository, BarMatchRepository matchRepository,
             IBarMatchAllyTeamDb allyTeamDb, BaseQueue<FixCountryCodeQueueEntry> fixCountryCodeQueue,
-            GameUnitsCreatedRepository gameUnitsCreatedRepository) {
+            GameUnitsCreatedRepository gameUnitsCreatedRepository, BarUserSkillPercentileDb skillPercentileDb) {
 
             _Logger = logger;
             _UserRepository = userRepository;
@@ -68,6 +69,7 @@ namespace gex.Controllers.Api {
             _AllyTeamDb = allyTeamDb;
             _FixCountryCodeQueue = fixCountryCodeQueue;
             _GameUnitsCreatedRepository = gameUnitsCreatedRepository;
+            _SkillPercentileDb = skillPercentileDb;
         }
 
         /// <summary>
@@ -114,7 +116,18 @@ namespace gex.Controllers.Api {
             response.CountryCode = user.CountryCode;
 
             if (includeSkill == true) {
-                response.Skill = await _SkillDb.GetByUserID(userID, cancel);
+                List<BarUserSkillPercentile> percentiles = await _SkillPercentileDb.GetAll(cancel);
+
+                List<BarUserSkill> userSkill = await _SkillDb.GetByUserID(userID, cancel);
+
+                response.Skill = userSkill.Select(iter => {
+                    // only show if <= 5 skill uncertainty
+                    BarUserSkillPercentile? perc = iter.SkillUncertainty <= 5d ? percentiles.FirstOrDefault(i2 => i2.Gamemode == iter.Gamemode) : null;
+
+                    return new ApiBarUserSkill(iter) {
+                        Percentile = perc?.CalculatePercentile(iter.Skill),
+                    };
+                }).ToList();
             }
 
             if (includeMapStats == true) {
@@ -185,6 +198,8 @@ namespace gex.Controllers.Api {
 
             List<BarUser> users = await _UserRepository.GetByIDs(userIDs, cancel);
 
+            List<BarUserSkillPercentile> percentiles = await _SkillPercentileDb.GetAll(cancel);
+
             List<ApiBarUser> ret = [];
             foreach (BarUser user in users) {
                 if (user.CountryCode == null) {
@@ -199,7 +214,15 @@ namespace gex.Controllers.Api {
                 api.CountryCode = user.CountryCode;
 
                 if (includeSkill == true) {
-                    api.Skill = await _SkillDb.GetByUserID(api.UserID, cancel);
+                    List<BarUserSkill> userSkill = await _SkillDb.GetByUserID(user.UserID, cancel);
+                    api.Skill = userSkill.Select(iter => {
+                        // only show if <= 5 skill uncertainty
+                        BarUserSkillPercentile? perc = iter.SkillUncertainty <= 5d ? percentiles.FirstOrDefault(i2 => i2.Gamemode == iter.Gamemode) : null;
+
+                        return new ApiBarUserSkill(iter) {
+                            Percentile = perc?.CalculatePercentile(iter.Skill)
+                        };
+                    }).ToList();
                 }
 
                 ret.Add(api);

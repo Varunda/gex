@@ -18,14 +18,19 @@
 
         <div v-else-if="barMap.state == 'loaded'">
             <div class="text-center border-bottom mb-5 pb-5">
-                <h1>
-                    {{ barMap.data.name }}
-                </h1>
+                <div>
+                    <h1 class="d-inline">
+                        {{ barMap.data.name }}
+                    </h1>
 
-                <h5 class="mb-0">
-                    by {{ barMap.data.author }}
-                </h5>
+                    <h4 class="mb-0 d-inline">
+                        by {{ barMap.data.author }}
+                    </h4>
+                </div>
 
+                <h4 class="mb-0">
+                    {{ barMap.data.description }}
+                </h4>
 
                 <div v-if="isDev">
                     <button class="btn btn-info" @click="recalculateMapStartSpots">
@@ -55,65 +60,93 @@
                 <div class="flex-grow-0"></div>
             </div>
 
-            <div class="d-flex justify-content-center">
-                <div class="flex-grow-0 bg-danger">
+            <div class="d-grid mb-3" style="grid-template-columns: 1fr auto 1fr;">
+                <div class="border border-end">
+                    <h3 class="text-center">Map info</h3>
+                    <table class="table table-borderless">
+                        <tr class="table-info-row">
+                            <td>Size</td>
+                            <td>{{ barMap.data.width }}x{{ barMap.data.height }}</td>
+                        </tr>
+
+                        <tr class="table-info-row">
+                            <td>Tidal</td>
+                            <td>{{ barMap.data.tidalStrength }}</td>
+                        </tr>
+
+                        <tr class="table-info-row">
+                            <td>Wind</td>
+                            <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
+                        </tr>
+
+                        <tr class="table-info-row">
+                            <td>Symmetry axis</td>
+                            <td>{{ mapSymmetryAxis }}</td>
+                        </tr>
+                    </table>
                 </div>
-                <div id="d3_canvas" style="position: sticky" class="d-inline-block">
+
+                <div id="d3_canvas" style="position: sticky; width: 500px; height: 500px;" class="d-inline-block">
                     <svg id="map-svg" :viewBox="viewboxStr"></svg>
                 </div>
-                <div class="flex-grow-0 bg-warning">
+
+                <div class="border">
+                    <h3 class="text-center">Metal info</h3>
+                    <table class="table table-borderless" style="table-layout: fixed">
+                        <tr class="table-info-row">
+                            <td>Metal range</td>
+                            <td>{{ metalMinValue }}-{{ metalMaxWorth }}</td>
+                        </tr>
+                    </table>
+
+                    <h5 class="mb-0 text-center">Mex distribution</h5>
+                    <table class="table table-borderless" style="table-layout: fixed;">
+                        <tr class="table-info-row">
+                            <td>Mex value</td>
+                            <td>Count</td>
+                        </tr>
+
+                        <tr v-for="stat in metalSpotStats" :key="stat.value" class="table-info-row">
+                            <td>{{ stat.value }}</td>
+                            <td>{{ stat.count }}</td>
+                        </tr>
+
+                        <tr class="table-info-row fw-bold">
+                            <td>Total</td>
+                            <td>
+                                <span v-if="mapData.state == 'loaded' && mapData.data.metalSpots != null">
+                                    {{ mapData.data.metalSpots.length }}
+                                </span>
+                                <span v-else>
+                                    --
+                                </span>
+                            </td>
+                        </tr>
+
+                    </table>
+
                 </div>
             </div>
 
-            <table class="table table-borderless">
-                <tr>
-                    <td class="text-end pe-4">Size</td>
-                    <td>{{ barMap.data.width }}x{{ barMap.data.height }}</td>
-                </tr>
-
-                <tr>
-                    <td class="text-end pe-4">Max metal</td>
-                    <td>{{ barMap.data.maxMetal }}</td>
-                </tr>
-
-                <tr>
-                    <td class="text-end pe-4">Tidal</td>
-                    <td>{{ barMap.data.tidalStrength }}</td>
-                </tr>
-
-                <tr>
-                    <td class="text-end pe-4">Wind</td>
-                    <td>{{ barMap.data.minimumWind }}-{{ barMap.data.maximumWind }}</td>
-                </tr>
-
-                <tr>
-                    <td class="text-end pe-4">Symmetry axis</td>
-                    <td>{{ mapSymmetryAxis }}</td>
-                </tr>
-            </table>
-
-            <div class="d-flex justify-content-center">
+            <div class="d-flex justify-content-center mb-3">
                 <div class="flex-grow-0"></div>
                 <div>
                     <toggle-button v-model="showStartSpotMetadata">
                         Show start spot suggestions
                     </toggle-button>
+
+                    <toggle-button v-model="showMetalSpots">
+                        Show metal spots
+                    </toggle-button>
+
+                    <toggle-button v-model="showMetalSpotValue">
+                        Show metal spot value
+                    </toggle-button>
                 </div>
                 <div class="flex-grow-0"></div>
             </div>
 
-            <div v-if="isMapImageLoading == true" :style="loadingRectangleDimensions" class="text-center">
-                Loading map image...
-            </div>
-
-            <div class="d-flex mb-3">
-                <div class="flex-grow-1">
-
-                </div>
-            </div>
-
             <div v-if="isMapEditor" class="text-center">
-
                 <collapsible header-text="Map start spot data editor">
                     <table class="table">
                         <thead>
@@ -361,6 +394,23 @@
 
 </template>
 
+<style scoped>
+
+    .table-info-row {
+
+    }
+
+    .table-info-row > td:first-child {
+        padding-right: 0.5rem;
+        text-align: right;
+    }
+
+    .table-info-row > td:last-child {
+        text-align: left;
+    }
+
+</style>
+
 <script lang="ts">
     import Vue from "vue";
     import { Loadable, Loading } from "Loading";
@@ -390,6 +440,7 @@
     import { BarMap, StartPosition, StartPositionData } from "model/BarMap";
     import { BarMatch } from "model/BarMatch";
     import { MapStats } from "model/map_stats/MapStats";
+    import { BarMapData } from "model/BarMapData";
     import { MapStatsByGamemode } from "model/map_stats/MapStatsByGamemode";
     import { MapStatsStartSpot } from "model/map_stats/MapStatsStartSpot";
     import { MapStatsByFaction } from "model/map_stats/MapStatsByFaction";
@@ -406,7 +457,10 @@
     import AccountUtil from "util/Account";
     import Toaster from "Toaster";
 
-    import * as three from "three";
+    type MetalSpotStat = {
+        value: number;
+        count: number;
+    }
 
     let ROOT: d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null = null;
     let SVG: d3.Selection<d3.BaseType, unknown, HTMLElement, unknown> | null = null;
@@ -430,6 +484,7 @@
 
                 tooltip: null as any | null,
                 transform: { k: 1 as number, x: 0 as number, y: 0 as number },
+                zoom: {} as any,
 
                 selectedGamemode: 0 as number,
 
@@ -440,6 +495,7 @@
                 isMapImageLoading: false as boolean,
 
                 barMap: Loadable.idle() as Loading<BarMap>,
+                mapData: Loadable.idle() as Loading<BarMapData>,
                 stats: Loadable.idle() as Loading<MapStats>,
                 recent: Loadable.idle() as Loading<BarMatch[]>,
 
@@ -456,6 +512,8 @@
                 ] as RGB[],
 
                 showStartSpotMetadata: false as boolean,
+                showMetalSpots: true as boolean,
+                showMetalSpotValue: true as boolean,
 
                 overrideCopy: {
                     map: "" as string,
@@ -484,6 +542,23 @@
                 }
 
                 return "";
+            },
+
+            bind: async function(): Promise<void> {
+                this.barMap = Loadable.loading();
+                this.barMap = await MapApi.getByFilename(this.mapFilename);
+                if (this.barMap.state == "loaded") {
+                    document.title = `Gex / Map / ${this.barMap.data.name}`;
+                }
+
+                this.mapData = Loadable.loading();
+                this.mapData = await MapApi.getMapData(this.mapFilename);
+
+                this.stats = Loadable.loading();
+                this.stats = await MapStatsApi.getByMapFilename(this.mapFilename);
+
+                this.setupMap();
+                this.bindRecent();
             },
 
             setupMap: function(): void {
@@ -543,6 +618,9 @@
                     }
 
                     SVG = d3.select("#map-svg");
+                    if (SVG == null) {
+                        throw `failed to load SVG from #map-svg`;
+                    }
 
                     if (img.complete) {
                         console.log(`Map> img.complete, setupImg`);
@@ -580,7 +658,17 @@
                 ROOT = this.svg.append("g")
                     .attr("id", "doc-root");
 
-                console.log(ROOT);
+                this.zoom = d3z.zoom()
+                    .scaleExtent([1, 10])
+                    .translateExtent([[0, 0], [this.imgW, this.imgH]])
+                    .on("zoom", (ev: any) => {
+                        this.root!.attr("transform", ev.transform);
+
+                        this.transform = ev.transform;
+                    }
+                );
+
+                this.svg.call(this.zoom);
 
                 ROOT.append("image")
                     .classed("map-no-remove", true)
@@ -611,21 +699,6 @@
                 this.mapFilename = location.pathname.split("/")[2];
             },
 
-            bind: async function(): Promise<void> {
-                this.barMap = Loadable.loading();
-                this.barMap = await MapApi.getByFilename(this.mapFilename);
-                if (this.barMap.state == "loaded") {
-                    document.title = `Gex / Map / ${this.barMap.data.name}`;
-                }
-
-                this.stats = Loadable.loading();
-                this.stats = await MapStatsApi.getByMapFilename(this.mapFilename);
-
-                this.setupMap();
-                this.bindRecent();
-
-                this.getMapSym();
-            },
 
             bindRecent: async function(): Promise<void> {
                 if (this.barMap.state != "loaded") {
@@ -728,7 +801,6 @@
                             .attr("cx", this.toImgX(spot.x))
                             .attr("cy", this.toImgZ(spot.y))
                             .attr("r", `${r}`)
-                            //.style("fill", `rgba(255, 0, 0, ${opacity / 100})`)
                             .style("fill", "#FFFFFF55")
                             .style("stroke", "#000000CC")
                             .style("stroke-width", "2px")
@@ -747,62 +819,49 @@
                 }
             },
 
-            drawMapSymmetry: function(): void {
-                if (this.svg == null) { return console.warn(`cannot draw map sym: svg is null`); }
-                if (this.root == null) { return console.warn(`cannot draw map sym: root is null`); }
+            drawMetalSpots: function(): void {
+                if (this.svg == null) { return console.warn(`cannot draw metal spots: svg is null`); }
+                if (this.root == null) { return console.warn(`cannot draw metal spots: root is null`); }
 
-                if (this.barMap.state != "loaded") {
+                if (this.mapData.state != "loaded" || this.barMap.state != "loaded") {
                     return;
                 }
 
-                //this.barMap.data.symmetryAxis
-
-            },
-
-            getMapSym: function(): void {
-
-                if (this.barMap.state != "loaded") {
+                if (this.mapData.data.metalSpots == null) {
                     return;
                 }
 
-                if (this.barMap.data.startPositionData == null) {
-                    return;
+                const g = this.root.append("g")
+                    .attr("id", "metal-spots-group")
+                    .style("opacity", this.showMetalSpots == true ? "1" : "0");
+
+                const textG = this.root.append("g")
+                    .attr("id", "metal-spots-value-group")
+                    .style("opacity", this.showMetalSpotValue == true ? "1" : "0");
+
+                const r: number = Math.max(this.toImgX(this.barMap.data.extractorRadius || 50), this.toImgZ(this.barMap.data.extractorRadius || 50));
+
+                for (const metalSpot of this.mapData.data.metalSpots) {
+                    g.append("circle")
+                        .attr("cx", this.toImgX(metalSpot.x))
+                        .attr("cy", this.toImgZ(metalSpot.z))
+                        .attr("r", `${r}`)
+                        .style("fill", "#FF0000FF")
+                        .style("stroke", "#000000CC")
+                        .style("stroke-width", "2px")
+                        .style("paint-order", "fill stroke");
+
+                    textG.append("text")
+                        .attr("x", this.toImgX(metalSpot.x))
+                        .attr("y", this.toImgZ(metalSpot.z))
+                        .style("fill", "white")
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "1.3rem")
+                        .style("paint-order", "stroke")
+                        .style("stroke", "black").style("stroke-width", "2px")
+                        .style("pointer-events", "none")
+                        .text(`${metalSpot.worth.toFixed(1)}`);
                 }
-
-                let vm: number = 0;
-                let hm: number = 0;
-                let dm: number = 0;
-
-                const MAX_SPOT_DIFF: number = 300;
-
-                const config = this.barMap.data.startPositionData.configurations[0];
-
-                const spots: Map<string, StartPosition> = new Map();
-                for (const pos of this.barMap.data.startPositionData.positions) {
-                    spots.set(pos.name, pos);
-                }
-
-                const mapH: number = this.barMap.data.height * 512;
-                const mapW: number = this.barMap.data.width * 512;
-
-                for (let i = 0; i < config.playersPerTeam; ++i) {
-                    const t1 = config.sides[0].starts[i];
-                    const t2 = config.sides[1].starts[i];
-
-                    const t1s = spots.get(t1.spawnPoint)!;
-                    const t2s = spots.get(t2.spawnPoint)!;
-
-                    const x1diff: number = Math.abs(t1s.x);
-                    const x2diff: number = Math.abs(mapW - t2s.x);
-                    const xdiff = Math.abs(x1diff - x2diff);
-
-                    const y1diff: number = Math.abs(t1s.y);
-                    const y2diff: number = Math.abs(mapH - t2s.y);
-                    const ydiff = Math.abs(y1diff - y2diff);
-
-                    console.log(`pos${i}: ${t1s.name}@(${t1s.x},${t1s.y}) ${t2s.name}@(${t2s.x},${t2s.y}) [diff ${x1diff} ${x2diff} ${y1diff} ${y2diff}] [abs diff ${xdiff} ${ydiff}]`);
-                }
-
             },
 
             drawMap: function(): void {
@@ -813,6 +872,7 @@
 
                 this.drawStartSpotMetadata();
                 this.drawStartSpotStats();
+                this.drawMetalSpots();
             },
 
             drawStartSpotStats: function(): void {
@@ -1094,6 +1154,43 @@
 
             isDev: function(): boolean {
                 return AccountUtil.hasPermission("Gex.Dev");
+            },
+
+            metalMinValue: function(): number {
+                if (this.mapData.state != "loaded" || this.mapData.data.metalSpots == null) {
+                    return 0;
+                }
+
+                return Number.parseFloat(Math.min(...this.mapData.data.metalSpots.map(iter => iter.worth)).toFixed(1));
+            },
+
+            metalMaxWorth: function(): number {
+                if (this.mapData.state != "loaded" || this.mapData.data.metalSpots == null) {
+                    return 0;
+                }
+
+                return Number.parseFloat(Math.max(...this.mapData.data.metalSpots.map(iter => iter.worth)).toFixed(1));
+            },
+
+            metalSpotStats: function(): MetalSpotStat[] {
+                if (this.mapData.state != "loaded" || this.mapData.data.metalSpots == null) {
+                    return [];
+                }
+
+                const map: Map<number, MetalSpotStat> = new Map();
+
+                for (const metalSpot of this.mapData.data.metalSpots) {
+                    const worth: number = Number.parseFloat(metalSpot.worth.toFixed(1));
+
+                    const stat: MetalSpotStat = map.get(worth) ?? { value: worth, count: 0 };
+                    stat.count += 1;
+
+                    map.set(worth, stat);
+                }
+                
+                return Array.from(map.values()).sort((a, b) => {
+                    return b.count - a.count;
+                });
             }
         },
 
@@ -1110,6 +1207,24 @@
                 this.root.select("#start-spot-metadata-group")
                     .style("opacity", this.showStartSpotMetadata == true ? "1" : "0")
             },
+
+            showMetalSpots: function(): void {
+                if (this.root == null) {
+                    return;
+                }
+
+                this.root.select("#metal-spots-group")
+                    .style("opacity", this.showMetalSpots == true ? "1" : "0")
+            },
+
+            showMetalSpotValue: function(): void {
+                if (this.root == null) {
+                    return;
+                }
+
+                this.root.select("#metal-spots-value-group")
+                    .style("opacity", this.showMetalSpotValue == true ? "1" : "0");
+            }
         },
 
         components: {

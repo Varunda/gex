@@ -36,6 +36,15 @@ namespace gex.Services.Repositories {
             _StorageOptions = storageOptions;
         }
 
+        /// <summary>
+        ///     get the <see cref="BarMapData"/> based on map filename
+        /// </summary>
+        /// <remarks>
+        ///     first loads from cache, if missing loads from DB, if missing from DB parses the map
+        /// </remarks>
+        /// <param name="mapFilename">filename of the map. case-insensitive</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         public async Task<BarMapData?> GetByMapFilename(string mapFilename, CancellationToken cancel) {
             mapFilename = mapFilename.ToLower();
 
