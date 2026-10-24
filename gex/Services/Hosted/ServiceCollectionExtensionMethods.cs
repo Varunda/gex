@@ -45,6 +45,7 @@ namespace gex.Services.Hosted {
             services.AddHostedService<GameLogDeleterPeriodicService>();
             //services.AddHostedService<MapStartPositionDataUpdatePeriodicService>();
             services.AddHostedService<MapParseCacheUpdatePeriodicService>();
+            services.AddHostedService<UserSkillPercentileUpdatePeriodicServer>();
         }
 
         public static void AddBackgroundServices(this IServiceCollection services) {
