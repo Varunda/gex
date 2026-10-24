@@ -23,7 +23,7 @@ Vue.filter("timeAgoRelative", (date: Date | number): string => {
 
 	const hours = Math.floor(now.diff(m, "hours").as("hours")) % 24;
 	if (days >= 1) {
-		return `${Math.round(days).toFixed(2)}d`;
+		return `${Math.round(days).toFixed(0)}d`;
 	}
 
     return `today`;
