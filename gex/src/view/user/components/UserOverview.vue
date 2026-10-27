@@ -213,7 +213,7 @@
                         </span>
 
                         <span :title="skill.lastUpdated | moment" style="grid-row: 2; grid-column: 1 / span 2;">
-                            Last played {{ skill.lastUpdated | timeAgoRelative }} ago
+                            Last played {{ skill.lastUpdated | timeAgoRelative }}
                         </span>
                     </div>
                 </div>
