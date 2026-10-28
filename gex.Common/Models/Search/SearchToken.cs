@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace gex.Models.Search {
+namespace gex.Common.Models.Search {
 
     public class SearchToken {
 
@@ -21,7 +21,11 @@ namespace gex.Models.Search {
             return HashCode.Combine((int)Type, Value);
         }
 
-        public static SearchToken OR_START => new SearchToken(SearchTokenType.OR_START, "");
+        public static SearchToken GROUP_START => new(SearchTokenType.GROUP_START, "");
+
+        public static SearchToken GROUP_END => new(SearchTokenType.GROUP_END, "");
+
+        public static SearchToken OR_CONTINUE => new(SearchTokenType.OR_CONTINUE, "");
 
     }
 
@@ -33,11 +37,11 @@ namespace gex.Models.Search {
 
         NOT,
 
-        OR_START,
+        GROUP_START,
 
         OR_CONTINUE,
 
-        OR_END,
+        GROUP_END,
 
         FIELD,
 

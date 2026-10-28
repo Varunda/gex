@@ -397,7 +397,9 @@
                     unitDeatHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                     buildingHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
                     armyValueHeatmap: null as d3.Selection<SVGGElement, unknown, HTMLElement, unknown> | null,
-                }
+                },
+
+                teamStartTexts: [] as d3.Selection<SVGTextElement, unknown, HTMLElement, unknown>[]
 
             }
         },
@@ -928,30 +930,66 @@
                     const rightSide: boolean = (team.startingPosition.x / this.mapW) > 0.5;
                     const offset: number = rightSide ? -16 : 16;
 
-                    this.root.append("text")
-                        .attr("x", (this.toImgX(team.startingPosition.x)) + offset)
+                    let textAnchor: string = "middle";
+                    /*
+                    if ((team.startingPosition.x / this.mapW) < 0.10) {
+                        textAnchor = "start";
+                    }
+                    if ((team.startingPosition.x / this.mapW) > 0.90) {
+                        textAnchor = "end";
+                    }
+                    */
+
+                    const t = this.root.append("text")
+                        .attr("x", (this.toImgX(team.startingPosition.x))) // + offset)
                         .attr("y", this.toImgZ(team.startingPosition.z))
                         .classed("map-starting-position", true)
                         .style("fill", team.hexColor)
-                        .style("text-anchor", rightSide ? "end" : "start")
+                        .style("text-anchor", textAnchor)
                         .style("font-size", "1.3rem")
                         .style("paint-order", "stroke")
                         .style("stroke", "black").style("stroke-width", "2px")
                         .style("pointer-events", "none")
                         .text(team.name);
 
+                    this.teamStartTexts.push(t);
+
+                    const bb = t.node()!.getBBox();
+                    console.log(`MatchMap> text for player ${team.name} [x=${bb.x}] [y=${bb.y}] [width=${bb.width}] [height=${bb.height}]`);
+
+                    if (bb.x < 0) {
+                        console.log(`MatchMap> moving text right (left bound hit)`);
+                        t.attr("x", bb.width / 2);
+                    }
+
+                    if (bb.x + bb.width > this.imgW) {
+                        console.log(`MatchMap> moving text left (right bound hit)`);
+                        t.attr("x", this.imgW - (bb.width / 2));
+                    }
+
                     if (team.startSpotLabel != null) {
-                        this.root.append("text")
-                            .attr("x", (this.toImgX(team.startingPosition.x)) + offset)
+                        const tt = this.root.append("text")
+                            //.attr("x", (this.toImgX(team.startingPosition.x))) // + offset)
+                            .attr("x", bb.x + (bb.width / 2)) // + offset)
                             .attr("y", (this.toImgZ(team.startingPosition.z)) + 20)
                             .classed("map-starting-position", true)
                             .style("fill", team.hexColor)
-                            .style("text-anchor", rightSide ? "end" : "start")
+                            .style("text-anchor", textAnchor)
                             .style("font-size", "1.2rem")
                             .style("paint-order", "stroke")
                             .style("stroke", "black").style("stroke-width", "2px")
                             .style("pointer-events", "none")
                             .text(`(${team.startSpotLabel})`);
+
+                        const ttbb = tt.node()!.getBBox();
+
+                        if (ttbb.x < 0) {
+                            tt.attr("x", `${ttbb.width / 2 + 4}`);
+                        }
+
+                        if ((ttbb.x + ttbb.width) > this.imgW) {
+                            tt.attr("x", `${this.imgW - 4 - ttbb.width / 2}`);
+                        }
                     }
                 }
             },
@@ -1046,11 +1084,18 @@
                             if (region.vertices.length == 2) {
                                 console.log(`MatchMap> displaying region as a rect`);
 
+                                const x1 = region.vertices[0].x / 200;
+                                const z1 = region.vertices[0].z / 200;
+                                const w = (region.vertices[1].x - region.vertices[0].x) / 200;
+                                const h = (region.vertices[1].z - region.vertices[0].z) / 200;
+
+                                console.log(`MatchMap> region rect for allyTeam ${startRegion.allyTeamID}: [x1=${x1}] [z1=${z1}] [w=${w}] [h=${h}]`);
+
                                 this.root.append("rect")
-                                    .attr("x", `${region.vertices[0].x / 200 * this.imgW}`)
-                                    .attr("y", `${region.vertices[0].z / 200 * this.imgH}`)
-                                    .attr("width", `${(region.vertices[1].x - region.vertices[0].x) / 200 * this.imgW}`)
-                                    .attr("height", `${(region.vertices[1].z - region.vertices[0].z) / 200 * this.imgW}`)
+                                    .attr("x", `${x1 * this.imgW}`)
+                                    .attr("y", `${z1 * this.imgH}`)
+                                    .attr("width", `${w * this.imgW}`)
+                                    .attr("height", `${h * this.imgH}`)
                                     .classed("map-starting-box", true)
                                     .style("pointer-events", "none")
                                     .style("opacity", this.map.startingBox == true ? "1" : "0")

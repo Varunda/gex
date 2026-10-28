@@ -1,4 +1,4 @@
-﻿using gex.Models.Search;
+﻿using gex.Common.Models.Search;
 using gex.Services.Search;
 using gex.Tests.Util;
 using Microsoft.AspNetCore.Server.Kestrel.Core;

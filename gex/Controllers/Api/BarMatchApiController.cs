@@ -3,6 +3,7 @@ using gex.Common.Code.Constants;
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
+using gex.Common.Models.Search;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
@@ -21,6 +22,7 @@ using gex.Services.Db.Match;
 using gex.Services.Db.Patches;
 using gex.Services.Migrations;
 using gex.Services.Repositories;
+using gex.Services.Search;
 using gex.Services.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -58,6 +60,8 @@ namespace gex.Controllers.Api {
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
         private readonly IBarMatchBuilderUtil _MatchBuilder;
+        private readonly SearchTokenizer _SearchTokenizer;
+        private readonly SearchAstBuilder _AstBuilder;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, IBarMatchAllyTeamDb allyTeamDb,
@@ -65,10 +69,11 @@ namespace gex.Controllers.Api {
             BarMatchProcessingRepository processingRepository, HeadlessRunStatusRepository headlessRunStatusRepository,
             AppAccountDbStore accountDb, IBarMatchProcessingPriorityDb processingPriorityDb,
             ICurrentAccount currentUser, GameOutputStorage gameOutputStorage,
-            BarDemofileParser demofileParser, DemofileStorage demofileStorage, 
+            BarDemofileParser demofileParser, DemofileStorage demofileStorage,
             BadGameVersionRepository badGameVersionRepository, StartSpotDataRepository startSpotDataRepository,
             BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchTeamRepository teamRepository,
-            IBarMatchBuilderUtil matchBuilder) {
+            IBarMatchBuilderUtil matchBuilder, SearchAstBuilder astBuilder,
+            SearchTokenizer searchTokenizer) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -88,6 +93,8 @@ namespace gex.Controllers.Api {
             _PlayerStartSpotMigration = playerStartSpotMigration;
             _TeamRepository = teamRepository;
             _MatchBuilder = matchBuilder;
+            _AstBuilder = astBuilder;
+            _SearchTokenizer = searchTokenizer;
         }
 
         /// <summary>
@@ -486,6 +493,39 @@ namespace gex.Controllers.Api {
             }
 
             return ApiOk(ret);
+        }
+
+        /// <summary>
+        ///     search using a query string
+        /// </summary>
+        /// <param name="q"></param>
+        /// <param name="cancel"></param>
+        /// <returns></returns>
+        [HttpGet("query")]
+        public async Task<ApiResponse<ApiMatchSearchResults>> SearchQuery([FromQuery] string q,
+            CancellationToken cancel = default
+        ) {
+
+            throw new NotImplementedException();
+
+            if (string.IsNullOrWhiteSpace(q) == true) {
+                return ApiBadRequest<ApiMatchSearchResults>($"missing query");
+            }
+            if (q.Length > 2048) {
+                return ApiBadRequest<ApiMatchSearchResults>($"query can be at most 2048 characters");
+            }
+
+            List<SearchToken> tokens = _SearchTokenizer.Tokenize(q);
+
+            if (tokens.Count <= 1) { // count END token
+                return ApiBadRequest<ApiMatchSearchResults>($"no tokens provided");
+            }
+
+            SearchAst ast = _AstBuilder.Build(tokens);
+
+            ApiMatchSearchResults results = new(q, ast);
+
+            return ApiOk(results);
         }
 
         /// <summary>

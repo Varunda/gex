@@ -1,6 +1,6 @@
 ﻿using gex.Code.Exceptions;
 using gex.Code.ExtensionMethods;
-using gex.Models.Search;
+using gex.Common.Models.Search;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
 using System;
@@ -33,6 +33,7 @@ namespace gex.Services.Search {
             SearchToken? previousFieldName = null;
             SearchToken? previousFieldOp = null;
 
+            // _c(reate) a node with the parent as the node on top of the stack
             SearchNode _c(SearchNodeType type, SearchToken token) => new SearchNode(type, token, stack.Peek());
 
             while (iter != null) {
@@ -56,7 +57,7 @@ namespace gex.Services.Search {
                                 if (child.Children[0].Type == SearchNodeType.FIELD_NAME
                                     && iter.Value != child.Children[0].Token.Value) {
 
-                                    _Logger.LogTrace($"in an OR node, but this field doesn't match the previous one, popping OR [iter.Value={iter.Value}] [child field name={child.Token.Value}]");
+                                    //_Logger.LogTrace($"in an OR node, but this field doesn't match the previous one, popping OR [iter.Value={iter.Value}] [child field name={child.Token.Value}]");
                                     //stack.Pop();
                                 }
                             }
@@ -173,8 +174,8 @@ namespace gex.Services.Search {
 
                     if (stack.Peek().Type == SearchNodeType.OR) {
                         SearchToken? next = tokens.PeekNext();
-                        if (next != null && next.Type != SearchTokenType.OR_CONTINUE && next.Type != SearchTokenType.OR_END) {
-                            _Logger.LogTrace($"after FIELD, next token isn't an OR_CONTINUE, and in an OR, popping the OR off");
+                        if (next != null && next.Type != SearchTokenType.OR_CONTINUE && next.Type != SearchTokenType.GROUP_END && next.Type != SearchTokenType.PARAMETERS_END) {
+                            _Logger.LogTrace($"after FIELD, next token isn't an OR_CONTINUE, and in an OR, popping the OR off (is a {next.Type})");
                             stack.Pop();
                         }
                     }
@@ -229,21 +230,66 @@ namespace gex.Services.Search {
 
                 // PARAMETERS_END
                 else if (iter.Type == SearchTokenType.PARAMETERS_END) {
-                    // if the top node is an AND, implicitly assume an end and pop it off too
+                    // if the top node is an OR, implicitly assume an end and pop it off too
                     if (stack.Peek().Type == SearchNodeType.OR) {
-                        stack.Pop();
+                        //stack.Pop();
+                        //_Logger.LogTrace($"for PARAMETERS_END, parent is OR, popping");
                     }
 
-                    SearchNode and = stack.Pop(); // pop the AND off
-                    SearchNode field = stack.Pop(); // pop the FIELD off
+                    SearchNode group = stack.Pop(); // pop the AND/OR off
                     SearchNode fieldValue = stack.Pop(); // pop the FIELD_VALUE off
-                    _Logger.LogTrace($"got PARAMETERS_END, popping 3 [value={fieldValue.Type}] [field={field.Type}] [and={and.Type}]");
+                    SearchNode field = stack.Pop(); // pop the FIELD off
+                    _Logger.LogTrace($"got PARAMETERS_END, popping 3 [value={fieldValue.Type}] [field={field.Type}] [group={group.Type} (want OR/AND)]");
                 }
 
-                // OR_START
-                else if (iter.Type == SearchTokenType.OR_START) {
-                    stack.Push(_c(SearchNodeType.OR, iter));
-                    _Logger.LogTrace($"pushed OR node because of OR_START token");
+                // GROUP_START
+                else if (iter.Type == SearchTokenType.GROUP_START) {
+                    // if the next token is an OR_CONTINUE, this is an OR node, else it's an AND node
+
+                    // iterate tokens until either a GROUP_END is found, or an OR_CONTINUE
+                    // for a GROUP_END, this means this is an implicit AND node, 
+
+                    uint i = 1;
+                    SearchToken? token = null;
+                    while (true) {
+                        token = tokens.Peek(i);
+                        if (token == null) {
+                            break;
+                        }
+
+                        if (token.Type == SearchTokenType.OR_CONTINUE) {
+                            break;
+                        }
+
+                        if (token.Type == SearchTokenType.GROUP_END) {
+                            break;
+                        }
+
+                        i += 1;
+                    }
+
+                    if (token == null) {
+                        throw new SearchAstParseException(iter, $"expected a node to follow a GROUP_START");
+                    }
+
+                    SearchNodeType type = token.Type == SearchTokenType.OR_CONTINUE ? SearchNodeType.OR : SearchNodeType.AND;
+
+                    stack.Push(_c(type, iter));
+                    _Logger.LogTrace($"pushed node because of GROUP_START token [type={type}]");
+                }
+
+                // GROUP_END
+                else if (iter.Type == SearchTokenType.GROUP_END) {
+                    SearchNode parent = stack.Peek();
+
+                    /*
+                    if (parent.Type != SearchNodeType.OR) {
+                        throw new SearchAstParseException(iter, $"expected parent node to be of OR type, was a {parent.Type} instead");
+                    }
+                    */
+
+                    _Logger.LogTrace($"got GROUP_END, popping");
+                    stack.Pop();
                 }
 
                 // OR_CONTINUE
@@ -252,10 +298,59 @@ namespace gex.Services.Search {
 
                     SearchNode parent = stack.Peek();
                     if (parent.Type == SearchNodeType.AND) {
+
+                        // this is the root node, keep it as an AND
+                        if (parent.Parent == null && parent.Children.Count > 1) {
+
+                            _Logger.LogTrace($"this is the first child of an AND node, pushing an OR node to stack and taking a child if needed");
+
+                            // parent is set AFTER the child check is done
+                            SearchNode or = new(SearchNodeType.OR, SearchToken.GROUP_START, null);
+
+                            if (parent.Children.Count > 0) {
+                                // if the parent has at least one child, and the last child has the same field name,
+                                // create a new OR node, and take the last child of the parent
+                                SearchNode child = parent.Children[^1];
+                                if (child.Type == SearchNodeType.FIELD) {
+                                    if (child.Children[0].Type == SearchNodeType.FIELD_NAME
+                                        && tokens.PeekNext()?.Type == SearchTokenType.WORD) {
+
+                                        parent.Children.RemoveAt(parent.Children.Count - 1);
+
+                                        _Logger.LogTrace($"pushing OR node as parent's child last node is a FIELD_NAME and the value doesn't match");
+                                        or.Children.Add(child);
+                                        child.Parent = or;
+                                    }
+                                }
+                            }
+
+                            parent.Children.Add(or);
+                            or.Parent = parent;
+                            stack.Push(or);
+                        } else if (parent.Parent == null) {
+                            _Logger.LogTrace($"parent is null with <= 1 children, making new OR node and putting parent's children into it");
+                            SearchNode or = new(SearchNodeType.OR, SearchToken.GROUP_START, null);
+
+                            foreach (SearchNode child in parent.Children.ToList()) {
+                                child.Parent = or;
+                                or.Children.Add(child);
+                                parent.Children.Remove(child);
+                            }
+
+                            parent.Children.Add(or);
+                            or.Parent = parent;
+
+                            stack.Push(or);
+                        } else {
+                            parent.Type = SearchNodeType.OR;
+                            _Logger.LogTrace($"changed parent type to OR (from AND) due to OR_CONTINUE");
+                        }
+
+                        /*
                         _Logger.LogTrace($"this is the first child of an AND node, pushing an OR node to stack and taking a child if needed");
 
                         // parent is set AFTER the child check is done
-                        SearchNode or = new(SearchNodeType.OR, SearchToken.OR_START, null);
+                        SearchNode or = new(SearchNodeType.OR, SearchToken.GROUP_START, null);
 
                         if (parent.Children.Count > 0) {
                             // if the parent has at least one child, and the last child has the same field name,
@@ -277,19 +372,8 @@ namespace gex.Services.Search {
                         parent.Children.Add(or);
                         or.Parent = parent;
                         stack.Push(or);
+                        */
                     }
-                }
-
-                // OR_END
-                else if (iter.Type == SearchTokenType.OR_END) {
-                    SearchNode parent = stack.Peek();
-
-                    if (parent.Type != SearchNodeType.OR) {
-                        throw new SearchAstParseException(iter, $"expected parent node to be of OR type, was a {parent.Type} instead");
-                    }
-
-                    _Logger.LogTrace($"got OR_END, popping");
-                    stack.Pop();
                 }
 
                 // NOT
@@ -318,6 +402,7 @@ namespace gex.Services.Search {
 
             // for an OR node without explicit braces, assume the OR node ends at the end of tokens
             if (stack.Count == 2 && stack.Peek().Type == SearchNodeType.OR) {
+                _Logger.LogTrace($"found OR on top of stack with 2 nodes, assuming OR is child of AND, popping OR off");
                 stack.Pop();
             }
 
@@ -329,6 +414,28 @@ namespace gex.Services.Search {
             if (treeRoot == null) {
                 throw new SearchAstParseException(null, $"failed to get root tree node, stack has no nodes left on it (did a double pop occur?)");
             }
+
+            void FixAndWithOrChildren(SearchNode node) {
+                // skip the root node by checking if parent is null
+                if (node.Parent != null 
+                    && node.Type == SearchNodeType.AND && node.Children.Count == 1 && node.Children[0].Type == SearchNodeType.OR) {
+
+                    node.Parent.Children.Remove(node);
+
+                    SearchNode child = node.Children[0];
+                    child.Parent = node.Parent;
+                    child.Parent.Children.Add(child);
+
+                    return;
+                }
+
+                foreach (SearchNode child in node.Children.ToList()) { // copy list
+                    FixAndWithOrChildren(child);
+                }
+            }
+
+            FixAndWithOrChildren(treeRoot);
+
 
             // it's fine for like a NOT node to have 0 children, as it's the only node
             if ((treeRoot.Type == SearchNodeType.AND || treeRoot.Type == SearchNodeType.OR) && treeRoot.Children.Count == 0) {
@@ -383,6 +490,9 @@ namespace gex.Services.Search {
 
             { "[", ">" }, // less than or equal => greater than
             { "]", "<" }, // greater than or equal <= less than
+
+            { ">", "[" }, // greater than => less than or equal
+            { "<", "]" }, // less than => greater than or equal
         };
 
         /// <summary>
@@ -390,47 +500,6 @@ namespace gex.Services.Search {
         /// </summary>
         /// <param name="fieldName">field name, may or may not be an alias</param>
         private static string _FieldNameAlias(string fieldName) => FieldNameAliases.GetValueOrDefault(fieldName) ?? fieldName;
-
-        private SearchNode _MakeMetaNode(SearchToken iter, SearchNode parent, SearchTokenStream tokens) {
-            _Logger.LogTrace($"look-ahead found META token");
-            SearchToken meta = tokens.GetNext() ?? throw new Exception("something is fucked");
-
-            // an operator can optionally be set, but defaults to =
-            // for example, width:>10 has the tokens as "width", ">", "10"
-            SearchToken? opOrValue = tokens.GetNext();
-            if (opOrValue == null) {
-                throw new SearchAstParseException(iter, $"look ahead failed: no token after META token");
-            }
-
-            SearchToken? op = null;
-            SearchToken? value = null;
-            if (opOrValue.Type == SearchTokenType.OPERATOR) { // a colon
-                _Logger.LogTrace($"token is OPERATOR, checking for WORD [type={opOrValue.Type}] [value={opOrValue.Value}]");
-                op = opOrValue;
-                value = tokens.GetNext();
-                if (value == null) { // expect a token after the colon (prevents something like width:>)
-                    throw new SearchAstParseException(iter, $"look ahead failed: no token after OPERATOR token (for META)");
-                }
-                if (value.Type != SearchTokenType.WORD) {
-                    throw new SearchAstParseException(iter, $"look ahead failed: expected WORD token after OPERATOR token (for META), got {value.Type} instead");
-                }
-            } else if (opOrValue.Type == SearchTokenType.WORD) {
-                // assume if no operator is given, that the = operator is used
-                op = new SearchToken(SearchTokenType.OPERATOR, "=");
-                value = opOrValue;
-            } else {
-                throw new SearchAstParseException(iter, $"look ahead failed: expected WORD token after META token, got {opOrValue.Type} instead");
-            }
-
-            _Logger.LogTrace($"creating META node [field={iter.Value}] [operator='{op.Value}'] [value='{value.Value}']");
-
-            SearchNode metaParent = _c(SearchNodeType.FIELD, meta, parent);
-            _c(SearchNodeType.FIELD_NAME, iter, metaParent);
-            _c(SearchNodeType.FIELD_OP, op, metaParent);
-            _c(SearchNodeType.FIELD_VALUE, value, metaParent);
-
-            return metaParent;
-        }
 
     }
 }

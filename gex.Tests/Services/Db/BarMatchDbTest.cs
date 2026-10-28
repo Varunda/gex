@@ -1,5 +1,7 @@
 ﻿using gex.Common.Models.Match;
+using gex.Common.Models.Search;
 using gex.Common.Services.Db.Match;
+using gex.Services.Search;
 using gex.Tests.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -118,6 +120,20 @@ namespace gex.Tests.Services.Db {
             Assert.AreEqual(1, result3.Count, $"expected 1 game with Cortex and MinOS > 5");
         }
 
+        [TestMethod]
+        public async Task Test_Query_Ex1() {
+            (IBarMatchDb db, ServiceProvider svs) = await _Get();
+
+            SearchTokenizer tokenizer = svs.GetRequiredService<SearchTokenizer>();
+            SearchAstBuilder astBuilder = svs.GetRequiredService<SearchAstBuilder>();
+
+            SearchAst ast = astBuilder.Build(tokenizer.Tokenize("player: alice"));
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
+            List<BarMatch> results = await db.Search(ast, cts.Token);
+
+            Assert.IsNotNull(results);
+        }
 
     }
 }

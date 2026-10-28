@@ -6,6 +6,7 @@ using gex.Services.Db;
 using gex.Services.Db.Readers;
 using gex.Services.Parser;
 using gex.Services.Repositories;
+using gex.Services.Search;
 using gex.Services.Util;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,7 @@ namespace gex.Tests.Util {
             services.AddUtilServices();
             services.AddGexRepositories();
             services.AddAppDatabaseReadersServices();
+            services.AddGexSearchServices();
 
             return services;
         }

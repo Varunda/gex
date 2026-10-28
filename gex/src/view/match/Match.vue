@@ -380,6 +380,10 @@
                 <api-error :error="match.problem"></api-error>
             </div>
 
+            <div v-else-if="match.state == 'nocontent'" class="text-center alert alert-danger">
+                Match <code>{{ gameID }}</code> not found!
+            </div>
+
             <div v-else>
                 unchecked state of match: {{ match.state }}
             </div>
@@ -477,6 +481,7 @@
     import MergedStats from "./compute/MergedStats";
 
     import AccountUtil from "util/Account";
+    import { GamemodeUtil } from "util/Gamemode";
     import Toaster from "Toaster";
 
     import "filters/BarGamemodeFilter";
@@ -1010,7 +1015,7 @@
                 }
 
                 const entities: StatEntity[] = [];
-                if (this.match.data.teams.length <= 2) {
+                if (this.match.data.teams.length <= 2 || this.match.data.gamemode == GamemodeUtil.FFA) {
                     for (const team of this.match.data.teams) {
                         const players: BarMatchPlayer[] = this.match.data.players.filter(iter => iter.teamID == team.teamID);
 

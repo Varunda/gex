@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace gex.Models.Search {
+namespace gex.Common.Models.Search {
     public class SearchAst : IEnumerable<SearchNode> {
 
         public SearchAst(SearchNode root) {

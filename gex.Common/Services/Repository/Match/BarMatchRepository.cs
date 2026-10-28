@@ -2,6 +2,7 @@
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
+using gex.Common.Models.Search;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Storage;
@@ -38,6 +39,15 @@ namespace gex.Common.Services.Repository.Match {
             _Cache = cache;
         }
 
+        /// <summary>
+        ///     get a specific <see cref="BarMatch"/> by its <see cref="BarMatch.ID"/>
+        /// </summary>
+        /// <param name="gameID">ID of the match to get</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>,
+        ///     or <c>null</c> if it does not exist
+        /// </returns>
         public async Task<BarMatch?> GetByID(string gameID, CancellationToken cancel) {
             string cacheKey = string.Format(CACHE_KEY_ID, gameID);
 
@@ -99,12 +109,23 @@ namespace gex.Common.Services.Repository.Match {
             return matches;
         }
 
+        /// <summary>
+        ///     get all matches stored. use this so carefully
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     a list containing all <see cref="BarMatch"/>s stored
+        /// </returns>
         public Task<List<BarMatch>> GetAll(CancellationToken cancel) {
             return _MatchDb.GetAll(cancel);
         }
 
         public Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, long? currentUserID, CancellationToken cancel) {
             return _MatchDb.Search(parms, offset, limit, currentUserID, cancel);
+        }
+
+        public Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel) {
+            return _MatchDb.Search(ast, cancel);
         }
 
         /// <summary>

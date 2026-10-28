@@ -1,4 +1,5 @@
 ﻿using gex.Common.Models.Match;
+using gex.Common.Models.Search;
 
 namespace gex.Common.Services.Db.Match {
     public interface IBarMatchDb {
@@ -26,6 +27,8 @@ namespace gex.Common.Services.Db.Match {
         Task Insert(BarMatch match, CancellationToken cancel);
 
         Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, long? currentUserID, CancellationToken cancel);
+
+        Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel);
 
         Task UpdateStartOffset(BarMatch match, CancellationToken cancel);
 

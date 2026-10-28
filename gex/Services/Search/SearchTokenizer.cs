@@ -1,4 +1,4 @@
-﻿using gex.Models.Search;
+﻿using gex.Common.Models.Search;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,23 +46,23 @@ namespace gex.Services.Search {
                     }
                 }
 
-                // OR_START {
+                // GROUP_START {
                 else if (i == '{') {
                     if (word.Length > 0) {
                         SaveWord();
                     }
 
-                    tokens.Add(new SearchToken(SearchTokenType.OR_START, ""));
+                    tokens.Add(new SearchToken(SearchTokenType.GROUP_START, ""));
                     _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 } 
 
-                // OR_END }
+                // GROUP_END }
                 else if (i == '}') {
                     if (word.Length > 0) {
                         SaveWord();
                     }
 
-                    tokens.Add(new SearchToken(SearchTokenType.OR_END, ""));
+                    tokens.Add(new SearchToken(SearchTokenType.GROUP_END, ""));
                     _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 

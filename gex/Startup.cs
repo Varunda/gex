@@ -23,6 +23,7 @@ using gex.Services.Migrations;
 using gex.Services.Parser;
 using gex.Services.Queues;
 using gex.Services.Repositories;
+using gex.Services.Search;
 using gex.Services.Storage;
 using gex.Services.Util;
 using Microsoft.AspNetCore.Authentication;
@@ -346,6 +347,7 @@ namespace gex {
             services.AddSingleton<LuaRunner>();
             services.AddStorageServices();
             services.AddUtilServices();
+            services.AddGexSearchServices();
 
             // util
             services.AddSingleton<PathEnvironmentService>();

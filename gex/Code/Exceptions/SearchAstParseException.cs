@@ -1,4 +1,4 @@
-﻿using gex.Models.Search;
+﻿using gex.Common.Models.Search;
 using System;
 
 namespace gex.Code.Exceptions {

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace gex.Models.Search {
+namespace gex.Common.Models.Search {
 
     public class SearchTokenStream : IEnumerable<SearchToken>, IEnumerator<SearchToken> {
 

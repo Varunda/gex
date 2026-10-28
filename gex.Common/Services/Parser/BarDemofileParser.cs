@@ -329,6 +329,8 @@ namespace gex.Common.Services.Parser {
                 Dictionary<byte, List<ushort>> selectedUnitIds = [];
 
                 HashSet<byte> playedPositionsLockedIn = [];
+                // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/dab26c9a95782f1c536c0f984ea931e06c0e3beb/luaui/Widgets/map_startbox.lua#L440
+                const int SPAWN_TOO_CLOSE = 350;
 
                 // for team ffa, there is a game setting that shuffles the start boxes for each ally team.
                 // this means doing a check on the ally team start box is not useful, as where each start box
@@ -777,12 +779,12 @@ namespace gex.Common.Services.Parser {
 
                         //
                         // 2026-06-22: from what i can tell, the demofile just contains the last start spot a player sent,
-                        //  even if that start spot is not valid for that player.
-                        // so, gex will do some basic checks to ensure that the start spots are valid
+                        //      even if that start spot is not valid for that player.
                         //
-                        // check if the new start spot is valid by:
+                        // so, gex will do some basic checks to ensure that the start spots are valid:
                         //  1. ensuring the spot is within the start box of the ally team
                         //  2. the player has not already locked in their start spot
+                        //  3. the spot is not within 350 units of another start spot
                         //
                         do {
                             // this is set in LUA_MSG, with the data of "locking_in_place", see below for that handling
@@ -809,6 +811,29 @@ namespace gex.Common.Services.Parser {
                             BarMatchAllyTeam? at = match.AllyTeams.FirstOrDefault(iter => iter.AllyTeamID == team.AllyTeamID);
                             if (at == null) {
                                 _Logger.LogWarning($"cannot set start position, ally team does not exist [gameID={header.GameID}] [allyTeamID={team.AllyTeamID}]");
+                                break;
+                            }
+
+                            bool tooClose = false;
+                            List<BarMatchTeam> allyTeamTeams = match.Teams.Where(iter => iter.AllyTeamID == at.AllyTeamID).ToList();
+                            foreach (BarMatchTeam iter in allyTeamTeams) {
+                                if (iter.TeamID == team.TeamID) {
+                                    continue;
+                                }
+
+                                double dx = Math.Pow(iter.StartingPosition.X - x, 2);
+                                double dz = Math.Pow(iter.StartingPosition.Z - z, 2);
+
+                                if ((dx + dz) <= (SPAWN_TOO_CLOSE * SPAWN_TOO_CLOSE)) {
+                                    _Logger.LogDebug($"new position is too close to other team [teamID={team.TeamID}] [other teamID={iter.TeamID}]"
+                                        + $" [other pos={iter.StartingPosition.X},{iter.StartingPosition.Z}] [dist={dx + dz}]");
+
+                                    tooClose = true;
+                                    break;
+                                }
+                            }
+
+                            if (tooClose == true) {
                                 break;
                             }
 
