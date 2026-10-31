@@ -77,7 +77,9 @@ namespace gex.Common.Models.Search {
 
         DEFAULT = 0,
 
-        FIELD,
+        BASIC_FIELD,
+
+        COMPLEX_FIELD,
 
         FIELD_NAME,
 

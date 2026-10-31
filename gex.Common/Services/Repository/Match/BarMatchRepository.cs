@@ -124,7 +124,7 @@ namespace gex.Common.Services.Repository.Match {
             return _MatchDb.Search(parms, offset, limit, currentUserID, cancel);
         }
 
-        public Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel) {
+        public Task<Result<List<BarMatch>, string>> Search(SearchAst ast, CancellationToken cancel) {
             return _MatchDb.Search(ast, cancel);
         }
 

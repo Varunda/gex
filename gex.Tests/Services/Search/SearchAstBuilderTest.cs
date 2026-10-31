@@ -30,7 +30,7 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -54,7 +54,7 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
@@ -80,12 +80,12 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
@@ -107,7 +107,7 @@ namespace gex.Tests.Services.Search {
             ];
 
             List<Action<SearchNode>> children = [
-                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -143,12 +143,12 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
@@ -176,12 +176,12 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
@@ -213,22 +213,22 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "min_os"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "10"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "min_os"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "15"),
@@ -260,17 +260,17 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -307,17 +307,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // player=(name=alice OR position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -356,24 +356,24 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // engine=105
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                     ]),
 
                     // player=(name=alice AND position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -412,17 +412,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // player=(name=alice AND position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -432,7 +432,7 @@ namespace gex.Tests.Services.Search {
                     ]),
 
                     // engine=105
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -464,17 +464,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // player=(name=alice AND position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -517,17 +517,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // player=(name=alice AND position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -537,17 +537,17 @@ namespace gex.Tests.Services.Search {
                     ]),
 
                     // player=(name=beth AND position=front)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "front"),
@@ -591,17 +591,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     // player=(name=alice AND position=air)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "air"),
@@ -611,17 +611,17 @@ namespace gex.Tests.Services.Search {
                     ]),
 
                     // player=(name=beth AND position=front)
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
                             (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
                                 ]),
-                                (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                     (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "front"),
@@ -655,12 +655,12 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
@@ -698,17 +698,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "103"),
@@ -744,17 +744,17 @@ namespace gex.Tests.Services.Search {
                 SearchNodeType.AND,
                 [
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "104"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "103"),
@@ -788,18 +788,18 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast1.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
                     ]),
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "small"),
@@ -835,12 +835,12 @@ namespace gex.Tests.Services.Search {
                 [
                     // gamemode=duel | gamemode=small
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "small"),
@@ -848,7 +848,7 @@ namespace gex.Tests.Services.Search {
                     ]),
 
                     // engine=105
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -885,12 +885,12 @@ namespace gex.Tests.Services.Search {
                 [
                     // gamemode=duel | gamemode=small
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
                         ]),
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "small"),
@@ -898,7 +898,7 @@ namespace gex.Tests.Services.Search {
                     ]),
 
                     // engine=105
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -936,12 +936,12 @@ namespace gex.Tests.Services.Search {
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
                         // ( gamemode:duel AND engine=105 )
                         (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
                             ]),
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -949,7 +949,7 @@ namespace gex.Tests.Services.Search {
                         ]),
 
                         // gamemode = small
-                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                             (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                             (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "small"),
@@ -977,7 +977,7 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "!"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -1004,7 +1004,7 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "!"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "105"),
@@ -1039,27 +1039,27 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "!"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "cat"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "map"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "supreme"),
                     ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                         (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                         (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
@@ -1100,24 +1100,24 @@ namespace gex.Tests.Services.Search {
                 [
                     (node) => _CheckNodeTree(node, SearchNodeType.OR, [
                         (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
                             ]),
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
                             ])
                         ]),
                         (node) => _CheckNodeTree(node, SearchNodeType.AND, [
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "map"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "supreme"),
                             ]),
-                            (node) => _CheckNodeTree(node, SearchNodeType.FIELD, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
                                 (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "duel"),
@@ -1126,6 +1126,140 @@ namespace gex.Tests.Services.Search {
                     ])
                 ]
             );
+        }
+
+        /// <summary>
+        ///     test a double operator throws an exception
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_DoubleOperator() {
+            // player : : alice
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.AreEqual("missing WORD token after OPERATOR token", ex.Message);
+            }
+        }
+
+        /// <summary>
+        ///     test a query that is only an operator throws
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_OnlyOperator() {
+            // :
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("unexpected OPERATOR token"), $"wrong message. got: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        ///     ensure throw on a GROUP_START with a missing GROUP_END
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_GroupStart_JustStart() {
+            // {
+            List<SearchToken> tokens = [
+                SearchToken.GROUP_START
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("missing a OR_CONTINUE or GROUP_END in the token stream"), $"wrong message. got: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        ///     ensure throw on a GROUP_START with a missing GROUP_END
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_GroupStart_MissingEnd() {
+            // {
+            List<SearchToken> tokens = [
+                SearchToken.GROUP_START,
+                new SearchToken(SearchTokenType.WORD, "map"),
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("missing a OR_CONTINUE or GROUP_END in the token stream"), $"wrong message. got: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        ///     ensure throw on a GROUP_START with a missing GROUP_END
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_GroupStart_OneValid_MissingEnd() {
+            // { { map }
+            List<SearchToken> tokens = [
+                SearchToken.GROUP_START,
+                SearchToken.GROUP_START,
+                new SearchToken(SearchTokenType.WORD, "map"),
+                SearchToken.GROUP_END
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("invalid token list: expected one SearchNode in stack after consuming all tokens, had 2 instead"), $"wrong message. got: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        ///     ensure an exception for just a group end
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_GroupEnd_Single() {
+            // }
+            List<SearchToken> tokens = [
+                SearchToken.GROUP_END,
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("stack is empty"), $"wrong message. got: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        ///     ensure an exception for repeat GROUP_END tokens
+        /// </summary>
+        [TestMethod]
+        public void Test_Errors_RepeatGroupEnd() {
+            // } }
+            List<SearchToken> tokens = [
+                SearchToken.GROUP_END,
+                SearchToken.GROUP_END,
+            ];
+
+            try {
+                SearchAst ast = _a(tokens);
+            } catch (Exception ex) {
+                Assert.IsTrue(ex is SearchAstParseException, $"wanted a {nameof(SearchAstParseException)}, got a {ex.GetType().FullName} instead\n{ex.StackTrace}");
+                Assert.IsTrue(ex.Message.StartsWith("stack is empty"), $"wrong message. got: {ex.Message}");
+            }
         }
 
         // ============================================================================================================

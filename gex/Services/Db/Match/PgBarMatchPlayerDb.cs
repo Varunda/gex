@@ -110,6 +110,24 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        public async Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            using DbCommand cmd =  await _DbHelper.Command(conn, @"
+                SELECT *
+                    FROM bar_match_player
+                    WHERE LOWER(user_name) LIKE '%' || @Name || '%';
+            ", cancel);
+
+            cmd.AddParameter("Name", name.ToLower());
+
+            await cmd.PrepareAsync(cancel);
+
+            List<BarMatchPlayer> players = await _Reader.ReadList(cmd, cancel);
+            await conn.CloseAsync();
+
+            return players;
+        }
+
         public async Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using DbCommand cmd =  await _DbHelper.Command(conn, @"

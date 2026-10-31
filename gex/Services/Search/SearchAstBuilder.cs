@@ -52,7 +52,7 @@ namespace gex.Services.Search {
 
                         if (parent.Children.Count > 0) {
                             SearchNode child = parent.Children[^1];
-                            if (child.Type == SearchNodeType.FIELD) {
+                            if (child.Type == SearchNodeType.BASIC_FIELD || child.Type == SearchNodeType.COMPLEX_FIELD) {
                                 _Logger.LogTrace($"checking if field in OR is a different field name [child.Children[0]={child.Children[0].Type}/{child.Children[0].Token.Value}]");
                                 if (child.Children[0].Type == SearchNodeType.FIELD_NAME
                                     && iter.Value != child.Children[0].Token.Value) {
@@ -71,7 +71,7 @@ namespace gex.Services.Search {
                     if (tokens.PeekNext()?.Type == SearchTokenType.PARAMETERS_START) {
                         tokens.GetNext();
 
-                        SearchNode complexField = _c(SearchNodeType.FIELD, new SearchToken(SearchTokenType.FIELD, ""));
+                        SearchNode complexField = _c(SearchNodeType.COMPLEX_FIELD, new SearchToken(SearchTokenType.FIELD, ""));
                         stack.Push(complexField);
                         _Logger.LogTrace($"pushing FIELD node to contain the name op, and value nodes");
                         _c(SearchNodeType.FIELD_NAME, iter);
@@ -81,14 +81,8 @@ namespace gex.Services.Search {
                         _Logger.LogTrace($"pushing FIELD_VALUE node to contain the parameters");
                         stack.Push(fieldValue);
 
-                        SearchNodeType type = SearchNodeType.AND;
-                        if (tokens.PeekNext()?.Type == SearchTokenType.OR_CONTINUE) {
-                            type = SearchNodeType.OR;
-                            tokens.GetNext();
-                        }
-
                         _Logger.LogTrace($"pushing a node to contain the parameters");
-                        stack.Push(_c(type, iter));
+                        stack.Push(_c(SearchNodeType.AND, iter));
                         iter = tokens.GetNext();
 
                         _Logger.LogTrace($"WORD next token is PARAMETERS_START, beginning a complex field");
@@ -162,7 +156,11 @@ namespace gex.Services.Search {
                         op.Value = "=";
                     }
 
-                    SearchNode field = _c(SearchNodeType.FIELD, new SearchToken(SearchTokenType.FIELD, ""));
+                    SearchNode field = _c(
+                        ComplexFieldNames.Contains(name.Value) ? SearchNodeType.COMPLEX_FIELD : SearchNodeType.BASIC_FIELD,
+                        new SearchToken(SearchTokenType.FIELD, "")
+                    );
+
                     stack.Push(field);
                     _Logger.LogTrace($"pushing FIELD node to contain the name, op and value");
                     _c(SearchNodeType.FIELD_NAME, name);
@@ -191,7 +189,7 @@ namespace gex.Services.Search {
                     }
 
                     SearchNode child = parent.Children[^1];
-                    if (child.Type != SearchNodeType.FIELD) {
+                    if (child.Type != SearchNodeType.COMPLEX_FIELD) {
                         throw new SearchAstParseException(iter, $"expected a FIELD node when using an implicit name on a complex field (was a {child.Type}) instead");
                     }
 
@@ -216,7 +214,7 @@ namespace gex.Services.Search {
                     stack.Push(_c(SearchNodeType.FIELD_VALUE, new SearchToken(SearchTokenType.PARAMETERS_START, "")));
                     stack.Push(_c(SearchNodeType.AND, iter));
 
-                    SearchNode nameNode = _c(SearchNodeType.FIELD, child.Token);
+                    SearchNode nameNode = _c(SearchNodeType.BASIC_FIELD, child.Token);
                     stack.Push(nameNode);
 
                     _Logger.LogTrace($"for PARAMETERS_START, pushed FIELD, FIELD_VALUE, AND, then FIELD");
@@ -269,7 +267,7 @@ namespace gex.Services.Search {
                     }
 
                     if (token == null) {
-                        throw new SearchAstParseException(iter, $"expected a node to follow a GROUP_START");
+                        throw new SearchAstParseException(iter, $"missing a OR_CONTINUE or GROUP_END in the token stream");
                     }
 
                     SearchNodeType type = token.Type == SearchTokenType.OR_CONTINUE ? SearchNodeType.OR : SearchNodeType.AND;
@@ -280,13 +278,11 @@ namespace gex.Services.Search {
 
                 // GROUP_END
                 else if (iter.Type == SearchTokenType.GROUP_END) {
-                    SearchNode parent = stack.Peek();
-
-                    /*
-                    if (parent.Type != SearchNodeType.OR) {
-                        throw new SearchAstParseException(iter, $"expected parent node to be of OR type, was a {parent.Type} instead");
+                    if (stack.Count < 2) {
+                        throw new SearchAstParseException(iter, $"stack is empty, cannot end a group");
                     }
-                    */
+
+                    SearchNode parent = stack.Peek();
 
                     _Logger.LogTrace($"got GROUP_END, popping");
                     stack.Pop();
@@ -311,7 +307,7 @@ namespace gex.Services.Search {
                                 // if the parent has at least one child, and the last child has the same field name,
                                 // create a new OR node, and take the last child of the parent
                                 SearchNode child = parent.Children[^1];
-                                if (child.Type == SearchNodeType.FIELD) {
+                                if (child.Type == SearchNodeType.BASIC_FIELD || child.Type == SearchNodeType.COMPLEX_FIELD) {
                                     if (child.Children[0].Type == SearchNodeType.FIELD_NAME
                                         && tokens.PeekNext()?.Type == SearchTokenType.WORD) {
 
@@ -345,34 +341,6 @@ namespace gex.Services.Search {
                             parent.Type = SearchNodeType.OR;
                             _Logger.LogTrace($"changed parent type to OR (from AND) due to OR_CONTINUE");
                         }
-
-                        /*
-                        _Logger.LogTrace($"this is the first child of an AND node, pushing an OR node to stack and taking a child if needed");
-
-                        // parent is set AFTER the child check is done
-                        SearchNode or = new(SearchNodeType.OR, SearchToken.GROUP_START, null);
-
-                        if (parent.Children.Count > 0) {
-                            // if the parent has at least one child, and the last child has the same field name,
-                            // create a new OR node, and take the last child of the parent
-                            SearchNode child = parent.Children[^1];
-                            if (child.Type == SearchNodeType.FIELD) {
-                                if (child.Children[0].Type == SearchNodeType.FIELD_NAME
-                                    && tokens.PeekNext()?.Type == SearchTokenType.WORD) { 
-
-                                    parent.Children.RemoveAt(parent.Children.Count - 1);
-
-                                    _Logger.LogTrace($"pushing OR node as parent's child last node is a FIELD_NAME and the value doesn't match");
-                                    or.Children.Add(child);
-                                    child.Parent = or;
-                                }
-                            }
-                        }
-
-                        parent.Children.Add(or);
-                        or.Parent = parent;
-                        stack.Push(or);
-                        */
                     }
                 }
 
@@ -381,6 +349,11 @@ namespace gex.Services.Search {
                     SearchNode not = new(SearchNodeType.NOT, iter, null);
                     stack.Push(not);
                     _Logger.LogTrace($"pushing NOT node to be used on whatever is next");
+                }
+
+                // OPERATOR
+                else if (iter.Type == SearchTokenType.OPERATOR) {
+                    throw new SearchAstParseException(iter, $"unexpected OPERATOR token (OPERATOR tokens are consumsed when handling a WORD token)");
                 }
 
                 // END
@@ -456,6 +429,9 @@ namespace gex.Services.Search {
         /// </returns>
         private static SearchNode _c(SearchNodeType type, SearchToken token, SearchNode parent) => new SearchNode(type, token, parent);
 
+        /// <summary>
+        ///     list of fields that are complex
+        /// </summary>
         private static HashSet<string> ComplexFieldNames = ["player", "map"];
 
         /// <summary>

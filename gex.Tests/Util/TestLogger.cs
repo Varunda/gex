@@ -28,7 +28,7 @@ namespace gex.Tests.Util {
         }
 
         public bool IsEnabled(LogLevel logLevel) {
-            return OutputEnabled;
+            return !TestLogger.DisableOutput && OutputEnabled;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
@@ -42,6 +42,8 @@ namespace gex.Tests.Util {
     }
 
     public class TestLogger : ILogger {
+
+        public static bool DisableOutput = false;
 
         private string _ClassPrefix;
 
@@ -57,7 +59,7 @@ namespace gex.Tests.Util {
         }
 
         public bool IsEnabled(LogLevel logLevel) {
-            return OutputEnabled;
+            return !DisableOutput && OutputEnabled;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {

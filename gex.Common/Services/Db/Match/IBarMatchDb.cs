@@ -1,4 +1,5 @@
-﻿using gex.Common.Models.Match;
+﻿using gex.Common.Models;
+using gex.Common.Models.Match;
 using gex.Common.Models.Search;
 
 namespace gex.Common.Services.Db.Match {
@@ -28,7 +29,13 @@ namespace gex.Common.Services.Db.Match {
 
         Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, long? currentUserID, CancellationToken cancel);
 
-        Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel);
+        /// <summary>
+        ///     perform a search with a search AST
+        /// </summary>
+        /// <param name="ast"><see cref="SearchAst"/> used to perform the search</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        Task<Result<List<BarMatch>, string>> Search(SearchAst ast, CancellationToken cancel);
 
         Task UpdateStartOffset(BarMatch match, CancellationToken cancel);
 

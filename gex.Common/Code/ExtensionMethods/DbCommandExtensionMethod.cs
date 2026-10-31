@@ -1,5 +1,7 @@
 ﻿using gex.Common.Services.Db;
 using Microsoft.Data.Sqlite;
+using SQL.Formatter;
+using SQL.Formatter.Language;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -60,13 +62,54 @@ namespace gex.Common.Code.ExtensionMethods {
                     dbValue = (new DateTimeOffset(dt)).ToUnixTimeMilliseconds();
                 }
 
-                if (dbValue == null) {
-                    dbValue = value;
-                }
+                dbValue ??= value;
             } while (false);
 
             DbParameter param = cmd.CreateParameter();
             param.ParameterName = name;
+            param.Value = dbValue;
+
+            cmd.Parameters.Add(param);
+        }
+
+        public static void AddParameter(this DbCommand cmd, object? value) {
+
+            object? dbValue = null;
+            do {
+                if (value == null) {
+                    dbValue = DBNull.Value;
+                    break;
+                }
+
+                Type t = value.GetType();
+                // PostgreSQL as far as I can tell, doesn't have a type for unsigned ints, so to handle this,
+                //      it's first unboxed to a uint, then cast to an int byte for byte
+                // not including the unchecked would mean values that couldn't be represents as ints,
+                //      but could be represented by uints, would throw an exception
+                if (t == typeof(uint)) {
+                    dbValue = unchecked((int)((uint)value));
+                } else if (t == typeof(ulong)) {
+                    dbValue = unchecked((long)((ulong)value));
+                } else if (value is JsonElement json) {
+                    if (json.ValueKind == JsonValueKind.Undefined) {
+                        throw new ArgumentException($"cannot add an undefined JSON parameter");
+                    }
+
+                    if (json.ValueKind == JsonValueKind.Null) {
+                        dbValue = DBNull.Value;
+                    }
+
+                    if (cmd is SqliteCommand) {
+                        dbValue = json.ToString();
+                    }
+                } else if (cmd is SqliteCommand && value is DateTime dt) {
+                    dbValue = (new DateTimeOffset(dt)).ToUnixTimeMilliseconds();
+                }
+
+                dbValue ??= value;
+            } while (false);
+
+            DbParameter param = cmd.CreateParameter();
             param.Value = dbValue;
 
             cmd.Parameters.Add(param);
@@ -78,27 +121,43 @@ namespace gex.Common.Code.ExtensionMethods {
         /// <param name="cmd"></param>
         /// <returns></returns>
         public static string Print(this DbCommand cmd) {
-            string s = cmd.CommandText + "\n";
+            //string s = cmd.CommandText + "\n";
+            string s = ""; // SqlFormatter.Format(cmd.CommandText);
 
-            foreach (DbParameter param in cmd.Parameters) {
+            List<DbParameter> paramList = cmd.Parameters.CopyToList<DbParameter>();
+            DbParameter? namedParams = paramList.FirstOrDefault(iter => string.IsNullOrEmpty(iter.ParameterName) == false);
+            DbParameter? positionalParams = paramList.FirstOrDefault(iter => string.IsNullOrEmpty(iter.ParameterName) == true);
+
+            static string? GetParameterValue(DbParameter param) {
                 Type? valueType = param.Value?.GetType();
-
-                s += $"{param.ParameterName} => ";
 
                 if (valueType != null && valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(List<>)) {
                     Type listType = valueType.GetGenericArguments()[0];
                     MethodInfo? boundPrint = typeof(DbCommandExtensionMethod).GetMethod("IterateUnboundGeneric")?.MakeGenericMethod(listType);
                     if (boundPrint == null) {
-                        s += "<failed to get IterateUnboundGeneric>";
+                        return "<failed to get IterateUnboundGeneric>";
                     } else {
                         object? ret = boundPrint.Invoke(null, new[] { param.Value });
-                        s += (string?)ret;
+                        return (string?)ret;
                     }
                 } else {
-                    s += param.Value?.ToString();
+                    return param.Value?.ToString();
                 }
+            }
 
-                s += "\n";
+            if (namedParams != null && positionalParams != null) {
+                s = SqlFormatter.Format(cmd.CommandText);
+                foreach (DbParameter param in cmd.Parameters) {
+                    s += $"{param.ParameterName} => {GetParameterValue(param)}\n";
+                }
+            } else if (namedParams == null && positionalParams != null) {
+                List<string?> parms = paramList.Select(GetParameterValue).ToList();
+                s = SqlFormatter.Format(cmd.CommandText, parms);
+            } else if (namedParams != null && positionalParams == null) {
+                Dictionary<string, string?> parms = new(paramList.Select(iter => new KeyValuePair<string, string?>(iter.ParameterName, GetParameterValue(iter))));
+                s = SqlFormatter.Format(cmd.CommandText, parms);
+            } else if (namedParams == null && positionalParams == null) {
+                s = SqlFormatter.Format(cmd.CommandText);
             }
 
             return s;

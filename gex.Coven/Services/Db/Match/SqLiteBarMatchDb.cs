@@ -1,5 +1,6 @@
 ﻿using Avalonia.Metadata;
 using gex.Common.Code.ExtensionMethods;
+using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
 using gex.Common.Services.Db;
@@ -132,7 +133,7 @@ namespace gex.Coven.Services.Db.Match {
             throw new NotImplementedException();
         }
 
-        public Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel) {
+        public Task<Result<List<BarMatch>, string>> Search(SearchAst ast, CancellationToken cancel) {
             throw new NotImplementedException();
         }
 

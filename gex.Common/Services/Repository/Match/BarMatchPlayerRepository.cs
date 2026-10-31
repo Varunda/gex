@@ -77,6 +77,10 @@ namespace gex.Common.Services.Repository.Match {
             return p;
         }
 
+        public Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
+            return _Db.SearchByName(name, cancel);
+        }
+
         public Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
             return _Db.GetByUserID(userID, cancel);
         }

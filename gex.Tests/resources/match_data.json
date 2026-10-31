@@ -1,0 +1,18 @@
+﻿{
+  "Matches": [
+    {
+      "ID": "abc",
+      "StartTime": "2026-01-01",
+      "DurationMs": 60000,
+      "AllyTeams": [
+
+      ],
+      "Teams": [
+
+      ],
+      "Players": [
+
+      ]
+    }
+  ]
+}

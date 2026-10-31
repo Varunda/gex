@@ -130,13 +130,14 @@ namespace gex.Services.Db.Map {
 						m.map_name ""map_file_name"",
 						m.gamemode ""gamemode"",
 						NOW() at time zone 'utc' ""timestamp"",
-						128 * TRUNC(p.starting_position_x / 128) ""start_x"",
-						128 * TRUNC(p.starting_position_z / 128) ""start_z"",
+						128 * TRUNC(t.starting_position_x / 128) ""start_x"",
+						128 * TRUNC(t.starting_position_z / 128) ""start_z"",
 						count(*) ""count_total"",
 						count(*) filter (where at.won = true) ""count_win""
 					FROM 
 						bar_match m
 						LEFT JOIN bar_match_player p ON p.game_id = m.id
+						LEFT JOIN bar_match_team t ON t.game_id = m.id AND p.team_id = t.team_id
 						LEFT JOIN bar_match_ally_team at ON p.ally_team_id = at.ally_team_id AND p.game_id = at.game_id
 					WHERE 1=1
 						AND {(conditions.Count > 0 ? string.Join("\n AND ", conditions) : "1=1")}

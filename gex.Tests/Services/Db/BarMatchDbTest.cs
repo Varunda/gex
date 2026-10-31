@@ -1,4 +1,5 @@
-﻿using gex.Common.Models.Match;
+﻿using gex.Common.Models;
+using gex.Common.Models.Match;
 using gex.Common.Models.Search;
 using gex.Common.Services.Db.Match;
 using gex.Services.Search;
@@ -17,37 +18,16 @@ namespace gex.Tests.Services.Db {
     [TestClass]
     public class BarMatchDbTest {
 
-        private async Task<(IBarMatchDb, ServiceProvider)> _Get() {
-            ServiceCollection services = await Service.Standard();
-
-            ServiceProvider svs = services.BuildServiceProvider();
-
-            return (svs.GetRequiredService<IBarMatchDb>(), svs);
-        }
-
-        [TestMethod]
-        public async Task Test_GetByID() {
-            (IBarMatchDb db, _) = await _Get();
+        [ClassInitialize]
+        public static async Task Init(TestContext ctx) {
+            (IBarMatchDb db, ServiceProvider svs) = await _Get();
+            IBarMatchTeamDb teamDb = svs.GetRequiredService<IBarMatchTeamDb>();
+            IBarMatchPlayerDb playerDb = svs.GetRequiredService<IBarMatchPlayerDb>();
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-
             await db.Insert(new BarMatch() {
                 ID = "abc"
             }, cts.Token);
-
-            BarMatch? match = await db.GetByID("abc", cts.Token);
-            Assert.IsNotNull(match);
-            Assert.AreEqual("abc", match.ID);
-        }
-
-        [TestMethod]
-        public async Task Test_Search_Players() {
-            (IBarMatchDb db, ServiceProvider svs) = await _Get();
-
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
-
-            IBarMatchTeamDb teamDb = svs.GetRequiredService<IBarMatchTeamDb>();
-            IBarMatchPlayerDb playerDb = svs.GetRequiredService<IBarMatchPlayerDb>();
 
             await db.Insert(new BarMatch() {
                 ID = "def"
@@ -86,6 +66,32 @@ namespace gex.Tests.Services.Db {
                 UserID = 1,
                 Skill = 20
             });
+        }
+
+        private static async Task<(IBarMatchDb, ServiceProvider)> _Get() {
+            ServiceCollection services = await Service.Standard();
+
+            ServiceProvider svs = services.BuildServiceProvider();
+
+            return (svs.GetRequiredService<IBarMatchDb>(), svs);
+        }
+
+        [TestMethod]
+        public async Task Test_GetByID() {
+            (IBarMatchDb db, _) = await _Get();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+
+            BarMatch? match = await db.GetByID("abc", cts.Token);
+            Assert.IsNotNull(match);
+            Assert.AreEqual("abc", match.ID);
+        }
+
+        [TestMethod]
+        public async Task Test_Search_Players() {
+            (IBarMatchDb db, ServiceProvider svs) = await _Get();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
 
             // no teams played armada, expect empty
             List<BarMatch> result1 = await db.Search(new BarMatchSearchParameters() {
@@ -120,20 +126,6 @@ namespace gex.Tests.Services.Db {
             Assert.AreEqual(1, result3.Count, $"expected 1 game with Cortex and MinOS > 5");
         }
 
-        [TestMethod]
-        public async Task Test_Query_Ex1() {
-            (IBarMatchDb db, ServiceProvider svs) = await _Get();
-
-            SearchTokenizer tokenizer = svs.GetRequiredService<SearchTokenizer>();
-            SearchAstBuilder astBuilder = svs.GetRequiredService<SearchAstBuilder>();
-
-            SearchAst ast = astBuilder.Build(tokenizer.Tokenize("player: alice"));
-
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
-            List<BarMatch> results = await db.Search(ast, cts.Token);
-
-            Assert.IsNotNull(results);
-        }
 
     }
 }

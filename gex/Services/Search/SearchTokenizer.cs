@@ -14,7 +14,7 @@ namespace gex.Services.Search {
         }
 
         public List<SearchToken> Tokenize(string q) {
-            _Logger.LogDebug($"starting new tokenizing [q={q}]");
+            //_Logger.LogDebug($"starting new tokenizing [q={q}]");
 
             List<SearchToken> tokens = new();
 
@@ -23,12 +23,12 @@ namespace gex.Services.Search {
 
             void SaveWord() {
                 tokens.Add(new SearchToken(SearchTokenType.WORD, word));
-                _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 word = "";
             }
 
             foreach (char i in q) {
-                _Logger.LogTrace($"tokenize iteration [iter={i}] [word={word}]");
+                //_Logger.LogTrace($"tokenize iteration [iter={i}] [word={word}]");
 
                 // if in a quote, only stop for another quote
                 // TODO: support escaped quotes?
@@ -40,7 +40,7 @@ namespace gex.Services.Search {
                 }
 
                 if (i == ' ') {
-                    _Logger.LogTrace($"got space character");
+                    //_Logger.LogTrace($"got space character");
                     if (word.Length > 0) {
                         SaveWord();
                     }
@@ -53,7 +53,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.GROUP_START, ""));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 } 
 
                 // GROUP_END }
@@ -63,7 +63,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.GROUP_END, ""));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
                 // PARAMETERS_START (
@@ -73,7 +73,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.PARAMETERS_START, ""));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
                 // PARAMETERS_END )
@@ -83,7 +83,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.PARAMETERS_END, ""));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
                 // OR_CONTINUE
@@ -93,7 +93,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.OR_CONTINUE, ""));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
                 // OPERATORS that can exist in a word
@@ -104,7 +104,7 @@ namespace gex.Services.Search {
                     } else {
                         // otherwise it's an OPERATOR token
                         tokens.Add(new SearchToken(SearchTokenType.OPERATOR, "" + i));
-                        _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                        //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                     }
                 }
 
@@ -115,7 +115,7 @@ namespace gex.Services.Search {
                     }
 
                     tokens.Add(new SearchToken(SearchTokenType.OPERATOR, "" + i));
-                    _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                    //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
                 // NOT
@@ -129,23 +129,23 @@ namespace gex.Services.Search {
                         }
 
                         tokens.Add(new SearchToken(SearchTokenType.NOT, "!"));
-                        _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                        //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                     }
                 }
                 
                 // word quote handling
                 else if (i == '"') {
                     if (inQuote == true) {
-                        _Logger.LogTrace($"ending quoted strong");
+                        //_Logger.LogTrace($"ending quoted strong");
                         inQuote = false;
                     } else {
-                        _Logger.LogTrace($"starting quoted string");
+                        //_Logger.LogTrace($"starting quoted string");
                         inQuote = true;
                     }
 
                     if (word.Length > 0) {
                         tokens.Add(new SearchToken(SearchTokenType.WORD, word));
-                        _Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
+                        //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                         word = "";
                     }
 

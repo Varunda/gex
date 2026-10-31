@@ -15,6 +15,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using gex.Common.Models.Search;
 using gex.Code.Exceptions;
+using gex.Common.Models;
+using gex.Common.Services.Search;
 
 namespace gex.Services.Db.Match {
 
@@ -23,17 +25,19 @@ namespace gex.Services.Db.Match {
         private readonly ILogger<PgBarMatchDb> _Logger;
         private readonly IDbHelper _DbHelper;
         private readonly IDataReader<BarMatch> _Reader;
+        private readonly SearchAstDbCommanderCompiler _AstCompiler;
 
         private readonly AppPermissionRepository? _PermissionRepository;
 
         public PgBarMatchDb(ILogger<PgBarMatchDb> logger,
             IDbHelper dbHelper, IDataReader<BarMatch> reader,
-            AppPermissionRepository? permissionRepository) {
+            AppPermissionRepository? permissionRepository, SearchAstDbCommanderCompiler astCompiler) {
 
             _Logger = logger;
             _DbHelper = dbHelper;
             _Reader = reader;
             _PermissionRepository = permissionRepository;
+            _AstCompiler = astCompiler;
         }
 
         /// <summary>
@@ -325,7 +329,6 @@ namespace gex.Services.Db.Match {
             if (parms.ProcessingAction != null) {
                 joinProcessing = true;
                 conditions.Add("p.actions_parsed is "
-            //List<string> withs = [];
                     + (parms.ProcessingAction.Value == true ? "not null" : "null"));
             }
 
@@ -504,115 +507,18 @@ namespace gex.Services.Db.Match {
             return matches;
         }
 
-        public async Task<List<BarMatch>> Search(SearchAst ast, CancellationToken cancel) {
+        /// <inheritdoc/>
+        public async Task<Result<List<BarMatch>, string>> Search(SearchAst ast, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using DbCommand cmd =  await _DbHelper.Command(conn, "", cancel); // command text will be set later
+            Result<DbCommand, string> ret = await _AstCompiler.Compile(ast, conn, null, false, cancel);
 
-            List<string> conditions = [];
-            List<string> joins = [];
-
-            OrderBy orderBy = OrderBy.START_TIME;
-            OrderByDirection orderByDirection = OrderByDirection.DESC;
-
-            int limit = 24;
-            int offset = 0;
-
-            string cond = "";
-
-            int i = 0;
-
-            void Iterate(SearchNode node) {
-
-                if (node.Type == SearchNodeType.AND) {
-                    cond += "( \n";
-
-                    foreach (SearchNode iter in node.Children) {
-                        Iterate(iter);
-                        cond += "\n AND \n";
-                    }
-
-                    cond += " 1=1 \n)\n";
-                }
-
-                // OR
-                else if (node.Type == SearchNodeType.OR) {
-                    cond += "( \n";
-
-                    foreach (SearchNode iter in node.Children) {
-                        Iterate(iter);
-                        cond += "\n OR \n";
-                    }
-
-                    cond += " \n)\n";
-
-                }
-
-                // FIELD
-                else if (node.Type == SearchNodeType.FIELD) {
-                    if (node.Children.Count != 3) {
-                        throw new SearchAstException($"FIELD expected to have 3 children, had {node.Children.Count} instead");
-                    }
-
-                    SearchNode fieldName = node.Children[0];
-                    SearchNode fieldOp = node.Children[1];
-
-                    if (fieldName.Token.Value == "player") {
-                        joins.Add($"INNER JOIN bar_match_player players{i} ON players{i}.game_id = m.id ");
-                        joins.Add($"INNER JOIN bar_match_team teams{i} ON players{i}.game_id = teams{i}.game_id AND players{i}.team_id = teams{i}.team_id ");
-                    }
-
-                    cond += $" {fieldName.Token.Value} {fieldOp.Token.Value}";
-
-                    Iterate(node.Children[2]);
-
-                    cond += "\n";
-                }
-
-                // FIELD_VALUE
-                else if (node.Type == SearchNodeType.FIELD_VALUE) {
-                    if (node.Children.Count == 0) {
-                        string paramName = $"FieldValue{i}";
-                        ++i;
-
-                        cond += $" @{paramName} ";
-
-                        cmd.AddParameter(paramName, node.Token.Value);
-                    } else {
-                        foreach (SearchNode iter in node.Children) {
-                            Iterate(iter);
-                        }
-                    }
-                }
-
-                // fallback
-                else {
-                    throw new NotImplementedException($"unhandled node type '{node.Type}' (from {node})");
-                }
-
+            if (ret.IsOk == false) {
+                return ret.Error;
             }
 
-            Iterate(ast.Root);
-
-            cmd.CommandText = $@"
-                SELECT
-                    *
-                FROM (
-                    SELECT DISTINCT ON (m.id) *
-                        FROM bar_match m
-                            LEFT JOIN match_pool_entry mp ON mp.match_id = m.id
-                            LEFT JOIN match_pool mpool ON mp.pool_id = mpool.id
-                            {(joins.Count > 0 ? $"{string.Join("\n", joins)}" : "")}
-                        WHERE 1=1
-                            {cond}
-                ) sub_query
-                ORDER BY {orderBy.Value} {orderByDirection.Value}
-                LIMIT {limit}
-                OFFSET {offset}
-            ";
+            using DbCommand cmd = ret.Value;
 
             _Logger.LogDebug($"performing DB search: " + cmd.Print());
-
-            return [];
 
             await cmd.PrepareAsync(cancel);
 
