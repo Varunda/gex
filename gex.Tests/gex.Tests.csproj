@@ -21,6 +21,7 @@
     <None Remove="resources\maps\pillar_of_doom_v1.sd7" />
     <None Remove="resources\maps\supreme_isthmus_v2.1_removed_textures.sd7" />
     <None Remove="resources\missing_player_36.sdfz" />
+    <None Remove="resources\sql\bar_map.sql" />
     <None Remove="resources\start_spot_outside_start_box.sdfz" />
     <None Remove="resources\temp\file_to_create_dir_in_output.txt" />
     <None Remove="resources\unit_data\armpw.lua" />
@@ -90,6 +91,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\missing_player_36.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\sql\bar_map.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\start_spot_outside_start_box.sdfz">

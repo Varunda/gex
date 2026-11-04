@@ -13,6 +13,7 @@ local commanders = {}
 local units_died_in_frame = {}
 local units_pending_load = {}
 local units_pending_unload = {}
+local units_pregame_built = {}
 
 local CMD_RECLAIM = 90
 local CMD_RESTORE = 110
@@ -263,6 +264,11 @@ function widget:GameFrame(n)
     end
 	units_pending_unload = {}
 
+    for unitID,v in pairs(units_pregame_built) do
+        writeJson("unit_created", v)
+    end
+    units_pregame_built = {}
+
     frame = n
 
     local unitIDs = Spring.GetAllUnits()
@@ -425,13 +431,27 @@ end
 function widget:UnitCreated(unitID, unitDefID, teamID)
 	ignoreUnits[unitID] = frame + 1
 
+    local x, y, z = Spring.GetUnitPosition(unitID)
+    local yaw = Spring.GetUnitHeading(unitID, true) -- unit: radians
+
     if (UNIT_DEF_IS_COMMANDER[unitDefID] == true) then
         Spring.Echo("commander unit created", unitID, "defID", unitDefID)
 		commanders[unitID] = unitID
-    end
 
-    local x, y, z = Spring.GetUnitPosition(unitID)
-    local yaw = Spring.GetUnitHeading(unitID, true) -- unit: radians
+        if (frame <= 0) then
+            units_pregame_built[unitID] = {
+				{ "unitID", unitID },
+				{ "teamID", teamID },
+				{ "defID", unitDefID },
+				{ "defName", UNIT_DEF_NAMES[unitDefID] },
+				{ "unit_x", x },
+				{ "unit_y", y },
+				{ "unit_z", z },
+				{ "yaw", yaw }, -- this matters for non-square units that will be displayed on map
+            }
+            return
+        end
+    end
 
     writeJson("unit_created", {
         { "unitID", unitID },
@@ -453,6 +473,13 @@ function widget:UnitFinished(unitID, unitDefID, teamID)
 end
 
 function widget:UnitDestroyed(unitID, unitDefID, teamID, attackerID, attackerDefID, attackerTeam, weaponDefID)
+    if (frame <= 0) then
+        units_pregame_built[unitID] = nil
+		return
+    end 
+    if (Spring.GetUnitRulesParam(unitID, "pregame_proxy") == 1) then
+        return
+    end
 
     if (commanders[unitID] ~= nil) then
         commanders[unitID] = nil

@@ -4,7 +4,7 @@
             --
         </span>
 
-        <span v-else :style="{ color: textColor }" :title="'A skill of ' + value.toFixed(2) + ' is better than ' + percent.toFixed(2) + '% of other players'">
+        <span v-else :style="{ color: textColor }" :title="'A skill of ' + value.toFixed(2) + ' is better than ' + percent.toFixed(2) + '% of other players (below 5 skill uncertainity)'">
             {{ percent.toFixed(0) }}%
         </span>
     </span>
@@ -22,13 +22,13 @@
         computed: {
             textColor: function(): string {
                 if (this.percent > 95) {
-                    return "#FFD700";
+                    return "rgb(123, 0, 158)";
                 }
                 if (this.percent > 75) {
-                    return "#46C646";
+                    return "#038603";
                 }
 
-                return "#ADD8E6";
+                return "#202020";
             }
         }
     });

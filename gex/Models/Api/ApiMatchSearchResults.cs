@@ -13,9 +13,11 @@ namespace gex.Models.Api {
 
         public string Query { get; set; } = "";
 
+        public string Normalized { get; set; } = "";
+
         public SearchAst Ast { get; set; }
 
-        public List<BarMatch> Results { get; set; } = [];
+        public List<ApiMatch> Results { get; set; } = [];
 
         public int Found { get; set; } = 0;
 

@@ -13,6 +13,18 @@
             <h6 class="d-inline-block mb-0">
                 {{ gamemode.sum.winCount / gamemode.sum.playCount * 100 | locale(0) }}% win rate over {{ gamemode.sum.playCount }} games
             </h6>
+
+            <h6 v-if="skill != undefined" class="d-inline-block mb-0 border-start ps-2 ms-2">
+                <span v-if="skill.percentile != null" >
+                    OS is higher than
+                    <percentile-cell :value="skill.skill" :percent="skill.percentile" v-if="skill.percentile != null"></percentile-cell>
+                    of other players
+                </span>
+
+                <span v-else title="Uncertainty too high" class="text-muted">
+                    --
+                </span>
+            </h6>
         </div>
 
         <table class="table table-sm mb-1">
@@ -112,6 +124,7 @@
     import { BarUser } from "model/BarUser";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+    import { BarUserSkill } from "model/BarUserSkill";
 
     import "filters/BarGamemodeFilter";
     import "filters/LocaleFilter";
@@ -124,6 +137,7 @@
     import { GroupedFaction, GroupedFactionGamemode } from "./common";
 
     import InfoHover from "components/InfoHover.vue";
+    import PercentileCell from "./PercentileCell.vue";
 
     const FactionStatsRow = Vue.extend({
         props: {
@@ -471,6 +485,10 @@
                     });
             },
 
+            skill: function(): BarUserSkill | undefined {
+                return this.user.skill.find(iter => iter.gamemode == this.gamemode.gamemode);
+            },
+
             skillDiff: function(): number {
                 if (this.recentMatches.length < 2) {
                     return 0;
@@ -558,7 +576,8 @@
         },
         
         components: {
-            FactionStatsRow, InfoHover
+            FactionStatsRow, InfoHover,
+            PercentileCell
         }
     });
     export default UserGamemodeStatView;

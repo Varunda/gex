@@ -50,6 +50,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 
@@ -87,6 +88,8 @@ namespace gex {
             services.AddMvc(options => {
 
             }).AddJsonOptions(config => {
+                config.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
                 // don't forget to update these in ApiResponse as well!!!!!!!!!!!!!!!!!!!!!
                 config.JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
                 config.JsonSerializerOptions.Converters.Add(new TimeSpanJsonConverter());
@@ -104,6 +107,7 @@ namespace gex {
                         + "<h3>user agents</h3>"
                         + "<p>users of this API must include a user agent that contains contact info. failure to do so may result in projects being blocked</p>"
                         + "<p>example: <code>project-name (discord: username)</code></p>"
+                        + "<p>additionally, if the project is a website, setting the referer header to the URL of the website is appreciated (I like to check out projects that use gex)</p>"
                         + "<h3>rate limits</h3>"
                         + "<p>gex uses a bucketing rate limiting. users start with 300 requests, and refill 60 requests per minute (up to 300). "
                         + "additonally, please limit to 1 concurrent request.</p>"

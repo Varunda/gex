@@ -163,7 +163,9 @@ namespace gex.Services.Hosted.QueueProcessor {
                 }
 
                 BarMatch parsed = match.Value;
-                parsed.MapName = replay.MapName;
+                if (parsed.MapName == "") {
+                    parsed.MapName = replay.MapName;
+                }
 
                 await _ResultProcessor.Process(parsed, cancel);
                 priority = await _PriorityCalculator.Calculate(parsed, cancel);

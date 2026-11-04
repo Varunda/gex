@@ -19,6 +19,8 @@ namespace gex.Common.Services.Repository.Match {
 
         private const string CACHE_KEY_ID = "Gex.MatchPlayers.{0}"; // {0} => game ID
 
+        private const string CACHE_KEY_SEARCH_PLAYER = "Gex.MatchPlayers.Search.{0}"; // {0} => input
+
         public BarMatchPlayerRepository(ILogger<BarMatchPlayerRepository> logger,
             IBarMatchPlayerDb db, IMemoryCache cache) {
 
@@ -77,8 +79,32 @@ namespace gex.Common.Services.Repository.Match {
             return p;
         }
 
-        public Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
-            return _Db.SearchByName(name, cancel);
+        /// <summary>
+        ///     searc hthe <see cref="BarMatchPlayer"/>s by name
+        /// </summary>
+        /// <param name="name">name. minimumum 2 characters</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public async Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
+            if (string.IsNullOrWhiteSpace(name) == true) {
+                throw new ArgumentException($"{nameof(name)} cannot be null or empty");
+            }
+
+            if (name.Length <= 2) {
+                throw new ArgumentException($"{nameof(name)} must be at least 3 characters long");
+            }
+
+            string cacheKey = string.Format(CACHE_KEY_SEARCH_PLAYER, name);
+            if (_Cache.TryGetValue(cacheKey, out List<BarMatchPlayer>? players) == false || players == null) {
+                players = await _Db.SearchByName(name, cancel);
+
+                _Cache.Set(cacheKey, players, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                });
+            }
+
+            return players;
         }
 
         public Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {

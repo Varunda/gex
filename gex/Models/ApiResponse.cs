@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 
@@ -89,6 +90,7 @@ namespace gex.Models {
             _JsonOptions.Converters.Add(new DateTimeJsonConverter());
             _JsonOptions.Converters.Add(new TimeSpanJsonConverter());
             _JsonOptions.Converters.Add(new Vector3JsonConverter());
+            _JsonOptions.Converters.Add(new JsonStringEnumConverter());
         }
 
         public ApiResponseExecutor(ILoggerFactory logger, IHttpResponseStreamWriterFactory writerFactory) {

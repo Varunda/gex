@@ -26,6 +26,8 @@ namespace gex.Common.Models.Search {
 
         [JsonIgnore]
         private SearchNode? _parent = null;
+
+        [JsonIgnore]
         public SearchNode? Parent {
             get => _parent;
             set {

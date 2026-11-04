@@ -1129,6 +1129,61 @@ namespace gex.Tests.Services.Search {
         }
 
         /// <summary>
+        ///     test a NOT within an AND node is correctly interpreted
+        /// </summary>
+        [TestMethod]
+        public void Test_ComplexField_And_BasicField() {
+            // player:alice(skill>20) !beth
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, "="),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.PARAMETERS_START, ""),
+                new SearchToken(SearchTokenType.WORD, "skill"),
+                new SearchToken(SearchTokenType.OPERATOR, ">"),
+                new SearchToken(SearchTokenType.WORD, "20"),
+                new SearchToken(SearchTokenType.PARAMETERS_END, ""),
+                new SearchToken(SearchTokenType.NOT, "!"),
+                new SearchToken(SearchTokenType.WORD, "beth"),
+            ];
+
+            SearchAst ast = _a(tokens);
+
+            // (player = alice AND player = beth) OR (map = supreme AND mode = duel)
+            _CheckNodeTree(ast.Root,
+                SearchNodeType.AND,
+                [
+                    // player=(name=alice AND skill>20)
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                        (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.AND, [
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "="),
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
+                                ]),
+                                (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "skill"),
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_OP, ">"),
+                                    (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "20"),
+                                ])
+                            ])
+                        ]),
+                    ]),
+
+                    // !beth
+                    (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, "!"),
+                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
+                    ]),
+                ]
+            );
+        }
+
+        /// <summary>
         ///     test a double operator throws an exception
         /// </summary>
         [TestMethod]
@@ -1286,40 +1341,6 @@ namespace gex.Tests.Services.Search {
             return ast;
         }
 
-        /// <summary>
-        ///     helper function to validate the nodes in an AST. does NOT check children, ONLY the order
-        /// </summary>
-        /// <param name="ast"></param>
-        /// <param name="expected"></param>
-        private void _CheckNodeOrder(SearchAst ast, List<NodeIter> expected) {
-
-            int count = 0;
-            IEnumerator<SearchNode> astNodes = ast.GetEnumerator();
-            while (astNodes.MoveNext()) {
-                ++count;
-            }
-
-            Console.WriteLine($"have {count} nodes from the AST");
-
-            Assert.AreEqual(expected.Count, count);
-
-            int i = 0;
-            Console.WriteLine($"nodes within AST tree:");
-            foreach (SearchNode node in ast) {
-                Assert.IsTrue(i < expected.Count, $"i is {i}, and {i} < {expected.Count} is true, which means we've iterated past the end of the AST");
-
-                NodeIter ex = expected.ElementAt(i);
-
-                Assert.AreEqual(ex.Type, node.Type);
-                Assert.AreEqual(ex.Token.Type, node.Token.Type);
-                Assert.AreEqual(ex.Token.Value, node.Token.Value);
-
-                Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} {node.Token.Type} {node.Token.Value}");
-
-                ++i;
-            }
-        }
-
         private void _CheckNodeTree(SearchNode node, SearchNodeType type, List<Action<SearchNode>> childrenChecks) {
             Assert.AreEqual(type, node.Type);
             Assert.AreEqual(childrenChecks.Count, node.Children.Count, $"expected {childrenChecks.Count} children in {node}, has {node.Children.Count} instead");
@@ -1339,8 +1360,14 @@ namespace gex.Tests.Services.Search {
         }
 
         private void _PrintAst(SearchAst ast) {
-            foreach (SearchNode node in ast) {
-                Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} ({node.Token.Type}) {node.Token.Value}");
+            _PrintNode(ast.Root);
+        }
+
+        private void _PrintNode(SearchNode node) {
+            Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} ({node.Token.Type}) {node.Token.Value}");
+
+            foreach (SearchNode child in node.Children) {
+                _PrintNode(child);
             }
         }
 

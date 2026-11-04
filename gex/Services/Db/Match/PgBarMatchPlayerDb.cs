@@ -29,6 +29,7 @@ namespace gex.Services.Db.Match {
             _Reader = reader;
         }
 
+        /// <inheritdoc/>
         public async Task Insert(BarMatchPlayer player) {
             if (string.IsNullOrEmpty(player.GameID)) {
                 throw new ArgumentException($"GameID of player is missing!");
@@ -59,6 +60,7 @@ namespace gex.Services.Db.Match {
             await conn.CloseAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<List<BarMatchPlayer>> GetByGameID(string gameID, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarMatchPlayer>(
@@ -93,6 +95,7 @@ namespace gex.Services.Db.Match {
             return matches;
         }
 
+        /// <inheritdoc/>
         public async Task<List<BarMatchPlayer>> GetByUserID(long userID, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using DbCommand cmd =  await _DbHelper.Command(conn, @"
@@ -110,6 +113,7 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        /// <inheritdoc/>
         public async Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using DbCommand cmd =  await _DbHelper.Command(conn, @"
@@ -128,6 +132,7 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        /// <inheritdoc/>
         public async Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using DbCommand cmd =  await _DbHelper.Command(conn, @"
@@ -143,6 +148,7 @@ namespace gex.Services.Db.Match {
             return players;
         }
 
+        /// <inheritdoc/>
         public async Task DeleteByGameID(string gameID) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             using DbCommand cmd =  await _DbHelper.Command(conn, @"

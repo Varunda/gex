@@ -196,23 +196,17 @@
                         {{ skill.gamemode | gamemode }}
                     </h4>
 
-                    <div class="d-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto, auto; gap: 0.5rem;">
-                        <span style="grid-row: 1; grid-column: 1;">
-                            {{ skill.skill | locale(2) }}
+                    <div class="d-grid" style="grid-template-columns: 1fr; grid-template-rows: auto, auto; gap: 0.5rem;">
+                        <span style="grid-row: 1;">
+                            <span :style="skillColor(skill)">
+                                {{ skill.skill | locale(2) }}
+                            </span>
                             <small class="text-muted">
                                 &plusmn;{{ skill.skillUncertainty | locale(2) }}
                             </small>
                         </span>
 
-                        <span style="grid-row: 1; grid-column: 2;">
-                            <percentile-cell :value="skill.skill" :percent="skill.percentile" v-if="skill.percentile != null"></percentile-cell>
-
-                            <span v-else title="Uncertainty too high" class="text-muted">
-                                --
-                            </span>
-                        </span>
-
-                        <span :title="skill.lastUpdated | moment" style="grid-row: 2; grid-column: 1 / span 2;">
+                        <span :title="skill.lastUpdated | moment" style="grid-row: 2;">
                             Last played {{ skill.lastUpdated | timeAgoRelative }}
                         </span>
                     </div>
@@ -393,6 +387,24 @@
 
             mapNameWithoutVersion: function(name: string): string {
                 return MapUtil.getNameNameWithoutVersion(name);
+            },
+
+            skillColor: function(skill: BarUserSkill): any {
+                let color: string = "#ADD8E6";
+                if (skill.percentile == null) {
+                    color = "#ffffff";
+                } else {
+                    if (skill.percentile > 75) {
+                        color = "#46C646";
+                    }
+                    if (skill.percentile > 95) {
+                        color = "#FFD700";
+                    }
+                }
+
+                return {
+                    "color": color
+                };
             },
 
             makeFactionChart: function(): void {

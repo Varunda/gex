@@ -503,10 +503,11 @@ namespace gex.Controllers.Api {
         /// <returns></returns>
         [HttpGet("query")]
         public async Task<ApiResponse<ApiMatchSearchResults>> SearchQuery([FromQuery] string q,
+            [FromQuery] bool includeTeams = true,
+            [FromQuery] bool includeAllyTeams = true,
+            [FromQuery] bool includePlayers = true,
             CancellationToken cancel = default
         ) {
-
-            throw new NotImplementedException();
 
             if (string.IsNullOrWhiteSpace(q) == true) {
                 return ApiBadRequest<ApiMatchSearchResults>($"missing query");
@@ -523,7 +524,34 @@ namespace gex.Controllers.Api {
 
             SearchAst ast = _AstBuilder.Build(tokens);
 
+            Result<List<BarMatch>, string> matches = await _MatchRepository.Search(ast, cancel);
+
+            if (matches.IsOk == false) {
+                return ApiBadRequest<ApiMatchSearchResults>($"failed to perform query: {matches.Error}");
+            }
+
             ApiMatchSearchResults results = new(q, ast);
+            foreach (BarMatch m in matches.Value) {
+                if (includeTeams == true) {
+                    m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
+                }
+
+                if (includePlayers == true) {
+                    m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
+                }
+
+                if (includeAllyTeams == true) {
+                    m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+                }
+
+                ApiMatch api = new(m);
+                api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
+                api.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(m.GameVersion, cancel);
+
+                results.Results.Add(api);
+            }
+
+            results.Normalized = ast.ToString();
 
             return ApiOk(results);
         }

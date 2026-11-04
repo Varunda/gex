@@ -1,9 +1,12 @@
 ﻿using gex.Common.Models;
+using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Services.Db;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
+using gex.Common.Services.Repository;
 using gex.Common.Services.Util;
 using gex.Services.Search;
 using gex.Services.Util;
@@ -14,6 +17,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -57,12 +61,27 @@ namespace gex.Tests.Services.Db {
             TestLogger.DisableOutput = true;
 
             (IBarMatchDb db, ServiceProvider svs) = await _Get();
+            TestLogger.DisableOutput = false;
+            _Logger.LogInformation($"loading maps...");
+
+            string barMapSql = await File.ReadAllTextAsync("./resources/sql/bar_map.sql");
+            IDbHelper helper = svs.GetRequiredService<IDbHelper>();
+
+            using DbConnection conn = helper.Connection();
+            using DbCommand cmd = await helper.Command(conn, barMapSql);
+
+            await cmd.ExecuteNonQueryAsync();
+
+            BarMapRepository mapRepo = svs.GetRequiredService<BarMapRepository>();
+            List<BarMap> maps = await mapRepo.GetAll(CancellationToken.None);
+            _Logger.LogInformation($"loaded maps ({maps.Count})");
+
+            TestLogger.DisableOutput = true;
             BarDemofileParser parser = svs.GetRequiredService<BarDemofileParser>();
             BarDemofileResultProcessor processor = svs.GetRequiredService<BarDemofileResultProcessor>();
             BarMatchProcessingRepository processingRepo = svs.GetRequiredService<BarMatchProcessingRepository>();
 
             string[] demofiles = Directory.GetFiles("./resources/", "*.sdfz");
-
             foreach (string demofile in demofiles) {
                 _Logger.LogInformation($"adding demofile [demofile={demofile}]");
 
@@ -103,6 +122,8 @@ namespace gex.Tests.Services.Db {
             SearchAstBuilder astBuilder = svs.GetRequiredService<SearchAstBuilder>();
 
             SearchAst ast = astBuilder.Build(tokenizer.Tokenize(query));
+            _Logger.LogInformation($"parsed ast: {ast.Print()}");
+            _PrintAst(ast);
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
             Result<List<BarMatch>, string> results = await db.Search(ast, cts.Token);
@@ -111,7 +132,48 @@ namespace gex.Tests.Services.Db {
 
             Assert.IsTrue(results.IsOk, $"results was not ok: {results.Error}");
 
+            IBarMatchBuilderUtil builder = svs.GetRequiredService<IBarMatchBuilderUtil>();
+            foreach (BarMatch iter in results.Value) {
+                Result<Maybe<BarMatch>, string> ret = await builder.BuildMatch(iter.ID, new IBarMatchBuilderUtil.BuildOptions() {
+                    IncludeAiPlayers = true,
+                    IncludeAllyTeams = true,
+                    IncludePlayers = true,
+                    IncludeTeams = true,
+                }, null, cts.Token);
+                BarMatch match = ret.Value.Get();
+
+                Console.WriteLine($"game {match.ID} - {match.Map} - {match.StartTime:u}");
+
+                foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+
+                    List<BarMatchTeam> teams = match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).ToList();
+
+                    if (teams.Count == 1) {
+                        List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == teams[0].TeamID).ToList();
+                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {teams[0].Faction}");
+                    } else {
+                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - ");
+                        foreach (BarMatchTeam team in teams) {
+                            List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == team.TeamID).ToList();
+                            Console.WriteLine($"\t\tTeam {team.TeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {team.Faction}");
+                        }
+                    }
+                }
+            }
+
             return results.Value;
+        }
+
+        private void _PrintAst(SearchAst ast) {
+            _PrintNode(ast.Root);
+        }
+
+        private void _PrintNode(SearchNode node) {
+            Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} ({node.Token.Type}) {node.Token.Value}");
+
+            foreach (SearchNode child in node.Children) {
+                _PrintNode(child);
+            }
         }
 
         /// <summary>
@@ -276,18 +338,49 @@ namespace gex.Tests.Services.Db {
             }
         }
 
+        /// <summary>
+        ///     test to find all games of a player
+        /// </summary>
         [TestMethod]
-        public async Task Test_Query_PlayersOr() {
-            List<BarMatch> matches = await _Query("player: cetme | fightwar");
+        public async Task Test_Query_PlayersFindAll() {
+            List<BarMatch> matches = await _Query("player: varunda");
 
+            Assert.AreEqual(5, matches.Count);
+        }
+
+        /// <summary>
+        ///     test to find all games of a player that are with another player
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_PlayersFindAll_IncludeOtherPlayer() {
+            List<BarMatch> matches = await _Query("player: varunda victoria");
+            Assert.AreEqual(4, matches.Count);
+        }
+
+        /// <summary>
+        ///     test to find all games of a player that DONT contain another player
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_PlayersFindAll_ExcludeOtherPlayer() {
+            List<BarMatch> matches = await _Query("player: varunda !victoria");
             Assert.AreEqual(1, matches.Count);
+        }
+
+        /// <summary>
+        ///     test to find all games of a player that aren't played on another map
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_PlayersFindAll_ExcludeMap() {
+            List<BarMatch> matches = await _Query("player: varunda map: !pinewood");
+
+            Assert.AreEqual(4, matches.Count);
         }
 
         [TestMethod]
         public async Task Test_Query_Grouped_Or() {
-            List<BarMatch> matches = await _Query("{ player: cetme fightwar } | { map: supreme }");
+            List<BarMatch> matches = await _Query("{ player: cetme fightwar } | { map: gasbag }");
 
-            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual(2, matches.Count); // the 1 gasbag game, and the one game with fightwar in it
         }
 
     }

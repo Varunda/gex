@@ -4,27 +4,13 @@ using System.Linq;
 using System.Text;
 
 namespace gex.Common.Models.Search {
-    public class SearchAst : IEnumerable<SearchNode> {
+    public class SearchAst {
 
         public SearchAst(SearchNode root) {
             this.Root = root;
         }
 
         public SearchNode Root { get; set; }
-
-        /// <summary>
-        ///     get a <see cref="IEnumerable{T}"/> that iterates thru the <see cref="SearchNode"/>s starting from the left
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator<SearchNode> GetEnumerator() {
-            List<SearchNode> nodes = _BuildEnumerable(Root, new List<SearchNode>());
-
-            return nodes.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() {
-            return GetEnumerator();
-        }
 
         private List<SearchNode> _BuildEnumerable(SearchNode node, List<SearchNode> list) {
             list.Add(node);
@@ -42,6 +28,33 @@ namespace gex.Common.Models.Search {
             } else {
                 return _PrintNode(Root);
             }
+        }
+
+        public override string ToString() {
+            return _ToString(Root);
+        }
+
+        private string _ToString(SearchNode node) {
+            StringBuilder sb = new();
+            if (node.Children.Count > 0) {
+                if (node.Type != SearchNodeType.BASIC_FIELD && node.Type != SearchNodeType.COMPLEX_FIELD) {
+                    sb.Append('(');
+                }
+                sb.Append(string.Join(node.Type == SearchNodeType.AND ? " AND " : node.Type == SearchNodeType.OR ? " OR " : " ", node.Children.Select(_ToString)));
+                if (node.Type != SearchNodeType.BASIC_FIELD && node.Type != SearchNodeType.COMPLEX_FIELD) {
+                    sb.Append(')');
+                }
+            } else {
+                if (node.Type == SearchNodeType.AND) {
+                    sb.Append(" AND ");
+                } else if (node.Type == SearchNodeType.OR) {
+                    sb.Append(" OR ");
+                }
+
+                sb.Append(node.Token.Value);
+            }
+
+            return sb.ToString();
         }
 
         private string _PrintNode(SearchNode node, int depth = 0) {
@@ -74,7 +87,7 @@ namespace gex.Common.Models.Search {
                 sb.Append('(');
                 sb.Append('\n');
                 sb.Append(string.Join(" ", node.Children.Select(iter => _PrintNodeIndent(iter, depth + 1))));
-                sb.Append('\n');
+                //sb.Append('\n');
                 for (int i = 0; i < depth; ++i) { sb.Append('\t'); }
                 sb.Append(')');
                 sb.Append('\n');

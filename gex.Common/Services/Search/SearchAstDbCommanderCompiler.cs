@@ -1,8 +1,10 @@
 ﻿using gex.Common.Code;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Services.Repository;
 using gex.Common.Services.Repository.Match;
 using Microsoft.Extensions.Logging;
 using System;
@@ -20,12 +22,14 @@ namespace gex.Common.Services.Search {
         private readonly ILogger<SearchAstDbCommanderCompiler> _Logger;
 
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarMapRepository _MapRepository;
 
         public SearchAstDbCommanderCompiler(ILogger<SearchAstDbCommanderCompiler> logger,
-            BarMatchPlayerRepository playerRepository) {
+            BarMatchPlayerRepository playerRepository, BarMapRepository mapRepository) {
 
             _Logger = logger;
             _PlayerRepository = playerRepository;
+            _MapRepository = mapRepository;
         }
 
         public async Task<Result<DbCommand, string>> Compile(SearchAst ast, DbConnection conn, long? currentUserID, bool isDev, CancellationToken cancel) {
@@ -221,20 +225,77 @@ namespace gex.Common.Services.Search {
                     cmd += $" m.game_settings->>'ranked_game' = {(value == true ? '1' : '0')}\n";
                 }
 
+                // gamemode
+                else if (fieldName == "gamemode") {
+                    string value = (string)parseValue(typeof(string), fieldValue.Token.Value, fieldName);
+
+                    if (value.StartsWith("d", StringComparison.OrdinalIgnoreCase) || value == "1v1") { // duel
+                        cmd += $" m.gamemode = 1 ";
+                    } else if (value.StartsWith("s", StringComparison.OrdinalIgnoreCase)) { // small team
+                        cmd += $" m.gamemode = 2 ";
+                    } else if (value.StartsWith("l", StringComparison.OrdinalIgnoreCase)) { // large team
+                        cmd += $" m.gamemode = 3 ";
+                    } else if (value.StartsWith("f", StringComparison.OrdinalIgnoreCase)) { // ffa
+                        cmd += $" m.gamemode = 4 ";
+                    } else if (value.StartsWith("t", StringComparison.OrdinalIgnoreCase)) { // team ffa
+                        cmd += $" m.gamemode = 5 ";
+                    } else if (value.StartsWith("o", StringComparison.OrdinalIgnoreCase)) { // other/default
+                        cmd += $" m.gamemode = 0 ";
+                    } else {
+                        return $"invalid gamemode: {value}";
+                    }
+                }
+
                 // player.name
                 else if (fieldName == "player.user_name") {
                     if (query.PlayerLookupCache.TryGetValue(fieldValue.Token.Value, out List<BarMatchPlayer>? players) == false || players == null) {
-                        players = await _PlayerRepository.SearchByName(fieldValue.Token.Value, cancel);
+                        players = (await _PlayerRepository.SearchByName(fieldValue.Token.Value, cancel)).DistinctBy(iter => iter.UserID).ToList();
+                        if (players.Count > 1000) {
+                            return $"player name '{fieldValue.Token.Value}' returns too many results ({players.Count})";
+                        }
+
                         query.PlayerLookupCache.Add(fieldValue.Token.Value, players);
                     }
 
                     cmd += $" player.user_id IN (";
-                    
-                    foreach (BarMatchPlayer player in players) {
-                        cmd += $" {addParameter(query, player.UserID)} ";
+                    cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
+                    cmd += ")\n";
+                }
+
+                // player.faction / team.faction
+                else if (fieldName == "team.faction") {
+
+                    string faction = "";
+                    if (fieldValue.Token.Value.StartsWith("a", StringComparison.OrdinalIgnoreCase)) {
+                        faction = "Armada";
+                    } else if (fieldValue.Token.Value.StartsWith("c", StringComparison.OrdinalIgnoreCase)) {
+                        faction = "Cortex";
+                    } else if (fieldValue.Token.Value.StartsWith("l", StringComparison.OrdinalIgnoreCase)) {
+                        faction = "Legion";
+                    } else if (fieldValue.Token.Value.StartsWith("r", StringComparison.OrdinalIgnoreCase)) {
+                        faction = "Random";
+                    } else {
+                        return $"invalid faction: {fieldValue.Token.Value}";
                     }
 
-                    cmd += ")\n";
+                    cmd += $" team.faction {fieldOp.Token.Value} {addParameter(query, faction)} ";
+                }
+
+                // map.map_name
+                else if (fieldName == "map.name") {
+                    query.MapCache ??= await _MapRepository.GetAll(cancel);
+
+                    IEnumerable<BarMap> matchedMaps = query.MapCache.Where(iter => {
+                        return iter.Name.Contains(fieldValue.Token.Value, StringComparison.InvariantCultureIgnoreCase);
+                    });
+
+                    if (matchedMaps.Count() == 0) {
+                        cmd += " 0 = 1 ";
+                    } else {
+                        cmd += $" map.filename IN ( ";
+                        cmd += $" {string.Join(", ", matchedMaps.Select(iter => $" {addParameter(query, iter.FileName)} "))} ";
+                        cmd += ")\n";
+                    }
                 }
 
                 // fallback
@@ -262,10 +323,11 @@ namespace gex.Common.Services.Search {
                 if (fieldName == "player") {
                     prefix = "player";
 
-                    cmd += @$" m.id IN (
+                    cmd += @$" m.id {(fieldOp.Token.Value == "!" ? "NOT" : "")} IN (
                         SELECT distinct(player.game_id) as game_id 
                         FROM bar_match_player player
                             INNER JOIN bar_match_team team ON player.game_id = team.game_id AND player.team_id = team.team_id
+                            INNER JOIN bar_match_ally_team ally_team ON team.ally_team_id = ally_team.ally_team_id AND team.game_id = ally_team.game_id
                         WHERE
                     ";
                 }
@@ -274,7 +336,7 @@ namespace gex.Common.Services.Search {
                 else if (fieldName == "map") {
                     prefix = "map";
 
-                    cmd += @" m.map_name IN (
+                    cmd += @$" m.map_name {(fieldOp.Token.Value == "!" ? "NOT" : "")} IN (
                         SELECT distinct(filename)
                         FROM bar_map map
                         WHERE
@@ -402,8 +464,9 @@ namespace gex.Common.Services.Search {
             { "player.user_name", typeof(string) },
             { "team.start_spot_label", typeof(string) },
             { "team.faction", typeof(string) },
-            { "player.skill", typeof(string) },
-            { "player.skill_uncertainity", typeof(string) },
+            { "ally_team.won", typeof(bool) },
+            { "player.skill", typeof(double) },
+            { "player.skill_uncertainity", typeof(double) },
 
             // map fields
             { "map.name", typeof(string) },
@@ -422,8 +485,12 @@ namespace gex.Common.Services.Search {
         private static Dictionary<string, string> FieldNameAliases = new Dictionary<string, string>() {
             // player fields
             { "player.position", "team.start_spot_label" },
+            { "player.pos", "team.start_spot_label" },
+            { "player.role", "team.start_spot_label" },
+            { "player.spot", "team.start_spot_label" },
             { "player.faction", "team.faction" },
             { "player.name", "player.user_name" },
+            { "player.won", "ally_team.won" },
 
             // map fields
             { "map.min_wind", "map.minimum_wind" },
@@ -456,6 +523,8 @@ namespace gex.Common.Services.Search {
             public uint Limit { get; set; } = 24;
 
             public Dictionary<string, List<BarMatchPlayer>> PlayerLookupCache = [];
+
+            public List<BarMap>? MapCache = null;
 
         }
 

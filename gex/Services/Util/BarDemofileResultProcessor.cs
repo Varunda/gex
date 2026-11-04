@@ -16,6 +16,7 @@ using gex.Services.Db.UserStats;
 using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.JsonDiffPatch;
@@ -77,6 +78,10 @@ namespace gex.Services.Util {
         }
 
         public async Task Process(BarMatch match, CancellationToken cancel) {
+            if (match.MapName == "") {
+                BarMap? fileMap = await _BarMapRepository.GetByName(match.Map, cancel);
+                match.MapName = fileMap?.FileName ?? "";
+            }
 
             BarMap? map = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             if (map == null) {

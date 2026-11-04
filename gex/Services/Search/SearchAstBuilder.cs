@@ -40,30 +40,6 @@ namespace gex.Services.Search {
                 _Logger.LogTrace($"AST iteration [iter.Type={iter.Type}] [iter.Value={iter.Value}] [parent={stack.Peek().Type}] [parent.Children count={stack.Peek().Children.Count}]");
 
                 if (iter.Type == SearchTokenType.WORD) {
-                    if (tokens.PeekNext()?.Type == SearchTokenType.OR_CONTINUE) {
-                        SearchNode or = _c(SearchNodeType.OR, new SearchToken(SearchTokenType.OR_CONTINUE, ""));
-                        _Logger.LogTrace($"next token is an OR continue. pushing an OR continue on the stack");
-                        stack.Push(or);
-                        tokens.GetNext();
-                    }
-
-                    if (stack.Peek().Type == SearchNodeType.OR) {
-                        SearchNode parent = stack.Peek();
-
-                        if (parent.Children.Count > 0) {
-                            SearchNode child = parent.Children[^1];
-                            if (child.Type == SearchNodeType.BASIC_FIELD || child.Type == SearchNodeType.COMPLEX_FIELD) {
-                                _Logger.LogTrace($"checking if field in OR is a different field name [child.Children[0]={child.Children[0].Type}/{child.Children[0].Token.Value}]");
-                                if (child.Children[0].Type == SearchNodeType.FIELD_NAME
-                                    && iter.Value != child.Children[0].Token.Value) {
-
-                                    //_Logger.LogTrace($"in an OR node, but this field doesn't match the previous one, popping OR [iter.Value={iter.Value}] [child field name={child.Token.Value}]");
-                                    //stack.Pop();
-                                }
-                            }
-                        }
-                    }
-
                     SearchToken name = iter;
                     SearchToken? op = null;
                     SearchToken? value = null;
@@ -139,8 +115,10 @@ namespace gex.Services.Search {
 
                         value = valueToken;
 
-                        previousFieldName = name;
-                        previousFieldOp = op;
+                        if (stack.Peek().Token.Type != SearchTokenType.PARAMETERS_START) {
+                            previousFieldName = name;
+                            previousFieldOp = op;
+                        }
                     } else {
                         op = new SearchToken(SearchTokenType.OPERATOR, "=");
                         value = new SearchToken(SearchTokenType.OPERATOR, "true");

@@ -128,6 +128,8 @@ namespace gex.Common.Code.ExtensionMethods {
             DbParameter? namedParams = paramList.FirstOrDefault(iter => string.IsNullOrEmpty(iter.ParameterName) == false);
             DbParameter? positionalParams = paramList.FirstOrDefault(iter => string.IsNullOrEmpty(iter.ParameterName) == true);
 
+            SqlFormatter.Formatter formatter = SqlFormatter.Of(Dialect.PostgreSql);
+
             static string? GetParameterValue(DbParameter param) {
                 Type? valueType = param.Value?.GetType();
 
@@ -140,24 +142,30 @@ namespace gex.Common.Code.ExtensionMethods {
                         object? ret = boundPrint.Invoke(null, new[] { param.Value });
                         return (string?)ret;
                     }
+                } else if (valueType == typeof(string)) {
+                    if (param.Value == null) {
+                        return "null";
+                    }
+                    return $"'{param.Value?.ToString()}'";
                 } else {
                     return param.Value?.ToString();
                 }
             }
 
             if (namedParams != null && positionalParams != null) {
-                s = SqlFormatter.Format(cmd.CommandText);
+                s = formatter.Format(cmd.CommandText);
                 foreach (DbParameter param in cmd.Parameters) {
                     s += $"{param.ParameterName} => {GetParameterValue(param)}\n";
                 }
             } else if (namedParams == null && positionalParams != null) {
-                List<string?> parms = paramList.Select(GetParameterValue).ToList();
-                s = SqlFormatter.Format(cmd.CommandText, parms);
+                //List<string?> parms = paramList.Select(GetParameterValue).ToList();
+                Dictionary<string, string?> parms = new(paramList.Select((iter, index) => new KeyValuePair<string, string?>($"{index + 1}", GetParameterValue(iter))));
+                s = formatter.Format(cmd.CommandText, parms);
             } else if (namedParams != null && positionalParams == null) {
                 Dictionary<string, string?> parms = new(paramList.Select(iter => new KeyValuePair<string, string?>(iter.ParameterName, GetParameterValue(iter))));
-                s = SqlFormatter.Format(cmd.CommandText, parms);
+                s = formatter.Format(cmd.CommandText, parms);
             } else if (namedParams == null && positionalParams == null) {
-                s = SqlFormatter.Format(cmd.CommandText);
+                s = formatter.Format(cmd.CommandText);
             }
 
             return s;
