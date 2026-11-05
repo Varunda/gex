@@ -1,4 +1,5 @@
 ﻿using gex.Code;
+using gex.Code.Exceptions;
 using gex.Common.Code.Constants;
 using gex.Common.Models;
 using gex.Common.Models.Map;
@@ -496,11 +497,26 @@ namespace gex.Controllers.Api {
         }
 
         /// <summary>
-        ///     search using a query string
+        ///     search using the query language
         /// </summary>
-        /// <param name="q"></param>
-        /// <param name="cancel"></param>
-        /// <returns></returns>
+        /// <param name="q">query to perform</param>
+        /// <param name="includeTeams">will the results of the response contain the <see cref="BarMatchTeam"/>s</param>
+        /// <param name="includeAllyTeams">will the results of the response contain the <see cref="BarMatchAllyTeam"/>s</param>
+        /// <param name="includePlayers">will the results of the response contain the <see cref="BarMatchPlayer"/>s</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <response code="200">
+        ///     the response will contain a <see cref="ApiMatchSearchResults"/> for the query passed
+        ///     in <paramref name="q"/>
+        /// </response>
+        /// <response code="400">
+        ///     a validation error took place:
+        ///     <ul>
+        ///         <li><paramref name="q"/> was empty or only whitespace</li>
+        ///         <li><paramref name="q"/> was more than 2048 characters</li>
+        ///         <li><paramref name="q"/> failed to tokenize</li>
+        ///         <li>the query failed to be ran (usually a syntax error in <paramref name="q"/>)</li>
+        ///     </ul>
+        /// </response>
         [HttpGet("query")]
         public async Task<ApiResponse<ApiMatchSearchResults>> SearchQuery([FromQuery] string q,
             [FromQuery] bool includeTeams = true,
@@ -522,7 +538,15 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<ApiMatchSearchResults>($"no tokens provided");
             }
 
-            SearchAst ast = _AstBuilder.Build(tokens);
+            SearchAst ast;
+            
+            try {
+                ast = _AstBuilder.Build(tokens);
+            } catch (SearchAstParseException apex) {
+                return ApiBadRequest<ApiMatchSearchResults>($"invalid syntax: {apex.Message} (token: {apex.ErroringToken})");
+            } catch (SearchAstException aex) {
+                return ApiBadRequest<ApiMatchSearchResults>($"invalid syntax: {aex.Message}");
+            }
 
             Result<List<BarMatch>, string> matches = await _MatchRepository.Search(ast, cancel);
 

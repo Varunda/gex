@@ -130,9 +130,9 @@ namespace gex.Common.Services.Search {
                     return $"FIELD expected to have 3 children, had {node.Children.Count} instead";
                 }
 
-                string fieldName = node.Children[0].Token.Value;
+                string fieldName = node.Children[0].Token.Value.ToLower();
                 if (fieldPrefix != null) {
-                    fieldName = $"{fieldPrefix}.{fieldName}";
+                    fieldName = $"{fieldPrefix}.{fieldName}".ToLower();
                 }
 
                 if (FieldNameAliases.ContainsKey(fieldName)) {
@@ -286,7 +286,8 @@ namespace gex.Common.Services.Search {
                     query.MapCache ??= await _MapRepository.GetAll(cancel);
 
                     IEnumerable<BarMap> matchedMaps = query.MapCache.Where(iter => {
-                        return iter.Name.Contains(fieldValue.Token.Value, StringComparison.InvariantCultureIgnoreCase);
+                        return iter.Name.Contains(fieldValue.Token.Value, StringComparison.OrdinalIgnoreCase)
+                            || iter.FileName.Contains(fieldValue.Token.Value, StringComparison.OrdinalIgnoreCase);
                     });
 
                     if (matchedMaps.Count() == 0) {

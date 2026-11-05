@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Permissions;
 
 namespace gex.Common.Models.Bar {
@@ -182,6 +183,32 @@ namespace gex.Common.Models.Bar {
             }
 
             return damage;
+        }
+
+        public double GetDefaultDps() {
+            double reloadTime = WeaponDefinition.IsStockpile == true ? WeaponDefinition.StockpileTime : WeaponDefinition.ReloadTime;
+
+            // for sweep fire guns, the reload time is not included in the DPS calc
+            // https://github.com/beyond-all-reason/Beyond-All-Reason/blob/master/luaui/Widgets/gui_info.lua#L479
+            // unitDefInfo[unitDefID].maxdps = (weaponDef.damages[0] * weaponDef.customParams.sweepfire) / math.max(weaponDef.minIntensity, 0.5)
+            double dps = (WeaponDefinition.SweepFire == 0) 
+                ? (GetDefaultDamage() / Math.Max(0.01, reloadTime))
+                : (GetDefaultDamage() * WeaponDefinition.SweepFire);
+
+            if (WeaponDefinition.WeaponType == "BeamLaser") {
+                // how many frames the beam will stay on
+                int beamFrames = (int)Math.Floor(Math.Max(1, WeaponDefinition.BeamTime * 30d));
+
+                if (WeaponDefinition.SweepFireFireTime != 0) {
+                    double reload = WeaponDefinition.SweepFireReloadTime == 0 ? WeaponDefinition.ReloadTime : WeaponDefinition.SweepFireReloadTime;
+                    dps = WeaponDefinition.DefaultDamage * 30 * WeaponDefinition.SweepFireFireTime / beamFrames / reload;
+                }
+            }
+
+            if (WeaponDefinition.Burst != 0) { dps *= WeaponDefinition.Burst; }
+            if (WeaponDefinition.Projectiles != 1) { dps *= WeaponDefinition.Projectiles; }
+
+            return dps;
         }
 
         public string GetDefaultDamageName() {

@@ -234,6 +234,19 @@
                 <toggle-button v-model="adv">
                     Show adv. player filter
                 </toggle-button>
+
+                <toggle-button v-model="showQuery">
+                    Show query (WIP)
+                </toggle-button>
+            </div>
+
+            <div v-if="showQuery == true" class="col-12">
+                <label for="query-input">Query input</label>
+                <input type="text" v-model="query" class="form-control" id="query-input"/>
+
+                <a href="/faq#gex-query" target="_blank" ref="nofollow">
+                    Learn more
+                </a>
             </div>
 
             <div v-show="adv == true" class="col-12">
@@ -339,7 +352,7 @@
             </div>
         </div>
 
-        <div>
+        <div v-if="queryResult.state == 'idle'">
             <div v-if="recent.state == 'idle'"></div>
 
             <div v-else-if="recent.state == 'loading'">
@@ -348,7 +361,6 @@
             </div>
 
             <div v-else-if="recent.state == 'loaded'">
-
                 <div class="d-flex flex-wrap d-md-none mb-3 pb-3 border-bottom">
                     <a v-if="offset > 24" :href="'/recent?offset=0' + searchParam" class="btn btn-primary me-2 mobile-after">
                         First
@@ -414,6 +426,50 @@
                 <api-error :error="recent.problem"></api-error>
             </div>
         </div>
+
+        <div v-else-if="queryResult.state == 'loading'">
+            <busy class="busy busy-sm"></busy>
+        </div>
+
+        <div v-else-if="queryResult.state == 'loaded'">
+
+            <match-list :matches="queryResult.data.results"></match-list>
+
+            <div class="d-flex">
+                <div class="flex-grow-1 flex-basis-0"></div>
+                <div>
+                    <div>
+                        <label>Query:</label>
+                        <pre><code>{{ queryResult.data.query }}</code></pre>
+                    </div>
+
+                    <div>
+                        <label>Normalized:</label>
+                        <pre><code>{{ queryResult.data.normalized }}</code></pre>
+                    </div>
+
+                    <div class="mb-3">
+                        <collapsible header-text="AST" size-class="h6" class="mb-0">
+                            <div class="d-grid" style="grid-template-columns: 500px 1fr; gap: 1rem; overflow: hidden">
+                                <div class="overflow-y-auto">
+                                    <div class="list-group border-right border-bottom rounded-0">
+                                        <search-node-view :node="queryResult.data.ast"></search-node-view>
+                                    </div>
+                                </div>
+                            </div>
+                        </collapsible>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 flex-basis-0"></div>
+            </div>
+
+        </div>
+
+        <div v-else-if="queryResult.state == 'error'">
+            <api-error :error="queryResult.problem"></api-error>
+        </div>
+
     </div>
 </template>
 
@@ -443,14 +499,18 @@
     import ApiError from "components/ApiError";
     import DateTimeInput from "components/DateTimeInput.vue";
     import Busy from "components/Busy.vue";
+    import Collapsible from "components/Collapsible.vue";
 
-    import { BarMatch, SearchKeyValue } from "model/BarMatch";
+    import SearchNodeView from "./components/SearchNodeView.vue";
+
     import { BarMatchApi } from "api/BarMatchApi";
     import { MatchSearchApi } from "api/MatchSearchApi";
     import { BarUserApi } from "api/BarUserApi";
 
+    import { BarMatch, SearchKeyValue } from "model/BarMatch";
     import { BarUser } from "model/BarUser";
     import { UserSearchResult } from "model/UserSearchResult";
+    import { ApiMatchSearchResults } from "model/ApiMatchSearchResults";
     import { SearchPlayer } from "model/SearchOptions";
 
     import "filters/MomentFilter";
@@ -476,6 +536,7 @@
                 gameIdRegex: new RegExp(/[0-9a-f]{32}/) as RegExp,
                 enterLockout: 0 as number,
                 adv: false as boolean,
+                showQuery: false as boolean,
 
                 search: {
                     use: false as boolean,
@@ -508,6 +569,9 @@
                     orderBy: "start_time" as string,
                     orderByDir: "desc" as string,
                 },
+
+                query: "" as string,
+                queryResult: Loadable.idle() as Loading<ApiMatchSearchResults>,
 
                 player: new SearchPlayer() as SearchPlayer,
 
@@ -694,6 +758,15 @@
                 this.performSearch();
             },
 
+            performQuery: async function(): Promise<void> {
+                if (this.query == "") {
+                    return;
+                }
+
+                this.queryResult = Loadable.loading();
+                this.queryResult = await BarMatchApi.query(this.query);
+            },
+
             loadRecent: async function(): Promise<void> {
                 this.recent = Loadable.loading();
 
@@ -707,12 +780,16 @@
             },
 
             doSearchWrapper: async function(): Promise<void> {
-                this.search.use = true;
-                this.offset = 0;
-                const url = new URL(location.href);
-                history.pushState({ path: url.href }, "", `/recent?offset=0${this.searchParam}`);
+                if (this.query != "") {
+                    await this.performQuery();
+                } else {
+                    this.search.use = true;
+                    this.offset = 0;
+                    const url = new URL(location.href);
+                    history.pushState({ path: url.href }, "", `/recent?offset=0${this.searchParam}`);
 
-                this.performSearch();
+                    this.performSearch();
+                }
             },
 
             performSearch: async function(): Promise<void> {
@@ -921,7 +998,8 @@
 
         components: {
             InfoHover, GexMenu, Busy,
-            MatchList, DropdownSearch, ToggleButton, ApiError, DateTimeInput
+            MatchList, DropdownSearch, ToggleButton, ApiError, DateTimeInput,
+            SearchNodeView, Collapsible
         }
     });
 

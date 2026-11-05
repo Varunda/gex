@@ -154,21 +154,67 @@ namespace gex.Tests.Services.Search {
         /// </summary>
         [TestMethod]
         public void Test_ParameterTokens() {
-            List<SearchToken> tokens = _t("player:alice(air, won, os>15)");
+            List<SearchToken> tokens = _t("player:alice(position:air won:true skill>15)");
 
             List<SearchToken> expected = [
                 new SearchToken(SearchTokenType.WORD, "player"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
                 new SearchToken(SearchTokenType.WORD, "alice"),
                 new SearchToken(SearchTokenType.PARAMETERS_START, ""),
+                new SearchToken(SearchTokenType.WORD, "position"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
                 new SearchToken(SearchTokenType.WORD, "air"),
                 new SearchToken(SearchTokenType.WORD, "won"),
-                new SearchToken(SearchTokenType.WORD, "os"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "true"),
+                new SearchToken(SearchTokenType.WORD, "skill"),
                 new SearchToken(SearchTokenType.OPERATOR, ">"),
                 new SearchToken(SearchTokenType.WORD, "15"),
-                new SearchToken(SearchTokenType.PARAMETERS_END, ")"),
+                new SearchToken(SearchTokenType.PARAMETERS_END, ""),
                 new SearchToken(SearchTokenType.END, ""),
             ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
+        }
+
+        /// <summary>
+        ///     ensure a WORD token can contain periods
+        /// </summary>
+        [TestMethod]
+        public void Test_WordWithPeriods() {
+            List<SearchToken> tokens = _t("engine:2026.07.08 skill>15.50");
+
+            List<SearchToken> expected = [
+                new SearchToken(SearchTokenType.WORD, "engine"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "2026.07.08"),
+                new SearchToken(SearchTokenType.WORD, "skill"),
+                new SearchToken(SearchTokenType.OPERATOR, ">"),
+                new SearchToken(SearchTokenType.WORD, "15.50"),
+                new SearchToken(SearchTokenType.END, ""),
+            ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
+        }
+
+        /// <summary>
+        ///     ensure a WORD token can contain colons
+        /// </summary>
+        [TestMethod]
+        public void Test_WordWithColon() {
+            List<SearchToken> tokens = _t("start_time>\"2026-10-10T13:00\"");
+
+            List<SearchToken> expected = [
+                new SearchToken(SearchTokenType.WORD, "start_time"),
+                new SearchToken(SearchTokenType.OPERATOR, ">"),
+                new SearchToken(SearchTokenType.WORD, "2026-10-10T13:00"),
+                new SearchToken(SearchTokenType.END, ""),
+            ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
         }
 
         // ============================================================================================================

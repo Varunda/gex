@@ -1,5 +1,6 @@
 import { Loading } from "Loading";
 import ApiWrapper from "api/ApiWrapper";
+import { ApiMatchSearchResults } from "model/ApiMatchSearchResults";
 import { BarMatch, SearchKeyValue } from "model/BarMatch";
 import { SearchOptions } from "model/SearchOptions";
 
@@ -138,6 +139,10 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
         }
 
         return search;
+    }
+
+    public static query(query: string): Promise<Loading<ApiMatchSearchResults>> {
+        return BarMatchApi.get().readSingle(`/api/match/query?q=${encodeURIComponent(query)}`, ApiMatchSearchResults.parse);
     }
 
     public static recalculatePlayerStartSpots(gameID: string): Promise<Loading<void>> {

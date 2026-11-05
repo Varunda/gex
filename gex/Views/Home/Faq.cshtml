@@ -3,7 +3,6 @@
 
 <style>
     .header {
-        padding-left: 0.5rem;
         padding-right: 0.5rem;
         display: flex;
     }
@@ -27,6 +26,7 @@
             } else {
                 elem.classList.add("bg-secondary");
                 elem.classList.add("rounded");
+                elem.classList.add("px-2");
             }
         }
     });
@@ -46,104 +46,838 @@
 
     <hr class="border" />
 
-    <h3 id="what-is-gex" class="header">
-        <span class="flex-grow-1">
-            What does Gex mean?
-        </span>
-        <a href="/faq#what-is-gex" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>Gex stands for Game Extractor, named after a metal extractor (mex)</p>
-
-    <h3 id="which-games" class="header">
-        <span class="flex-grow-1">
-            Which matches are processed?
-        </span>
-        <a href="/faq#which-games" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>
-        Gex downloads all PvP public matches (meaning no matches with bots). Once downloaded, Gex will parse the replays to get some basic information about each match.
-    </p>
-    <div>
-        Under certain conditions, Gex will also simulate the replay file locally to generate in-depth stats
-        <ul>
-            <li>If the match has 6 or less players, is not on a metal map, and is shorter than an hour, Gex will process these matches</li>
-            <li>
-                If the match has more than 6 players, or is on a metal map, Gex might process the match based on a priority system.
-                <br>
-                Gex will prioritize matches that are quicker to process. A match will be less likely to be processed if it:
-                <ul>
-                    <li>Is longer than 30 minutes</li>
-                    <li>Is on a metal map</li>
-                    <li>Is unranked</li>
-                    <li>Contains only low OS players</li>
-                    <li>Contains unit tweaks</li>
-                    <li>Changes any of the default mod options (increased starting resources, resource multipliers, etc.)</li>
-                </ul>
-                Matches that meet these conditions are de-prioritized, as these matches usually take longer to process, and Gex tries to process quicker matches first
-            </li>
-        </ul>
+    <div class="mb-5">
+        <h3 id="what-is-gex" class="header">
+            <span class="flex-grow-1">
+                What does Gex mean?
+            </span>
+            <a href="/faq#what-is-gex" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>Gex stands for Game Extractor, named after a metal extractor (mex)</p>
     </div>
-    <p>
-        Users that are logged in can request Gex puts more priority on a match. A user can only prioritize one match at a time.
-    </p>
 
-    <h3 id="gamemode-demofile-ratings" class="header">
-        <span>
-            Gamemode and demofile rating inconsistency
-        </span>
-        <a href="/faq#gamemode-demofile-ratings" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>
-        The demofile can contain incorrect rating information for a match depending on how the lobby is setup.
-        <br />
-        For example, if a duel is created with a team size of 8 in the lobby,
-        the demofile will contain the ratings for the large team gamemode, not the duel gamemode.
-    </p>
+    <div class="mb-5">
+        <h3 id="which-games" class="header">
+            <span class="flex-grow-1">
+                Which matches are processed?
+            </span>
+            <a href="/faq#which-games" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>
+            Gex downloads all PvP public matches (meaning no matches with bots). Once downloaded, Gex will parse the replays to get some basic information about each match.
+        </p>
+        <div>
+            Under certain conditions, Gex will also simulate the replay file locally to generate in-depth stats
+            <ul>
+                <li>If the match has 6 or less players, is not on a metal map, and is shorter than an hour, Gex will process these matches</li>
+                <li>
+                    If the match has more than 6 players, or is on a metal map, Gex might process the match based on a priority system.
+                    <br>
+                    Gex will prioritize matches that are quicker to process. A match will be less likely to be processed if it:
+                    <ul>
+                        <li>Is longer than 30 minutes</li>
+                        <li>Is on a metal map</li>
+                        <li>Is unranked</li>
+                        <li>Contains only low OS players</li>
+                        <li>Contains unit tweaks</li>
+                        <li>Changes any of the default mod options (increased starting resources, resource multipliers, etc.)</li>
+                    </ul>
+                    Matches that meet these conditions are de-prioritized, as these matches usually take longer to process, and Gex tries to process quicker matches first
+                </li>
+            </ul>
+        </div>
+        <p>
+            Users that are logged in can request Gex puts more priority on a match. A user can only prioritize one match at a time.
+        </p>
+    </div>
 
-    <h3 id="why-no-pve" class="header">
-        <span class="flex-grow-1">
-            Why are PvE matches not processed?
-        </span>
-        <a href="/faq#why-no-pve" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>
-        PvE matches take much longer on average to process than PvP matches,
-        and in general is not a particularly competitive format where the data Gex provides is useful (tho it may be interesting for some, sorry!)
-    </p>
+    <div class="mb-5">
+        <h3 id="gamemode-demofile-ratings" class="header">
+            <span>
+                Gamemode and demofile rating inconsistency
+            </span>
+            <a href="/faq#gamemode-demofile-ratings" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>
+            The demofile can contain incorrect rating information for a match depending on how the lobby is setup.
+            <br />
+            For example, if a duel is created with a team size of 8 in the lobby,
+            the demofile will contain the ratings for the large team gamemode, not the duel gamemode.
+        </p>
+    </div>
+
+    <div class="mb-5">
+        <h3 id="why-no-pve" class="header">
+            <span class="flex-grow-1">
+                Why are PvE matches not processed?
+            </span>
+            <a href="/faq#why-no-pve" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>
+            PvE matches take much longer on average to process than PvP matches,
+            and, in general, is not a competitive environment where the data Gex provides would be useful (tho it may be interesting for some, sorry!)
+        </p>
+    </div>
     
-    <h3 id="bad-game-version" class="header">
-        <span class="flex-grow-1">
-            What is a broken game version?
-        </span>
-        <a href="/faq#bad-game-version" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>
-        Sometimes, patches to BAR prevent Gex from running the replay file locally to generate in-depth stats
-        <br />
-        This most often occurs when a bug specific to spring-headless prevents the replay from starting correctly.
-        Any match with this is marked when viewing it.
-    </p>
+    <div class="mb-5">
+        <h3 id="bad-game-version" class="header">
+            <span class="flex-grow-1">
+                What is a broken game version?
+            </span>
+            <a href="/faq#bad-game-version" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>
+            Sometimes, patches to BAR prevent Gex from running the replay file locally to generate in-depth stats
+            <br />
+            This most often occurs when a bug specific to spring-headless prevents the replay from starting correctly.
+            Any match with this is marked when viewing it.
+        </p>
+    </div>
 
-    <h3 id="gex-query" class="header">
-        <span class="flex-grow-1">
-            Gex match queries
-        </span>
-        <a href="/faq#gex-query" class="ms-auto">
-            <span class="bi bi-link" title="link"></span>
-        </a>
-    </h3>
-    <p>
-        Work in progress :)
-    </p>
+    <div>
+        <h3 id="gex-query" class="header">
+            <span class="flex-grow-1">
+                Gex match queries
+            </span>
+            <a href="/faq#gex-query" class="ms-auto">
+                <span class="bi bi-link" title="link"></span>
+            </a>
+        </h3>
+        <p>
+            <div class="alert alert-info text-center">
+                <strong>Work in progress.</strong>
+                This feature is a work in progress. Expect bugs if used.
+            </div>
+
+            <p>
+                Gex allows quering matches using a custom query language.
+                The basic syntax is <code>$FIELD $OPERATOR $VALUE</code>, and can be joined using <code>AND</code>/<code>OR</code>.
+                <br>
+                Spaces between words is ignored (For example, both <code>player : alice</code> and <code>player:alice</code> are the same)
+            </p>
+
+            <div>
+                <h4>Examples</h4>
+
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <td>Query</td>
+                            <td>Explanation</td>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td><code>player: alice</code></td>
+                            <td>
+                                Games of any user that at one point had a username that contained the name <kbd>alice</kbd> (case-insensitive).
+                                <br />
+                                This will include names that contain <kbd>alice</kbd>, such as Alice1, AliceCat41, or NotAlice.
+                                <br />
+                                If a user at any point had a username that contained <kbd>alice</kbd>, they will be included
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice player: beth</code></td>
+                            <td>
+                                Games that contain both <kbd>alice</kbd> and <kbd>beth</kbd> (Including the rules in the first example)
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice | player: beth</code></td>
+                            <td>
+                                Games that contain either <kbd>alice</kbd> or <kbd>beth</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice map: supreme</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played on any map with a name that contains <kbd>supreme</kbd> (case-insensitive)
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice(position: air)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played the <kbd>air</kbd> position
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(position: front) map:supreme</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played the <kbd>front</kbd> position maps named <kbd>supreme</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(position:front) player:beth(position:air)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played <kbd>front</kbd>, and <kbd>beth</kbd> played <kbd>air</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(skill&gt;30 won:true)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> had a <kbd>skill</kbd> greater than (but not equal) to <kbd>30</kbd>, and <kbd>alice</kbd>'s team won the game
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(won:true) beth(won:true)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> won, and where <kbd>beth</kbd> won (they had to be on the same team)
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(won:true) beth(won:false)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> won, and where <kbd>beth</kbd> lost (they had to be on different teams)
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player:alice(won:true skill[40)</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> won, or where <kbd>alice</kbd> had a skill equal to or less than <kbd>40</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>map:glitters mode:d</code></td>
+                            <td>
+                                Games on <kbd>glitters</kbd> with a gamemode of <kbd>duel</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice !beth</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played, and <kbd>beth</kbd> did not play
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player: alice average_skill]30</code></td>
+                            <td>
+                                Games where <kbd>alice</kbd> played and the average skill in the lobby was greater than or equal to <kbd>30</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>duration>1h</code></td>
+                            <td>
+                                Games that were longer than <kbd>1h</kbd> (1 hour)
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player_count:10 { map: tempest | "koom valley" | darkside }</code></td>
+                            <td>
+                                Games with exactly <kbd>10</kbd> players, and were played on
+                                <kbd>tempest</kbd>, <kbd>koom valley</kbd>, or <kbd>darkside</kbd>
+                                <br />
+                                <small>
+                                    (Remember: strings with a space in them must be double quoted)
+                                </small>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>player(position:air skill>50)</code></td>
+                            <td>
+                                Games where any player played <kbd>air</kbd> and had a skill above <kbd>50</kbd>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <h4>AND/OR</h4>
+
+                <p>
+                    Fields are grouped into a set of conditions that must either must all be true (AND), or at least one must be true (OR)
+                    <br />
+                    By default, all fields are grouped into an AND group
+                </p>
+                <p>
+                    To put fields into an OR group, use <code>|</code> between the fields
+                    <br />
+                    Example: <code>player: alice | player: beth</code> will find any games with a player named alice or player named beth
+                </p>
+                <p>
+                    If more grouping is needed, use <code>{</code> and <code>}</code> to group fields
+                    <br>
+                    Example: <code>map: supreme {player: alice | player: beth}</code> will find any games played on supreme, with a player named alice or a player named beth
+                </p>
+                <p>
+                    If no <code>|</code> is given, it is assumed all fields are in an AND group
+                    <br />
+                    Example: <code>{ map:supreme player:alice } | { map:glitters player:beth }</code> will find any games where alice played on supreme, or beth played on glitters
+                </p>
+            </div>
+
+            <div>
+                <h4>Fields</h4>
+                <p>
+                    Fields are classified as a meta field, basic field, or complex field.
+                    For field values, see the next section
+                </p>
+            </div>
+
+            <div>
+                <h5>Meta fields</h5>
+                <p>
+                    Meta fields change the query itself, how many results are returned, the offset (used for paginating), and the sort field and direction.
+                    <br>
+                    NOTE: Only the equals operator (<code>:</code>/<code>=</code>) can be used for meta fields.
+                </p>
+
+                <p>
+                    <a data-bs-toggle="collapse" data-bs-target="#gex-query-meta-fields" href="javascript:void(0);">
+                        View meta fields
+                    </a>
+                </p>
+
+                <div class="collapse" id="gex-query-meta-fields">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Example</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td><code>sort</code></td>
+                                <td><code>start_time</code> | <code>player_count</code> | <code>duration</code></td>
+                                <td><code>sort:start_time</code></td>
+                                <td>
+                                    Defaults to <code>start_time</code> if not given.
+                                    <br />
+                                    <code>order</code> is an alias for this field.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>sort_dir</code></td>
+                                <td><code>asc</code> | <code>desc</code></td>
+                                <td><code>sort_dir:asc</code></td>
+                                <td>
+                                    Defaults to <code>desc</code> if not given.
+                                    <br />
+                                    <code>order_dir</code> is an alias for this field.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>limit</code></td>
+                                <td><code>uint (0 - 1000)</code></td>
+                                <td><code>limit:50</code></td>
+                                <td>
+                                    Defaults to <code>24</code> if not given.
+                                    <br />
+                                    Limits how many results are returned.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>offset</code></td>
+                                <td><code>uint (0 - 100000)</code></td>
+                                <td><code>offset:50</code></td>
+                                <td>
+                                    Skips this many entries in the DB according to the sort field.
+                                    <br />
+                                    Defaults to <code>0</code> if not given.
+                                    <br>
+                                    <code>start</code> is an alias for this field.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h5>Basic fields</h5>
+                <p>
+                    Basic fields follow the <code>$FIELD $OPERATOR $VALUE</code> syntax.
+                </p>
+
+                <p>
+                    If a field is not given, it is assumed the last field is the one wanted.
+                    For example: <code>player: alice beth</code> is the same as <code>player:alice player:beth</code>
+                </p>
+
+                <p>
+                    <a data-bs-toggle="collapse" data-bs-target="#gex-query-basic-fields" href="javascript:void(0);">
+                        View basic fields
+                    </a>
+                </p>
+
+                <div class="collapse" id="gex-query-basic-fields">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Example</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td><code>ranked</code></td>
+                                <td><code>boolean</code></td>
+                                <td><code>ranked:true</code></td>
+                                <td>
+                                    Only checks if the game setting <code>rankedgame</code> is true.
+                                    A match can be unranked even if this game setting is true (such as unequal team sizes)
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>duration</code></td>
+                                <td><code>string (TimeSpan)</code></td>
+                                <td><code>duration&gt;30m</code></td>
+                                <td>
+                                    The string represents a span of time, and uses the syntax <code>#d#h#m#s</code>,
+                                    where <code>d</code> is days, <code>h</code> is hours,
+                                    <code>m</code> is minutes, and <code>s</code> is seconds.
+                                    <br>
+                                    If a component is 0, it can be omitted (<code>0d1h0m0s -&gt; 1h</code>)
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>average_os</code></td>
+                                <td><code>double</code></td>
+                                <td><code>average_os&gt;20</code></td>
+                                <td>
+                                    Uses the average OS of all players in the match
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>min_os</code></td>
+                                <td><code>double</code></td>
+                                <td><code>min_os&lt;10</code></td>
+                                <td>
+                                    Uses the lowest OS of all players in the match
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>max_os</code></td>
+                                <td><code>double</code></td>
+                                <td><code>max_os]15</code></td>
+                                <td>
+                                    Uses the highest OS of all players in the match
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>start_time</code></td>
+                                <td><code>string (DateTime)</code></td>
+                                <td><code>start_time&gt;"2026-10-01T13:00"</code></td>
+                                <td>
+                                    Uses UTC for the timestamp. In the example, the timestamp is quoted, as the <code>:</code> is usually
+                                    interpreted as an equals operator
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>engine</code></td>
+                                <td><code>string</code></td>
+                                <td><code>engine=2026.07.04</code></td>
+                                <td>
+                                    Version of the engine the match took place on. Can put a field value in quotes to include spaces
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>game_version</code></td>
+                                <td><code>string</code></td>
+                                <td><code>game_version="Beyond All Reason test-31783-a096d9f"</code></td>
+                                <td>
+                                    Version of the game the match ran in. Can put a field value in quotes to include spaces
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>gamemode</code></td>
+                                <td><code>string</code></td>
+                                <td><code>gamemode:duel</code></td>
+                                <td>
+                                    The gamemode used depends on the first character of the value.
+                                    For example: both <code>d</code> and <code>duel</code> will filter using the duel gamemode
+                                    <ul>
+                                        <li>(<code>d</code>)uel</li>
+                                        <li>(<code>s</code>)mall team</li>
+                                        <li>(<code>l</code>)arge team</li>
+                                        <li>(<code>f</code>)fa</li>
+                                        <li>(<code>t</code>)eam ffa</li>
+                                        <li>(<code>o</code>)ther</li>
+                                    </ul>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>uploaded_by</code></td>
+                                <td><code></code></td>
+                                <td><code>uploaded_by:alice</code></td>
+                                <td>
+                                    Not yet implemented
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>player_count</code></td>
+                                <td><code>int</code></td>
+                                <td><code>player_count>16</code></td>
+                                <td>
+                                    The total number of players in a match
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+            <div>
+                <h5>Complex fields</h5>
+                <p>
+                    Complex fields can use that syntax (and use an implicit field when used), or the parameter syntax: <code>$FIELD ( $BASIC_FIELDS )</code>
+                </p>
+
+                <p>
+                    <a data-bs-toggle="collapse" data-bs-target="#gex-query-complex-fields" href="javascript:void(0);">
+                        View complex fields
+                    </a>
+                </p>
+
+                <div class="collapse" id="gex-query-complex-fields">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Example</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <tr>
+                                <td colspan="4" class="text-center fw-bold">Player fields</td>
+                            </tr>
+
+                            <tr>
+                                <td><code>name</code></td>
+                                <td><code>string</code></td>
+                                <td>
+                                    <code>player:alice</code> (Implicit form)
+                                    <br>
+                                    <code>player(name:alice)</code>
+                                </td>
+                                <td>
+                                    This will include any user that every had a username with this name.
+                                    <br />
+                                    For example, if <code>alice</code> renames to <code>camille</code>, <code>player:alice</code>
+                                    will still include games from the user now named <code>camille</code>.
+                                    <br/>
+                                    This is the implicit field name when using the player field like a basic field
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td><code>position</code></td>
+                                <td><code>string</code></td>
+                                <td><code>player(position:air)</code></td>
+                                <td>
+                                    Based on the suggested start spots of a map.
+                                    <br>
+                                    <code>role</code>, and <code>pos</code> are alises for this field
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>faction</code></td>
+                                <td><code>"Cortex"</code> | <code>"Armada"</code> | <code>"Legion"</code> | <code>"Random"</code></td>
+                                <td><code>player(faction:cortex)</code></td>
+                                <td>
+                                    Case insensitive. Any string that beings with the same letter as a faction will be counted.
+                                    For example: <code>cor</code>, and <code>c</code> will both alias to <code>Cortex</code>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>skill</code></td>
+                                <td><code>double</code></td>
+                                <td><code>player(skill>50)</code></td>
+                                <td>
+                                    Uses the skill of the player at the start of the match, not the current skill of the user
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>won</code></td>
+                                <td><code>boolean</code></td>
+                                <td><code>player(won:true)</code></td>
+                                <td>
+                                    If the team of the player won or not
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td colspan="4" class="text-center fw-bold">Map fields</td>
+                            </tr>
+
+                            <tr>
+                                <td><code>name</code></td>
+                                <td><code>string</code></td>
+                                <td>
+                                    <code>map:supreme</code> (Implicit form)
+                                    <br>
+                                    <code>map(name:supreme)</code>
+                                </td>
+                                <td>
+                                    Both the map name and filename can be used. Like the <code>player:name</code> field, this is
+                                    a wildcard search, where any map that contains the value will be included.
+                                    <br />
+                                    This is the implicit field name when using the map field like a basic field
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>width</code></td>
+                                <td><code>int</code></td>
+                                <td><code>map(width]12)</code></td>
+                                <td>
+                                    Width of the map as shown in the map select. Is not the width of the map in elmos
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>height</code></td>
+                                <td><code>int</code></td>
+                                <td><code>map(height[20)</code></td>
+                                <td>
+                                    Height of the map as shown in the map select. Is not the height of the map in elmos
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>minimum_wind</code></td>
+                                <td><code>int</code></td>
+                                <td><code>map(minimum_wind=0)</code></td>
+                                <td>
+                                    Minimum value the wind can reach on this map.
+                                    <br>
+                                    <code>min_wind</code> is an alias for this field
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>maximum_wind</code></td>
+                                <td><code>int</code></td>
+                                <td><code>map(maximum_wind]16)</code></td>
+                                <td>
+                                    Maximum value the wind can reach on this map.
+                                    <br>
+                                    <code>max_wind</code> is an alias for this field
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>tidal_strength</code></td>
+                                <td><code>int</code></td>
+                                <td><code>map(tidal_strength]20)</code></td>
+                                <td>
+                                    Tidal value on this map.
+                                    <br>
+                                    <code>tidal</code> is an alias for this field
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>Author</code></td>
+                                <td><code>string</code></td>
+                                <td><code>map(author:aidan)</code></td>
+                                <td></td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </div>
+
+            <div>
+                <h4>Types</h4>
+
+                <p>
+                    A field value can be one of the following types
+                </p>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Example</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td><code>boolean</code></td>
+                            <td><code>true</code></td>
+                            <td>
+                                A boolean true or false value.
+                                <br>
+                                The following values are intrepretted as <code>true</code>: <code>true</code>, <code>t</code>, <code>yes</code>, <code>y</code>, <code>1</code>
+                                <br>
+                                The following values are intrepretted as <code>false</code>: <code>false</code>, <code>f</code>, <code>no</code>, <code>n</code>, <code>0</code>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>double</code></td>
+                            <td><code>41.67</code></td>
+                            <td>
+                                A number with a decimal. The decimal can be left out if 0
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>int</code></td>
+                            <td><code>112</code></td>
+                            <td>
+                                A number without a decimal
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>string</code></td>
+                            <td><code>howdy</code></td>
+                            <td>
+                                A string of characters. Escape spaces and operators using double quotes.
+                                <br>
+                                Examples: <code>"game extractor"</code>, <code>"13:00"</code>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>string (DateTime)</code></td>
+                            <td><code>2026-10-10T13:00</code></td>
+                            <td>
+                                A string that represents a timestamp. If including a time part, remember to double quote the string, otherwise the <code>:</code>
+                                will be treated as an equal operator.
+                                <br />
+                                All timestamps are in UTC
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>string (TimeSpan)</code></td>
+                            <td><code>5h22m</code></td>
+                            <td>
+                                A string that represents a duration, in the format of <code>#d#h#m#s</code>.
+                                <code>d</code> is days, <code>h</code> is hours, <code>m</code> is minutes, and <code>s</code> is seconds.
+                                <br />
+                                Any component not given is assumed to be 0.
+                                <br />
+                                Example: <code>41m42s -&gt; 0d0h41m42s</code>
+                                <br />
+                                Components can also overflow, and will be handled correctly.
+                                <br />
+                                Example: <code>120s -&gt; 0d0h2m0s</code> (120 seconds is 2 minutes)
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+            <h4>Operators</h4>
+            The following operators can be used:
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Operator</th>
+                        <th>Characters</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>Equals</td>
+                        <td><code>:</code> / <code>=</code></td>
+                        <td></td>
+                    </tr>
+
+                    <tr>
+                        <td>Not</td>
+                        <td><code>!</code> / <code>-</code></td>
+                        <td>Not can be used to negate the default <code>=</code> when using implicit field names, or can negate other operators</td>
+                    </tr>
+
+                    <tr>
+                        <td>Less than</td>
+                        <td><code>&lt;</code></td>
+                        <td></td>
+                    </tr>
+
+
+                    <tr>
+                        <td>Greater than</td>
+                        <td><code>&gt;</code></td>
+                        <td></td>
+                    </tr>
+
+                    <tr>
+                        <td>Less than or equal</td>
+                        <td><code>[</code></td>
+                        <td></td>
+                    </tr>
+
+                    <tr>
+                        <td>Greater than or equal</td>
+                        <td><code>]</code></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h5>Values</h5>
+
+        </p>
+    </div>
 
 </div>

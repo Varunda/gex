@@ -520,7 +520,7 @@ namespace gex.Code.Discord {
 
                         // show stockpile time instead of reload time for stockpile weapons
                         double reloadTime = weapon.IsStockpile == true ? weapon.StockpileTime : weapon.ReloadTime;
-                        double dps = weapon.DefaultDps;
+                        double dps = wep.GetDefaultDps();
 
                         embed.Description += $"DPS: {_N(dps)} {(weapon.IsParalyzer ? "(EMP)" : "")} (";
                         if (weapon.Burst != 0) {
