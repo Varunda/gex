@@ -270,7 +270,7 @@ namespace gex.Common.Services.Search {
                 // ranked
                 else if (fieldName == "ranked") {
                     bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
-                    cmd += $" m.game_settings->>'ranked_game' = {(value == true ? '1' : '0')}\n";
+                    cmd += $" m.game_settings->>'ranked_game' = {(value == true ? "'1'" : "'0'")}\n";
                 }
 
                 // gamemode

@@ -1,5 +1,6 @@
 ﻿using gex.Common.Code.Constants;
 using gex.Common.Code.Exceptions;
+using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
@@ -19,7 +20,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
@@ -429,6 +429,16 @@ namespace gex.Tests.Services.Db {
             Assert.IsTrue(matches.Count > 0, $"expected at least 1 match after 2026-01-01");
             foreach (BarMatch match in matches) {
                 Assert.IsTrue(match.StartTime > DateTime.Parse("2026-01-01"), $"match was not after 2026-01-01");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_RankedTrue() {
+            List<BarMatch> matches = await _Query("ranked:true");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match");
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue("1" == match.GameSettings.GetString("ranked_game", ""), $"game was not ranked: {match.GameSettings.GetString("ranked_game", "")}");
             }
         }
 
