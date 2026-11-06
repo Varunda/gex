@@ -96,20 +96,8 @@ namespace gex.Services.Search {
                     //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
                 }
 
-                // OPERATORS that can exist in a word
-                else if (i == '[' || i == ']') {
-                    // if a word has already started, assume the bracket is part of the WORD, not an OPERATOR token
-                    if (word.Length > 0) {
-                        word += i;
-                    } else {
-                        // otherwise it's an OPERATOR token
-                        tokens.Add(new SearchToken(SearchTokenType.OPERATOR, "" + i));
-                        //_Logger.LogTrace($"new token [type={tokens.Last().Type}] [value={tokens.Last().Value}]");
-                    }
-                }
-
                 // OPERATORS
-                else if (i == '<' || i == '>' || i == '*' || i == ':' || i == '=') {
+                else if (i == '<' || i == '>' || i == '*' || i == ':' || i == '=' || i == '*' || i == '^' || i == '$') {
                     if (word.Length > 0) {
                         SaveWord();
                     }

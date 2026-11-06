@@ -4,6 +4,7 @@ export class ApiMatchSearchResults {
 
     public query: string = "";
     public normalized: string = "";
+    public tokens: SearchToken[] = [];
     public ast: SearchNode = new SearchNode();
     public results: BarMatch[] = [];
     public found: number = 0;
@@ -12,6 +13,7 @@ export class ApiMatchSearchResults {
         return {
             query: elem.query,
             normalized: elem.normalized,
+            tokens: elem.tokens.map((iter: any) => SearchToken.parse(iter)),
             ast: SearchNode.parse(elem.ast.root),
             results: elem.results.map((iter: any) => BarMatch.parse(iter)),
             found: elem.found

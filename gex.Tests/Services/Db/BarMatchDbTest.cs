@@ -1,6 +1,7 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Services.Db;
 using gex.Common.Services.Db.Match;
 using gex.Services.Search;
 using gex.Tests.Util;
@@ -23,6 +24,8 @@ namespace gex.Tests.Services.Db {
             (IBarMatchDb db, ServiceProvider svs) = await _Get();
             IBarMatchTeamDb teamDb = svs.GetRequiredService<IBarMatchTeamDb>();
             IBarMatchPlayerDb playerDb = svs.GetRequiredService<IBarMatchPlayerDb>();
+
+            await DbUtil.TruncateTables(svs.GetRequiredService<IDbHelper>());
 
             using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
             await db.Insert(new BarMatch() {

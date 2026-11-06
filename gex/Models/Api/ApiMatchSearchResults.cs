@@ -15,6 +15,8 @@ namespace gex.Models.Api {
 
         public string Normalized { get; set; } = "";
 
+        public List<SearchToken> Tokens { get; set; } = [];
+
         public SearchAst Ast { get; set; }
 
         public List<ApiMatch> Results { get; set; } = [];

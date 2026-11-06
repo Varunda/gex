@@ -19,14 +19,18 @@ namespace gex.Tests.Services.Parser {
     [TestClass]
     public class BarDemofileParserTest {
 
+        private static ServiceProvider? _ServiceProvider;
         private async Task<(BarDemofileParser, ServiceProvider)> _Get() {
-            ServiceCollection services = await Service.Standard();
-            services.AddSingleton<LuaCommandParser>();
-            services.AddSingleton<BarDemofileParser>();
 
-            ServiceProvider svs = services.BuildServiceProvider();
+            if (_ServiceProvider == null) {
+                ServiceCollection services = await Service.Standard();
+                services.AddSingleton<LuaCommandParser>();
+                services.AddSingleton<BarDemofileParser>();
 
-            return (svs.GetRequiredService<BarDemofileParser>(), svs);
+                _ServiceProvider = services.BuildServiceProvider();
+            }
+
+            return (_ServiceProvider.GetRequiredService<BarDemofileParser>(), _ServiceProvider);
         }
 
         [DataTestMethod]

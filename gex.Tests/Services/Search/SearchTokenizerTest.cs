@@ -112,7 +112,7 @@ namespace gex.Tests.Services.Search {
         [DataRow("        \"well hello there\"")]
         [DataRow("\"well hello there\"              ")]
         [DataRow("             \"well hello there\"             ")]
-        public void Test_TokenizeQuotedStringsKeptInOneWord(string input) {
+        public void Test_TokenizeQuotedStrings_KeptInOneWord(string input) {
             List<SearchToken> tokens = _t(input);
 
             List<SearchToken> expected = [
@@ -210,6 +210,54 @@ namespace gex.Tests.Services.Search {
                 new SearchToken(SearchTokenType.WORD, "start_time"),
                 new SearchToken(SearchTokenType.OPERATOR, ">"),
                 new SearchToken(SearchTokenType.WORD, "2026-10-10T13:00"),
+                new SearchToken(SearchTokenType.END, ""),
+            ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
+        }
+
+        [TestMethod]
+        public void Test_StringOperator_Contains() {
+            List<SearchToken> tokens = _t("player:*alice");
+
+            List<SearchToken> expected = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.OPERATOR, "*"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.END, ""),
+            ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
+        }
+
+        [TestMethod]
+        public void Test_StringOperator_EndsWith() {
+            List<SearchToken> tokens = _t("player:$alice");
+
+            List<SearchToken> expected = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.OPERATOR, "$"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.END, ""),
+            ];
+
+            Assert.AreEqual(expected.Count, tokens.Count);
+            _c(tokens, expected.ToArray());
+        }
+
+        [TestMethod]
+        public void Test_StringOperator_StartsWith() {
+            List<SearchToken> tokens = _t("player:^alice");
+
+            List<SearchToken> expected = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.OPERATOR, "^"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
                 new SearchToken(SearchTokenType.END, ""),
             ];
 

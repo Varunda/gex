@@ -1,6 +1,7 @@
 ﻿using gex.Code;
 using gex.Code.Exceptions;
 using gex.Common.Code.Constants;
+using gex.Common.Code.Exceptions;
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
@@ -546,6 +547,8 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<ApiMatchSearchResults>($"invalid syntax: {apex.Message} (token: {apex.ErroringToken})");
             } catch (SearchAstException aex) {
                 return ApiBadRequest<ApiMatchSearchResults>($"invalid syntax: {aex.Message}");
+            } catch (SearchAstArgumentException aex) {
+                return ApiBadRequest<ApiMatchSearchResults>($"bad argument: {aex.Message}");
             }
 
             Result<List<BarMatch>, string> matches = await _MatchRepository.Search(ast, cancel);
@@ -575,6 +578,7 @@ namespace gex.Controllers.Api {
                 results.Results.Add(api);
             }
 
+            results.Tokens = tokens;
             results.Normalized = ast.ToString();
 
             return ApiOk(results);

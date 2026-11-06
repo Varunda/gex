@@ -1,5 +1,6 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Match;
+using gex.Common.Services.Db;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
 using gex.Common.Services.Repository.Match;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,18 +30,29 @@ namespace gex.Tests.Services.Util {
     [TestClass]
     public class BarDemofileResultProcessorTest {
 
-        private async Task<(BarDemofileResultProcessor, ServiceProvider)> _Get() {
-            ServiceCollection services = await Service.Standard();
-            services.AddSingleton<LuaCommandParser>();
-            services.AddSingleton<BarDemofileParser>();
-            services.AddSingleton<DemofileStorage>();
-            services.AddGexQueueServices();
-            services.AddGexMetrics();
-            services.AddGexParsers();
+        private static ServiceProvider? _ServiceProvier = null;
+        private static async Task<(BarDemofileResultProcessor, ServiceProvider)> _Get() {
+            if (_ServiceProvier == null) {
+                ServiceCollection services = await Service.Standard();
+                services.AddSingleton<LuaCommandParser>();
+                services.AddSingleton<BarDemofileParser>();
+                services.AddSingleton<DemofileStorage>();
+                services.AddGexQueueServices();
+                services.AddGexMetrics();
+                services.AddGexParsers();
 
-            ServiceProvider svs = services.BuildServiceProvider();
+                _ServiceProvier = services.BuildServiceProvider();
+            }
 
-            return (svs.GetRequiredService<BarDemofileResultProcessor>(), svs);
+            return (_ServiceProvier.GetRequiredService<BarDemofileResultProcessor>(), _ServiceProvier);
+        }
+
+        [ClassInitialize]
+        public static async Task Setup(TestContext ctx) {
+            (BarDemofileResultProcessor _, ServiceProvider svs) = await _Get();
+
+            IDbHelper helper = svs.GetRequiredService<IDbHelper>();
+            await DbUtil.TruncateTables(helper);
         }
 
         [DataTestMethod]
@@ -52,6 +65,13 @@ namespace gex.Tests.Services.Util {
         [DataRow("2025.06.19_IndexOutOfRange.sdfz")]
         public async Task Test_Process_Bulk(string file) {
             (BarDemofileResultProcessor processor, ServiceProvider svs) = await _Get();
+
+            IDbHelper helper = svs.GetRequiredService<IDbHelper>();
+            using DbConnection conn = helper.Connection();
+            using DbCommand cmd = await helper.Command(conn, @"
+                SELECT COUNT(*) FROM bar_match;");
+
+            object? obj = await cmd.ExecuteScalarAsync();
 
             using FileStream testInput = File.OpenRead($"./resources/{file}");
             using MemoryStream ms = new();

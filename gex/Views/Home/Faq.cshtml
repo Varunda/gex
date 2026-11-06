@@ -122,6 +122,9 @@
             </a>
         </h3>
         <p>
+        public SearchAstException() : base() { }
+
+        public SearchAstException(string msg) : base(msg) { }
             PvE matches take much longer on average to process than PvP matches,
             and, in general, is not a competitive environment where the data Gex provides would be useful (tho it may be interesting for some, sorry!)
         </p>
@@ -253,7 +256,7 @@
                         </tr>
 
                         <tr>
-                            <td><code>player:alice(won:true skill[40)</code></td>
+                            <td><code>player:alice(won:true | skill&gt:40)</code></td>
                             <td>
                                 Games where <kbd>alice</kbd> won, or where <kbd>alice</kbd> had a skill equal to or less than <kbd>40</kbd>
                             </td>
@@ -274,7 +277,7 @@
                         </tr>
 
                         <tr>
-                            <td><code>player: alice average_skill]30</code></td>
+                            <td><code>player: alice average_skill&gt;=30</code></td>
                             <td>
                                 Games where <kbd>alice</kbd> played and the average skill in the lobby was greater than or equal to <kbd>30</kbd>
                             </td>
@@ -303,6 +306,20 @@
                             <td><code>player(position:air skill>50)</code></td>
                             <td>
                                 Games where any player played <kbd>air</kbd> and had a skill above <kbd>50</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>mode:duel map: -argent -pinewood</code></td>
+                            <td>
+                                <kbd>duel</kbd> games, but not on maps with the name <kbd>argent</kbd> and <kbd>pinewood</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>limit:50 offset:50</code></td>
+                            <td>
+                                Limit the results to <kbd>50</kbd> matches, and skip the first <kbd>50</kbd> results
                             </td>
                         </tr>
                     </tbody>
@@ -381,7 +398,7 @@
 
                             <tr>
                                 <td><code>sort_dir</code></td>
-                                <td><code>asc</code> | <code>desc</code></td>
+                                <td><code>"asc"</code> | <code>"desc"</code></td>
                                 <td><code>sort_dir:asc</code></td>
                                 <td>
                                     Defaults to <code>desc</code> if not given.
@@ -392,7 +409,7 @@
 
                             <tr>
                                 <td><code>limit</code></td>
-                                <td><code>uint (0 - 1000)</code></td>
+                                <td><code>int (0 - 1000)</code></td>
                                 <td><code>limit:50</code></td>
                                 <td>
                                     Defaults to <code>24</code> if not given.
@@ -403,7 +420,7 @@
 
                             <tr>
                                 <td><code>offset</code></td>
-                                <td><code>uint (0 - 100000)</code></td>
+                                <td><code>int (0 - 100000)</code></td>
                                 <td><code>offset:50</code></td>
                                 <td>
                                     Skips this many entries in the DB according to the sort field.
@@ -421,11 +438,12 @@
             <div>
                 <h5>Basic fields</h5>
                 <p>
-                    Basic fields follow the <code>$FIELD $OPERATOR $VALUE</code> syntax.
+                    Basic fields use the form <code>$FIELD $OPERATOR $VALUE</code>
                 </p>
 
                 <p>
-                    If a field is not given, it is assumed the last field is the one wanted.
+                    If a field is not given, the previous field is used
+                    <br>
                     For example: <code>player: alice beth</code> is the same as <code>player:alice player:beth</code>
                 </p>
 
@@ -462,11 +480,25 @@
                                 <td><code>string (TimeSpan)</code></td>
                                 <td><code>duration&gt;30m</code></td>
                                 <td>
-                                    The string represents a span of time, and uses the syntax <code>#d#h#m#s</code>,
-                                    where <code>d</code> is days, <code>h</code> is hours,
-                                    <code>m</code> is minutes, and <code>s</code> is seconds.
-                                    <br>
-                                    If a component is 0, it can be omitted (<code>0d1h0m0s -&gt; 1h</code>)
+                                    Alias for <code>duration_time</code>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>duration_time</code></td>
+                                <td><code>string (TimeSpan)</code></td>
+                                <td><code>duration_time&gt;5m</code></td>
+                                <td>
+                                    Uses the wall time of the match, which includes pause time and time at the start
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>duration_frames</code></td>
+                                <td><code>long</code></td>
+                                <td><code>duration_frame_count&gt;600</code></td>
+                                <td>
+                                    Uses how many frames were in a game, which ignores time in pause and pre-game time
                                 </td>
                             </tr>
 
@@ -544,18 +576,9 @@
                             </tr>
 
                             <tr>
-                                <td><code>uploaded_by</code></td>
-                                <td><code></code></td>
-                                <td><code>uploaded_by:alice</code></td>
-                                <td>
-                                    Not yet implemented
-                                </td>
-                            </tr>
-
-                            <tr>
                                 <td><code>player_count</code></td>
                                 <td><code>int</code></td>
-                                <td><code>player_count>16</code></td>
+                                <td><code>player_count&gt;16</code></td>
                                 <td>
                                     The total number of players in a match
                                 </td>
@@ -653,6 +676,33 @@
                             </tr>
 
                             <tr>
+                                <td><code>user_id</code></td>
+                                <td><code>long</code></td>
+                                <td><code>player(user_id:112129)</code></td>
+                                <td>
+                                    The user ID of the player. This ID cannot change for the same account, useful for repeat queries where the user might change names
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>game_name</code></td>
+                                <td><code>string</code></td>
+                                <td><code>player(game_name:alice)</code></td>
+                                <td>
+                                    The name of the player in the game
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>current_name</code></td>
+                                <td><code>string</code></td>
+                                <td><code>player(current_name:alice)</code></td>
+                                <td>
+                                    The current name of the player
+                                </td>
+                            </tr>
+
+                            <tr>
                                 <td colspan="4" class="text-center fw-bold">Map fields</td>
                             </tr>
 
@@ -675,7 +725,7 @@
                             <tr>
                                 <td><code>width</code></td>
                                 <td><code>int</code></td>
-                                <td><code>map(width]12)</code></td>
+                                <td><code>map(width&lt;=12)</code></td>
                                 <td>
                                     Width of the map as shown in the map select. Is not the width of the map in elmos
                                 </td>
@@ -684,7 +734,7 @@
                             <tr>
                                 <td><code>height</code></td>
                                 <td><code>int</code></td>
-                                <td><code>map(height[20)</code></td>
+                                <td><code>map(height&lt;=20)</code></td>
                                 <td>
                                     Height of the map as shown in the map select. Is not the height of the map in elmos
                                 </td>
@@ -704,7 +754,7 @@
                             <tr>
                                 <td><code>maximum_wind</code></td>
                                 <td><code>int</code></td>
-                                <td><code>map(maximum_wind]16)</code></td>
+                                <td><code>map(maximum_wind&gt;=16)</code></td>
                                 <td>
                                     Maximum value the wind can reach on this map.
                                     <br>
@@ -715,7 +765,7 @@
                             <tr>
                                 <td><code>tidal_strength</code></td>
                                 <td><code>int</code></td>
-                                <td><code>map(tidal_strength]20)</code></td>
+                                <td><code>map(tidal_strength&gt;=20)</code></td>
                                 <td>
                                     Tidal value on this map.
                                     <br>
@@ -807,16 +857,23 @@
                             <td><code>string (TimeSpan)</code></td>
                             <td><code>5h22m</code></td>
                             <td>
-                                A string that represents a duration, in the format of <code>#d#h#m#s</code>.
-                                <code>d</code> is days, <code>h</code> is hours, <code>m</code> is minutes, and <code>s</code> is seconds.
-                                <br />
-                                Any component not given is assumed to be 0.
-                                <br />
-                                Example: <code>41m42s -&gt; 0d0h41m42s</code>
-                                <br />
-                                Components can also overflow, and will be handled correctly.
-                                <br />
-                                Example: <code>120s -&gt; 0d0h2m0s</code> (120 seconds is 2 minutes)
+                                <p>
+                                    A string that represents a duration, in the format of <code>#d#h#m#s</code>.
+                                    <br>
+                                    <code>d</code> is days, <code>h</code> is hours, <code>m</code> is minutes, and <code>s</code> is seconds.
+                                </p>
+
+                                <p>
+                                    Any component not given is assumed to be 0.
+                                    <br />
+                                    Example: <code>41m42s -&gt; 0d0h41m42s</code>
+                                </p>
+
+                                <p>
+                                    Components can also overflow, and will be handled correctly.
+                                    <br />
+                                    Example: <code>120s -&gt; 0d0h2m0s</code> (120 seconds is 2 minutes)
+                                </p>
                             </td>
                         </tr>
                     </tbody>
@@ -854,7 +911,6 @@
                         <td></td>
                     </tr>
 
-
                     <tr>
                         <td>Greater than</td>
                         <td><code>&gt;</code></td>
@@ -863,19 +919,35 @@
 
                     <tr>
                         <td>Less than or equal</td>
-                        <td><code>[</code></td>
+                        <td><code>:&lt</code> / <code>=&lt;</code> / <code>&lt;=</code> / <code>&lt;:</code></td>
                         <td></td>
                     </tr>
 
                     <tr>
                         <td>Greater than or equal</td>
-                        <td><code>]</code></td>
+                        <td><code>:&gt</code> / <code>=&gt;</code> / <code>&gt;=</code> / <code>&gt;:</code></td>
                         <td></td>
+                    </tr>
+
+                    <tr>
+                        <td>Contains</td>
+                        <td><code>*</code></td>
+                        <td>Only valid for string fields</td>
+                    </tr>
+
+                    <tr>
+                        <td>Starts with</td>
+                        <td><code>^</code></td>
+                        <td>Only valid for string fields</td>
+                    </tr>
+
+                    <tr>
+                        <td>Ends with</td>
+                        <td><code>$</code></td>
+                        <td>Only valid for string fields</td>
                     </tr>
                 </tbody>
             </table>
-
-            <h5>Values</h5>
 
         </p>
     </div>

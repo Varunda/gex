@@ -1,9 +1,11 @@
 ﻿using gex.Common.Code;
+using gex.Common.Code.Exceptions;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Models.User;
 using gex.Common.Services.Repository;
 using gex.Common.Services.Repository.Match;
 using Microsoft.Extensions.Logging;
@@ -22,14 +24,17 @@ namespace gex.Common.Services.Search {
         private readonly ILogger<SearchAstDbCommanderCompiler> _Logger;
 
         private readonly BarMatchPlayerRepository _PlayerRepository;
+        private readonly BarUserRepository _UserRepository;
         private readonly BarMapRepository _MapRepository;
 
         public SearchAstDbCommanderCompiler(ILogger<SearchAstDbCommanderCompiler> logger,
-            BarMatchPlayerRepository playerRepository, BarMapRepository mapRepository) {
+            BarMatchPlayerRepository playerRepository, BarMapRepository mapRepository,
+            BarUserRepository userRepository) {
 
             _Logger = logger;
             _PlayerRepository = playerRepository;
             _MapRepository = mapRepository;
+            _UserRepository = userRepository;
         }
 
         public async Task<Result<DbCommand, string>> Compile(SearchAst ast, DbConnection conn, long? currentUserID, bool isDev, CancellationToken cancel) {
@@ -91,6 +96,16 @@ namespace gex.Common.Services.Search {
             return sqlCmd;
         }
 
+        /// <summary>
+        ///     compile a node, and all its children
+        /// </summary>
+        /// <param name="node">node to be compiled</param>
+        /// <param name="query">query being built</param>
+        /// <param name="fieldPrefix">optional field prefix, used for complex fields</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>
+        ///     
+        /// </returns>
         private async Task<Result<Maybe<string>, string>> _Compile(SearchNode node, QuerySetup query, string? fieldPrefix, CancellationToken cancel) {
 
             string? cmd = null;
@@ -149,7 +164,7 @@ namespace gex.Common.Services.Search {
 
                 // sort | order
                 if (fieldName == "sort" || fieldName == "order") {
-                    if (fieldOp.Token.Value != "=") {
+                    if (fieldOp.Token.Value != SearchOp.EQ) {
                         return $"for a 'sort'|'order' field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
@@ -157,12 +172,12 @@ namespace gex.Common.Services.Search {
                     }
 
                     query.OrderBy = BarMatchSearchParameters.ParseOrderBy(fieldValue.Token.Value)
-                        ?? throw new ArgumentException($"invalid OrderBy value '{fieldValue.Token.Value}'");
+                        ?? throw new SearchAstArgumentException($"invalid OrderBy value '{fieldValue.Token.Value}'");
                 }
 
                 // order_dir | sort_dir
                 else if (fieldName == "order_dir" || fieldName == "sort_dir") {
-                    if (fieldOp.Token.Value != "=") {
+                    if (fieldOp.Token.Value != SearchOp.EQ) {
                         return $"for a 'sort_dir'|'order_dir' field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
@@ -170,12 +185,12 @@ namespace gex.Common.Services.Search {
                     }
 
                     query.OrderByDirection = BarMatchSearchParameters.ParseOrderByDirection(fieldValue.Token.Value)
-                        ?? throw new ArgumentException($"invalid OrderByDirection value '{fieldValue.Token.Value}'");
+                        ?? throw new SearchAstArgumentException($"invalid OrderByDirection value '{fieldValue.Token.Value}'");
                 }
 
                 // limit
                 else if (fieldName == "limit") {
-                    if (fieldOp.Token.Value != "=") {
+                    if (fieldOp.Token.Value != SearchOp.EQ) {
                         return $"for a 'limit' field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
@@ -185,16 +200,16 @@ namespace gex.Common.Services.Search {
                     query.Limit = uint.Parse(fieldValue.Token.Value);
 
                     if (query.Limit == 0) {
-                        throw new ArgumentException($"limit must be greater than 0");
+                        throw new SearchAstArgumentException($"limit must be greater than 0");
                     }
                     if (query.Limit > 1000) {
-                        throw new ArgumentException($"limit must be less than or equal to 1000");
+                        throw new SearchAstArgumentException($"limit must be less than or equal to 1000");
                     }
                 }
 
                 // offset | start
                 else if (fieldName == "offset" || fieldName == "start") {
-                    if (fieldOp.Token.Value != "=") {
+                    if (fieldOp.Token.Value != SearchOp.EQ) {
                         return $"for a 'offset' field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
@@ -204,12 +219,45 @@ namespace gex.Common.Services.Search {
                     query.Offset = uint.Parse(fieldValue.Token.Value);
 
                     if (query.Offset > 100000) {
-                        throw new ArgumentException($"offset must be 100000 or less");
+                        throw new SearchAstArgumentException($"offset must be 100000 or less");
                     }
+                }
+
+                // downloaded
+                else if (fieldName == "downloaded") {
+                    bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
+
+                    cmd += @$" m.id IN (
+                        SELECT game_id
+                        FROM bar_match_processing
+                        WHERE fetch_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                    ";
+                }
+
+                // parsed
+                else if (fieldName == "parsed") {
+                    bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
+
+                    cmd += @$" m.id IN (
+                        SELECT game_id
+                        FROM bar_match_processing
+                        WHERE parse_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                    ";
                 }
 
                 // replayed
                 else if (fieldName == "replayed") {
+                    bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
+
+                    cmd += @$" m.id IN (
+                        SELECT game_id
+                        FROM bar_match_processing
+                        WHERE replay_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                    ";
+                }
+
+                // replayed
+                else if (fieldName == "actions_parsed") {
                     bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
 
                     cmd += @$" m.id IN (
@@ -230,20 +278,27 @@ namespace gex.Common.Services.Search {
                     string value = (string)parseValue(typeof(string), fieldValue.Token.Value, fieldName);
 
                     if (value.StartsWith("d", StringComparison.OrdinalIgnoreCase) || value == "1v1") { // duel
-                        cmd += $" m.gamemode = 1 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 1 ";
                     } else if (value.StartsWith("s", StringComparison.OrdinalIgnoreCase)) { // small team
-                        cmd += $" m.gamemode = 2 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 2 ";
                     } else if (value.StartsWith("l", StringComparison.OrdinalIgnoreCase)) { // large team
-                        cmd += $" m.gamemode = 3 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 3 ";
                     } else if (value.StartsWith("f", StringComparison.OrdinalIgnoreCase)) { // ffa
-                        cmd += $" m.gamemode = 4 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 4 ";
                     } else if (value.StartsWith("t", StringComparison.OrdinalIgnoreCase)) { // team ffa
-                        cmd += $" m.gamemode = 5 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 5 ";
                     } else if (value.StartsWith("o", StringComparison.OrdinalIgnoreCase)) { // other/default
-                        cmd += $" m.gamemode = 0 ";
+                        cmd += $" m.gamemode {GetDbOperation(fieldOp)} 0 ";
                     } else {
                         return $"invalid gamemode: {value}";
                     }
+                }
+
+                // duration_time / duration
+                else if (fieldName == "duration_time") {
+                    TimeSpan duration = DurationStringUtil.Parse(fieldValue.Token.Value);
+
+                    cmd += $" m.duration_ms {GetDbOperation(fieldOp)} {(int)duration.TotalMilliseconds}";
                 }
 
                 // player.name
@@ -257,9 +312,46 @@ namespace gex.Common.Services.Search {
                         query.PlayerLookupCache.Add(fieldValue.Token.Value, players);
                     }
 
-                    cmd += $" player.user_id IN (";
-                    cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
-                    cmd += ")\n";
+                    if (players.Count == 0) {
+                        cmd += " 1 = 0 ";
+                    } else {
+                        cmd += $" player.user_id IN (";
+                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
+                        cmd += ")\n";
+                    }
+                }
+
+                // player.current_name
+                else if (fieldName == "player.current_name") {
+                    List<UserSearchResult> users = await _UserRepository.SearchByName(fieldValue.Token.Value, false, cancel);
+
+                    if (users.Count == 0) {
+                        cmd += " 1 = 0 ";
+                    } else {
+                        cmd += $" player.user_id IN (";
+                        cmd += $" {string.Join(", ", users.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
+                        cmd += ")\n";
+                    }
+                }
+
+                // player.game_name
+                else if (fieldName == "player.game_name") {
+                    List<BarMatchPlayer> players = await _PlayerRepository.SearchByName(fieldValue.Token.Value, cancel);
+
+                    if (players.Count == 0) {
+                        cmd += " 1 = 0 ";
+                    } else {
+                        cmd += $" player.game_id IN (";
+                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.GameID)} "))} ";
+                        cmd += ")\n";
+                    }
+                }
+
+                // player.user_id
+                else if (fieldName == "player.user_id") {
+                    long userID = (long)parseValue(typeof(long), fieldValue.Token.Value, "player.user_id");
+
+                    cmd += $" player.user_id {GetDbOperation(fieldOp)} {addParameter(query, userID)} ";
                 }
 
                 // player.faction / team.faction
@@ -278,7 +370,7 @@ namespace gex.Common.Services.Search {
                         return $"invalid faction: {fieldValue.Token.Value}";
                     }
 
-                    cmd += $" team.faction {fieldOp.Token.Value} {addParameter(query, faction)} ";
+                    cmd += $" team.faction {GetDbOperation(fieldOp)} {addParameter(query, faction)} ";
                 }
 
                 // map.map_name
@@ -305,7 +397,7 @@ namespace gex.Common.Services.Search {
                         ?? throw new InvalidOperationException($"expected type mapping for fieldName '{fieldName}' to exist");
 
                     object value = parseValue(fieldType, fieldValue.Token.Value, fieldName);
-                    cmd += $" {fieldName} {fieldOp.Token.Value} {addParameter(query, value)}";
+                    cmd += $" {fieldName} {GetDbOperation(fieldOp)} {addParameter(query, value)}";
                 }
             }
 
@@ -427,6 +519,8 @@ namespace gex.Common.Services.Search {
                 }
             } else if (fieldType == typeof(TimeSpan)) {
                 value = DurationStringUtil.Parse(input);
+            } else if (fieldType == typeof(DateTime)) {
+                value = DateTime.Parse(input);
             } else {
                 throw new InvalidOperationException($"unhandled type ({fieldType.FullName}) for field ({fieldName})");
             }
@@ -451,6 +545,9 @@ namespace gex.Common.Services.Search {
             // match fields
             { "ranked", typeof(bool) },
             { "duration", typeof(TimeSpan) },
+            { "duration_time", typeof(TimeSpan) },
+            { "duration_frames", typeof(long) },
+            { "duration_frame_count", typeof(long) },
             { "average_os", typeof(double) },
             { "min_os", typeof(double) },
             { "max_os", typeof(double) },
@@ -460,6 +557,10 @@ namespace gex.Common.Services.Search {
             { "gamemode", typeof(string) },
             { "uploaded_by", typeof(long) },
             { "player_count", typeof(int) },
+            { "downloaded", typeof(bool) },
+            { "parsed", typeof(bool) },
+            { "replayed", typeof(bool) },
+            { "actions_parsed", typeof(bool) },
 
             // player fields
             { "player.user_name", typeof(string) },
@@ -468,6 +569,11 @@ namespace gex.Common.Services.Search {
             { "ally_team.won", typeof(bool) },
             { "player.skill", typeof(double) },
             { "player.skill_uncertainity", typeof(double) },
+            { "player.team_id", typeof(int) },
+            { "player.handicap", typeof(double) },
+            { "player.game_name", typeof(string) },
+            { "player.current_name", typeof(string) },
+            { "player.user_id", typeof(long) },
 
             // map fields
             { "map.name", typeof(string) },
@@ -484,6 +590,11 @@ namespace gex.Common.Services.Search {
         /// 
         /// </summary>
         private static Dictionary<string, string> FieldNameAliases = new Dictionary<string, string>() {
+
+            // basic fields
+            { "duration", "duration_time" },
+            { "duration_frames", "duration_frame_count" },
+
             // player fields
             { "player.position", "team.start_spot_label" },
             { "player.pos", "team.start_spot_label" },
@@ -492,6 +603,7 @@ namespace gex.Common.Services.Search {
             { "player.faction", "team.faction" },
             { "player.name", "player.user_name" },
             { "player.won", "ally_team.won" },
+            { "player.handicap", "team.handicap" },
 
             // map fields
             { "map.min_wind", "map.minimum_wind" },
@@ -506,6 +618,20 @@ namespace gex.Common.Services.Search {
             { "player", "user_name" },
             { "map", "name" }
         };
+
+        private static string GetDbOperation(SearchNode op) {
+            return op.Token.Value switch {
+                "=" => "=",
+                ":" => "=",
+                "<" => "<",
+                ">" => ">",
+                "]" => ">=",
+                "[" => "<=",
+                "!" => "!=",
+                "-" => "!=",
+                _ => throw new ArgumentException($"invalid operator {op.Token.Value}")
+            };
+        }
 
         private class QuerySetup {
 

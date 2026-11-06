@@ -97,6 +97,10 @@ namespace gex.Services.Search {
                             );
                         }
 
+                        if (op.Value == ":") {
+                            op.Value = SearchOp.EQ;
+                        }
+
                         SearchToken valueToken = tokens.GetNext()
                             ?? throw new SearchAstParseException(iter, $"missing value token when an OPERATOR token was provided");
 
@@ -107,6 +111,50 @@ namespace gex.Services.Search {
 
                             valueToken = tokens.GetNext()
                                 ?? throw new SearchAstParseException(iter, $"missing token after NOT token in FIELD node");
+                        }
+
+                        if (valueToken.Type == SearchTokenType.OPERATOR) {
+                            if (valueToken.Value == ":") {
+                                valueToken.Value = SearchOp.EQ;
+                            }
+
+                            if (op.Value != SearchOp.EQ && op.Value != SearchOp.LT && op.Value != SearchOp.GT) {
+                                throw new SearchAstParseException(iter, $"can only chain = and : when using operators");
+                            }
+
+                            _Logger.LogTrace($"token after the OPERATOR is another OPERATOR, checking for valid ops");
+
+                            if (op.Value == SearchOp.EQ) {
+                                if (valueToken.Value == SearchOp.GT) {
+                                    op.Value = SearchOp.GTE;
+                                } else if (valueToken.Value == SearchOp.LT) {
+                                    op.Value = SearchOp.LTE;
+                                } else if (valueToken.Value == SearchOp.CONTAINS || valueToken.Value == SearchOp.ENDS_WITH || valueToken.Value == SearchOp.STARTS_WITH) {
+                                    op.Value = valueToken.Value;
+
+                                } else {
+                                    throw new SearchAstParseException(iter, $"invalid operator '{valueToken.Value}' (which followed an {op.Value})");
+                                }
+
+                            } else if (op.Value == SearchOp.LT) {
+                                if (valueToken.Value == SearchOp.EQ) {
+                                    op.Value = SearchOp.LTE;
+                                } else {
+                                    throw new SearchAstParseException(iter, $"invalid operator '{valueToken.Value}' (which followed an {op.Value})");
+                                }
+
+                            } else if (op.Value == SearchOp.GT) {
+                                if (valueToken.Value == SearchOp.EQ) {
+                                    op.Value = SearchOp.GTE;
+                                } else {
+                                    throw new SearchAstParseException(iter, $"invalid operator '{valueToken.Value}' (which followed an {op.Value})");
+                                }
+                            } else {
+                                throw new SearchAstParseException(iter, $"invalid operator '{op.Value}', this operator cannot have any operators after it");
+                            }
+
+                            valueToken = tokens.GetNext()
+                                ?? throw new SearchAstParseException(iter, $"missing token after OPERATOR token in FIELD node");
                         }
 
                         if (valueToken.Type != SearchTokenType.WORD) {
@@ -120,7 +168,7 @@ namespace gex.Services.Search {
                             previousFieldOp = op;
                         }
                     } else {
-                        op = new SearchToken(SearchTokenType.OPERATOR, "=");
+                        op = new SearchToken(SearchTokenType.OPERATOR, SearchOp.EQ);
                         value = new SearchToken(SearchTokenType.OPERATOR, "true");
                     }
 
@@ -131,7 +179,7 @@ namespace gex.Services.Search {
                     name.Value = _FieldNameAlias(name.Value);
 
                     if (op.Value == ":") {
-                        op.Value = "=";
+                        op.Value = SearchOp.EQ;
                     }
 
                     SearchNode field = _c(
@@ -188,7 +236,7 @@ namespace gex.Services.Search {
 
                     stack.Push(child);
 
-                    _c(SearchNodeType.FIELD_OP, new SearchToken(SearchTokenType.OPERATOR, "="));
+                    _c(SearchNodeType.FIELD_OP, new SearchToken(SearchTokenType.OPERATOR, SearchOp.EQ));
                     stack.Push(_c(SearchNodeType.FIELD_VALUE, new SearchToken(SearchTokenType.PARAMETERS_START, "")));
                     stack.Push(_c(SearchNodeType.AND, iter));
 
@@ -439,14 +487,14 @@ namespace gex.Services.Search {
         /// </summary>
         private static readonly Dictionary<string, string> OperatorNegations = new() {
             // equals => not equals
-            { ":", "!" },
-            { "=", "!" },
+            { ":", SearchOp.NOT },
+            { "=", SearchOp.NOT },
 
-            { "[", ">" }, // less than or equal => greater than
-            { "]", "<" }, // greater than or equal <= less than
+            { "[", SearchOp.GT }, // less than or equal => greater than
+            { "]", SearchOp.LT }, // greater than or equal <= less than
 
-            { ">", "[" }, // greater than => less than or equal
-            { "<", "]" }, // less than => greater than or equal
+            { ">", SearchOp.LTE }, // greater than => less than or equal
+            { "<", SearchOp.GTE }, // less than => greater than or equal
         };
 
         /// <summary>

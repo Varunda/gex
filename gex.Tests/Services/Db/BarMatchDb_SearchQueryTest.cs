@@ -1,7 +1,10 @@
-﻿using gex.Common.Models;
+﻿using gex.Common.Code.Constants;
+using gex.Common.Code.Exceptions;
+using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Models.User;
 using gex.Common.Services.Db;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
@@ -62,10 +65,13 @@ namespace gex.Tests.Services.Db {
 
             (IBarMatchDb db, ServiceProvider svs) = await _Get();
             TestLogger.DisableOutput = false;
+
+            IDbHelper helper = svs.GetRequiredService<IDbHelper>();
+            await DbUtil.TruncateTables(helper);
+
             _Logger.LogInformation($"loading maps...");
 
             string barMapSql = await File.ReadAllTextAsync("./resources/sql/bar_map.sql");
-            IDbHelper helper = svs.GetRequiredService<IDbHelper>();
 
             using DbConnection conn = helper.Connection();
             using DbCommand cmd = await helper.Command(conn, barMapSql);
@@ -108,72 +114,10 @@ namespace gex.Tests.Services.Db {
             _Logger.LogInformation($"loaded matches");
         }
 
-        /// <summary>
-        ///     runs a string query by tokenizing, parsing the compiling the ast, and gets the results from the DB
-        /// </summary>
-        /// <param name="query">query string, expected to be valid</param>
-        /// <returns>the list of matches that fulfil the query used in <paramref name="query"/></returns>
-        private async Task<List<BarMatch>> _Query(string query) {
-            Stopwatch timer = Stopwatch.StartNew();
-
+        [ClassCleanup]
+        public static async Task Teardown() {
             (IBarMatchDb db, ServiceProvider svs) = await _Get();
-
-            SearchTokenizer tokenizer = svs.GetRequiredService<SearchTokenizer>();
-            SearchAstBuilder astBuilder = svs.GetRequiredService<SearchAstBuilder>();
-
-            SearchAst ast = astBuilder.Build(tokenizer.Tokenize(query));
-            _Logger.LogInformation($"parsed ast: {ast.Print()}");
-            _PrintAst(ast);
-
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
-            Result<List<BarMatch>, string> results = await db.Search(ast, cts.Token);
-
-            _Logger.LogInformation($"query complete [timer={timer.ElapsedMilliseconds}ms] [query={query}]");
-
-            Assert.IsTrue(results.IsOk, $"results was not ok: {results.Error}");
-
-            IBarMatchBuilderUtil builder = svs.GetRequiredService<IBarMatchBuilderUtil>();
-            foreach (BarMatch iter in results.Value) {
-                Result<Maybe<BarMatch>, string> ret = await builder.BuildMatch(iter.ID, new IBarMatchBuilderUtil.BuildOptions() {
-                    IncludeAiPlayers = true,
-                    IncludeAllyTeams = true,
-                    IncludePlayers = true,
-                    IncludeTeams = true,
-                }, null, cts.Token);
-                BarMatch match = ret.Value.Get();
-
-                Console.WriteLine($"game {match.ID} - {match.Map} - {match.StartTime:u}");
-
-                foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
-
-                    List<BarMatchTeam> teams = match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).ToList();
-
-                    if (teams.Count == 1) {
-                        List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == teams[0].TeamID).ToList();
-                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {teams[0].Faction}");
-                    } else {
-                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - ");
-                        foreach (BarMatchTeam team in teams) {
-                            List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == team.TeamID).ToList();
-                            Console.WriteLine($"\t\tTeam {team.TeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {team.Faction}");
-                        }
-                    }
-                }
-            }
-
-            return results.Value;
-        }
-
-        private void _PrintAst(SearchAst ast) {
-            _PrintNode(ast.Root);
-        }
-
-        private void _PrintNode(SearchNode node) {
-            Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} ({node.Token.Type}) {node.Token.Value}");
-
-            foreach (SearchNode child in node.Children) {
-                _PrintNode(child);
-            }
+            await DbUtil.TruncateTables(svs.GetRequiredService<IDbHelper>());
         }
 
         /// <summary>
@@ -212,7 +156,7 @@ namespace gex.Tests.Services.Db {
         /// </summary>
         [TestMethod]
         public async Task Test_Query_Limit0_Throws() {
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => {
+            await Assert.ThrowsExceptionAsync<SearchAstArgumentException>(() => {
                 return _Query("limit:0");
             }, "limit must be greater than 0");
         }
@@ -263,7 +207,7 @@ namespace gex.Tests.Services.Db {
         /// </summary>
         [TestMethod]
         public async Task Test_Query_Limit1001_Throws() {
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => {
+            await Assert.ThrowsExceptionAsync<SearchAstArgumentException>(() => {
                 return _Query("limit:1001");
             });
         }
@@ -372,16 +316,255 @@ namespace gex.Tests.Services.Db {
         [TestMethod]
         public async Task Test_Query_PlayersFindAll_ExcludeMap() {
             List<BarMatch> matches = await _Query("player: varunda map: !pinewood");
-
             Assert.AreEqual(4, matches.Count);
         }
 
         [TestMethod]
         public async Task Test_Query_Grouped_Or() {
             List<BarMatch> matches = await _Query("{ player: cetme fightwar } | { map: gasbag }");
-
             Assert.AreEqual(2, matches.Count); // the 1 gasbag game, and the one game with fightwar in it
         }
+
+        [TestMethod]
+        public async Task Test_Query_Player_NoMatch() {
+            List<BarMatch> matches = await _Query("player: doesnotexistinthisdataset");
+            Assert.AreEqual(0, matches.Count);
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Map_NoMatch() {
+            List<BarMatch> matches = await _Query("map: doesnotexistindataset");
+            Assert.AreEqual(0, matches.Count);
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Gamemode_NotDuel() {
+            List<BarMatch> matches = await _Query("gamemode:!duel");
+
+            foreach (BarMatch match in matches) {
+                Assert.AreNotEqual(BarGamemode.DUEL, match.Gamemode, $"expected non-DUEL gamemode, got {match.Gamemode}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_CurrentName() {
+            BarUserRepository userRepo = _ServiceProvier!.GetRequiredService<BarUserRepository>();
+            List<UserSearchResult> users = await userRepo.SearchByName("[Blahaj]varunda", false, CancellationToken.None);
+
+            Assert.IsTrue(users.Count > 0, $"expected at least 1 user searched with '[Blahaj]varunda' to exist");
+            HashSet<long> userIDs = new(users.Select(iter => iter.UserID));
+
+            List<BarMatch> matches = await _Query("player(current_name:[Blahaj]varunda)");
+
+            foreach (BarMatch match in matches) {
+                HashSet<long> matchUsers = new(match.Players.Select(iter => iter.UserID));
+
+                bool found = false;
+                foreach (long userID in userIDs) {
+                    found = matchUsers.Contains(userID);
+                    if (found == true) {
+                        break;
+                    }
+                }
+
+                Assert.IsTrue(found, $"failed to find any user with name of varunda in game");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_GameName() {
+            List<BarMatch> matches = await _Query("player(game_name:varunda)");
+
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.Players.FirstOrDefault(iter => iter.Name.Contains("varunda", StringComparison.OrdinalIgnoreCase)),
+                    $"missing user with name varunda from {match.ID}: {string.Join(", ", match.Players.Select(i => i.Name))}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_UserID() {
+            List<BarMatch> matches = await _Query("player(user_id:146777)");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match with user ID 146777");
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.Players.FirstOrDefault(iter => iter.UserID == 146777),
+                    $"missing user with ID 146777 from {match.ID}: {string.Join(", ", match.Players.Select(i => i.UserID))}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Duration_GreaterThan() {
+            List<BarMatch> matches = await _Query("duration:>5m");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match over 5 minutes");
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.DurationMs > (1000 * 60 * 5), $"match was not over 5 minutes ({match.DurationMs})");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_DurationFrames_GreaterThan() {
+            List<BarMatch> matches = await _Query("duration_frames:>9000");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match over 5 minutes (of frames)");
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.DurationFrameCount > (30 * 60 * 5), $"match was not over 5 minutes ({match.DurationFrameCount})");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_DateTime_MatchStartTime_JustDate() {
+            List<BarMatch> matches = await _Query("start_time>2026-01-01");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match after 2026-01-01");
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.StartTime > DateTime.Parse("2026-01-01"), $"match was not after 2026-01-01");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_DateTime_MatchStartTime_WithTime() {
+            List<BarMatch> matches = await _Query("start_time>\"2026-01-01T00:00\"");
+
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match after 2026-01-01");
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.StartTime > DateTime.Parse("2026-01-01"), $"match was not after 2026-01-01");
+            }
+        }
+
+        #region error test
+
+        [TestMethod]
+        public async Task Test_Error_Format_Bool() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("ranked=10");
+            });
+        }
+
+        [TestMethod]
+        public async Task Test_Error_Format_Int() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("player_count:howdy");
+            });
+        }
+
+        [TestMethod]
+        public async Task Test_Error_Format_Long() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("duration_frame_count:howdy");
+            });
+        }
+
+        [TestMethod]
+        public async Task Test_Error_Format_Double() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("average_os:howdy");
+            });
+        }
+
+        [TestMethod]
+        public async Task Test_Error_Format_StringDateTime() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("start_time:howdy");
+            });
+        }
+
+        [TestMethod]
+        public async Task Test_Error_Format_StringTimeSpan() {
+            await Assert.ThrowsExceptionAsync<FormatException>(() => {
+                return _Query("duration_time:howdy");
+            });
+        }
+
+        #endregion 
+
+        #region helper functions
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // helper functions
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        ///     runs a string query by tokenizing, parsing the compiling the ast, and gets the results from the DB
+        /// </summary>
+        /// <param name="query">query string, expected to be valid</param>
+        /// <returns>the list of matches that fulfil the query used in <paramref name="query"/></returns>
+        private async Task<List<BarMatch>> _Query(string query) {
+            Stopwatch timer = Stopwatch.StartNew();
+
+            (IBarMatchDb db, ServiceProvider svs) = await _Get();
+
+            SearchTokenizer tokenizer = svs.GetRequiredService<SearchTokenizer>();
+            SearchAstBuilder astBuilder = svs.GetRequiredService<SearchAstBuilder>();
+
+            SearchAst ast = astBuilder.Build(tokenizer.Tokenize(query));
+            _Logger.LogInformation($"parsed ast: {ast.Print()}");
+            _PrintAst(ast);
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(15));
+            Result<List<BarMatch>, string> results = await db.Search(ast, cts.Token);
+
+            _Logger.LogInformation($"query complete [timer={timer.ElapsedMilliseconds}ms] [query={query}]");
+
+            Assert.IsTrue(results.IsOk, $"results was not ok: {results.Error}");
+
+            _Logger.LogInformation($"matches found ({results.Value.Count}):");
+
+            List<BarMatch> built = [];
+
+            IBarMatchBuilderUtil builder = svs.GetRequiredService<IBarMatchBuilderUtil>();
+            foreach (BarMatch iter in results.Value) {
+                Result<Maybe<BarMatch>, string> ret = await builder.BuildMatch(iter.ID, new IBarMatchBuilderUtil.BuildOptions() {
+                    IncludeAiPlayers = true,
+                    IncludeAllyTeams = true,
+                    IncludePlayers = true,
+                    IncludeTeams = true,
+                }, null, cts.Token);
+
+                Assert.IsTrue(ret.IsOk, $"got error built match {iter.ID}: {ret.Error}");
+                Assert.IsTrue(ret.Value.Has(), $"Maybe returned null for {iter.ID}");
+
+                BarMatch match = ret.Value.Get();
+
+                built.Add(match);
+
+                Console.WriteLine($"game {match.ID} - {match.Map} - {match.StartTime:u}");
+
+                foreach (BarMatchAllyTeam allyTeam in match.AllyTeams) {
+
+                    List<BarMatchTeam> teams = match.Teams.Where(iter => iter.AllyTeamID == allyTeam.AllyTeamID).ToList();
+
+                    if (teams.Count == 1) {
+                        List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == teams[0].TeamID).ToList();
+                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {teams[0].Faction}");
+                    } else {
+                        Console.WriteLine($"\t{allyTeam.AllyTeamID} - ");
+                        foreach (BarMatchTeam team in teams) {
+                            List<BarMatchPlayer> players = match.Players.Where(iter => iter.TeamID == team.TeamID).ToList();
+                            Console.WriteLine($"\t\tTeam {team.TeamID} - {string.Join(" & ", players.Select(iter => iter.Name))}: {team.Faction}");
+                        }
+                    }
+                }
+
+                Console.WriteLine("");
+            }
+
+            return built;
+        }
+
+        private void _PrintAst(SearchAst ast) {
+            _PrintNode(ast.Root);
+        }
+
+        private void _PrintNode(SearchNode node) {
+            Console.WriteLine($"{new string('\t', node.Depth + 1)}{node.Type} ({node.Token.Type}) {node.Token.Value}");
+
+            foreach (SearchNode child in node.Children) {
+                _PrintNode(child);
+            }
+        }
+
+        #endregion
 
     }
 }

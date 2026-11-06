@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,6 +39,26 @@ namespace gex.Tests.Util {
             await creator.Execute();
 
             return dbHelper;
+        }
+
+        public static async Task TruncateTables(IDbHelper helper) {
+
+            using DbConnection conn = helper.Connection();
+            using DbCommand cmd = await helper.Command(conn, @"
+                TRUNCATE bar_match;
+                TRUNCATE bar_match_player;
+                TRUNCATE bar_match_ally_team;
+                TRUNCATE bar_match_team;
+                TRUNCATE bar_match_spectator;
+                TRUNCATE bar_match_chat_message;
+                TRUNCATE bar_map;
+                TRUNCATE bar_match_team_death;
+                TRUNCATE bar_match_player_left;
+                TRUNCATE bar_match_map_draw_point;
+            ");
+
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
         }
 
     }

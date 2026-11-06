@@ -46,12 +46,12 @@ namespace gex.Tests.Code {
         [TestMethod]
         public void Test_BadInput_InvalidCharacters() {
             // can't express negative components like this
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse("-4h"); });
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse("4d 4s"); });
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse("\n4d"); });
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse(" 4d"); });
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse("-4h "); });
-            Assert.ThrowsException<Exception>(() => { DurationStringUtil.Parse("1.2d"); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse("-4h"); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse("4d 4s"); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse("\n4d"); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse(" 4d"); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse("-4h "); });
+            Assert.ThrowsException<FormatException>(() => { DurationStringUtil.Parse("1.2d"); });
         }
 
         /// <summary>

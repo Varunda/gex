@@ -14,334 +14,252 @@
 
         <div v-if="searching == true" class="row mb-3">
             <div class="col-12">
-                <h4 @click="hideSearch">
+                <h4>
                     Search options
-                    <span v-if="searching == true">
+
+                    <div class="btn-group">
+                        <button @click="showQuery = false" class="btn" :class="[ showQuery == true ? 'btn-secondary' : 'btn-primary' ]">
+                            Basic
+                        </button>
+                        <button @click="showQuery = true" class="btn" :class="[ showQuery == true ? 'btn-primary' : 'btn-secondary' ]">
+                            Query
+                        </button>
+                    </div>
+
+                    <span @click="hideSearch" class="border rounded px-2">
                         &times;
                     </span>
                 </h4>
             </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label for="search-engine">Engine</label>
-                <dropdown-search name="search-engine" v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Game version</label>
-                <dropdown-search v-model="search.gameVersion" :api="dropdownSearchCalls.gameVersion"></dropdown-search>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Map</label>
-                <dropdown-search v-model="search.map" :api="dropdownSearchCalls.map"></dropdown-search>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Gamemode</label>
-                <select v-model.number="search.gamemode" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="1">Duel</option>
-                    <option :value="2">Small team</option>
-                    <option :value="3">Large team</option>
-                    <option :value="4">FFA</option>
-                    <option :value="5">Team FFA</option>
-                    <option :value="0">Other</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Start time before</label>
-                <date-time-input v-model="search.startTimeBefore" :allow-null="true"></date-time-input>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Start time after</label>
-                <date-time-input v-model="search.startTimeAfter" :allow-null="true"></date-time-input>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Minimum player count (exclusive)</label>
-                <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Maximum player count (inclusive)</label>
-                <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Downloaded?</label>
-                <select v-model="search.processingDownloaded" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Parsed?</label>
-                <select v-model="search.processingParsed" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Replayed?</label>
-                <select v-model="search.processingReplayed" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Actions parsed?</label>
-                <select v-model="search.processingAction" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label for="search-ranked">Ranked?</label>
-                <select v-model="search.ranked" class="form-control" name="search-ranked">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Legion enabled</label>
-                <select v-model="search.legionEnabled" class="form-control">
-                    <option :value="null">Unset</option>
-                    <option :value="false">No</option>
-                    <option :value="true">Yes</option>
-                </select>
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Match link</label>
-                <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
-            </div>
-
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Game settings</label>
-                <div class="input-group">
-                    <input v-model="gameSetting.key" class="form-control"/>
-                    <select v-model="gameSetting.operation" class="form-control">
-                        <option value="eq">equals</option>
-                        <option value="ne">not equals</option>
-                        <option value="st">starts with</option>
-                        <option value="en">ends with</option>
-                        <option value="in">contains</option>
-                    </select>
-                    <input v-model="gameSetting.value" class="form-control" placeholder="game setting value"/>
-                    <button class="btn btn-success" @click="addGameSetting" :disabled="gameSetting.key == ''" :title="gameSetting.key == '' ? 'cannot add as there is no key' : ''">add</button>
+            <template v-if="showQuery == false">
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label for="search-engine">Engine</label>
+                    <dropdown-search name="search-engine" v-model="search.engine" :api="dropdownSearchCalls.engine"></dropdown-search>
                 </div>
-            </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Minimum OS (all players)</label>
-                <input v-model.number="search.minOS" class="form-control" type="number" placeholder="Minimum OS in match (exclusive)">
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Game version</label>
+                    <dropdown-search v-model="search.gameVersion" :api="dropdownSearchCalls.gameVersion"></dropdown-search>
+                </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Maximum OS (all players)</label>
-                <input v-model.number="search.maxOS" class="form-control" type="number" placeholder="Maximum OS in match (inclusive)">
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Map</label>
+                    <dropdown-search v-model="search.map" :api="dropdownSearchCalls.map"></dropdown-search>
+                </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Minimum average OS (all players)</label>
-                <input v-model.number="search.minAvgOS" class="form-control" type="number" placeholder="Minimum average OS in match (exclusive)">
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Gamemode</label>
+                    <select v-model.number="search.gamemode" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="1">Duel</option>
+                        <option :value="2">Small team</option>
+                        <option :value="3">Large team</option>
+                        <option :value="4">FFA</option>
+                        <option :value="5">Team FFA</option>
+                        <option :value="0">Other</option>
+                    </select>
+                </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Maximum average OS (all players)</label>
-                <input v-model.number="search.maxAvgOS" class="form-control" type="number" placeholder="Maximum average OS in match (inclusive)">
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Start time before</label>
+                    <date-time-input v-model="search.startTimeBefore" :allow-null="true"></date-time-input>
+                </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Order by</label>
-                <select v-model="search.orderBy" class="form-control">
-                    <option value="start_time">Start time</option>
-                    <option value="duration">Duration</option>
-                    <option value="player_count">Player count</option>
-                </select>
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Start time after</label>
+                    <date-time-input v-model="search.startTimeAfter" :allow-null="true"></date-time-input>
+                </div>
 
-            <div class="col-lg-3 col-md-4 col-sm-6 col-12">
-                <label>Order direction</label>
-                <select v-model="search.orderByDir" class="form-control">
-                    <option value="desc">Desc</option>
-                    <option value="asc">Asc</option>
-                </select>
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Minimum player count (exclusive)</label>
+                    <input v-model.number="search.playerCountMinimum" class="form-control" type="number">
+                </div>
 
-            <div v-if="search.gameSettings.length > 0" class="col-12 mt-2">
-                <label>Game setting search values</label>
-                <div class="">
-                    <div v-for="gs in search.gameSettings" :key="gs.key" class="my-3 mx-2 d-flex">
-                        <span class="flex-grow-0">
-                            <code>{{ gs.key }}</code>
-                            <span v-if="gs.operation == 'eq'">
-                                =
-                            </span>
-                            <span v-else-if="gs.operation == 'ne'">
-                                !=
-                            </span>
-                            <span v-else-if="gs.operation == 'st'">
-                                starts with
-                            </span>
-                            <span v-else-if="gs.operation == 'en'">
-                                ends with
-                            </span>
-                            <span v-else-if="gs.operation == 'in'">
-                                contains
-                            </span>
-                            <span v-else>
-                                unknown {{ gs.operation }}
-                            </span>
-                            <code>{{ gs.value }}</code>
-                        </span>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Maximum player count (inclusive)</label>
+                    <input v-model.number="search.playerCountMaximum" class="form-control" type="number">
+                </div>
 
-                        <span class="flex-grow-0 text-danger border px-1 py-0 ms-3 rounded" @click="removeGameSetting(gs.key)">
-                            &times;
-                        </span>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Downloaded?</label>
+                    <select v-model="search.processingDownloaded" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Parsed?</label>
+                    <select v-model="search.processingParsed" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Replayed?</label>
+                    <select v-model="search.processingReplayed" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Actions parsed?</label>
+                    <select v-model="search.processingAction" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label for="search-ranked">Ranked?</label>
+                    <select v-model="search.ranked" class="form-control" name="search-ranked">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Legion enabled</label>
+                    <select v-model="search.legionEnabled" class="form-control">
+                        <option :value="null">Unset</option>
+                        <option :value="false">No</option>
+                        <option :value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Match link</label>
+                    <input v-model="search.gameID" class="form-control" placeholder="Put replay link or game ID here">
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Game settings</label>
+                    <div class="input-group">
+                        <input v-model="gameSetting.key" class="form-control"/>
+                        <select v-model="gameSetting.operation" class="form-control">
+                            <option value="eq">equals</option>
+                            <option value="ne">not equals</option>
+                            <option value="st">starts with</option>
+                            <option value="en">ends with</option>
+                            <option value="in">contains</option>
+                        </select>
+                        <input v-model="gameSetting.value" class="form-control" placeholder="game setting value"/>
+                        <button class="btn btn-success" @click="addGameSetting" :disabled="gameSetting.key == ''" :title="gameSetting.key == '' ? 'cannot add as there is no key' : ''">add</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-12 mb-2">
-                <label for="user-search-input-bottom">User search</label>
-                <div class="form-control user-input-parent px-0" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
-                    <button v-for="user in search.users" :key="user.userID" class="btn btn-primary btn-sm rounded mx-2">
-                        {{ user.username }}
-                        <span class="close" @click="removeUser(user.userID)">
-                            &times;
-                        </span>
-                    </button>
-                    
-                    <input class="pe-0 d-inline-block form-control border-0" style="background-color: inherit; outline: 0; width: auto;" placeholder="Search..." v-model="userInput" id="user-search-input-bottom" />
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Minimum OS (all players)</label>
+                    <input v-model.number="search.minOS" class="form-control" type="number" placeholder="Minimum OS in match (exclusive)">
                 </div>
-            </div>
 
-            <div class="col-12">
-                <toggle-button v-model="adv">
-                    Show adv. player filter
-                </toggle-button>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Maximum OS (all players)</label>
+                    <input v-model.number="search.maxOS" class="form-control" type="number" placeholder="Maximum OS in match (inclusive)">
+                </div>
 
-                <toggle-button v-model="showQuery">
-                    Show query (WIP)
-                </toggle-button>
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Minimum average OS (all players)</label>
+                    <input v-model.number="search.minAvgOS" class="form-control" type="number" placeholder="Minimum average OS in match (exclusive)">
+                </div>
 
-            <div v-if="showQuery == true" class="col-12">
-                <label for="query-input">Query input</label>
-                <input type="text" v-model="query" class="form-control" id="query-input"/>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Maximum average OS (all players)</label>
+                    <input v-model.number="search.maxAvgOS" class="form-control" type="number" placeholder="Maximum average OS in match (inclusive)">
+                </div>
 
-                <a href="/faq#gex-query" target="_blank" ref="nofollow">
-                    Learn more
-                </a>
-            </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Order by</label>
+                    <select v-model="search.orderBy" class="form-control">
+                        <option value="start_time">Start time</option>
+                        <option value="duration">Duration</option>
+                        <option value="player_count">Player count</option>
+                    </select>
+                </div>
 
-            <div v-show="adv == true" class="col-12">
-                <hr>
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+                    <label>Order direction</label>
+                    <select v-model="search.orderByDir" class="form-control">
+                        <option value="desc">Desc</option>
+                        <option value="asc">Asc</option>
+                    </select>
+                </div>
 
-                <label>Advanced player filters</label>
+                <div v-if="search.gameSettings.length > 0" class="col-12 mt-2">
+                    <label>Game setting search values</label>
+                    <div class="">
+                        <div v-for="gs in search.gameSettings" :key="gs.key" class="my-3 mx-2 d-flex">
+                            <span class="flex-grow-0">
+                                <code>{{ gs.key }}</code>
+                                <span v-if="gs.operation == 'eq'">
+                                    =
+                                </span>
+                                <span v-else-if="gs.operation == 'ne'">
+                                    !=
+                                </span>
+                                <span v-else-if="gs.operation == 'st'">
+                                    starts with
+                                </span>
+                                <span v-else-if="gs.operation == 'en'">
+                                    ends with
+                                </span>
+                                <span v-else-if="gs.operation == 'in'">
+                                    contains
+                                </span>
+                                <span v-else>
+                                    unknown {{ gs.operation }}
+                                </span>
+                                <code>{{ gs.value }}</code>
+                            </span>
 
-                <span class="text-muted d-block">This is a WIP UI, it is not very good</span>
+                            <span class="flex-grow-0 text-danger border px-1 py-0 ms-3 rounded" @click="removeGameSetting(gs.key)">
+                                &times;
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
-                <table class="table table-sm">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>User ID</th>
-                            <th>Position</th>
-                            <th>Faction</th>
-                            <th>Min OS</th>
-                            <th colspan="2">Max OS</th>
-                        </tr>
-                    </thead>
+                <div class="col-12 mb-2">
+                    <label for="user-search-input-bottom">User search</label>
+                    <div class="form-control user-input-parent px-0" style="background-color: var(--bs-tertiary-bg); width: fit-content;">
+                        <button v-for="user in search.users" :key="user.userID" class="btn btn-primary btn-sm rounded mx-2">
+                            {{ user.username }}
+                            <span class="close" @click="removeUser(user.userID)">
+                                &times;
+                            </span>
+                        </button>
+                        
+                        <input class="pe-0 d-inline-block form-control border-0" style="background-color: inherit; outline: 0; width: auto;" placeholder="Search..." v-model="userInput" id="user-search-input-bottom" />
+                    </div>
+                </div>
+            </template>
 
-                    <tbody>
-                        <tr v-if="search.players == undefined || search.players.length == 0">
-                            <td colspan="5" class="text-muted">
-                                No player filters added
-                            </td>
-                        </tr>
+            <template v-if="showQuery == true">
 
-                        <tr v-for="(player, index) in search.players" :key="index">
-                            <td>
-                                {{ player.userID }}
-                            </td>
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        <strong>This feature is a WIP.</strong>
+                        The syntax is not yet stable, and this has not been well tested yet. Expect bugs
+                    </div>
+                </div>
 
-                            <td>
-                                {{ player.positionLabel }}
-                            </td>
+                <div class="col-12">
+                    <label for="query-input">Query input</label>
+                    <input type="text" v-model="query" class="form-control" id="query-input" @keyup.enter="doSearchWrapper"/>
 
-                            <td>
-                                {{ player.faction }}
-                            </td>
-
-                            <td>
-                                {{ player.minOS }}
-                            </td>
-
-                            <td>
-                                {{ player.maxOS }}
-                            </td>
-
-                            <td>
-                                <button class="btn btn-danger" aria-label="close" @click="removePlayer(index)">
-                                    &times;
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-
-                    <tfoot>
-                        <tr class="table-dark">
-                            <td>
-                                <input class="form-control" v-model.number="player.userID" placeholder="This is user ID, not username">
-                            </td>
-
-                            <td>
-                                <input class="form-control" v-model="player.positionLabel">
-                            </td>
-
-                            <td>
-                                <select class="form-control" v-model="player.faction">
-                                    <option :value="null">--</option>
-                                    <option>Cortex</option>
-                                    <option>Armada</option>
-                                    <option>Legion</option>
-                                    <option>Random</option>
-                                </select>
-                            </td>
-
-                            <td>
-                                <input class="form-control" v-model.number="player.minOS" type="number">
-                            </td>
-
-                            <td>
-                                <input class="form-control" v-model.number="player.maxOS" type="number">
-                            </td>
-
-                            <td>
-                                <button class="btn btn-primary" @click="addPlayer">
-                                    Add
-                                </button>
-                            </td>
-                        </tr>
-                    </tfoot>
-
-                </table>
-
-            </div>
+                    <a href="/faq#gex-query" target="_blank" ref="nofollow">
+                        Learn more
+                    </a>
+                </div>
+            </template>
 
             <div class="col-12 mt-2">
                 <button class="btn btn-primary" @click="doSearchWrapper">Search</button>
@@ -435,6 +353,10 @@
 
             <match-list :matches="queryResult.data.results"></match-list>
 
+            <div v-if="queryResult.data.results.length == 0">
+                No matches found!
+            </div>
+
             <div class="d-flex">
                 <div class="flex-grow-1 flex-basis-0"></div>
                 <div>
@@ -448,8 +370,27 @@
                         <pre><code>{{ queryResult.data.normalized }}</code></pre>
                     </div>
 
+                    <div>
+                        <label>Tokens</label>
+                        <div>
+                            <table class="table table-sm table-borderless table-hover table-no-padding">
+                                <tbody>
+                                    <tr v-for="(token, index) in queryResult.data.tokens" :key="index">
+                                        <td>
+                                            <code>{{ token.type }}</code>
+                                        </td>
+
+                                        <td>
+                                            {{ token.value }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <collapsible header-text="AST" size-class="h6" class="mb-0">
+                        <collapsible header-text="Parsed query" size-class="h6" class="mb-0">
                             <div class="d-grid" style="grid-template-columns: 500px 1fr; gap: 1rem; overflow: hidden">
                                 <div class="overflow-y-auto">
                                     <div class="list-group border-right border-bottom rounded-0">
@@ -598,42 +539,12 @@
             document.title = "Gex / Recent matches";
         },
 
-        beforeMount: function(): void {
-            const search: URLSearchParams = new URLSearchParams(location.search);
-            if (search.has("offset")) {
-                this.offset = Number.parseInt(search.get("offset")!);
-            }
-
-            if (search.has("showUnprocessed")) {
-                this.showUnprocessedGames = search.get("showUnprocessed") == "true";
-            }
-
-            if (search.has("search") && search.get("search") != "") {
-                const b64: string = search.get("search")!;
-                const blob = JSON.parse(atob(b64));
-                if (blob.startTimeBefore) {
-                    blob.startTimeBefore = new Date(blob.startTimeBefore);
-                }
-                if (blob.startTimeAfter) {
-                    blob.startTimeAfter = new Date(blob.startTimeAfter);
-                }
-                blob.orderBy ??= "start_time";
-                blob.orderByDir ??= "desc";
-                blob.gameSettings ??= [];
-                blob.users ??= [];
-                blob.players ??= [];
-                this.search = blob;
-                this.performSearch();
-            } else {
-                this.loadRecent();
-            }
-        },
-
         mounted: function(): void {
+
             this.$nextTick(() => {
                 this.tribute = new Tribute<UserSearchResult>({
                     trigger: "", // don't trigger on anything special
-                    menuShowMinLength: 3, // tag search requires at least 2 characters
+                    menuShowMinLength: 3, // player search requires at least 2 characters
                     autocompleteMode: true, // autocomplete this, not sure what false does tho
                     allowSpaces: false, // tags can't have spaces
 
@@ -690,6 +601,44 @@
                 });
 
                 this.hideSearch();
+
+                const search: URLSearchParams = new URLSearchParams(location.search);
+
+                if (search.has("q")) {
+                    this.showQuery = true;
+                    this.searching = true;
+                    this.query = decodeURIComponent(search.get("q")!);
+                    this.performQuery();
+                } else {
+                    if (search.has("offset")) {
+                        this.offset = Number.parseInt(search.get("offset")!);
+                    }
+
+                    if (search.has("showUnprocessed")) {
+                        this.showUnprocessedGames = search.get("showUnprocessed") == "true";
+                    }
+
+                    if (search.has("search") && search.get("search") != "") {
+                        const b64: string = search.get("search")!;
+                        const blob = JSON.parse(atob(b64));
+                        if (blob.startTimeBefore) {
+                            blob.startTimeBefore = new Date(blob.startTimeBefore);
+                        }
+                        if (blob.startTimeAfter) {
+                            blob.startTimeAfter = new Date(blob.startTimeAfter);
+                        }
+                        blob.orderBy ??= "start_time";
+                        blob.orderByDir ??= "desc";
+                        blob.gameSettings ??= [];
+                        blob.users ??= [];
+                        blob.players ??= [];
+                        this.search = blob;
+                        this.performSearch();
+                    } else {
+                        this.loadRecent();
+                    }
+                }
+
             });
         },
 
@@ -697,30 +646,32 @@
             showSearch: function(): void {
                 this.searching = true;
 
-                this.$nextTick(() => {
-                    if (this.tribute == null) {
-                        console.log(`Recent> tribute container is not present`);
-                        return;
-                    }
+                if (this.showQuery == false) {
+                    this.$nextTick(() => {
+                        if (this.tribute == null) {
+                            console.log(`Recent> tribute container is not present`);
+                            return;
+                        }
 
-                    const elem = document.getElementById("user-search-input-bottom");
-                    if (!elem) {
-                        throw `failed to find #user-search-input-bottom`;
-                    }
-                    this.tribute.attach(elem);
-                    console.log(`Recent> tribute attached to #user-search-input-bottom`);
+                        const elem = document.getElementById("user-search-input-bottom");
+                        if (!elem) {
+                            throw `failed to find #user-search-input-bottom`;
+                        }
+                        this.tribute.attach(elem);
+                        console.log(`Recent> tribute attached to #user-search-input-bottom`);
 
-                    // i don't think these actually matter
-                    elem.addEventListener("tribute-replaced", (ev: any) => {
-                        this.enterLockout = Date.now() + 200;
-                        this.userInput = "";
-                        this.search.users.push(ev.detail.item.original);
+                        // i don't think these actually matter
+                        elem.addEventListener("tribute-replaced", (ev: any) => {
+                            this.enterLockout = Date.now() + 200;
+                            this.userInput = "";
+                            this.search.users.push(ev.detail.item.original);
+                        });
+
+                        elem.addEventListener("tribute-no-match", (ev: any) => {
+                            console.log(`Recent> no match event emitted`);
+                        });
                     });
-
-                    elem.addEventListener("tribute-no-match", (ev: any) => {
-                        console.log(`Recent> no match event emitted`);
-                    });
-                });
+                }
             },
 
             hideSearch: function(): void {
@@ -760,6 +711,7 @@
 
             performQuery: async function(): Promise<void> {
                 if (this.query == "") {
+                    console.warn(`Recent> cannot perform query: query is empty`);
                     return;
                 }
 
@@ -781,6 +733,9 @@
 
             doSearchWrapper: async function(): Promise<void> {
                 if (this.query != "") {
+                    const url = new URL(location.href);
+                    history.pushState({ path: url.href }, "", `/recent?q=${encodeURIComponent(this.query)}`);
+
                     await this.performQuery();
                 } else {
                     this.search.use = true;
@@ -993,6 +948,11 @@
         watch: {
             showUnprocessedGames: function(): void {
                 this.loadRecent();
+            },
+
+            searching: function(): void {
+                console.log(`Recent> searching changed to ${this.searching}`);
+
             }
         },
 

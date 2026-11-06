@@ -38,7 +38,7 @@ namespace gex.Common.Code {
                     word += i;
                 } else if (i == 'd' || i == 'h' || i == 'm' || i == 's') {
                     if (int.TryParse(word, out int value) == false) {
-                        throw new Exception($"failed to parse '{word}' to a valid int");
+                        throw new FormatException($"failed to parse '{word}' to a valid int");
                     }
 
                     word = "";
@@ -72,10 +72,10 @@ namespace gex.Common.Code {
                         span += TimeSpan.FromSeconds(value);
                         secondsGiven = true;
                     } else {
-                        throw new Exception($"unchecked letter character '{i}'");
+                        throw new FormatException($"unchecked letter character '{i}'");
                     }
                 } else {
-                    throw new Exception($"invalid character {i}");
+                    throw new FormatException($"invalid character {i}");
                 }
             }
 

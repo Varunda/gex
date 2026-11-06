@@ -243,6 +243,10 @@
     box-shadow: inset 0px -2px #444;
 }
 
+.table-no-padding tbody tr td {
+    padding: 0 !important;
+}
+
 .tooltip {
   display: block !important;
   z-index: 10000;
