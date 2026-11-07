@@ -17,7 +17,8 @@ namespace gex.Services.Repositories {
         private readonly ILogger<AppPermissionRepository> _Logger;
         private readonly IMemoryCache _Cache;
 
-        private const string CACHE_KEY = "App.Permission.{0}"; // {0} => groupd ID
+        private const string CACHE_KEY_BY_GROUP = "App.Permission.Group.{0}"; // {0} => groupd ID
+        private const string CACHE_KEY_BY_USER = "App.Permission.User.{0}"; // {0} => user ID
 
         private readonly AppGroupPermissionDb _PermissionDb;
         private readonly AppAccountGroupMembershipRepository _MembershipRepository;
@@ -39,23 +40,39 @@ namespace gex.Services.Repositories {
             return _PermissionDb.GetByID(ID, cancel);
         }
 
+        /// <summary>
+        ///     get the <see cref="AppGroupPermission"/>s of a user
+        /// </summary>
+        /// <param name="accountID">ID of the <see cref="AppAccount"/></param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         public async Task<List<AppGroupPermission>> GetByAccountID(long accountID, CancellationToken cancel) {
-            _Logger.LogDebug($"getting permission of account [accountID={accountID}]");
-            Dictionary<string, AppGroupPermission> perms = new();
+            string cacheKey = string.Format(CACHE_KEY_BY_USER, accountID);
 
-            List<AppAccountGroupMembership> groups = await _MembershipRepository.GetByAccountID(accountID, cancel);
+            if (_Cache.TryGetValue(cacheKey, out List<AppGroupPermission>? userPerms) == false || userPerms == null) {
+                _Logger.LogDebug($"getting permission of account [accountID={accountID}]");
+                Dictionary<string, AppGroupPermission> perms = [];
 
-            foreach (AppAccountGroupMembership member in groups) {
-                List<AppGroupPermission> groupPerms = await GetByGroupID(member.GroupID, cancel);
+                List<AppAccountGroupMembership> groups = await _MembershipRepository.GetByAccountID(accountID, cancel);
 
-                foreach (AppGroupPermission p in groupPerms) {
-                    if (perms.ContainsKey(p.Permission) == false) {
-                        perms.Add(p.Permission, p);
+                foreach (AppAccountGroupMembership member in groups) {
+                    List<AppGroupPermission> groupPerms = await GetByGroupID(member.GroupID, cancel);
+
+                    foreach (AppGroupPermission p in groupPerms) {
+                        if (perms.ContainsKey(p.Permission) == false) {
+                            perms.Add(p.Permission, p);
+                        }
                     }
                 }
+
+                userPerms = perms.Values.ToList();
+
+                _Cache.Set(cacheKey, userPerms, new MemoryCacheEntryOptions() {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                });
             }
 
-            return perms.Values.ToList();
+            return userPerms;
         }
 
         /// <summary>
@@ -64,7 +81,7 @@ namespace gex.Services.Repositories {
         /// <param name="groupID">ID of the group</param>
         /// <param name="cancel">cancellation token</param>
         public async Task<List<AppGroupPermission>> GetByGroupID(long groupID, CancellationToken cancel) {
-            string cacheKey = string.Format(CACHE_KEY, groupID);
+            string cacheKey = string.Format(CACHE_KEY_BY_GROUP, groupID);
 
             if (_Cache.TryGetValue(cacheKey, out List<AppGroupPermission>? perms) == false || perms == null) {
                 perms = await _PermissionDb.GetByGroupID(groupID, cancel);
@@ -83,8 +100,8 @@ namespace gex.Services.Repositories {
         /// <param name="perm">permission to insert</param>
         /// <param name="cancel">cancellation token</param>
         public Task<ulong> Insert(AppGroupPermission perm, CancellationToken cancel) {
-            string cacheKey = string.Format(CACHE_KEY, perm.GroupID);
-            _Cache.Remove(cacheKey);
+            string cacheKey = string.Format(CACHE_KEY_BY_GROUP, perm.GroupID);
+            _Cache.Remove(string.Format(CACHE_KEY_BY_GROUP, perm.GroupID));
 
             return _PermissionDb.Insert(perm, cancel);
         }
@@ -98,7 +115,7 @@ namespace gex.Services.Repositories {
         public async Task DeleteByID(long ID, CancellationToken cancel) {
             AppGroupPermission? perm = await GetByID(ID, cancel);
             if (perm != null) {
-                string cacheKey = string.Format(CACHE_KEY, perm.GroupID);
+                string cacheKey = string.Format(CACHE_KEY_BY_GROUP, perm.GroupID);
                 _Cache.Remove(cacheKey);
             }
 

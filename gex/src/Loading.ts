@@ -23,8 +23,8 @@ export class ProblemDetails {
 
 function isProblemDetails(obj: object): obj is ProblemDetails {
     const pd: ProblemDetails = obj as ProblemDetails;
-    return pd.type !== undefined
-        && pd.title !== undefined
+    return pd.title !== undefined
+        //&& pd.type !== undefined
         && pd.status !== undefined
         && pd.detail !== undefined
         && pd.instance !== undefined;

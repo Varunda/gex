@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -103,9 +104,6 @@ namespace gex.Models {
             if (context == null) { throw new ArgumentNullException(nameof(context)); }
             if (result == null) { throw new ArgumentNullException(nameof(result)); }
 
-            OutputFormatterWriteContext formatterContext =
-                new OutputFormatterWriteContext(context.HttpContext, _Writer, typeof(object), result.Data!); // Force is safe, cause null is a valid object
-
             IOutputFormatter formatter = new SystemTextJsonOutputFormatter(_JsonOptions);//, ArrayPool<char>.Shared);
 
             if (context.HttpContext.Response.HasStarted == true) {
@@ -122,11 +120,27 @@ namespace gex.Models {
                     $"Cannot have null {nameof(result.Data)} when the {nameof(result.Status)} is 201 Created");
             }
 
-            if (result.Status != 204) { // It is an error to write to a 204
-                return formatter.WriteAsync(formatterContext);
+            if (result.Status == 204) {
+                return Task.CompletedTask;
             }
 
-            return Task.CompletedTask;
+            if (result.Status >= 300 && result.Data is string str) {
+                string err = str;
+                string? title = Enum.GetName(typeof(HttpStatusCode), result.Status);
+
+                result.Data = new ProblemDetails() {
+                    Detail = err,
+                    Instance = $"error:{Guid.NewGuid()}",
+                    Status = result.Status,
+                    Title = title,
+                    Type = context.HttpContext.Request.Path.Value
+                };
+            }
+
+            OutputFormatterWriteContext formatterContext
+                = new(context.HttpContext, _Writer, typeof(object), result.Data!); // Force is safe, cause null is a valid object
+
+            return formatter.WriteAsync(formatterContext);
         }
 
     }

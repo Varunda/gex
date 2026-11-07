@@ -32,6 +32,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<BarI18nRepository>();
             services.AddSingleton<BarMoveDefinitionRepository>();
             services.AddSingleton<MatchPoolRepository>();
+            services.AddSingleton<MatchPoolEntryRepository>();
             services.AddSingleton<BadGameVersionRepository>();
             services.AddSingleton<GameUnitsCreatedRepository>();
             services.AddSingleton<MapImageRepository>();

@@ -69,12 +69,23 @@ namespace gex.Services.Repositories {
                 return false;
             }
 
+            return await CanView(pool, appUserID, cancel);
+        }
+
+        /// <summary>
+        ///     check if a user can view a <see cref="MatchPool"/>, or any user if <paramref name="appUserID"/> is null
+        /// </summary>
+        /// <param name="pool">pool to check if a user can view</param>
+        /// <param name="appUserID">ID of the user to check the permission of, or <c>null</c> if any user</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
+        public async Task<bool> CanView(MatchPool pool, long? appUserID, CancellationToken cancel) {
             if (pool.HideUntil == null) {
                 return true;
             }
 
             bool isDev = appUserID != null && await _PermissionRepository.HasPermission(appUserID.Value, [AppPermission.GEX_DEV], cancel);
-            _Logger.LogTrace($"checking if user can view match pool [poolID={poolID}] [isDev={isDev}] [appUserID={appUserID}] [hideUntil={pool.HideUntil.Value:u}]");
+            _Logger.LogTrace($"checking if user can view match pool [poolID={pool.ID}] [isDev={isDev}] [appUserID={appUserID}] [hideUntil={pool.HideUntil.Value:u}]");
             return isDev == true || pool.CreatedByID == appUserID || DateTime.UtcNow >= pool.HideUntil.Value;
         }
 

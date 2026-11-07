@@ -230,7 +230,7 @@ namespace gex.Common.Services.Search {
                     cmd += @$" m.id IN (
                         SELECT game_id
                         FROM bar_match_processing
-                        WHERE fetch_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                        WHERE fetch_ms IS {(value == true ? "NOT NULL" : "NULL")} )
                     ";
                 }
 
@@ -241,7 +241,7 @@ namespace gex.Common.Services.Search {
                     cmd += @$" m.id IN (
                         SELECT game_id
                         FROM bar_match_processing
-                        WHERE parse_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                        WHERE parse_ms IS {(value == true ? "NOT NULL" : "NULL")} )
                     ";
                 }
 
@@ -252,7 +252,7 @@ namespace gex.Common.Services.Search {
                     cmd += @$" m.id IN (
                         SELECT game_id
                         FROM bar_match_processing
-                        WHERE replay_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                        WHERE replay_ms IS {(value == true ? "NOT NULL" : "NULL")} )
                     ";
                 }
 
@@ -263,7 +263,7 @@ namespace gex.Common.Services.Search {
                     cmd += @$" m.id IN (
                         SELECT game_id
                         FROM bar_match_processing
-                        WHERE actions_ms IS {(value == true ? "NOT NULL" : "NULL")}
+                        WHERE action_ms IS {(value == true ? "NOT NULL" : "NULL")} )
                     ";
                 }
 
@@ -373,7 +373,7 @@ namespace gex.Common.Services.Search {
                     cmd += $" team.faction {GetDbOperation(fieldOp)} {addParameter(query, faction)} ";
                 }
 
-                // map.map_name
+                // map.name
                 else if (fieldName == "map.name") {
                     query.MapCache ??= await _MapRepository.GetAll(cancel);
 
@@ -495,6 +495,15 @@ namespace gex.Common.Services.Search {
             return $"${query.Parameters.Count}";
         }
 
+        /// <summary>
+        ///     parse an input string into the wanted <paramref name="fieldType"/>
+        /// </summary>
+        /// <param name="fieldType">type to turn the input into</param>
+        /// <param name="input">input string</param>
+        /// <param name="fieldName">name of the field</param>
+        /// <returns>the <paramref name="input"/> as the type of <paramref name="fieldType"/></returns>
+        /// <exception cref="FormatException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         private static object parseValue(Type fieldType, string input, string fieldName) {
             object value;
 
@@ -587,7 +596,21 @@ namespace gex.Common.Services.Search {
         };
 
         /// <summary>
-        /// 
+        ///     valid types and what operations can be done on them
+        /// </summary>
+        private static Dictionary<Type, List<string>> ValidTypeOperations = new() {
+            { typeof(bool), [ SearchOp.EQ, SearchOp.NOT ] },
+            { typeof(TimeSpan), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(DateTime), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(int), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(long), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(uint), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(double), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(string), [ SearchOp.EQ, SearchOp.NOT, SearchOp.STARTS_WITH, SearchOp.CONTAINS, SearchOp.ENDS_WITH ] },
+        };
+
+        /// <summary>
+        ///     aliases of fields
         /// </summary>
         private static Dictionary<string, string> FieldNameAliases = new Dictionary<string, string>() {
 

@@ -24,6 +24,7 @@ namespace gex.Services.Db {
             _DbHelper = dbHelper;
         }
 
+
         public async Task<List<MatchPoolEntry>> GetByPoolID(long poolID, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<MatchPoolEntry>(
@@ -44,6 +45,15 @@ namespace gex.Services.Db {
             return await conn.QueryListAsync<MatchPoolEntry>(
                 "SELECT * FROM match_pool_entry WHERE match_id = @MatchID",
                 new { MatchID = matchID },
+                cancel
+            );
+        }
+
+        public async Task<List<MatchPoolEntry>> GetByMatchIDs(IEnumerable<string> gameIDs, CancellationToken cancel) {
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            return await conn.QueryListAsync<MatchPoolEntry>(
+                "SELECT * FROM match_pool_entry WHERE match_id = ANY(@GameIDs)",
+                new { GameIDs = gameIDs },
                 cancel
             );
         }

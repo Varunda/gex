@@ -435,7 +435,6 @@ namespace gex.Services.Search {
 
             FixAndWithOrChildren(treeRoot);
 
-
             // it's fine for like a NOT node to have 0 children, as it's the only node
             if ((treeRoot.Type == SearchNodeType.AND || treeRoot.Type == SearchNodeType.OR) && treeRoot.Children.Count == 0) {
                 throw new SearchAstParseException(null, $"invalid token list: expected root {nameof(SearchNode)} to have >0 children, had {treeRoot.Children.Count} instead");
@@ -443,17 +442,6 @@ namespace gex.Services.Search {
 
             return new SearchAst(treeRoot);
         }
-
-        /// <summary>
-        ///     helper function to create a Node, and add it to the <see cref="SearchNode.Children"/> of <paramref name="parent"/>
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="token"></param>
-        /// <param name="parent"></param>
-        /// <returns>
-        ///     the newly created node
-        /// </returns>
-        private static SearchNode _c(SearchNodeType type, SearchToken token, SearchNode parent) => new SearchNode(type, token, parent);
 
         /// <summary>
         ///     list of fields that are complex

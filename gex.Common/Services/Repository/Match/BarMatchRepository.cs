@@ -120,6 +120,15 @@ namespace gex.Common.Services.Repository.Match {
             return _MatchDb.GetAll(cancel);
         }
 
+        /// <summary>
+        ///     perform a search with a <see cref="BarMatchSearchParameters"/>
+        /// </summary>
+        /// <param name="parms">parameters used to construct the search</param>
+        /// <param name="offset">offset into the list</param>
+        /// <param name="limit">how many matches to return. may be less</param>
+        /// <param name="currentUserID">ID of the user making the request, or <c>null</c> if no user</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         public Task<List<BarMatch>> Search(BarMatchSearchParameters parms, int offset, int limit, long? currentUserID, CancellationToken cancel) {
             return _MatchDb.Search(parms, offset, limit, currentUserID, cancel);
         }

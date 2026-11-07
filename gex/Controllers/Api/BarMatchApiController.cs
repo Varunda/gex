@@ -1,4 +1,5 @@
-﻿using gex.Code;
+﻿using Docker.DotNet.Models;
+using gex.Code;
 using gex.Code.Exceptions;
 using gex.Common.Code.Constants;
 using gex.Common.Code.Exceptions;
@@ -6,6 +7,7 @@ using gex.Common.Models;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using gex.Common.Models.User;
 using gex.Common.Services.Db.Match;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
@@ -29,6 +31,7 @@ using gex.Services.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -62,8 +65,14 @@ namespace gex.Controllers.Api {
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly BarMatchPlayerStartSpotMigration _PlayerStartSpotMigration;
         private readonly IBarMatchBuilderUtil _MatchBuilder;
+        private readonly MatchPoolRepository _MatchPoolRepository;
+        private readonly MatchPoolEntryRepository _MatchPoolEntryRepository;
+        private readonly BarUserRepository _UserRepository;
         private readonly SearchTokenizer _SearchTokenizer;
         private readonly SearchAstBuilder _AstBuilder;
+
+        private const string CACHE_KEY_MATCHES_BY_USER_ID = "Gex.Match.Controller.Matches.{0}"; // {0} => user ID
+        private readonly IMemoryCache _Cache;
 
         public BarMatchApiController(ILogger<BarMatchApiController> logger,
             BarMatchRepository matchRepository, IBarMatchAllyTeamDb allyTeamDb,
@@ -75,7 +84,9 @@ namespace gex.Controllers.Api {
             BadGameVersionRepository badGameVersionRepository, StartSpotDataRepository startSpotDataRepository,
             BarMatchPlayerStartSpotMigration playerStartSpotMigration, BarMatchTeamRepository teamRepository,
             IBarMatchBuilderUtil matchBuilder, SearchAstBuilder astBuilder,
-            SearchTokenizer searchTokenizer) {
+            SearchTokenizer searchTokenizer, MatchPoolRepository matchPoolRepository,
+            IMemoryCache cache, MatchPoolEntryRepository matchPoolEntryRepository,
+            BarUserRepository userRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -97,6 +108,10 @@ namespace gex.Controllers.Api {
             _MatchBuilder = matchBuilder;
             _AstBuilder = astBuilder;
             _SearchTokenizer = searchTokenizer;
+            _MatchPoolRepository = matchPoolRepository;
+            _Cache = cache;
+            _MatchPoolEntryRepository = matchPoolEntryRepository;
+            _UserRepository = userRepository;
         }
 
         /// <summary>
@@ -172,6 +187,9 @@ namespace gex.Controllers.Api {
             }, (await _CurrentUser.Get(cancel))?.ID, cancel);
 
             if (result.IsOk == false) {
+                if (result.Error.Contains("no permission") == true) {
+                    return ApiForbidden<ApiMatch>($"this match is in a hidden match pool");
+                }
                 return ApiInternalError<ApiMatch>($"failed to build match");
             }
 
@@ -748,42 +766,102 @@ namespace gex.Controllers.Api {
         /// </summary>
         /// <param name="cancel">cancelation token</param>
         /// <param name="userID">ID of the user</param>
+        /// <param name="includeTeams">will <see cref="BarMatch.Teams"/> be populated</param>
+        /// <param name="includePlayers">will <see cref="BarMatch.Players"/> be populated</param>
+        /// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated</param>
         /// <response code="200">
         ///     the response will contain a list of <see cref="BarMatch"/>s that
         ///     have a <see cref="BarMatch.Players"/> with <see cref="BarMatchPlayer.UserID"/> of <paramref name="userID"/>
         /// </response>
+        /// <response code="404">
+        ///     no <see cref="BarUser"/> with <see cref="BarUser.UserID"/> of <paramref name="userID"/> exists
+        /// </response>
         [HttpGet("user/{userID}")]
-        public async Task<ApiResponse<List<ApiMatch>>> GetByUserID(CancellationToken cancel, int userID) {
+        public async Task<ApiResponse<List<ApiMatch>>> GetByUserID(long userID,
+            [FromQuery] bool includeTeams = true,
+            [FromQuery] bool includePlayers = true,
+            [FromQuery] bool includeAllyTeams = true,
+            CancellationToken cancel = default
+        ) {
 
-            AppAccount? currentUser = await _CurrentUser.Get(cancel);
-            BarMatchSearchParameters searchParameters = new() {
-                Players = [ new SearchPlayer() { UserID = userID } ]
-            };
-
-            List<BarMatch> matches = [];
-            int offset = 0;
-            while (true) {
-                List<BarMatch> iter = await _MatchRepository.Search(searchParameters, offset, 1000, currentUser?.ID, cancel);
-
-                matches.AddRange(iter);
-                offset += 1000;
-
-                if (offset > 10000 || iter.Count < 1000) {
-                    break;
-                }
+            BarUser? user = await _UserRepository.GetByID(userID, cancel);
+            if (user == null) {
+                return ApiNotFound<List<ApiMatch>>($"{nameof(BarUser)} {userID}");
             }
 
+            string cacheKey = string.Format(CACHE_KEY_MATCHES_BY_USER_ID, userID);
+
+            if (_Cache.TryGetValue(cacheKey, out List<ApiMatch>? matches) == true && matches != null) {
+                return ApiOk(matches);
+            }
+
+            AppAccount? currentUser = await _CurrentUser.Get(cancel);
+
+            Stopwatch timer = Stopwatch.StartNew();
+
+            List<BarMatch> repoMatches = await _MatchRepository.GetByUserID(userID, cancel);
+            long userMatchesMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            Dictionary<long, MatchPool> pools = (await _MatchPoolRepository.GetAll(cancel)).ToDictionary(iter => iter.ID);
+            long poolsMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            List<MatchPoolEntry> entries = await _MatchPoolEntryRepository.GetByMatchIDs(repoMatches.Select(iter => iter.ID), cancel);
+            long entriesMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            Dictionary<string, List<MatchPoolEntry>> dict = [];
+            foreach (MatchPoolEntry entry in entries) {
+                List<MatchPoolEntry> matchEnts = dict.GetValueOrDefault(entry.MatchID) ?? [];
+                matchEnts.Add(entry);
+                dict[entry.MatchID] = matchEnts;
+            }
+
+            long builtDictMs = timer.ElapsedMilliseconds; timer.Restart();
+
             List<ApiMatch> ret = [];
-            foreach (BarMatch m in matches) {
-                m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
-                m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
-                m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+            foreach (BarMatch m in repoMatches) {
+                List<MatchPoolEntry> matchPoolEntries = dict.GetValueOrDefault(m.ID) ?? [];
+                bool canView = matchPoolEntries.Count == 0;
+                foreach (MatchPoolEntry entry in matchPoolEntries) {
+                    MatchPool? pool = pools.GetValueOrDefault(entry.PoolID);
+
+                    if (pool == null) {
+                        _Logger.LogError($"missing pool when getting matches of user IDs [userID={userID}] [gameID={m.ID}] [poolID={entry.PoolID}]");
+                    }  else {
+                        canView |= await _MatchPoolRepository.CanView(pool, currentUser?.ID, cancel);
+                        if (canView == true) {
+                            break;
+                        }
+                    }
+                }
+
+                if (canView == false) {
+                    continue;
+                }
+
+                if (includeTeams == true) {
+                    m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);
+                }
+                if (includePlayers == true) {
+                    m.Players = await _PlayerRepository.GetByGameID(m.ID, cancel);
+                }
+                if (includeAllyTeams == true) {
+                    m.AllyTeams = await _AllyTeamDb.GetByGameID(m.ID, cancel);
+                }
 
                 ApiMatch match = new(m);
                 match.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
 
                 ret.Add(match);
             }
+
+            long builtMatchesMs = timer.ElapsedMilliseconds; timer.Restart();
+
+            _Cache.Set(cacheKey, ret, new MemoryCacheEntryOptions() {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3)
+            });
+
+            _Logger.LogDebug($"built matches for user [userID={userID}] [user matches={userMatchesMs}ms] "
+                + $" [pools={poolsMs}ms] [entries={entriesMs}ms] [dict={builtDictMs}ms] [build={builtMatchesMs}ms]");
 
             return ApiOk(ret);
         }

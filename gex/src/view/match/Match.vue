@@ -194,7 +194,8 @@
                 </div>
 
                 <div v-if="match.data.matchPoolIsHidden == true" class="alert alert-info text-center">
-                    This match is in a match pool that is currently hidden from public view. 
+                    <h4><b>Hidden match</b></h4>
+                    This match is in a hidden match pool. Only the match pool creator and Gex admins can see this match
                 </div>
 
                 <div>
@@ -377,7 +378,13 @@
             </div>
 
             <div v-else-if="match.state == 'error'">
-                <api-error :error="match.problem"></api-error>
+                <div v-if="match.problem.status == 403" class="alert alert-secondary text-center">
+                    <h4 class="alert-heading">
+                        <b>This match is hidden</b>
+                    </h4>
+                    This match is in a match pool that is currently hidden. It will be available in the future
+                </div>
+                <api-error v-else :error="match.problem"></api-error>
             </div>
 
             <div v-else-if="match.state == 'nocontent'" class="text-center alert alert-danger">

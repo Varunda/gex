@@ -442,6 +442,27 @@ namespace gex.Tests.Services.Db {
             }
         }
 
+        [TestMethod]
+        public async Task Test_Query_ProcessedFieldsTrue() {
+            List<BarMatch> matches = await _Query("downloaded:true");
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match for downloaded"); // all games are parsed
+
+            matches = await _Query("parsed:true");
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match"); // all games are parsed
+
+            matches = await _Query("replayed:false");
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match for not replayed"); 
+
+            matches = await _Query("actions_parsed:false");
+            Assert.IsTrue(matches.Count > 0, $"expected at least 1 match for not actions replayed"); 
+        }
+
+        [TestMethod]
+        public async Task Test_Query_ParsedFalse() {
+            List<BarMatch> matches = await _Query("parsed:false");
+            Assert.AreEqual(0, matches.Count);
+        }
+
         #region error test
 
         [TestMethod]

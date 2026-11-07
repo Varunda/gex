@@ -98,9 +98,13 @@ namespace gex.Services.Util {
                     if (canView == true) {
                         MatchPool allowedPool = await _MatchPoolRepository.GetByID(entry.PoolID, cancel)
                             ?? throw new Exception($"failsafe tripped, if canView is true, then how is this pool null?");
+
                         if (allowedPool.HideUntil != null) {
                             match.MatchPoolIsHidden = DateTime.UtcNow < allowedPool.HideUntil;
+                        } else {
+                            match.MatchPoolIsHidden = false;
                         }
+
                         break;
                     }
                 }
