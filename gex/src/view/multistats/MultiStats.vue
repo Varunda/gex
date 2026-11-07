@@ -1891,7 +1891,7 @@
                             unitName: def?.name ?? `<no name ${unit.definitionID}>`,
                             statName: "dealt",
                             value: unit.damageDealt / lifespan,
-                            valueDisplay: `${CompactUtils.compact(unit.damageDealt)} dmg in ${TimeUtils.duration(lifespan)}`,
+                            valueDisplay: `${CompactUtils.compact(unit.damageDealt)} dmg in ${TimeUtils.duration(lifespan * 60)}`,
                             gameID: unit.gameID,
                             player: match.players.find(iter => iter.teamID == unit.teamID)?.username ?? `<missing team ${unit.teamID}>`,
                             map: match.map
