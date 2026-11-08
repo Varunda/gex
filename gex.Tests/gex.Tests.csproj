@@ -84,6 +84,9 @@
     <Content Include="resources\maps\hooked_1.1.1.sd7">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="resources\maps\koom_valley_3_3.1_removed_textures.sd7">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="resources\maps\pillar_of_doom_v1_removed_textures.sd7">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

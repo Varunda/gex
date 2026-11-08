@@ -291,8 +291,12 @@ namespace gex.Common.Services.Parser {
                     Dictionary<string, BarFeature> featureDict = [];
                     foreach (BarFeature feat in map.Features) {
                         // both of these get used
-                        featureDict[feat.Name] = feat;
-                        featureDict[Path.GetFileNameWithoutExtension(feat.Object)] = feat;
+                        featureDict[feat.Name.ToLower()] = feat;
+
+                        string path = Path.GetFileNameWithoutExtension(feat.Object).ToLower();
+                        if (featureDict.ContainsKey(path) == false) {
+                            featureDict[path] = feat;
+                        }
                     }
 
                     if (featureDict.ContainsKey("geovent") == false) {
@@ -307,7 +311,7 @@ namespace gex.Common.Services.Parser {
                     map.FeatureSet.ObjectList.AddRange(header.Value.FeatureInstances);
 
                     foreach (BarFeatureInstance inst in map.FeatureSet.ObjectList) {
-                        BarFeature? feat = featureDict.GetValueOrDefault(inst.FeatureName);
+                        BarFeature? feat = featureDict.GetValueOrDefault(inst.FeatureName.ToLower());
 
                         if (feat == null) {
                             if (missingFeatureNames.Contains(inst.FeatureName) == false) {

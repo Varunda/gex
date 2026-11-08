@@ -169,5 +169,39 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual(2642, map.FeatureSet.ObjectList.Count);
         }
 
+        [TestMethod]
+        public async Task Test_Parse_Koom_Valley_3_3_1() {
+            ServiceCollection services = new();
+            services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, TestLoggerFactory>());
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(TestLogger<>)));
+
+            services.AddSingleton<LuaRunner>();
+            services.AddSingleton<BarMapParser>();
+            services.AddSingleton<BarFeatureParser>();
+            services.AddSingleton<BarFeatureSetParser>();
+            services.AddSingleton<IMemoryCache, NonCachingCache>();
+            services.AddSingleton<IOptions<FileStorageOptions>>(Options.Create<FileStorageOptions>(new FileStorageOptions() {
+                EngineLocation = "./engines/",
+                MapLocation = "./maps/",
+                GitHubDataLocation = "./github_data/",
+            }));
+
+            BarMapParser parser = services.BuildServiceProvider().GetRequiredService<BarMapParser>();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+            Result<BarMapData, string> ret = await parser.Parse("./resources/maps/koom_valley_3_3.1_removed_textures.sd7", new BarMapParser.ParseOptions() {
+                Header = true,
+                Features = true,
+            }, cts.Token);
+
+            Assert.IsTrue(ret.IsOk, $"got parse error: {ret.Error}");
+
+            BarMapData map = ret.Value;
+            Assert.IsNotNull(map);
+
+            Assert.IsNotNull(map.FeatureSet);
+            Assert.AreEqual(7, map.GeothermalCount);
+        }
+
     }
 }
