@@ -675,6 +675,9 @@ namespace gex.Common.Services.Search {
             // basic fields
             { "duration", "duration_time" },
             { "duration_frames", "duration_frame_count" },
+            { "average_skill", "average_os" },
+            { "min_skill", "min_os" },
+            { "max_skill", "max_os" },
 
             // player fields
             { "player.position", "team.start_spot_label" },

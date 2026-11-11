@@ -274,7 +274,7 @@
                         </tr>
 
                         <tr>
-                            <td><code>player: alice average_skill&gt;=30</code></td>
+                            <td><code>player: alice average_os&gt;=30</code></td>
                             <td>
                                 Games where <kbd>alice</kbd> played and the average skill in the lobby was greater than or equal to <kbd>30</kbd>
                             </td>
@@ -391,7 +391,10 @@
                         <tbody>
                             <tr>
                                 <td><code>sort</code></td>
-                                <td><code>start_time</code> | <code>player_count</code> | <code>duration</code></td>
+                                <td>
+                                    <code>start_time</code> | <code>player_count</code> | <code>duration</code>
+                                    | <code>min_os</code> | <code>average_os</code> | <code>max_os</code>
+                                </td>
                                 <td><code>sort:start_time</code></td>
                                 <td>
                                     Defaults to <code>start_time</code> if not given.

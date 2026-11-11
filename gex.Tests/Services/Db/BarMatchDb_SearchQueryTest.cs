@@ -283,6 +283,54 @@ namespace gex.Tests.Services.Db {
         }
 
         /// <summary>
+        ///     ensure a sort:average_os works desc
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_Sort_AverageOS_Desc() {
+            List<BarMatch> matches = await _Query("sort:average_os sort_dir:desc limit:1000");
+
+            Assert.AreEqual(GetDemofileCount(), matches.Count);
+
+            float avgOs = float.MaxValue;
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.AverageOS <= avgOs, $"expected average_os of {match.ID} ({match.AverageOS}) to be lower than previous value {avgOs}");
+                avgOs = match.AverageOS;
+            }
+        }
+
+        /// <summary>
+        ///     ensure a sort:average_os works desc
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_Sort_MinOS_Desc() {
+            List<BarMatch> matches = await _Query("sort:min_os sort_dir:desc limit:1000");
+
+            Assert.AreEqual(GetDemofileCount(), matches.Count);
+
+            float minOs = float.MaxValue;
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.MinOS <= minOs, $"expected min_os of {match.ID} ({match.MinOS}) to be lower than previous value {minOs}");
+                minOs = match.MinOS;
+            }
+        }
+
+        /// <summary>
+        ///     ensure a sort:average_os works desc
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Query_Sort_MaxOS_Desc() {
+            List<BarMatch> matches = await _Query("sort:max_os sort_dir:desc limit:1000");
+
+            Assert.AreEqual(GetDemofileCount(), matches.Count);
+
+            float maxOs = float.MaxValue;
+            foreach (BarMatch match in matches) {
+                Assert.IsTrue(match.MaxOS <= maxOs, $"expected max_os of {match.ID} ({match.MaxOS}) to be lower than previous value {maxOs}");
+                maxOs = match.MaxOS;
+            }
+        }
+
+        /// <summary>
         ///     test to find all games of a player
         /// </summary>
         [TestMethod]

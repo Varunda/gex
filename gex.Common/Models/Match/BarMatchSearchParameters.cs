@@ -146,6 +146,12 @@ namespace gex.Common.Models.Match {
                 "start_time" => (OrderBy?)OrderBy.START_TIME,
                 "player_count" => (OrderBy?)OrderBy.PLAYER_COUNT,
                 "duration" => (OrderBy?)OrderBy.DURATION,
+                "min_os" => (OrderBy?)OrderBy.MIN_SKILL,
+                "average_os" => (OrderBy?)OrderBy.AVERAGE_SKILL,
+                "max_os" => (OrderBy?)OrderBy.MAX_SKILL,
+                "min_skill" => (OrderBy?)OrderBy.MIN_SKILL,
+                "average_skill" => (OrderBy?)OrderBy.AVERAGE_SKILL,
+                "max_skill" => (OrderBy?)OrderBy.MAX_SKILL,
                 _ => null,
             };
         }
@@ -176,6 +182,12 @@ namespace gex.Common.Models.Match {
         public readonly static OrderBy PLAYER_COUNT = new("player_count");
 
         public readonly static OrderBy DURATION = new("duration_frame_count");
+
+        public readonly static OrderBy AVERAGE_SKILL = new("average_os");
+
+        public readonly static OrderBy MIN_SKILL = new("min_os");
+
+        public readonly static OrderBy MAX_SKILL = new("max_os");
 
     }
 
