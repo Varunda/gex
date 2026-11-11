@@ -127,8 +127,8 @@ namespace gex.Controllers.Api {
             if (entries.IsOk == false) {
                 _Logger.LogWarning($"failed to get all apm tournament entries [poolID={poolID}] [error={entries.Error}]");
             } else {
-                //List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.GexMatchPoolID != null && iter.GexMatchPoolID.Value == poolID).ToList();
-                List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.Slug == "BPLS8").ToList();
+                List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.GexMatchPoolID != null && iter.GexMatchPoolID.Value == poolID).ToList();
+                //List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.Slug == "BPLS8").ToList();
                 foreach (ApmTournamentEntry entry in poolTournies) {
                     Result<ApmTournamentInfo, string> info = await _TournamentRepository.GetTournamentInfo(entry.ID, cancel);
                     if (info.IsOk == false) {
