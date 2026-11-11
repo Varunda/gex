@@ -328,6 +328,7 @@ namespace gex {
             services.Configure<GitHubOptions>(Configuration.GetSection("GitHub"));
             services.Configure<FocusPlayerModeOptions>(Configuration.GetSection("FocusPlayerMode"));
             services.Configure<MatchProcessingWebhookOptions>(Configuration.GetSection("MatchProcessingWebhook"));
+            services.Configure<ApmWebsiteOptions>(Configuration.GetSection("ApmWebsite"));
 
             services.AddSingleton<ServiceHealthMonitor>();
 

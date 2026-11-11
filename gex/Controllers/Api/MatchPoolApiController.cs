@@ -1,7 +1,10 @@
 ﻿using gex.Code;
+using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Services.Repository.Match;
 using gex.Models;
+using gex.Models.Api;
+using gex.Models.Apm;
 using gex.Models.Db;
 using gex.Models.Internal;
 using gex.Services;
@@ -29,11 +32,12 @@ namespace gex.Controllers.Api {
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
         private readonly BarMatchRepository _MatchRepository;
+        private readonly ApmTournamentRepository _TournamentRepository;
 
         public MatchPoolApiController(ILogger<MatchPoolApiController> logger,
             MatchPoolRepository matchPoolRepository, MatchPoolEntryDb matchPoolEntryDb,
             ICurrentAccount currentUser, BarMatchRepository matchRepository,
-            AppPermissionRepository permissionRepository) {
+            AppPermissionRepository permissionRepository, ApmTournamentRepository tournamentRepository) {
 
             _Logger = logger;
             _MatchPoolRepository = matchPoolRepository;
@@ -41,6 +45,7 @@ namespace gex.Controllers.Api {
             _CurrentUser = currentUser;
             _MatchRepository = matchRepository;
             _PermissionRepository = permissionRepository;
+            _TournamentRepository = tournamentRepository;
         }
 
         /// <summary>
@@ -60,7 +65,7 @@ namespace gex.Controllers.Api {
         ///     if the user is not logged in, it will be a list of match pools that anyone can see
         /// </response>
         [HttpGet]
-        public async Task<ApiResponse<List<MatchPool>>> GetPools(CancellationToken cancel = default) {
+        public async Task<ApiResponse<List<ApiMatchPool>>> GetPools(CancellationToken cancel = default) {
 
             AppAccount? currentUser = await _CurrentUser.Get(cancel);
             bool includeHidden = currentUser != null && await _PermissionRepository.HasPermission(currentUser.ID, [AppPermission.GEX_DEV], cancel);
@@ -83,7 +88,7 @@ namespace gex.Controllers.Api {
                 }).ToList();
             }
 
-            return ApiOk(pools);
+            return ApiOk(pools.Select(iter => new ApiMatchPool(iter)).ToList());
         }
 
         /// <summary>
@@ -106,17 +111,36 @@ namespace gex.Controllers.Api {
         ///     and the user is not the creator of the match pool (or a dev)
         /// </response>
         [HttpGet("{poolID}")]
-        public async Task<ApiResponse<MatchPool>> GetByID(long poolID, CancellationToken cancel = default) {
+        public async Task<ApiResponse<ApiMatchPool>> GetByID(long poolID, CancellationToken cancel = default) {
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
             if (pool == null) {
-                return ApiNoContent<MatchPool>();
+                return ApiNoContent<ApiMatchPool>();
             }
 
             if (await _CanViewPool(poolID, cancel) == false) {
-                return ApiForbidden<MatchPool>($"no permission to view this pool (it is hidden)");
+                return ApiForbidden<ApiMatchPool>($"no permission to view this pool (it is hidden)");
             }
 
-            return ApiOk(pool);
+            ApiMatchPool apiPool = new(pool);
+
+            Result<List<ApmTournamentEntry>, string> entries = await _TournamentRepository.GetEntries(cancel);
+            if (entries.IsOk == false) {
+                _Logger.LogWarning($"failed to get all apm tournament entries [poolID={poolID}] [error={entries.Error}]");
+            } else {
+                //List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.GexMatchPoolID != null && iter.GexMatchPoolID.Value == poolID).ToList();
+                List<ApmTournamentEntry> poolTournies = entries.Value.Where(iter => iter.Slug == "BPLS8").ToList();
+                foreach (ApmTournamentEntry entry in poolTournies) {
+                    Result<ApmTournamentInfo, string> info = await _TournamentRepository.GetTournamentInfo(entry.ID, cancel);
+                    if (info.IsOk == false) {
+                        _Logger.LogWarning($"failed to load tournament info [poolID={poolID}] [tourney ID={entry.ID}] [slug={entry.Slug}] [error={info.Error}]");
+                        continue;
+                    }
+
+                    apiPool.TournamentInfos.Add(info.Value);
+                }
+            }
+
+            return ApiOk(apiPool);
         }
 
         /// <summary>
@@ -139,7 +163,7 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpPost]
         [PermissionNeeded(AppPermission.GEX_MATCH_POOL_CREATE)]
-        public async Task<ApiResponse<MatchPool>> Create([FromQuery] string name,
+        public async Task<ApiResponse<ApiMatchPool>> Create([FromQuery] string name,
             [FromQuery] bool unlisted = false,
             [FromQuery] DateTime? hideUntil = null,
             CancellationToken cancel = default
@@ -148,13 +172,13 @@ namespace gex.Controllers.Api {
                 ?? throw new Exception($"expected current user to exist here");
 
             if (hideUntil != null && hideUntil < DateTime.UtcNow) {
-                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} ({hideUntil:u}) cannot be in the past when creating a {nameof(MatchPool)}");
+                return ApiBadRequest<ApiMatchPool>($"{nameof(hideUntil)} ({hideUntil:u}) cannot be in the past when creating a {nameof(MatchPool)}");
             }
             if (hideUntil != null && (hideUntil - DateTime.UtcNow) > TimeSpan.FromDays(90)) {
-                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
+                return ApiBadRequest<ApiMatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
             }
             if (string.IsNullOrWhiteSpace(name) == true) {
-                return ApiBadRequest<MatchPool>($"{nameof(name)} cannot be blank");
+                return ApiBadRequest<ApiMatchPool>($"{nameof(name)} cannot be blank");
             }
 
             MatchPool pool = new() {
@@ -169,7 +193,7 @@ namespace gex.Controllers.Api {
 
             _Logger.LogInformation($"created new match pool [id={pool.ID}] [name={pool.Name}] [created by={currentUser.Name}/{currentUser.ID}]");
 
-            return ApiOk(pool);
+            return ApiOk(new ApiMatchPool(pool));
         }
 
         /// <summary>
@@ -200,7 +224,7 @@ namespace gex.Controllers.Api {
         /// </response>
         [HttpPost("{poolID}")]
         [Authorize]
-        public async Task<ApiResponse<MatchPool>> Update(long poolID,
+        public async Task<ApiResponse<ApiMatchPool>> Update(long poolID,
             [FromQuery] string name,
             [FromQuery] bool unlisted = false,
             [FromQuery] DateTime? hideUntil = null,
@@ -212,18 +236,18 @@ namespace gex.Controllers.Api {
 
             MatchPool? pool = await _MatchPoolRepository.GetByID(poolID, cancel);
             if (pool == null) {
-                return ApiNotFound<MatchPool>($"{nameof(MatchPool)} {poolID}");
+                return ApiNotFound<ApiMatchPool>($"{nameof(MatchPool)} {poolID}");
             }
 
             if (await _IsPoolCreatorOrDev(poolID, cancel) == false) {
-                return ApiForbidden<MatchPool>($"user is not the creator of this match pool (or a dev)");
+                return ApiForbidden<ApiMatchPool>($"user is not the creator of this match pool (or a dev)");
             }
 
             if (string.IsNullOrWhiteSpace(name)) {
-                return ApiBadRequest<MatchPool>($"{nameof(name)} cannot be empty or contain only whitespace");
+                return ApiBadRequest<ApiMatchPool>($"{nameof(name)} cannot be empty or contain only whitespace");
             }
             if (hideUntil != null && (hideUntil - DateTime.UtcNow) > TimeSpan.FromDays(90)) {
-                return ApiBadRequest<MatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
+                return ApiBadRequest<ApiMatchPool>($"{nameof(hideUntil)} can only be at most 90 days in the future");
             }
 
             pool.Name = name;
@@ -233,7 +257,7 @@ namespace gex.Controllers.Api {
             _Logger.LogDebug($"updating match pool [poolID={poolID}] [name={pool.Name}] [unlisted={pool.Unlisted}] [hideUntil={pool.HideUntil:u}]");
             await _MatchPoolRepository.Update(poolID, pool, cancel);
 
-            return ApiOk(pool);
+            return ApiOk(new ApiMatchPool(pool));
         }
 
         /// <summary>

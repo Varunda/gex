@@ -1,7 +1,7 @@
 ﻿using gex.Common.Models.Options;
 using gex.Common.Services.Parser;
+using gex.Common.Services.Repositories;
 using gex.Services.Db.Event;
-using gex.Services.Repositories;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

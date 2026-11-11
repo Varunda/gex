@@ -2,6 +2,7 @@
 using gex.Common.Models;
 using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
+using gex.Common.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using Pfim;
 using SevenZip;

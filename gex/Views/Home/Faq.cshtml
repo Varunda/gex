@@ -122,9 +122,6 @@
             </a>
         </h3>
         <p>
-        public SearchAstException() : base() { }
-
-        public SearchAstException(string msg) : base(msg) { }
             PvE matches take much longer on average to process than PvP matches,
             and, in general, is not a competitive environment where the data Gex provides would be useful (tho it may be interesting for some, sorry!)
         </p>
@@ -313,6 +310,13 @@
                             <td><code>mode:duel map: -argent -pinewood</code></td>
                             <td>
                                 <kbd>duel</kbd> games, but not on maps with the name <kbd>argent</kbd> and <kbd>pinewood</kbd>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><code>pool:"Omega Series 5"</code></td>
+                            <td>
+                                Games in the match pool named <kbd>Omega Series 5</kbd> (because the value has spaces, it is quoted)
                             </td>
                         </tr>
 
@@ -523,7 +527,7 @@
                             <tr>
                                 <td><code>max_os</code></td>
                                 <td><code>double</code></td>
-                                <td><code>max_os]15</code></td>
+                                <td><code>max_os=&gt;15</code></td>
                                 <td>
                                     Uses the highest OS of all players in the match
                                 </td>
@@ -581,6 +585,30 @@
                                 <td><code>player_count&gt;16</code></td>
                                 <td>
                                     The total number of players in a match
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>pool</code></td>
+                                <td><code>string | long</code></td>
+                                <td>
+                                    <code>pool:7</code>
+                                    <br>
+                                    <code>pool:"pool name"</code>
+                                </td>
+                                <td>
+                                    <p>
+                                        Used to find games in a match pool.
+                                        Can use either a <code>string</code> or <code>long</code>
+                                    </p>
+                                    <p>
+                                        If the value can be parsed to a valid <code>long</code>, it find matches in the match pool based on ID
+                                        <br />
+                                        Otherwise, the value is used as a string, and will find matches in the match pool based on the name
+                                    </p>
+                                    <p>
+                                        It is prefered to use the pool ID, as the name of a match pool can change
+                                    </p>
                                 </td>
                             </tr>
                         </tbody>

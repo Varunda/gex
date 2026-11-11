@@ -142,5 +142,7 @@ namespace gex.Models.Api {
 
         public List<StartRegionData>? StartRegionData { get; set; } = null;
 
+        public List<BarMatchOutcome>? WinnerPrediction { get; set; } = null;
+
     }
 }

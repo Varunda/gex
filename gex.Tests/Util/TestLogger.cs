@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Data;
 
 namespace gex.Tests.Util {
 
@@ -37,6 +38,9 @@ namespace gex.Tests.Util {
             }
 
             Console.WriteLine($"[{DateTime.UtcNow:u}] {logLevel}: {_ClassPrefix}> {formatter(state, exception)}");
+            if (exception != null) {
+                Console.WriteLine($"[{DateTime.UtcNow:u}] {logLevel}: {exception}");
+            }
         }
 
     }

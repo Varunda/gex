@@ -153,6 +153,18 @@
             </div>
 
             <div v-else-if="matches.state == 'loaded'">
+                <div v-if="pool.state == 'loaded' && pool.data.tournamentInfos.length > 0" class="alert alert-info text-center">
+                    <b>This match pool has games played in the following tournament<span v-if="pool.data.tournamentInfos.length > 1">s</span>:</b>
+
+                    <div>
+                        <a v-for="tourney in pool.data.tournamentInfos" :key="tourney.id"
+                            :href="'https://apm.bar/tournament/' + tourney.slug" target="_blank" ref="nofollow" class="btn btn-link border rounded">
+                            
+                            <img src="/img/apm_icon.svg" height="18" width="18" class="me-1">{{ tourney.name }}
+                        </a>
+                    </div>
+                </div>
+
                 <match-list :matches="matches.data" :group-match-override="matchGroupOverride"></match-list>
 
                 <div v-if="matches.data.length == 0">

@@ -72,7 +72,7 @@ namespace gex.Common.Services.Search {
             if (isDev == false) {
                 string cond = $"(mpool.hide_until IS NULL OR mpool.hide_until <= NOW() at time zone 'utc' ";
                 if (currentUserID != null) {
-                    cond += $" OR mpool.created_by_id = {addParameter(query, currentUserID.Value)} ";
+                    cond += $" OR mpool.created_by_id = {addParameter(query, currentUserID.Value, null)} ";
                 }
 
                 cond += ")\n AND\n";
@@ -269,6 +269,8 @@ namespace gex.Common.Services.Search {
 
                 // ranked
                 else if (fieldName == "ranked") {
+                    ValidateOperator(fieldOp, ValidTypeOperations.GetValueOrDefault(typeof(bool))!);
+
                     bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
                     cmd += $" m.game_settings->>'ranked_game' = {(value == true ? "'1'" : "'0'")}\n";
                 }
@@ -301,6 +303,15 @@ namespace gex.Common.Services.Search {
                     cmd += $" m.duration_ms {GetDbOperation(fieldOp)} {(int)duration.TotalMilliseconds}";
                 }
 
+                // pool
+                else if (fieldName == "pool") {
+                    if (long.TryParse(fieldValue.Token.Value, out long poolID) == true) {
+                        cmd += $" mpool.id {GetDbOperation(fieldOp)} {poolID} ";
+                    } else {
+                        cmd += $" lower(mpool.name) {GetDbOperation(fieldOp)} {addParameter(query, fieldValue.Token.Value.ToLower(), fieldOp)} ";
+                    }
+                }
+
                 // player.name
                 else if (fieldName == "player.user_name") {
                     if (query.PlayerLookupCache.TryGetValue(fieldValue.Token.Value, out List<BarMatchPlayer>? players) == false || players == null) {
@@ -316,7 +327,7 @@ namespace gex.Common.Services.Search {
                         cmd += " 1 = 0 ";
                     } else {
                         cmd += $" player.user_id IN (";
-                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
+                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.UserID, fieldOp)} "))} ";
                         cmd += ")\n";
                     }
                 }
@@ -329,7 +340,7 @@ namespace gex.Common.Services.Search {
                         cmd += " 1 = 0 ";
                     } else {
                         cmd += $" player.user_id IN (";
-                        cmd += $" {string.Join(", ", users.Select(iter => $" {addParameter(query, iter.UserID)} "))} ";
+                        cmd += $" {string.Join(", ", users.Select(iter => $" {addParameter(query, iter.UserID, fieldOp)} "))} ";
                         cmd += ")\n";
                     }
                 }
@@ -342,7 +353,7 @@ namespace gex.Common.Services.Search {
                         cmd += " 1 = 0 ";
                     } else {
                         cmd += $" player.game_id IN (";
-                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.GameID)} "))} ";
+                        cmd += $" {string.Join(", ", players.Select(iter => $" {addParameter(query, iter.GameID, fieldOp)} "))} ";
                         cmd += ")\n";
                     }
                 }
@@ -351,7 +362,7 @@ namespace gex.Common.Services.Search {
                 else if (fieldName == "player.user_id") {
                     long userID = (long)parseValue(typeof(long), fieldValue.Token.Value, "player.user_id");
 
-                    cmd += $" player.user_id {GetDbOperation(fieldOp)} {addParameter(query, userID)} ";
+                    cmd += $" player.user_id {GetDbOperation(fieldOp)} {addParameter(query, userID, fieldOp)} ";
                 }
 
                 // player.faction / team.faction
@@ -370,7 +381,7 @@ namespace gex.Common.Services.Search {
                         return $"invalid faction: {fieldValue.Token.Value}";
                     }
 
-                    cmd += $" team.faction {GetDbOperation(fieldOp)} {addParameter(query, faction)} ";
+                    cmd += $" team.faction {GetDbOperation(fieldOp)} {addParameter(query, faction, fieldOp)} ";
                 }
 
                 // map.name
@@ -386,7 +397,7 @@ namespace gex.Common.Services.Search {
                         cmd += " 0 = 1 ";
                     } else {
                         cmd += $" map.filename IN ( ";
-                        cmd += $" {string.Join(", ", matchedMaps.Select(iter => $" {addParameter(query, iter.FileName)} "))} ";
+                        cmd += $" {string.Join(", ", matchedMaps.Select(iter => $" {addParameter(query, iter.FileName, fieldOp)} "))} ";
                         cmd += ")\n";
                     }
                 }
@@ -397,7 +408,8 @@ namespace gex.Common.Services.Search {
                         ?? throw new InvalidOperationException($"expected type mapping for fieldName '{fieldName}' to exist");
 
                     object value = parseValue(fieldType, fieldValue.Token.Value, fieldName);
-                    cmd += $" {fieldName} {GetDbOperation(fieldOp)} {addParameter(query, value)}";
+                    //cmd += $" {fieldName} {GetDbOperation(fieldOp)} {addParameter(query, value, fieldOp)}";
+                    cmd += $" {fieldName} {addOpAndParam(query, value, fieldOp, fieldType)} ";
                 }
             }
 
@@ -416,7 +428,7 @@ namespace gex.Common.Services.Search {
                 if (fieldName == "player") {
                     prefix = "player";
 
-                    cmd += @$" m.id {(fieldOp.Token.Value == "!" ? "NOT" : "")} IN (
+                    cmd += @$" m.id {(fieldOp.Token.Value == SearchOp.NOT ? "NOT" : "")} IN (
                         SELECT distinct(player.game_id) as game_id 
                         FROM bar_match_player player
                             INNER JOIN bar_match_team team ON player.game_id = team.game_id AND player.team_id = team.team_id
@@ -485,13 +497,52 @@ namespace gex.Common.Services.Search {
         }
 
         /// <summary>
+        ///     add an operator and parameter to a query, also ensuring that the operator is valid for the type of field value
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="value"></param>
+        /// <param name="op"></param>
+        /// <param name="fieldType"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="SearchAstArgumentException"></exception>
+        private static string addOpAndParam(QuerySetup query, object? value, SearchNode op, Type fieldType) {
+            List<string> validOps = ValidTypeOperations.GetValueOrDefault(fieldType)
+                ?? throw new InvalidOperationException($"unchecked field type {fieldType.Name}");
+
+            if (validOps.Contains(op.Token.Value) == false) {
+                throw new SearchAstArgumentException($"invalid operator '{op.Token.Value}' for field type {fieldType.Name}");
+            }
+
+            return $" {GetDbOperation(op)} {addParameter(query, value, op)}";
+        }
+
+        /// <summary>
         ///     add a DB parameter to the query
         /// </summary>
         /// <param name="query"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static string addParameter(QuerySetup query, object? value) {
-            query.Parameters.Add(value);
+        private static string addParameter(QuerySetup query, object? value, SearchNode? op) {
+
+            if (op != null && (op.Token.Value == SearchOp.STARTS_WITH || op.Token.Value == SearchOp.ENDS_WITH || op.Token.Value == SearchOp.CONTAINS)) {
+                if (value is not string str) {
+                    throw new SearchAstArgumentException($"value was a {value?.GetType().Name}, not a {typeof(string).Name} (for a {op.Token.Value} operator)");
+                }
+
+                if (op.Token.Value == SearchOp.STARTS_WITH) {
+                    query.Parameters.Add($"{value}%");
+                } else if (op.Token.Value == SearchOp.ENDS_WITH) {
+                    query.Parameters.Add($"%{value}");
+                } else if (op.Token.Value == SearchOp.CONTAINS) {
+                    query.Parameters.Add($"%{value}%");
+                } else {
+                    throw new InvalidOperationException($"invalid operator {op.Token.Value}, expected starts with, ends with or contains (and was in an exhaustive check)");
+                }
+            } else {
+                query.Parameters.Add(value);
+            }
+
             return $"${query.Parameters.Count}";
         }
 
@@ -537,6 +588,12 @@ namespace gex.Common.Services.Search {
             return value;
         }
 
+        private static void ValidateOperator(SearchNode op, IEnumerable<string> validOps) {
+            if (validOps.Contains(op.Token.Value) == false) {
+                throw new SearchAstArgumentException($"invalid operator '{op.Token.Value}', valid operators are: {string.Join(", ", validOps)}");
+            }
+        }
+
         /// <summary>
         ///     maps field names and their data types to parse the string value into
         /// </summary>
@@ -550,6 +607,7 @@ namespace gex.Common.Services.Search {
             { "limit", typeof(uint) },
             { "offset", typeof(uint) },
             { "start", typeof(uint) },
+            { "pool", typeof(string) },
 
             // match fields
             { "ranked", typeof(bool) },
@@ -644,14 +702,15 @@ namespace gex.Common.Services.Search {
 
         private static string GetDbOperation(SearchNode op) {
             return op.Token.Value switch {
-                "=" => "=",
-                ":" => "=",
-                "<" => "<",
-                ">" => ">",
-                "]" => ">=",
-                "[" => "<=",
-                "!" => "!=",
-                "-" => "!=",
+                SearchOp.EQ => "=",
+                SearchOp.LT => "<",
+                SearchOp.GT => ">",
+                SearchOp.GTE => ">=",
+                SearchOp.LTE => "<=",
+                SearchOp.NOT => "!=",
+                SearchOp.STARTS_WITH => " LIKE ",
+                SearchOp.ENDS_WITH => " LIKE ",
+                SearchOp.CONTAINS => " LIKE ",
                 _ => throw new ArgumentException($"invalid operator {op.Token.Value}")
             };
         }

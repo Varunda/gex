@@ -17,6 +17,7 @@
 
   <ItemGroup>
 	<PackageReference Include="Hogimn.Sql.Formatter" Version="2.0.4" />
+	<PackageReference Include="OpenSkillSharp" Version="1.1.0" />
 	<ProjectReference Include="../SevenZip/src/SevenZip/SevenZip.csproj" />
 	<ProjectReference Include="../NReco.Logging.File/src/NReco.Logging.File/NReco.Logging.File.csproj" />
 	  

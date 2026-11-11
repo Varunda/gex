@@ -42,6 +42,7 @@ namespace gex.Services.Repositories {
             services.AddSingleton<GameOutputRepository>();
             services.AddSingleton<BarIconTypeRepository>();
             services.AddSingleton<BarMapDataRepository>();
+            services.AddSingleton<ApmTournamentRepository>();
 
             // user stats
             services.AddSingleton<BarUserRepository>();

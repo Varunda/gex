@@ -18,3 +18,5 @@ wwwroot/dist/
 
 .vscode/
 /extra-stats
+
+secrets.json

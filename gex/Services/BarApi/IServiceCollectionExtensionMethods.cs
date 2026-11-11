@@ -16,6 +16,7 @@ namespace gex.Services.BarApi {
             services.AddSingleton<BarMapApi>();
             services.AddSingleton<TeiServerApi>();
             services.AddSingleton<BarBattleStatusApi>();
+            services.AddSingleton<ApmWebsiteApi>();
         }
 
     }

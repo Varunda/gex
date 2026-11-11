@@ -1,6 +1,6 @@
 ﻿using gex.Common.Models;
+using gex.Common.Services.Repositories;
 using gex.Models;
-using gex.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using gex.Services.Repositories;
+﻿using gex.Common.Services.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;

@@ -25,9 +25,9 @@
                 </span>
             </div>
 
-            <div v-if="isFunkyTeams == false">
+            <div v-if="isFunkyTeams == false" class="mb-2">
                 <div class="teams">
-                    <div class="team" v-for="allyTeam in allyTeamsSorted" :key="allyTeam.allyTeamID">
+                    <div class="team" v-for="(allyTeam, index) in allyTeamsSorted" :key="allyTeam.allyTeamID">
                         <div>
                             <h4 class="ally-team-header mb-0" :style="getTeamNameStyle(allyTeam)">
                                 Team {{ allyTeam.allyTeamID + 1 }}
@@ -48,13 +48,17 @@
                         
                         <div class="players">
                             <template v-for="(team, index) in getTeamsByAllyTeam(allyTeam.allyTeamID)"> 
-                                <match-team-entry :key="index" :players="getPlayersOfTeam(team.teamID)" :team="team" :show-debug="showDebug" />
+                                <match-team-entry :key="index" :players="getPlayersOfTeam(team.teamID)" :team="team" :show-debug="showDebug" :show-prediction="showPrediction" />
                             </template>
                         </div>
+
+                        <h6 v-if="showPrediction && match.winnerPrediction != null" class="d-inline-block mb-0 p-2 border rounded">
+                            Win prediction: {{ match.winnerPrediction[index].winProbability * 100 | locale(1) }}%
+                        </h6>
                     </div>
                 </div>
             </div>
-            <div v-else>
+            <div v-else class="mb-2">
                 <small class="text-muted">These are not usual team size! Gex is not programmed to handle teams of this size, so a fallback is being used instead</small>
 
                 <table class="table table-sm" style="table-layout: fixed">
@@ -76,7 +80,10 @@
                     <tbody>
                         <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <match-player-item v-if="index <= allyTeam.playerCount" :player="getPlayersByAllyTeam(allyTeam.allyTeamID)[index - 1]" :show-debug="showDebug" />
+                                <match-player-item v-if="index <= allyTeam.playerCount" :player="getPlayersByAllyTeam(allyTeam.allyTeamID)[index - 1]"
+                                    :show-debug="showDebug" :show-prediction="showPrediction">
+                                </match-player-item>
+
                                 <span v-else>
                                     <!-- uneven team placeholder -->
                                 </span>
@@ -89,6 +96,12 @@
             <toggle-button class="btn-small" v-model="showWinner">
                 Show winner
             </toggle-button>
+
+            <!--
+            <toggle-button class="btn-small" v-model="showPrediction">
+                Show winner prediction %
+            </toggle-button>
+            -->
 
             <toggle-button class="btn-small" v-model="showDebug">
                 debug
@@ -144,6 +157,10 @@
         row-gap: 0.25rem;
     }
 
+    .win-prediction {
+        text-align: center;
+    }
+
     @media only screen and (max-width: 800px) {
         .team {
             flex: 1 2 50%;
@@ -192,6 +209,7 @@
         data: function() {
             return {
                 showWinner: false as boolean,
+                showPrediction: false as boolean,
                 showDebug: false as boolean
             }
         },

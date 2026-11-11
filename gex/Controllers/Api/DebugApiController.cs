@@ -11,7 +11,7 @@ namespace gex.Controllers.Api {
 
     [ApiController]
     [Route("/api/debug")]
-    [PermissionNeeded(AppPermission.APP_ACCOUNT_ADMIN)]
+    [PermissionNeeded(AppPermission.GEX_DEV)]
     public class DebugApiController : ApiControllerBase {
 
         private readonly ILogger<DebugApiController> _Logger;

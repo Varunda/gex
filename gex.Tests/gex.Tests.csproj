@@ -42,6 +42,7 @@
     <None Remove="resources\unit_data\legmos.lua" />
     <None Remove="resources\unit_data\legrail.lua" />
     <None Remove="resources\unit_data\Unit_Explosions.lua" />
+    <None Remove="secrets.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -158,6 +159,9 @@
     </Content>
     <Content Include="resources\unit_data\Unit_Explosions.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="secrets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

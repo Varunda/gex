@@ -465,6 +465,10 @@ namespace gex.Tests.Services.Db {
 
         #region error test
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // error tests
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         [TestMethod]
         public async Task Test_Error_Format_Bool() {
             await Assert.ThrowsExceptionAsync<FormatException>(() => {
@@ -493,6 +497,9 @@ namespace gex.Tests.Services.Db {
             });
         }
 
+        /// <summary>
+        ///     ensure exception for a bad DateTime
+        /// </summary>
         [TestMethod]
         public async Task Test_Error_Format_StringDateTime() {
             await Assert.ThrowsExceptionAsync<FormatException>(() => {
@@ -500,11 +507,73 @@ namespace gex.Tests.Services.Db {
             });
         }
 
+        /// <summary>
+        ///     ensure exception is thrown for a bad TimeSpan
+        /// </summary>
         [TestMethod]
         public async Task Test_Error_Format_StringTimeSpan() {
             await Assert.ThrowsExceptionAsync<FormatException>(() => {
                 return _Query("duration_time:howdy");
             });
+        }
+
+        /// <summary>
+        ///     test bad operators on a bool field
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Error_BadOperator_Bool() {
+            List<string> queries = [
+                "ranked>true",
+                "ranked<true",
+                "ranked>=true",
+                "ranked<=true",
+                "ranked=^true",
+                "ranked=$true",
+                "ranked=*true",
+            ];
+
+            foreach (string q in queries) {
+                await Assert.ThrowsExceptionAsync<SearchAstArgumentException>(() => {
+                    return _Query(q);
+                });
+            }
+        }
+
+        /// <summary>
+        ///     test bad operators on an int field
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Error_BadOperator_Int() {
+            List<string> queries = [
+                "player_count=^1",
+                "player_count=$1",
+                "player_count=*1",
+            ];
+
+            foreach (string q in queries) {
+                await Assert.ThrowsExceptionAsync<SearchAstArgumentException>(() => {
+                    return _Query(q);
+                });
+            }
+        }
+
+        /// <summary>
+        ///     test bad operators on a string field
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Error_BadOperator_String() {
+            List<string> queries = [
+                "engine>105",
+                "engine<105",
+                "engine<=105",
+                "engine>=105",
+            ];
+
+            foreach (string q in queries) {
+                await Assert.ThrowsExceptionAsync<SearchAstArgumentException>(() => {
+                    return _Query(q);
+                });
+            }
         }
 
         #endregion 

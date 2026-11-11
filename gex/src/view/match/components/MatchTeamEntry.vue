@@ -1,9 +1,6 @@
 <template>
     <fragment v-if="players.length == 1">
         <a :href="players.length == 1 ? ('/user/' + players[0].userID) : ''" style="text-decoration: none" class="name">
-            <span v-if="team.startSpotLabel != null" class="role">
-                ({{ team.startSpotLabel }})
-            </span>
 
             <span style="text-shadow: 1px 1px 1px #000000" :style="{ color: team.hexColor }">
                 <img v-if="team.faction == 'Armada'" src="/img/armada.png" height="16" title="icon for armada" />
@@ -27,6 +24,10 @@
                     (+{{ team.handicap }}%)
                 </span>
                 <span v-else> ({{ team.handicap }}%) </span>
+            </span>
+
+            <span v-if="team.startSpotLabel != null" class="role text-info" style="font-size: 1rem" title="Role">
+                - {{ team.startSpotLabel }}
             </span>
         </span>
 
@@ -105,6 +106,7 @@
         props: {
             players: { type: Array as PropType<BarMatchPlayer[]>, required: true },
             team: { type: Object as PropType<BarMatchTeam>, required: true },
+            ShowPrediction: { type: Boolean, required: false },
             ShowDebug: { type: Boolean, required: false }
         },
 

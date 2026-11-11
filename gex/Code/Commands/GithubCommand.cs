@@ -1,5 +1,5 @@
 ﻿
-using gex.Services.Repositories;
+using gex.Common.Services.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;

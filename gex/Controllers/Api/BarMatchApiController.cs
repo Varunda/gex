@@ -33,6 +33,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using OpenSkillSharp.Models;
+using OpenSkillSharp.Rating;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -124,7 +126,7 @@ namespace gex.Controllers.Api {
         ///     then a 403 is returned. if the match is in multiple match pools, the match is allowed
         ///     if at least one of the match pools is not hidden
         /// </remarks>
-        /// <param name="cancel">cancel token</param>
+        /// 
         /// <param name="gameID">ID of the game</param>
         /// <param name="includeTeams">will <see cref="BarMatch.Teams"/> be populated? defaults to false</param>
         /// <param name="includeAllyTeams">will <see cref="BarMatch.AllyTeams"/> be populated? defaults to false</param>
@@ -144,6 +146,12 @@ namespace gex.Controllers.Api {
         ///     if <paramref name="includeCommands"/>> is <c>true</c>, then this parameter is ignored (as it is a subset of the data)
         /// </param>
         /// <param name="includeStartRegionData">will <see cref="BarMatch.StartRegionData"/> be populated? defaults to false</param>
+        /// <param name="includeWinnerPrediction">
+        ///     will <see cref="ApiMatch.WinnerPrediction"/> be populated? defaults to false.
+        ///     implies <paramref name="includePlayers"/> 
+        /// </param>
+        /// <param name="cancel">cancel token</param>
+        /// 
         /// <response code="200">
         ///     the reponse will contain the <see cref="BarMatch"/> with <see cref="BarMatch.ID"/> of <paramref name="gameID"/>,
         ///     populating any of the fields with the parameters
@@ -169,12 +177,13 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeCommands = false,
             [FromQuery] bool includeSelfDCommands = false,
             [FromQuery] bool includeStartRegionData = false,
+            [FromQuery] bool includeWinnerPrediction = false,
             CancellationToken cancel = default
         ) {
             Result<Maybe<BarMatch>, string> result = await _MatchBuilder.BuildMatch(gameID, new IBarMatchBuilderUtil.BuildOptions() {
                 IncludeTeams = includeTeams,
                 IncludeAllyTeams = includeAllyTeams,
-                IncludePlayers = includePlayers,
+                IncludePlayers = includePlayers || includeWinnerPrediction,
                 IncludeChat = includeChat,
                 IncludeSpectators = includeSpectators,
                 IncludeTeamDeaths = includeTeamDeaths,
@@ -224,6 +233,36 @@ namespace gex.Controllers.Api {
             ret.HeadlessRunStatus = _HeadlessRunStatusRepository.Get(gameID);
             if (ret.UploadedByID != null) {
                 ret.UploadedBy = await _AccountDb.GetByID(ret.UploadedByID.Value, cancel);
+            }
+
+            if (includeWinnerPrediction == true) {
+                PlackettLuce model = new();
+
+                List<int> allyTeamIDs = [.. ret.Players.Select(iter => iter.AllyTeamID).Distinct().Order()];
+
+                List<ITeam> teams = [.. allyTeamIDs.Select(allyTeam => {
+                    return new Team() {
+                        // bar shows the mu - sigma for match ratings
+                        Players = ret.Players
+                            .Where(p => p.AllyTeamID == allyTeam)
+                            .Select(iter => model.Rating(mu: (iter.Skill + iter.SkillUncertainty), sigma: iter.SkillUncertainty))
+                    };
+                })];
+
+                List<double> probabilities = [.. model.PredictWin([.. teams])];
+
+                List<ITeamRating> ratings = [.. model.CalculateTeamRatings(teams)];
+
+                ret.WinnerPrediction = [];
+                for (int i = 0; i < ratings.Count; ++i) {
+                    ITeamRating rating = ratings[i];
+                    ret.WinnerPrediction.Add(new BarMatchOutcome() {
+                        AllyTeamID = i,
+                        Mu = rating.Mu,
+                        Sigma = rating.SigmaSq,
+                        WinProbability = probabilities[i],
+                    });
+                }
             }
 
             return ApiOk(ret);

@@ -351,7 +351,7 @@
 
         <div v-else-if="queryResult.state == 'loaded'">
 
-            <match-list :matches="queryResult.data.results"></match-list>
+            <match-list :matches="queryResult.data.results" :group-match-override="true"></match-list>
 
             <div v-if="queryResult.data.results.length == 0">
                 No matches found!

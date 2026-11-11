@@ -116,6 +116,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Content Update="wwwroot\img\apm_icon.svg">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Content>
 		<Content Update="wwwroot\img\logo0.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
@@ -156,8 +159,8 @@
 			<SevenZipLinux Include="../SevenZip/runtimes/linux-x64/native/7z.so" />
 		</ItemGroup>
 
-		<Copy SourceFiles="@(SevenZipWin)" DestinationFolder="$(OutputPath)"/>
-		<Copy SourceFiles="@(SevenZipLinux)" DestinationFolder="$(OutputPath)"/>
+		<Copy SourceFiles="@(SevenZipWin)" DestinationFolder="$(OutputPath)" />
+		<Copy SourceFiles="@(SevenZipLinux)" DestinationFolder="$(OutputPath)" />
 	</Target>
 
 </Project>
