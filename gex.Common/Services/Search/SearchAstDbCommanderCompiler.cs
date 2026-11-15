@@ -162,26 +162,26 @@ namespace gex.Common.Services.Search {
                 SearchNode fieldOp = node.Children[1];
                 SearchNode fieldValue = node.Children[2];
 
-                // sort | order
-                if (fieldName == "sort" || fieldName == "order") {
+                // sort
+                if (fieldName == "sort") {
                     if (fieldOp.Token.Value != SearchOp.EQ) {
-                        return $"for a 'sort'|'order' field, the operation can only be '='";
+                        return $"for a sort field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
-                        return $"for a 'sort'|'order' field, the value must be a FIELD_VALUE and have no children";
+                        return $"for a sort field, the value must be a FIELD_VALUE and have no children";
                     }
 
                     query.OrderBy = BarMatchSearchParameters.ParseOrderBy(fieldValue.Token.Value)
                         ?? throw new SearchAstArgumentException($"invalid OrderBy value '{fieldValue.Token.Value}'");
                 }
 
-                // order_dir | sort_dir
-                else if (fieldName == "order_dir" || fieldName == "sort_dir") {
+                // sort_dir
+                else if (fieldName == "sort_dir") {
                     if (fieldOp.Token.Value != SearchOp.EQ) {
-                        return $"for a 'sort_dir'|'order_dir' field, the operation can only be '='";
+                        return $"for a sort_dir field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
-                        return $"for a 'sort_dir'|'order_dir' field, the value must be a FIELD_VALUE and have no children";
+                        return $"for a sort_dir field, the value must be a FIELD_VALUE and have no children";
                     }
 
                     query.OrderByDirection = BarMatchSearchParameters.ParseOrderByDirection(fieldValue.Token.Value)
@@ -191,10 +191,10 @@ namespace gex.Common.Services.Search {
                 // limit
                 else if (fieldName == "limit") {
                     if (fieldOp.Token.Value != SearchOp.EQ) {
-                        return $"for a 'limit' field, the operation can only be '='";
+                        return $"for a limit field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
-                        return $"for a 'limit' field, the value must be a FIELD_VALUE and have no children";
+                        return $"for a limit field, the value must be a FIELD_VALUE and have no children";
                     }
 
                     query.Limit = uint.Parse(fieldValue.Token.Value);
@@ -207,13 +207,13 @@ namespace gex.Common.Services.Search {
                     }
                 }
 
-                // offset | start
-                else if (fieldName == "offset" || fieldName == "start") {
+                // offset
+                else if (fieldName == "offset") {
                     if (fieldOp.Token.Value != SearchOp.EQ) {
-                        return $"for a 'offset' field, the operation can only be '='";
+                        return $"for a offset field, the operation can only be '='";
                     }
                     if (fieldValue.Type != SearchNodeType.FIELD_VALUE || fieldValue.Children.Count > 0) {
-                        return $"for a 'offset' field, the value must be a FIELD_VALUE and have no children";
+                        return $"for a offset field, the value must be a FIELD_VALUE and have no children";
                     }
 
                     query.Offset = uint.Parse(fieldValue.Token.Value);
@@ -256,7 +256,7 @@ namespace gex.Common.Services.Search {
                     ";
                 }
 
-                // replayed
+                // actions parsed
                 else if (fieldName == "actions_parsed") {
                     bool value = (bool)parseValue(typeof(bool), fieldValue.Token.Value, fieldName);
 
@@ -671,6 +671,11 @@ namespace gex.Common.Services.Search {
         ///     aliases of fields
         /// </summary>
         private static Dictionary<string, string> FieldNameAliases = new Dictionary<string, string>() {
+
+            // meta fields
+            { "order", "sort" },
+            { "order_dir", "sort_dir" }, 
+            { "start", "offset" },
 
             // basic fields
             { "duration", "duration_time" },

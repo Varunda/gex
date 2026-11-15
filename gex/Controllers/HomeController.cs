@@ -266,7 +266,7 @@ namespace gex.Controllers {
                 }
 
                 if (canView == false) {
-                    return StatusCode(403, $"this {nameof(BarMatch)} is in a match pool that is hidden");
+                    return StatusCode(403, $"{nameof(BarMatch)} {gameID} is in a match pool that is hidden");
                 }
             }
 
@@ -417,6 +417,12 @@ namespace gex.Controllers {
         }
 
         public IActionResult MapMod() {
+            return View();
+        }
+
+        [Authorize]
+        [PermissionNeeded(AppPermission.GEX_DEV)]
+        public IActionResult GexImport() {
             return View();
         }
 

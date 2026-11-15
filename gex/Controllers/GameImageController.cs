@@ -219,19 +219,19 @@ namespace gex.Controllers {
                 color = null;
             }
 
+            color ??= 0;
+
             string iconDir = Path.Join(_Options.Value.WebImageLocation, "icons");
             Directory.CreateDirectory(iconDir);
 
             string storedName = "atlas";
-
-            if (color != null && color.Value != 0) {
+            if (color.Value != 0) {
                 storedName += $"_{color}";
             }
 
             string atlasPath = Path.Join(iconDir, storedName + ".png");
 
             bool needsCreation = System.IO.File.Exists(atlasPath) == false;
-
             if (needsCreation == false) {
                 FileInfo atlasInfo = new(atlasPath);
                 needsCreation = (DateTime.UtcNow - atlasInfo.LastWriteTimeUtc) > TimeSpan.FromHours(24);
@@ -244,26 +244,26 @@ namespace gex.Controllers {
                 _Logger.LogDebug($"missing atlas or json [color={color}]");
                 string uncoloredPath = Path.Join(iconDir, "atlas.png");
                 byte[] data = [];
-                if (System.IO.File.Exists(uncoloredPath) == true) {
+                if (System.IO.File.Exists(uncoloredPath) == true && color.Value != 0) {
                     _Logger.LogDebug($"have an uncolored atlas, can use that one instead of fetching [color={color}]");
                     data = await System.IO.File.ReadAllBytesAsync(uncoloredPath, cancel);
                 } else {
                     _Logger.LogDebug($"creating icon atlas");
-                    await _CreateAtlasAndJson(cancel);
+                    await _CreateAtlasAndJson(CancellationToken.None);
                     data = await System.IO.File.ReadAllBytesAsync(uncoloredPath, cancel);
                 }
 
-                if (color != null && color != 0) {
+                if (color != 0) {
                     _Logger.LogTrace($"coloring atlas [color={color}]");
                     Stopwatch timer = Stopwatch.StartNew();
                     data = _RecolorPng(data, color.Value);
                     _Logger.LogTrace($"colored atlas [color={color}] [timer={timer.ElapsedMilliseconds}ms]");
                 }
 
-                _Logger.LogTrace($"saving colored atlas [color={color}] [path={atlasPath}]");
+                _Logger.LogTrace($"saving atlas [color={color}] [path={atlasPath}]");
                 Stopwatch timer2 = Stopwatch.StartNew();
                 await System.IO.File.WriteAllBytesAsync(atlasPath, data, CancellationToken.None);
-                _Logger.LogTrace($"saved colored atlas [color={color}] [path={atlasPath}] [timer={timer2.ElapsedMilliseconds}ms]");
+                _Logger.LogTrace($"saved atlas [color={color}] [path={atlasPath}] [timer={timer2.ElapsedMilliseconds}ms]");
                 Debug.Assert(System.IO.File.Exists(atlasPath), $"missing atlasPath {atlasPath}");
             }
 
@@ -488,7 +488,13 @@ namespace gex.Controllers {
 
             Dictionary<int, SKColor> cache = [];
 
-            SKBitmap bp = SKBitmap.Decode(data);
+            /*
+            using MemoryStream ms = new(data);
+            using SKManagedStream sks = new(ms);
+            using SKData skData = SKData.Create(sks);
+            using SKCodec? codec = SKCodec.Create(skData);
+            */
+            using SKBitmap bp = SKBitmap.Decode(data);
             SKColor[] pixels = bp.Pixels;
 
             int w = bp.Width;
@@ -519,7 +525,7 @@ namespace gex.Controllers {
 
             bp.Pixels = pixels;
 
-            SKData output = bp.Encode(SKEncodedImageFormat.Png, 100);
+            using SKData output = bp.Encode(SKEncodedImageFormat.Png, 100);
             return output.AsSpan().ToArray();
         }
 

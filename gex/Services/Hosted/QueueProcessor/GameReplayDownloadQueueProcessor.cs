@@ -1,9 +1,11 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Bar;
+using gex.Common.Models.Demofile;
 using gex.Common.Models.Match;
 using gex.Common.Models.Options;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repositories;
+using gex.Common.Services.Storage;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.BarApi;
@@ -30,6 +32,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly BarReplayApi _ReplayApi;
         private readonly BaseQueue<GameReplayDownloadQueueEntry> _DownloadQueue;
         private readonly BarDemofileParser _Parser;
+        private readonly DemofileStorage _DemofileStorage;
 
         private readonly IOptions<FileStorageOptions> _Options;
         private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
@@ -40,7 +43,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             IOptions<FileStorageOptions> options, BarReplayDb replayDb,
             BaseQueue<GameReplayParseQueueEntry> parseQueue, BarReplayApi replayApi,
             BaseQueue<GameReplayDownloadQueueEntry> downloadQueue, IOptions<FocusPlayerModeOptions> focusUserOptions,
-            BarDemofileParser parser)
+            BarDemofileParser parser, DemofileStorage demofileStorage)
         : base("game_replay_download_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -52,6 +55,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _DownloadQueue = downloadQueue;
             _FocusUserOptions = focusUserOptions;
             _Parser = parser;
+            _DemofileStorage = demofileStorage;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayDownloadQueueEntry entry, CancellationToken cancel) {

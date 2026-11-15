@@ -5,6 +5,8 @@
 
             <toggle-button v-model="showPlayerStats">show player stats</toggle-button>
 
+            <toggle-button v-model="showTourneyInfo">show tourney info</toggle-button>
+
             <toggle-button v-model="matchGroupOverride">disable match grouping</toggle-button>
 
             <toggle-button v-if="hasAddRemovePermission" v-model="showEntryEdit">show entry edit</toggle-button>
@@ -92,6 +94,18 @@
             </div>
         </div>
 
+        <div v-if="showTourneyInfo == true" class="mb-3">
+            <select v-model="selectedTournamentID" class="form-select" v-if="pool.state == 'loaded'">
+                <option :value="null">none</option>
+                <option v-for="tourney in pool.data.tournamentInfos" :key="tourney.id" :value="tourney.id">
+                    {{ tourney.name }}
+                </option>
+            </select>
+
+            <tourney-info-view v-if="selectedTournamentInfo != null" :tournament-info="selectedTournamentInfo"></tourney-info-view>
+        </div>
+
+
         <div v-if="showPoolEdit == true" class="mb-3">
             <h2>pool edit</h2>
 
@@ -165,7 +179,7 @@
                     </div>
                 </div>
 
-                <match-list :matches="matches.data" :group-match-override="matchGroupOverride"></match-list>
+                <match-list :matches="matches.data" :group-match-override="matchGroupOverride" :team-names="selectedTournamentMatchTeams"></match-list>
 
                 <div v-if="matches.data.length == 0">
                     No matches found!
@@ -299,10 +313,16 @@
     import Busy from "components/Busy.vue";
     import DateTimeInput from "components/DateTimeInput.vue";
 
+    import TourneyInfoView from "./components/TourneyInfoView.vue";
+
+    import { TournamentMatchTeamNames, TournamentMatchTeamNamesEntry } from "components/app/TournamentCommon";
+
     import { MatchPool } from "model/MatchPool";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarUser } from "model/BarUser";
+    import { BarMatchTeam } from "model/BarMatchTeam";
+    import { ApmTournamentInfo, ApmTournamentTeam } from "model/apm_tournament/ApmTournamentInfo";
 
     import { MatchPoolApi } from "api/MatchPoolApi";
     import { BarMatchApi } from "api/BarMatchApi";
@@ -314,7 +334,6 @@
     import ColorUtils from "util/Color";
 
     import "filters/LocaleFilter";
-import { BarMatchTeam } from "model/BarMatchTeam";
 
     type MapStats = {
         mapName: string;
@@ -373,7 +392,11 @@ import { BarMatchTeam } from "model/BarMatchTeam";
                 showPlayerStats: false as boolean,
                 playerStats: [] as PlayerStats[],
 
-                matchGroupOverride: false as boolean
+                matchGroupOverride: false as boolean,
+
+                showTourneyInfo: false as boolean,
+                selectedTournamentID: null as string | null,
+                tourneyGameTeams: new TournamentMatchTeamNames() as TournamentMatchTeamNames,
             }
         },
 
@@ -390,6 +413,10 @@ import { BarMatchTeam } from "model/BarMatchTeam";
 
                 if (this.pool.state != "loaded") {
                     return;
+                }
+
+                if (this.pool.data.tournamentInfos.length == 1) {
+                    this.selectedTournamentID = this.pool.data.tournamentInfos[0].id;
                 }
 
                 this.poolEdit = { ...this.pool.data };
@@ -707,12 +734,47 @@ import { BarMatchTeam } from "model/BarMatchTeam";
                 return this.pool.state == "loaded"
                     && this.pool.data.hideUntil != null
                     && this.pool.data.hideUntil.getTime() > Date.now();
+            },
+
+            selectedTournamentInfo: function(): ApmTournamentInfo | null {
+                if (this.pool.state != "loaded") {
+                    return null;
+                }
+
+                if (this.selectedTournamentID == null) {
+                    return null;
+                }
+
+                return this.pool.data.tournamentInfos.find(iter => iter.id == this.selectedTournamentID) || null;
+            },
+
+            selectedTournamentMatchTeams: function(): TournamentMatchTeamNames {
+                const names: TournamentMatchTeamNames = new TournamentMatchTeamNames();
+                if (this.selectedTournamentInfo == null) {
+                    return names;
+                }
+
+                names.tournamentID = this.selectedTournamentInfo.id;
+
+                for (const match of this.selectedTournamentInfo.matches) {
+                    for (const game of match.games) {
+                        const teams: ApmTournamentTeam[] = this.selectedTournamentInfo.teams.filter(iter => match.entries.map(i => i.entryID).indexOf(iter.id) > -1);
+
+                        const entry: TournamentMatchTeamNamesEntry = new TournamentMatchTeamNamesEntry();
+                        entry.gameID = game.id;
+                        entry.teams = teams;
+
+                        names.entries.push(entry);
+                    }
+                }
+
+                return names;
             }
         },
 
         components: {
             InfoHover, MatchList, ToggleButton, ApiError, Busy,
-            DateTimeInput
+            DateTimeInput, TourneyInfoView
         }
     });
     export default MatchPoolView;

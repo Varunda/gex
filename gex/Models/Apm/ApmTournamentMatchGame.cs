@@ -14,6 +14,8 @@ namespace gex.Models.Apm {
 
         public string WinnerEntryID { get; set; } = "";
 
+        public string Map { get; set; } = "";
+
         public string ReplayUrl { get; set; } = "";
 
         public static ApmTournamentMatchGame Parse(JsonElement elem) {
@@ -24,6 +26,7 @@ namespace gex.Models.Apm {
             game.StartedAt = DateTime.Parse(elem.GetRequiredString("started_at"));
             game.WinnerEntryID = elem.GetRequiredString("winner_entry_id");
             game.ReplayUrl = elem.GetRequiredString("replay_url");
+            game.Map = elem.GetRequiredString("map_name");
 
             return game;
         }

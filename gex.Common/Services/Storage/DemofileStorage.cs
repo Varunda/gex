@@ -17,6 +17,21 @@ namespace gex.Common.Services.Storage {
             _Options = options;
         }
 
+        /// <summary>
+        ///     check if a demofile has already been stored
+        /// </summary>
+        /// <param name="filename">filename of the demofile</param>
+        public bool HasDemofile(string filename) {
+            string replayPath = Path.Join(_Options.Value.ReplayLocation, filename);
+            return File.Exists(replayPath);
+        }
+
+        /// <summary>
+        ///     get the data of a demofile as a byte array
+        /// </summary>
+        /// <param name="filename">name of the demofile</param>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns></returns>
         public async Task<Result<byte[], string>> GetDemofileByFilename(string filename, CancellationToken cancel) {
             string replayPath = Path.Join(_Options.Value.ReplayLocation, filename);
             if (File.Exists(replayPath) == false) {
@@ -31,6 +46,30 @@ namespace gex.Common.Services.Storage {
 
             byte[] file = await File.ReadAllBytesAsync(replayPath, cancel);
             return file;
+        }
+
+        /// <summary>
+        ///     write a demofile to storage
+        /// </summary>
+        /// <param name="filename">name of the demofile</param>
+        /// <param name="data">data of the demofile</param>
+        /// <param name="override">if the file already exists, will it be replaced with the data in <paramref name="data"/>?</param>
+        /// <param name="cancel">cancellation token</param>
+        public async Task Write(string filename, byte[] data, bool @override, CancellationToken cancel) {
+            string outputPath = Path.Join(_Options.Value.ReplayLocation, filename);
+
+            if (File.Exists(outputPath) && @override == false) {
+                _Logger.LogDebug($"demofile already exists [filename={filename}] [path={outputPath}]");
+                return;
+            }
+
+            if (File.Exists(outputPath) == true) {
+                File.Delete(outputPath);
+            }
+
+            using FileStream file = File.OpenWrite(outputPath);
+            await file.WriteAsync(data, cancel);
+            _Logger.LogInformation($"successfully saved demofile [filename={filename}] [outputPath={outputPath}]");
         }
 
     }

@@ -16,15 +16,11 @@
                             <div class="tile-team"
                                 :style="getTeamPanelStyle(match, allyTeam)">
 
-                                <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username"
-                                    :style="{
-                                        'text-shadow': '1px 1px 1px #000000',
-                                        'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto',
-                                        'overflow': 'clip',
-                                        'text-overflow': 'ellipsis',
-                                        'margin': '0.25rem 0'
-                                    }">
+                                <div v-if="getAllyTeamTourneyName(match, allyTeam) != null" class="tile-team-player-name border-bottom pb-1" style="text-align: center;">
+                                    <b>{{ getAllyTeamTourneyName(match, allyTeam) }}</b>
+                                </div>
 
+                                <div v-for="player in getMatchAllyPlayers(match, allyTeam.allyTeamID)" :key="allyTeam.allyTeamID + '-' + player.teamID" :title="player.username" class="tile-team-player-name">
                                     {{ player.username }}
                                 </div>
                             </div>
@@ -182,6 +178,13 @@
         width: max-content;
     }
 
+    .tile-team-player-name {
+        text-shadow: 1px 1px 1px #000000;
+        overflow: clip;
+        text-overflow: ellipsis;
+        margin: 0.25rem 0;
+    }
+
     .dot {
         display: inline-block;
         width: 1em;
@@ -203,11 +206,13 @@
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
+    import { ApmTournamentTeam } from "model/apm_tournament/ApmTournamentInfo";
 
     export const MatchInfo = Vue.extend({
         props: {
             match: { type: Object as PropType<BarMatch>, required: true },
-            ShowTime: { type: Boolean, required: false, default: true }
+            ShowTime: { type: Boolean, required: false, default: true },
+            TeamNames: { type: Array as PropType<ApmTournamentTeam[]>, required: false }
         },
 
         data: function() {
@@ -217,6 +222,30 @@
         },
 
         methods: {
+
+            getAllyTeamTourneyName: function(match: BarMatch, allyTeam: BarMatchAllyTeam): string | null {
+                if (this.TeamNames == undefined) {
+                    return null;
+                }
+
+                if (allyTeam.allyTeamID > this.TeamNames.length - 1) {
+                    return null;
+                }
+
+                const allyTeamPlayers: BarMatchPlayer[] = match.players.filter(iter => iter.allyTeamID == allyTeam.allyTeamID);
+
+                for (const players of allyTeamPlayers) {
+
+                    for (const team of this.TeamNames) {
+                        if (team.members.find(iter => iter.barUserID == players.userID) != undefined) {
+                            return team.name;
+                        }
+                    }
+
+                }
+
+                return null;
+            },
 
             matchAllyTeams: function(match: BarMatch): BarMatchAllyTeam[] {
                 return match.allyTeams.filter(iter => iter.playerCount > 0);
@@ -258,6 +287,10 @@
                         style["border-left"] = border;
                     }
                 }
+
+                style["text-align"] = this.matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? "end" : "start" : "auto";
+
+                //:style="{ 'text-align': matchAllyTeams(match).length == 2 ? allyTeam.allyTeamID % 2 == 0 ? 'end' : 'start' : 'auto' }">
 
                 return style;
             },
