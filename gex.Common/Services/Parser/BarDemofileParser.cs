@@ -19,6 +19,7 @@ using gex.Common.Code.ExtensionMethods;
 using gex.Common.Code;
 using System.Collections.ObjectModel;
 using gex.Common.Models.Bar.Commands;
+using System.Buffers.Text;
 
 namespace gex.Common.Services.Parser {
 
@@ -789,7 +790,7 @@ namespace gex.Common.Services.Parser {
                         do {
                             // this is set in LUA_MSG, with the data of "locking_in_place", see below for that handling
                             if (readyState == 0 && playedPositionsLockedIn.Contains(playerID)) {
-                                _Logger.LogTrace($"cannot set set start position, player is already locked in [teamID={teamID}] [gameID={header.GameID}]");
+                                _Logger.LogTrace($"cannot set set start position, player is already locked in [teamID={teamID}] [gameID={header.GameID}] [time={packet.GameTime}]");
                                 break;
                             }
 
@@ -825,8 +826,8 @@ namespace gex.Common.Services.Parser {
                                 double dz = Math.Pow(iter.StartingPosition.Z - z, 2);
 
                                 if ((dx + dz) <= (SPAWN_TOO_CLOSE * SPAWN_TOO_CLOSE)) {
-                                    _Logger.LogDebug($"new position is too close to other team [teamID={team.TeamID}] [other teamID={iter.TeamID}]"
-                                        + $" [other pos={iter.StartingPosition.X},{iter.StartingPosition.Z}] [dist={dx + dz}]");
+                                    _Logger.LogTrace($"new position is too close to other team [teamID={team.TeamID}] [other teamID={iter.TeamID}]"
+                                        + $" [other pos={iter.StartingPosition.X},{iter.StartingPosition.Z}] [dist={dx + dz}] [gameID={header.GameID}]");
 
                                     tooClose = true;
                                     break;
@@ -837,6 +838,25 @@ namespace gex.Common.Services.Parser {
                                 break;
                             }
 
+
+                            PolygonStartbox.Side? side = null;
+                            if (polygonStartBox.IsOk == true && polygonStartBox.Value.Has()) {
+                                PolygonStartbox polygonStart = polygonStartBox.Value.Get();
+
+                                side = polygonStart.Sides.FirstOrDefault(iter => iter.Index == at.AllyTeamID);
+                            }
+
+                            // a startbox with 2 anchors is used as a rectangle, which was already handled above
+                            bool usedPolygon = side != null && side.Anchors.Count > 2 && map != null;
+                            bool inPolygon = map == null || side == null || side.Anchors.Count <= 2;
+                            if (usedPolygon == true) {
+                                List<PolygonStartboxUtil.Pair> pairs = _PolygonStartboxUtil.TessellateRing(side!.Anchors);
+
+                                // scale the x//z pair to the scale used by the polygon start boxes
+                                (double sx, double sz) = (x / (map!.Width * 512f) * 200f, z / (map.Height * 512f) * 200f);
+                                inPolygon = _PolygonStartboxUtil.PointWithinPolygon(pairs, sx, sz);
+                            }
+
                             Rectangle scaled = new() {
                                 Left = (float)(at.StartBox.Left * (map?.Width ?? 1f) * 512f),
                                 Right = (float)(at.StartBox.Right * (map?.Width ?? 1f) * 512f),
@@ -844,13 +864,14 @@ namespace gex.Common.Services.Parser {
                                 Bottom = (float)(at.StartBox.Bottom * (map?.Height ?? 1f) * 512f),
                             };
 
-                            if (scaled != Rectangle.Zero && map != null && scaled.Within(x, z) == false) {
+                            if (scaled != Rectangle.Zero && map != null && (scaled.Within(x, z) == false || inPolygon == false)) {
                                 if ((readyState == 3 || readyState == 1) && team.StartingPosition == Vector3.Zero) {
                                     _Logger.LogWarning($"team start spot at 0, assuming the last update is correct [gameID={header.GameID}] [team={teamID}] [x={x}] [z={z}]"
                                         + $" [allyTeamID={at.AllyTeamID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
                                 } else {
-                                    _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}]"
-                                        + $" [gameID={header.GameID}] [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                                    _Logger.LogTrace($"cannot set start position, coords are outside the start box [teamID={teamID}] [readyState={readyState}] [x={x}] [z={z}] "
+                                        + $"[gameID={header.GameID}] [hasPolygon={usedPolygon}] [inPolygon={inPolygon}] "
+                                        + $"[rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
                                     break;
                                 }
                             }
@@ -861,8 +882,8 @@ namespace gex.Common.Services.Parser {
                                 Z = z
                             };
 
-                            //_Logger.LogDebug($"start position changed [teamID={teamID}] [readyState={readyState}] [ts={packet.GameTime}] [x={x}] [y={y}] [z={z}]"
-                            //    + $"[rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
+                            //_Logger.LogTrace($"start position changed [teamID={teamID}] [readyState={readyState}] [ts={packet.GameTime}] [x={x}] [y={y}] [z={z}]"
+                            //    + $" [rect (lrtb)={scaled.Left},{scaled.Right},{scaled.Top},{scaled.Bottom}]");
                         } while (false);
                     }
 
@@ -981,6 +1002,72 @@ namespace gex.Common.Services.Parser {
                         // LUA_MSG: unlocking_in_place
                         else if (msg == "unlocking_in_place") {
                             playedPositionsLockedIn.Remove(playerNum);
+                        }
+
+                        // LUA_MSG: complex-match-event
+                        else if (msg.StartsWith("complex-match-event:")) {
+                            do {
+                                BarMatchPlayer? player = match.Players.FirstOrDefault(iter => iter.PlayerID == playerNum);
+                                if (player == null) {
+                                    BarMatchSpectator? spec = match.Spectators.FirstOrDefault(iter => iter.PlayerID == playerNum);
+                                    if (spec == null) {
+                                        _Logger.LogWarning($"missing player (and not a spec) from complex-match-event [playerNum={playerNum}] [gameID={header.GameID}]");
+                                    }
+                                    break;
+                                }
+
+                                try {
+                                    string j = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(msg.AsSpan()["complex-match-event:".Length..]));
+                                    JsonElement json = JsonSerializer.Deserialize<JsonElement>(j);
+
+                                    string eventType = json.GetRequiredString("eventtype");
+                                    if (eventType == "widgets_report") {
+                                        JsonElement widgets = json.GetRequiredChild("widgets");
+                                        if (widgets.ValueKind != JsonValueKind.Array) {
+                                            _Logger.LogWarning($"wrong json element type expected widgets to be an array [type={widgets.ValueKind}] [gameID={header.GameID}]");
+                                            break;
+                                        }
+
+                                        foreach (JsonElement widget in widgets.EnumerateArray()) {
+                                            BarMatchPlayerWidget w = new();
+                                            w.GameID = header.GameID;
+                                            w.Hash = widget.GetRequiredString("hash");
+                                            w.UserID = player.UserID;
+                                            w.State = widget.GetChild("state")?.GetInt32() ?? 0;
+
+                                            // this can be sent multiple times in a demofile, add any new ones, updating the state of any that already exist
+                                            BarMatchPlayerWidget? existingUsage = match.PlayerWidgets.FirstOrDefault(iter => iter.UserID == w.UserID && w.Hash == iter.Hash);
+                                            if (existingUsage != null) {
+                                                // if someone disables a widget during a game
+                                                // (and somehow the demofile has 2 LUAMSGs with this data), keep the enabled one
+                                                if (w.State == 1) {
+                                                    existingUsage.State = w.State;
+                                                }
+                                            } else {
+                                                match.PlayerWidgets.Add(w);
+                                            }
+
+                                            if (match.Widgets.FirstOrDefault(iter => iter.Hash == w.Hash) == null) {
+                                                BarWidgetEntry entry = new();
+                                                entry.Hash = w.Hash;
+                                                entry.Name = widget.GetString("name", "<missing name>").Truncate(250);
+                                                entry.Author = widget.GetString("author", "<missing author>");
+                                                entry.Description = widget.GetString("desc", "<missing desc>");
+
+                                                match.Widgets.Add(entry);
+                                            }
+                                        }
+                                    } else if (eventType == "selfd_mass_allowed") {
+                                        //
+                                    } else {
+                                        _Logger.LogWarning($"unchecked complex-match-event type [eventType={eventType}] [gameID={header.GameID}]");
+                                        Debug.Fail($"unchecked complex-match-event type '{eventType}'");
+                                        break;
+                                    }
+                                } catch (Exception ex) {
+                                    _Logger.LogError(ex, $"failed to parse complex-match-event LUAMSG [gameID={header.GameID}] [gametime={packet.GameTime}]");
+                                }
+                            } while (false);
                         }
                     }
 

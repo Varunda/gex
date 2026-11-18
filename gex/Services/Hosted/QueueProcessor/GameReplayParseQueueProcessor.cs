@@ -42,6 +42,7 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly IBarMatchTeamDeathDb _TeamDeathDb;
         private readonly IBarMatchPlayerLeftDb _PlayerLeftDb;
         private readonly IBarMatchTextPingDb _TextPingDb;
+        private readonly IBarMatchPlayerWidgetDb _PlayerWidgetDb;
 
         private readonly BarMatchProcessingRepository _ProcessingRepository;
         private readonly IOptions<FileStorageOptions> _Options;
@@ -68,7 +69,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             IBarMatchTeamDeathDb teamDeathDb, IBarMatchPlayerLeftDb playerLeftDb,
             IBarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
             BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions,
-            BarMatchTeamRepository matchTeamRepository)
+            BarMatchTeamRepository matchTeamRepository, IBarMatchPlayerWidgetDb playerWidgetDb)
         : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -93,6 +94,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _WebhookQueue = webhookQueue;
             _InstanceOptions = instanceOptions;
             _MatchTeamRepository = matchTeamRepository;
+            _PlayerWidgetDb = playerWidgetDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -158,6 +160,7 @@ namespace gex.Services.Hosted.QueueProcessor {
                     await _MatchTeamRepository.DeleteByGameID(entry.GameID);
                     await _PlayerLeftDb.DeleteByGameID(entry.GameID);
                     await _TextPingDb.DeleteByGameID(entry.GameID);
+                    await _PlayerWidgetDb.DeleteByGameID(entry.GameID, cancel);
                     await _MatchRepository.Delete(entry.GameID);
                     _Logger.LogDebug($"deleted previous game data [gameID={entry.GameID}] [timer={delTimer.ElapsedMilliseconds}ms]");
                 }

@@ -7,6 +7,7 @@ using gex.Models.Internal;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Text.Json;
 
 namespace gex.Models.Api {
@@ -54,6 +55,7 @@ namespace gex.Models.Api {
             MatchPoolIsHidden = match.MatchPoolIsHidden;
             StartSpotVersion = match.StartSpotVersion;
             StartRegionData = match.StartRegionData;
+            //Widgets = match.PlayerWidgets.Select(iter => new ApiBarMatchPlayerWidget(iter, null)).ToList();
         }
 
         [Required]
@@ -143,6 +145,9 @@ namespace gex.Models.Api {
         public List<StartRegionData>? StartRegionData { get; set; } = null;
 
         public List<BarMatchOutcome>? WinnerPrediction { get; set; } = null;
+
+        public List<ApiBarMatchPlayerWidget> Widgets { get; set; } = [];
+
 
     }
 }

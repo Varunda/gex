@@ -10,6 +10,9 @@
   <ItemGroup>
     <None Remove="resources\2025.06.06_map_draw_test.sdfz" />
     <None Remove="resources\2025.06.19_IndexOutOfRange.sdfz" />
+    <None Remove="resources\2026-11-16_Supreme_WeirdStart.sdfz" />
+    <None Remove="resources\2026-11-17_Coastlines_Dry_Start.sdfz" />
+    <None Remove="resources\2026-11-17_DuplicatePlayerWidgets.sdfz" />
     <None Remove="resources\2026.07.04_QuantumMode.sdfz" />
     <None Remove="resources\actions_with_nan_and_inf.json" />
     <None Remove="resources\bomb.gzip" />
@@ -53,6 +56,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\2025.06.19_IndexOutOfRange.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\2026-11-16_Supreme_WeirdStart.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\2026-11-17_Coastlines_Dry_Start.sdfz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resources\2026-11-17_DuplicatePlayerWidgets.sdfz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="resources\2026.07.04_QuantumMode.sdfz">

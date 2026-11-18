@@ -14,6 +14,7 @@ import { HeadlessRunStatus } from "./HeadlessRunStatus";
 import { BarMatchTeam } from "./BarMatchTeam";
 import { StartRegionData } from "./StartRegionData";
 import { BarMatchOutcome } from "./BarMatchOutcome";
+import { BarMatchPlayerWidget } from "./BarMatchPlayerWidget";
 
 export class BarMatch {
     public id: string = "";
@@ -64,6 +65,8 @@ export class BarMatch {
 
     public winnerPrediction: BarMatchOutcome[] | null = null;
 
+    public widgets: BarMatchPlayerWidget[] = [];
+
     public static parse(elem: any): BarMatch {
         const players: BarMatchPlayer[] = (elem.players.map((iter: any) => BarMatchPlayer.parse(iter)) as BarMatchPlayer[]).sort((a, b) => a.playerID - b.playerID);
         const teams: BarMatchTeam[] = (elem.teams.map((iter: any) => BarMatchTeam.parse(iter)) as BarMatchTeam[]).sort((a, b) => a.teamID - b.teamID);
@@ -107,8 +110,8 @@ export class BarMatch {
             uploadedBy: !elem.uploadedBy ? null : AppAccount.parse(elem.uploadedBy),
 
             startRegionData: elem.startRegionData == null ? null : elem.startRegionData.map((iter: any) => StartRegionData.parse(iter)),
-
             winnerPrediction: elem.winnerPrediction == null ? null : elem.winnerPrediction.map((iter: any) => BarMatchOutcome.parse(iter)),
+            widgets: elem.widgets.map((iter: any) => BarMatchPlayerWidget.parse(iter)),
         }
     }
 

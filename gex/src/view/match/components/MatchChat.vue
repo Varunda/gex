@@ -30,7 +30,11 @@
                             Show map pings
                         </button>
 
-                        <toggle-button v-model="colorPlayerNames" class="btn-sm mb-2">
+                        <button class="btn btn-sm mb-2" :class="[ useFullMapDraws == true ? 'btn-primary' : 'btn-secondary' ]" @click.stop="useFullMapDraws = !useFullMapDraws">
+                            Show empty pings
+                        </button>
+
+                        <toggle-button v-model="colorPlayerNames" class="btn-sm mb-2" title="If a player name is found in a chat message, will it be colored?">
                             Color player names
                         </toggle-button>
                     </div>
@@ -93,10 +97,14 @@
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
+    import { Loadable, Loading } from "Loading";
+
+    import { BarMatchApi } from "api/BarMatchApi";
 
     import { BarMatch } from "model/BarMatch";
     import { BarMatchMapDraw, BarMatchMapDrawPoint } from "model/BarMatchMapDraws";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
+    import { BarMatchTeam } from "model/BarMatchTeam";
 
     import TimeUtils from "util/Time";
 
@@ -106,7 +114,6 @@
     import ToggleButton from "components/ToggleButton";
 
     import DOMPurify from "dompurify";
-import { BarMatchTeam } from "model/BarMatchTeam.js";
 
     type FullMessage = {
         id: number;
@@ -132,7 +139,10 @@ import { BarMatchTeam } from "model/BarMatchTeam.js";
                 show: false as boolean,
                 useStartTime: true as boolean,
                 showPingLocation: false as boolean,
-                colorPlayerNames: true as boolean
+                colorPlayerNames: true as boolean,
+                useFullMapDraws: false as boolean,
+
+                fullMapDraws: Loadable.idle() as Loading<BarMatchMapDraw[]>,
             }
         },
 
@@ -201,10 +211,26 @@ import { BarMatchTeam } from "model/BarMatchTeam.js";
             }
         },
 
+        watch: {
+            useFullMapDraws: function(): void {
+                if (this.useFullMapDraws == true && this.fullMapDraws.state == "idle") {
+                    this.fullMapDraws = Loadable.loading();
+                    console.log(`MatchChat> loading full map draw info`);
+                    BarMatchApi.getFullMapDrawsByID(this.match.id).then((data: Loading<BarMatch>) => {
+                        if (data.state != "loaded") {
+                            this.fullMapDraws = Loadable.rewrap(data);
+                            return;
+                        }
+
+                        this.fullMapDraws = Loadable.loaded(data.data.mapDraws);
+                    });
+                }
+            }
+        },
+
         computed: {
 
             nameColorMappings: function(): Map<string, string> {
-
                 const map: Map<string, string> = new Map();
 
                 for (const team of this.match.teams) {
@@ -244,13 +270,14 @@ import { BarMatchTeam } from "model/BarMatchTeam.js";
                     }
                 });
 
-                for (const ping of this.match.mapDraws) {
+                const draws: BarMatchMapDraw[] = this.useFullMapDraws == true && this.fullMapDraws.state == "loaded" ? this.fullMapDraws.data : this.match.mapDraws;
+                for (const ping of draws) {
                     if (ping.action != "point") {
                         continue;
                     }
 
                     const point: BarMatchMapDrawPoint = ping as BarMatchMapDrawPoint;
-                    if (point.label == "") {
+                    if (point.label == "" && this.useFullMapDraws == false) {
                         continue;
                     }
 

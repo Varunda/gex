@@ -1,6 +1,7 @@
 ﻿using gex.Common.Models;
 using gex.Common.Models.Match;
 using gex.Common.Models.User;
+using gex.Common.Services.Db;
 using gex.Common.Services.Parser;
 using gex.Common.Services.Repository;
 using gex.Tests.Util;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,6 +30,16 @@ namespace gex.Tests.Services.Parser {
                 services.AddSingleton<BarDemofileParser>();
 
                 _ServiceProvider = services.BuildServiceProvider();
+
+                IDbHelper helper = _ServiceProvider.GetRequiredService<IDbHelper>();
+                await DbUtil.TruncateTables(helper);
+
+                string barMapSql = await File.ReadAllTextAsync("./resources/sql/bar_map.sql");
+
+                using DbConnection conn = helper.Connection();
+                using DbCommand cmd = await helper.Command(conn, barMapSql);
+
+                await cmd.ExecuteNonQueryAsync();
             }
 
             return (_ServiceProvider.GetRequiredService<BarDemofileParser>(), _ServiceProvider);
@@ -408,6 +420,102 @@ namespace gex.Tests.Services.Parser {
             Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 13)?.OpeningLabUnitDefinitionName);
             Assert.AreEqual("armlab", match.Teams.FirstOrDefault(iter => iter.TeamID == 14)?.OpeningLabUnitDefinitionName);
             Assert.AreEqual("corap", match.Teams.FirstOrDefault(iter => iter.TeamID == 15)?.OpeningLabUnitDefinitionName);
+        }
+
+        [TestMethod]
+        public async Task Test_StartSpot_RejectionLogic() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/2026-11-16_Supreme_WeirdStart.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("da55fb6aee24804410643fb9d5ea39e9", match.ID);
+            Assert.AreEqual(16, match.Teams.Count);
+
+            BarMatchTeam? team0 = match.Teams.FirstOrDefault(iter => iter.TeamID == 0);
+            Assert.IsNotNull(team0);
+
+            Assert.AreEqual(7596.5435f, team0.StartingPosition.X);
+            Assert.AreEqual(55.812744f, team0.StartingPosition.Y);
+            Assert.AreEqual(4783.136f, team0.StartingPosition.Z);
+        }
+
+        [TestMethod]
+        public async Task Test_StartSpot_RejectionLogic2() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/2026-11-17_Coastlines_Dry_Start.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("d674fc6a288fc1e555837757edcf3a6b", match.ID);
+            Assert.AreEqual(16, match.Teams.Count);
+
+            BarMatchTeam? team0 = match.Teams.FirstOrDefault(iter => iter.TeamID == 0);
+            Assert.IsNotNull(team0);
+
+            Assert.AreEqual(9011.261f, team0.StartingPosition.X);
+            Assert.AreEqual(490.52405f, team0.StartingPosition.Y);
+            Assert.AreEqual(3116.9849f, team0.StartingPosition.Z);
+        }
+
+        [TestMethod]
+        public async Task Test_PlayerWidget_Duplicates() {
+            TestLogger<BarDemofileParser> logger = new TestLogger<BarDemofileParser>();
+
+            using FileStream testInput = File.OpenRead("./resources/2026-11-17_DuplicatePlayerWidgets.sdfz");
+            using MemoryStream ms = new();
+            await testInput.CopyToAsync(ms);
+
+            byte[] input = ms.ToArray();
+
+            (BarDemofileParser parser, ServiceProvider svs) = await _Get();
+
+            Result<BarMatch, string> output = await parser.Parse("", input, new DemofileParserOptions() { }, CancellationToken.None);
+            if (output.IsOk == false) {
+                logger.LogError(output.Error);
+            }
+
+            Assert.IsTrue(output.IsOk);
+
+            BarMatch match = output.Value;
+            Assert.AreEqual("93c1fc6a26eeb03117e6700f426c1b89", match.ID);
+
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 627800 && iter.Hash == "IGY8Cpp5U7rZGOsPrYrfdQ=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 609785 && iter.Hash == "QT1NUee7OoVEUHDaZSuwjA=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 609785 && iter.Hash == "UE8UsKFr77PQBg4/bmNjNQ=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 609785 && iter.Hash == "ozUV1rxdLudS3wa8GiGbwQ=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "1qXftC+wxw48ZX2+ZFd7jQ=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "QT1NUee7OoVEUHDaZSuwjA=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "6w4OQSGYZi1Q6YNVzjDWUg=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "YroTLHGZK26zNdj6a5iHNg=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "5sVYIxkUufyOBHz0auQBrA=="));
+            Assert.AreEqual(1, match.PlayerWidgets.Count(iter => iter.UserID == 614175 && iter.Hash == "Ohu8lzV2UwrVRZQeugbDQA=="));
         }
 
         /// <summary>

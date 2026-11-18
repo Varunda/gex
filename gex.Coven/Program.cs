@@ -72,6 +72,8 @@ sealed class Program {
         hostBuilder.Services.AddSingleton<UserOptionsService>();
         hostBuilder.Services.AddSingleton<BarMatchPlayerRepository>();
         hostBuilder.Services.AddSingleton<BarMatchTeamRepository>();
+        hostBuilder.Services.AddSingleton<BarFeatureParser>();
+        hostBuilder.Services.AddSingleton<BarFeatureSetParser>();
 
         hostBuilder.Services.AddCovenDbServices();
         hostBuilder.Services.AddCovenUtils();

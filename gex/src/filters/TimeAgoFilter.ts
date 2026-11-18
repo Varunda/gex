@@ -23,14 +23,14 @@ Vue.filter("timeAgo", (date: Date | number): string => {
 
 	const hours = Math.floor(now.diff(m, "hours").as("hours")) % 24;
 	if (days >= 1) {
-		return `${days.toFixed(2)}d ${hours.toFixed(2)}h`;
+		return `${days.toFixed(0)}d ${hours.toFixed(0)}h`;
 	}
 
 	const mins = Math.floor(now.diff(m, "minutes").as("minutes")) % 60;
 	if (hours >= 1) {
-        return `${hours.toFixed(2)}h ${mins.toFixed(2)}m`;
+        return `${hours.toFixed(0)}h ${mins.toFixed(0)}m`;
     }
 
 	const secs = Math.floor(now.diff(m, "seconds").as("seconds")) % 60;
-	return `${mins.toFixed(2)}m ${secs.toFixed(2)}s`;
+	return `${mins.toFixed(0)}m ${secs.toFixed(0)}s`;
 });

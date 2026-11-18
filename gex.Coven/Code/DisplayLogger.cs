@@ -37,8 +37,13 @@ namespace gex.Coven.Code {
             }
 
 			char ps = Path.DirectorySeparatorChar;
-            string message = formatter(state, exception)
-				.Replace($"{ps}{_UsernameToRedact}{ps}", $"{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase);
+            string message = formatter(state, exception);
+
+            if (exception != null) {
+                message = $"{exception.ToString()}\n" + message;
+            }
+
+            message = message.Replace($"{ps}{_UsernameToRedact}{ps}", $"{ps}<username>{ps}", StringComparison.OrdinalIgnoreCase);
 
             WeakReferenceMessenger.Default.Send(new DisplayLoggerMessage() {
                 Timestamp = DateTime.UtcNow,

@@ -524,9 +524,8 @@ namespace gex.Common.Services.Search {
         /// <param name="value"></param>
         /// <returns></returns>
         private static string addParameter(QuerySetup query, object? value, SearchNode? op) {
-
             if (op != null && (op.Token.Value == SearchOp.STARTS_WITH || op.Token.Value == SearchOp.ENDS_WITH || op.Token.Value == SearchOp.CONTAINS)) {
-                if (value is not string str) {
+                if (value is not string) {
                     throw new SearchAstArgumentException($"value was a {value?.GetType().Name}, not a {typeof(string).Name} (for a {op.Token.Value} operator)");
                 }
 
@@ -631,9 +630,6 @@ namespace gex.Common.Services.Search {
 
             // player fields
             { "player.user_name", typeof(string) },
-            { "team.start_spot_label", typeof(string) },
-            { "team.faction", typeof(string) },
-            { "ally_team.won", typeof(bool) },
             { "player.skill", typeof(double) },
             { "player.skill_uncertainity", typeof(double) },
             { "player.team_id", typeof(int) },
@@ -641,6 +637,11 @@ namespace gex.Common.Services.Search {
             { "player.game_name", typeof(string) },
             { "player.current_name", typeof(string) },
             { "player.user_id", typeof(long) },
+            { "player.player_id", typeof(int) },
+            { "team.start_spot_label", typeof(string) },
+            { "team.faction", typeof(string) },
+            { "team.opening_lab_unit_definition_name", typeof(string) },
+            { "ally_team.won", typeof(bool) },
 
             // map fields
             { "map.name", typeof(string) },
@@ -651,20 +652,6 @@ namespace gex.Common.Services.Search {
             { "map.tidal_strength", typeof(int) },
             { "map.author", typeof(string) },
             { "map.extractor_radius", typeof(int) },
-        };
-
-        /// <summary>
-        ///     valid types and what operations can be done on them
-        /// </summary>
-        private static Dictionary<Type, List<string>> ValidTypeOperations = new() {
-            { typeof(bool), [ SearchOp.EQ, SearchOp.NOT ] },
-            { typeof(TimeSpan), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(DateTime), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(int), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(long), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(uint), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(double), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
-            { typeof(string), [ SearchOp.EQ, SearchOp.NOT, SearchOp.STARTS_WITH, SearchOp.CONTAINS, SearchOp.ENDS_WITH ] },
         };
 
         /// <summary>
@@ -693,11 +680,28 @@ namespace gex.Common.Services.Search {
             { "player.name", "player.user_name" },
             { "player.won", "ally_team.won" },
             { "player.handicap", "team.handicap" },
+            { "player.opening_lab", "team.opening_lab_unit_definition_name" },
+            { "player.lab", "team.opening_lab_unit_definition_name" },
+            { "player.widget", "player.widget_hash" },
 
             // map fields
             { "map.min_wind", "map.minimum_wind" },
             { "ma.max_wind", "map.maximum_wind" },
             { "map.tidal", "map.tidal_strength" },
+        };
+
+        /// <summary>
+        ///     valid types and what operations can be done on them
+        /// </summary>
+        private static Dictionary<Type, List<string>> ValidTypeOperations = new() {
+            { typeof(bool), [ SearchOp.EQ, SearchOp.NOT ] },
+            { typeof(TimeSpan), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(DateTime), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(int), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(long), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(uint), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(double), [ SearchOp.EQ, SearchOp.NOT, SearchOp.LT, SearchOp.LTE, SearchOp.GT, SearchOp.GTE ] },
+            { typeof(string), [ SearchOp.EQ, SearchOp.NOT, SearchOp.STARTS_WITH, SearchOp.CONTAINS, SearchOp.ENDS_WITH ] },
         };
 
         /// <summary>

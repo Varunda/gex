@@ -54,11 +54,11 @@
                                 <TableViewColumn Header="Link" Width="*">
                                     <TableViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <ItemsControl ItemsSource="{Binding UserIDStrings}">
+                                            <ItemsControl ItemsSource="{Binding UserIDUris}">
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="x:String">
-                                                        <HyperlinkButton NavigateUri="{Binding ., StringFormat='https://gex.honu.pw/user/{0}'}">
-                                                            <TextBlock Text="{Binding .,StringFormat='Gex {0}'}"/>
+                                                    <DataTemplate x:DataType="x:Uri">
+                                                        <HyperlinkButton NavigateUri="{Binding .}">
+                                                            <TextBlock Text="Gex"/>
                                                         </HyperlinkButton>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>

@@ -141,6 +141,7 @@ namespace gex.Tests.Services.Db {
                     IncludeAllyTeams = true,
                     IncludePlayers = true,
                     IncludeTeams = true,
+                    IncludeWidgets = true,
                 }, null, cts.Token);
 
                 built.Add(ret.Value.Get());
@@ -430,6 +431,54 @@ namespace gex.Tests.Services.Db {
         }
 
         [TestMethod]
+        public async Task Test_Query_Player_OpeningLab() {
+            List<BarMatch> matches = await _Query("player(lab:corlab)");
+
+            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to verify query");
+
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.Teams.FirstOrDefault(iter => iter.OpeningLabUnitDefinitionName == "corlab"),
+                    $"expected a team to have corlab as opening lab from {match.ID}: {string.Join(", ", match.Teams.Select(i => i.OpeningLabUnitDefinitionName))}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_OpeningLab_EndsWith() {
+            List<BarMatch> matches = await _Query("player(lab:$ap)");
+
+            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to check condition");
+
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.Teams.FirstOrDefault(iter => (iter.OpeningLabUnitDefinitionName ?? "").EndsWith("ap")),
+                    $"expected a team to have a lab ending with 'ap' from {match.ID}: {string.Join(", ", match.Teams.Select(i => i.OpeningLabUnitDefinitionName))}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_WidgetHash() {
+            List<BarMatch> matches = await _Query("player(widget_hash:\"QT1NUee7OoVEUHDaZSuwjA==\")");
+
+            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to check condition");
+
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.PlayerWidgets.FirstOrDefault(iter => iter.Hash == "QT1NUee7OoVEUHDaZSuwjA=="),
+                    $"expected a team to a widget with hash QT1NUee7OoVEUHDaZSuwjA== {match.ID}: {string.Join(", ", match.PlayerWidgets.Select(i => i.Hash))}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Query_Player_WidgetHash_And_UserID() {
+            List<BarMatch> matches = await _Query("player(widget_hash:\"wiR49Rs0Ua43LLBKo6Q6sA==\" user_id:370202)");
+
+            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to check condition");
+
+            foreach (BarMatch match in matches) {
+                Assert.IsNotNull(match.PlayerWidgets.FirstOrDefault(iter => iter.Hash == "wiR49Rs0Ua43LLBKo6Q6sA=="),
+                    $"expected a team to a widget with hash wiR49Rs0Ua43LLBKo6Q6sA== from {match.ID}: {string.Join(", ", match.PlayerWidgets.Select(i => i.Hash))}");
+            }
+        }
+
+        [TestMethod]
         public async Task Test_Query_Player_UserID() {
             List<BarMatch> matches = await _Query("player(user_id:146777)");
 
@@ -510,6 +559,7 @@ namespace gex.Tests.Services.Db {
             List<BarMatch> matches = await _Query("parsed:false");
             Assert.AreEqual(0, matches.Count);
         }
+
 
         #region error test
 
@@ -667,6 +717,7 @@ namespace gex.Tests.Services.Db {
                     IncludeAllyTeams = true,
                     IncludePlayers = true,
                     IncludeTeams = true,
+                    IncludeWidgets = true,
                 }, null, cts.Token);
 
                 Assert.IsTrue(ret.IsOk, $"got error built match {iter.ID}: {ret.Error}");

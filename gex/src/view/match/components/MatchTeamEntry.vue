@@ -30,7 +30,6 @@
                 - {{ team.startSpotLabel }}
             </span>
         </span>
-
     </fragment>
 
     <fragment v-else>
@@ -101,13 +100,14 @@
 
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchTeam } from "model/BarMatchTeam";
+    import { BarMatchPlayerWidget } from "model/BarMatchPlayerWidget";
 
     export const MatchTeamEntry = Vue.extend({
         props: {
             players: { type: Array as PropType<BarMatchPlayer[]>, required: true },
             team: { type: Object as PropType<BarMatchTeam>, required: true },
             ShowPrediction: { type: Boolean, required: false },
-            ShowDebug: { type: Boolean, required: false }
+            ShowDebug: { type: Boolean, required: false },
         },
 
         components: {

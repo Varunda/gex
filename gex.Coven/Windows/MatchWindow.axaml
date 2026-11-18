@@ -1,4 +1,4 @@
-<husk:AppWindow xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:gex.Coven.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -173,4 +173,4 @@
         
     </Grid>
 
-</husk:AppWindow>
+</Window>

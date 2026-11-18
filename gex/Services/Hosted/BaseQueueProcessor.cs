@@ -126,7 +126,7 @@ namespace gex.Services.Hosted {
 
                 } catch (Exception ex) when (cancel.IsCancellationRequested == false) {
                     _Logger.LogError(ex, $"error in queue processor [service={_ServiceName}]");
-                    if (ex is not System.TimeoutException) {
+                    if (ex is not System.TimeoutException && (ex.InnerException is null || (ex.InnerException is not System.TimeoutException))) {
                         Debug.Fail("error in queue");
                     }
                 } catch (Exception) when (cancel.IsCancellationRequested == true) {

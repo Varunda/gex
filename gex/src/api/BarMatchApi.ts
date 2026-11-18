@@ -11,9 +11,13 @@ export class BarMatchApi extends ApiWrapper<BarMatch> {
     public static getByID(gameID: string): Promise<Loading<BarMatch>> {
         return BarMatchApi.get().readSingle(
             `/api/match/${gameID}?includeTeams=true&includePlayers=true&includeAllyTeams=true&includeSpectators=true`
-            + `&includeChat=true&includeTeamDeaths=true&includeLabeledPings=true&includePlayerLeaves=true&includeStartRegionData=true&includeWinnerPrediction=true`,
+            + `&includeChat=true&includeTeamDeaths=true&includeLabeledPings=true&includePlayerLeaves=true&includeStartRegionData=true&includeWidgets=true`,
             BarMatch.parse
         );
+    }
+
+    public static getFullMapDrawsByID(gameID: string): Promise<Loading<BarMatch>> {
+        return BarMatchApi.get().readSingle(`/api/match/${gameID}?includeMapDraws=true`, BarMatch.parse);
     }
 
     public static getRecent(offset: number = 0, limit: number = 24): Promise<Loading<BarMatch[]>> {

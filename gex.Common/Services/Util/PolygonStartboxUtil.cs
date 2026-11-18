@@ -249,6 +249,7 @@ namespace gex.Common.Services.Util {
             return inside;
         }
 
+        [DebuggerDisplay("Pair=({X},{Z})")]
         public struct Pair {
             public double X { get; set; }
             public double Z { get; set; }

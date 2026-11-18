@@ -4,6 +4,7 @@ using gex.Code.Exceptions;
 using gex.Common.Code.Constants;
 using gex.Common.Code.Exceptions;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.Search;
@@ -72,6 +73,7 @@ namespace gex.Controllers.Api {
         private readonly BarUserRepository _UserRepository;
         private readonly SearchTokenizer _SearchTokenizer;
         private readonly SearchAstBuilder _AstBuilder;
+        private readonly BarWidgetEntryRepository _WidgetRepository;
 
         private const string CACHE_KEY_MATCHES_BY_USER_ID = "Gex.Match.Controller.Matches.{0}"; // {0} => user ID
         private readonly IMemoryCache _Cache;
@@ -88,7 +90,7 @@ namespace gex.Controllers.Api {
             IBarMatchBuilderUtil matchBuilder, SearchAstBuilder astBuilder,
             SearchTokenizer searchTokenizer, MatchPoolRepository matchPoolRepository,
             IMemoryCache cache, MatchPoolEntryRepository matchPoolEntryRepository,
-            BarUserRepository userRepository) {
+            BarUserRepository userRepository, BarWidgetEntryRepository widgetRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -114,12 +116,14 @@ namespace gex.Controllers.Api {
             _Cache = cache;
             _MatchPoolEntryRepository = matchPoolEntryRepository;
             _UserRepository = userRepository;
+            _WidgetRepository = widgetRepository;
         }
 
         /// <summary>
         ///     get a <see cref="BarMatch"/>, optionally including additional information.
         ///     see remarks for how hidden match pools are handled
         /// </summary>
+        ///  
         /// <remarks>
         ///     some match pools are marked as hidden until a specific time.
         ///     if the match is in a <see cref="MatchPool"/> that is current hidden* (see more below), 
@@ -148,8 +152,10 @@ namespace gex.Controllers.Api {
         /// <param name="includeStartRegionData">will <see cref="BarMatch.StartRegionData"/> be populated? defaults to false</param>
         /// <param name="includeWinnerPrediction">
         ///     will <see cref="ApiMatch.WinnerPrediction"/> be populated? defaults to false.
-        ///     implies <paramref name="includePlayers"/> 
+        ///     implies <paramref name="includePlayers"/>. NOTE: this is not accurate to how the balancing is performed,
+        ///     as demofiles often contain the ratings from the previous match, not the current match
         /// </param>
+        /// <param name="includeWidgets">will <see cref="ApiMatch.Widgets"/> be populated? defaults to false</param>
         /// <param name="cancel">cancel token</param>
         /// 
         /// <response code="200">
@@ -178,6 +184,7 @@ namespace gex.Controllers.Api {
             [FromQuery] bool includeSelfDCommands = false,
             [FromQuery] bool includeStartRegionData = false,
             [FromQuery] bool includeWinnerPrediction = false,
+            [FromQuery] bool includeWidgets = false,
             CancellationToken cancel = default
         ) {
             Result<Maybe<BarMatch>, string> result = await _MatchBuilder.BuildMatch(gameID, new IBarMatchBuilderUtil.BuildOptions() {
@@ -193,6 +200,7 @@ namespace gex.Controllers.Api {
                 IncludeCommands = includeCommands,
                 IncludeSelfDCommands = includeSelfDCommands,
                 IncludeStartRegionData = includeStartRegionData,
+                IncludeWidgets = includeWidgets && false,
             }, (await _CurrentUser.Get(cancel))?.ID, cancel);
 
             if (result.IsOk == false) {
@@ -209,6 +217,12 @@ namespace gex.Controllers.Api {
             BarMatch match = result.Value.Get();
 
             ApiMatch ret = new(match);
+            if (includeTeams == false) { ret.Teams = []; }
+            if (includeAllyTeams == false) { ret.AllyTeams = []; }
+            if (includePlayers == false) { ret.Players = []; }
+            if (includeChat == false) { ret.ChatMessages = []; }
+            if (includeSpectators == false) { ret.Spectators = []; }
+
             ret.MapData = await _BarMapRepository.GetByFileName(match.MapName, cancel);
             if (ret.MapData != null && ret.StartSpotVersion != null) {
                 ret.MapData.StartPositionData =
@@ -216,6 +230,17 @@ namespace gex.Controllers.Api {
             }
             ret.Processing = await _ProcessingRepository.GetByGameID(gameID, cancel);
             ret.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(match.GameVersion, cancel);
+
+            if (includeWidgets == true && match.PlayerWidgets.Count > 0) {
+                Dictionary<string, BarWidgetEntry> widgetDict = (await _WidgetRepository.GetAll(cancel)).ToDictionary(iter => iter.Hash);
+
+                ret.Widgets = match.PlayerWidgets.Select(iter => new ApiBarMatchPlayerWidget(iter, widgetDict.GetValueOrDefault(iter.Hash))).ToList();
+            } else if (includeWidgets == false) {
+                ret.Widgets = [];
+            }
+
+            // 2026-11-17: for now, just collect this data and don't make it public
+            ret.Widgets = [];
 
             // if the user looking at the match is not logged in, don't show the users who prioritized the game
             List<ulong> discordIds = await _ProcessingPriorityDb.GetByGameID(gameID, cancel);
@@ -631,6 +656,7 @@ namespace gex.Controllers.Api {
                 ApiMatch api = new(m);
                 api.Processing = await _ProcessingRepository.GetByGameID(m.ID, cancel);
                 api.IsBadGameVersion = await _BadGameVersionRepository.IsBadGameVersion(m.GameVersion, cancel);
+                api.Widgets = [];
 
                 results.Results.Add(api);
             }

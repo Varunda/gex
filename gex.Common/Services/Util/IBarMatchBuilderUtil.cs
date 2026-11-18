@@ -41,6 +41,7 @@ namespace gex.Common.Services.Util {
             public bool IncludeSelfDCommands { get; set; } = false;
             public bool IncludeStartRegionData { get; set; } = false;
             public bool IncludeMapData { get; set; } = false;
+            public bool IncludeWidgets { get; set; } = false;
         }
 
     }

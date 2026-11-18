@@ -71,5 +71,7 @@ namespace gex.Coven.ViewModels.Match {
 
         public HashSet<string> UserIDStrings => new HashSet<string>(UserIDs.Select(iter => iter.ToString()));
 
+        public HashSet<Uri> UserIDUris => new HashSet<Uri>(UserIDs.Select(iter => new Uri($"https://gex.honu.pw/user/{iter}")));
+
     }
 }

@@ -109,5 +109,9 @@ namespace gex.Common.Models.Match {
 
         public List<BarMatchTeamStats> TeamStats { get; set; } = [];
 
+        public List<BarMatchPlayerWidget> PlayerWidgets { get; set; } = [];
+
+        public List<BarWidgetEntry> Widgets { get; set; } = [];
+
     }
 }

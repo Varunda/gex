@@ -1,6 +1,7 @@
 using gex.Common.Services.Db;
 using gex.Common.Services.Db.Match;
 using gex.Services.Db.Account;
+using gex.Services.Db.Bar;
 using gex.Services.Db.Event;
 using gex.Services.Db.Map;
 using gex.Services.Db.Match;
@@ -34,6 +35,7 @@ namespace gex.Services.Db {
             services.AddSingleton<IBarMatchTeamDeathDb, PgBarMatchTeamDeathDb>();
             services.AddSingleton<IBarMatchPlayerLeftDb, PgBarMatchPlayerLeftDb>();
             services.AddSingleton<IBarMatchTextPingDb, PgBarMatchTextPingDb>();
+            services.AddSingleton<IBarMatchPlayerWidgetDb, PgBarMatchPlayerWidgetDb>();
 
             // game event
             services.AddSingleton<GameEventUnitCreatedDb>();
@@ -101,6 +103,7 @@ namespace gex.Services.Db {
             services.AddSingleton<BadGameVersionDb>();
             services.AddSingleton<MapEngineUsageDb>();
             services.AddSingleton<MatchProcessingWebhookDb>();
+            services.AddSingleton<BarWidgetEntryDb>();
         }
 
     }

@@ -1,6 +1,7 @@
 ﻿using gex.Common.Code.Constants;
 using gex.Common.Code.ExtensionMethods;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Models.User;
@@ -44,10 +45,12 @@ namespace gex.Services.Util {
         private readonly StartSpotDataRepository _StartSpotDataRepository;
         private readonly StartSpotDataParser _StartSpotDataParser;
         private readonly BarMatchTeamRepository _TeamRepository;
+        private readonly IBarMatchPlayerWidgetDb _PlayerWidgetDb;
         private readonly BarMatchProcessingRepository _MatchProcessingRepository;
+        private readonly BarWidgetEntryRepository _WidgetRepository;
 
         public BarDemofileResultProcessor(ILogger<BarDemofileResultProcessor> logger,
-            BarMatchRepository matchRepository, 
+            BarMatchRepository matchRepository,
             IBarMatchAllyTeamDb matchAllyTeamDb, IBarMatchSpectatorDb matchSpectatorDb,
             IBarMatchChatMessageDb matchChatMessageDb, BarMatchPlayerRepository playerRepository,
             BarMapRepository barMapRepository, BarUserRepository userRepository,
@@ -55,7 +58,8 @@ namespace gex.Services.Util {
             IBarMatchTeamDeathDb teamDeathDb, StartSpotDataRepository startSpotDataRepository,
             StartSpotDataParser startSpotDataParser, IBarMatchPlayerLeftDb playerLeftDb,
             IBarMatchTextPingDb textPingDb, BarMatchTeamRepository teamRepository,
-            BarMatchProcessingRepository matchProcessingRepository) {
+            BarMatchProcessingRepository matchProcessingRepository, IBarMatchPlayerWidgetDb playerWidgetDb,
+            BarWidgetEntryRepository widgetRepository) {
 
             _Logger = logger;
 
@@ -75,6 +79,8 @@ namespace gex.Services.Util {
             _TextPingDb = textPingDb;
             _TeamRepository = teamRepository;
             _MatchProcessingRepository = matchProcessingRepository;
+            _PlayerWidgetDb = playerWidgetDb;
+            _WidgetRepository = widgetRepository;
         }
 
         public async Task Process(BarMatch match, CancellationToken cancel) {
@@ -225,6 +231,18 @@ namespace gex.Services.Util {
                 point.GameID = match.ID;
                 await _TextPingDb.Insert(point, cancel);
             }
+            long insertTextPingMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
+
+            // widgets
+            foreach (BarWidgetEntry widget in match.Widgets) {
+                await _WidgetRepository.Upsert(widget, cancel);
+            }
+
+            // player widgets
+            foreach (BarMatchPlayerWidget widget in match.PlayerWidgets) {
+                await _PlayerWidgetDb.Insert(widget, cancel);
+            }
+            long insertWidgetsMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             BarMatchProcessing? processing = await _MatchProcessingRepository.GetByGameID(match.ID, cancel)
                 ?? throw new InvalidOperationException($"a {nameof(BarMatchProcessing)} must exist for {match.ID} at this point");
@@ -233,14 +251,16 @@ namespace gex.Services.Util {
             processing.Features.Add("player_left");
             processing.Features.Add("text_ping");
             processing.Features.Add("player_opening_lab");
+            processing.Features.Add("widget");
             await _MatchProcessingRepository.Upsert(processing);
 
             await _MatchRepository.Insert(match, cancel);
             long insertMatchMs = stepTimer.ElapsedMilliseconds; stepTimer.Restart();
 
             _Logger.LogInformation($"processed match [ID={match.ID}]"
-                + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms]"
-                + $" [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms] [death db={match.TeamDeaths.Count}/{insertDeathMs}ms] [match db={insertMatchMs}ms]");
+                + $" [ally team db={insertAllyTeamsMs}ms] [player db={insertPlayersMs}ms] [spec ms={insertSpecMs}ms] [chat db={insertChatMs}ms]"
+                + $" [death db={match.TeamDeaths.Count}/{insertDeathMs}ms] [text ping={insertTextPingMs}ms] [widget={insertWidgetsMs}ms]"
+                + $" [match db={insertMatchMs}ms]");
 
             bool saidWrongSkillValues = false;
             foreach (BarMatchPlayer player in match.Players) {

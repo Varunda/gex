@@ -40,6 +40,8 @@ namespace gex.Services.BarApi {
             _Logger = logger;
             _Options = options;
 
+            _Logger.LogInformation($"creating new apm website api instance");
+
             if (_Options.Value.Enabled == true && string.IsNullOrWhiteSpace(_Options.Value.ApiUrl)) {
                 throw new ArgumentException($"missing ApmWebsite:ApiUrl");
             }

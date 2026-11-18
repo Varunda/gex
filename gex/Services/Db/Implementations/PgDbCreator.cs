@@ -72,6 +72,7 @@ namespace gex.Services.Db.Implementations {
 
             foreach (Type t in types) {
                 SqlMapper.SetTypeMap(t, new ColumnTypeMapper(t));
+                _Logger.LogTrace($"setup mapping for type [type={t.FullName}]");
             }
 
             SqlMapper.AddTypeHandler(new DapperSqlMappers.UIntHandler());

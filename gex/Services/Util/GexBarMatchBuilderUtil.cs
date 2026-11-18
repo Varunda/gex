@@ -1,5 +1,6 @@
 ﻿using gex.Common.Code.Constants;
 using gex.Common.Models;
+using gex.Common.Models.Bar;
 using gex.Common.Models.Map;
 using gex.Common.Models.Match;
 using gex.Common.Services.Db.Match;
@@ -40,8 +41,10 @@ namespace gex.Services.Util {
         private readonly MatchPoolRepository _MatchPoolRepository;
         private readonly MatchPoolEntryDb _MatchPoolEntryDb;
         private readonly IBarMatchTextPingDb _TextPingDb;
+        private readonly IBarMatchPlayerWidgetDb _PlayerWidgetDb;
         private readonly PolygonStartboxUtil _PolygonStartboxUtil;
         private readonly BarMapRepository _MapRepository;
+        private readonly BarWidgetEntryRepository _WidgetRepository;
 
         public GexBarMatchBuilderUtil(ILogger<GexBarMatchBuilderUtil> logger,
             BarMatchRepository matchRepository, IBarMatchTeamDb teamDb,
@@ -51,7 +54,8 @@ namespace gex.Services.Util {
             BarMatchProcessingRepository processingRepository, BarDemofileParser demofileParser,
             DemofileStorage demofileStorage, MatchPoolRepository matchPoolRepository,
             MatchPoolEntryDb matchPoolEntryDb, IBarMatchTextPingDb textPingDb,
-            PolygonStartboxUtil polygonStartboxUtil, BarMapRepository mapRepository) {
+            PolygonStartboxUtil polygonStartboxUtil, BarMapRepository mapRepository,
+            IBarMatchPlayerWidgetDb playerWidgetDb, BarWidgetEntryRepository widgetRepository) {
 
             _Logger = logger;
             _MatchRepository = matchRepository;
@@ -70,8 +74,11 @@ namespace gex.Services.Util {
             _TextPingDb = textPingDb;
             _PolygonStartboxUtil = polygonStartboxUtil;
             _MapRepository = mapRepository;
+            _PlayerWidgetDb = playerWidgetDb;
+            _WidgetRepository = widgetRepository;
         }
 
+        /// <inheritdoc/>
         public async Task<Result<Maybe<BarMatch>, string>> BuildMatch(string gameID,
             IBarMatchBuilderUtil.BuildOptions options, long? currentUserID,
             CancellationToken cancel
@@ -152,8 +159,7 @@ namespace gex.Services.Util {
                 match.TeamDeaths = await _TeamDeathDb.GetByGameID(gameID, cancel);
             }
 
-            // if the request wants player leaves, but the match feature's don't include it,
-            //      build those here
+            // if the request wants player leaves, but the match feature's don't include it, build that here
             if (options.IncludePlayerLeaves == true) {
                 if (proc != null && proc.Features.Contains("player_left") == false) {
                     _Logger.LogDebug($"match is missing player_left feature, fixing [gameID={gameID}]");
@@ -277,6 +283,37 @@ namespace gex.Services.Util {
 
                         match.StartRegionData.Add(startRegion);
                     }
+                }
+            }
+
+            // if the request wants widgets, but the match feature's don't include it, build those here
+            if (options.IncludeWidgets == true) {
+                if (proc != null && proc.Features.Contains("widget") == false) {
+                    _Logger.LogDebug($"match is missing widget feature, fixing [gameID={gameID}]");
+
+                    Result<BarMatch, string> fromDemofile = await _Parse(match, new DemofileParserOptions(), cancel);
+
+                    if (fromDemofile.IsOk == false) {
+                        _Logger.LogError($"failed to parse demofile [error={fromDemofile.Error}] [matchID={match.ID}]");
+                        Debug.Fail("failed to parse demofile");
+                        return $"failed to parse demofile for match [error={fromDemofile.Error}]";
+                    }
+
+                    await _PlayerWidgetDb.DeleteByGameID(gameID, cancel);
+                    foreach (BarMatchPlayerWidget widget in fromDemofile.Value.PlayerWidgets) {
+                        await _PlayerWidgetDb.Insert(widget, cancel);
+                        match.PlayerWidgets.Add(widget);
+                    }
+
+                    foreach (BarWidgetEntry widget in fromDemofile.Value.Widgets) {
+                        await _WidgetRepository.Upsert(widget, cancel);
+                    }
+
+                    proc.Features.Add("widget");
+                    await _ProcessingRepository.Upsert(proc);
+                } else {
+                    match.PlayerWidgets = [];
+                    match.PlayerWidgets.AddRange(await _PlayerWidgetDb.GetByGameID(gameID, cancel));
                 }
             }
 

@@ -21,6 +21,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Timers;
 
 namespace gex.Coven.Services {
 
@@ -35,6 +36,10 @@ namespace gex.Coven.Services {
         private readonly BarMatchIgnoredFilesDb _IgnoredFilesDb;
 
         private FileSystemWatcher? _FileWatcher;
+        private System.Timers.Timer? _WriteTimer;
+
+        private static Dictionary<string, DateTime> _WriteTimeout = [];
+        private string? _PreviousReplayFolder = null;
 
         public DemofileWatcher(ILogger<DemofileWatcher> logger,
             BarDemofileParser demofileParser, BarMatchRepository matchRepository,
@@ -50,11 +55,12 @@ namespace gex.Coven.Services {
             _StartSpotDataParser = startSpotDataParser;
             _IgnoredFilesDb = ignoredFilesDb;
 
-            UserOptions userOptions = _UserOptionsService.Load();
-            string replayFolder = Path.Join(userOptions.InstallFolder, "demos");
-            _Logger.LogInformation($"loading replay folder [replayFolder={replayFolder}]");
+            _WriteTimer = new(TimeSpan.FromSeconds(1));
+            _WriteTimer.Elapsed += _WriteTimer_Callback;
+            _WriteTimer.AutoReset = true;
+            _WriteTimer.Enabled = true;
 
-            _UserOptionsService_OptionsUpdated(this, userOptions);
+            _UserOptionsService_OptionsUpdated(this, _UserOptionsService.Load());
         }
 
         private void _UserOptionsService_OptionsUpdated(object sender, UserOptions options) {
@@ -65,10 +71,45 @@ namespace gex.Coven.Services {
                 return;
             }
 
-            _Logger.LogInformation($"replay folder changed [replayFolder={replayFolder}]");
-            CreateFileWatcher(replayFolder);
+            if (replayFolder != _PreviousReplayFolder) {
+                _PreviousReplayFolder = replayFolder;
+                _Logger.LogInformation($"replay folder changed [replayFolder={replayFolder}]");
+                CreateFileWatcher(replayFolder);
+            }
         }
 
+        private void _WriteTimer_Callback(object? sender, ElapsedEventArgs args) {
+            List<string> toProcess = [];
+            lock (_WriteTimeout) {
+                foreach (KeyValuePair<string, DateTime> entry in _WriteTimeout) {
+                    if (entry.Value < DateTime.UtcNow) {
+                        toProcess.Add(entry.Key);
+                    }
+                }
+
+                foreach (string key in toProcess) {
+                    _WriteTimeout.Remove(key);
+                }
+            }
+
+            foreach (string key in toProcess) {
+                _Logger.LogInformation($"write timeout finished, processing match [path={key}]");
+
+                try {
+                    Task.Run(async () => {
+                        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                        await _ProcessMatch(key, cts.Token);
+                    });
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to process match in timeout [key={key}]");
+                }
+            }
+        }
+
+        /// <summary>
+        ///     create a new file watcher and load all matches from the replay folder
+        /// </summary>
+        /// <param name="replayFolder">path to the folder that contains the replays</param>
         private void CreateFileWatcher(string replayFolder) {
             if (_FileWatcher != null) {
                 _FileWatcher.Changed -= FileWatcher_OnWrite;
@@ -112,25 +153,12 @@ namespace gex.Coven.Services {
                 Debug.Fail("why is args.Name null");
             }
 
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(1));
-
-            try {
-                byte[] bytes = await File.ReadAllBytesAsync(args.FullPath, cts.Token);
-                Result<BarMatch, string> ret = await _DemofileParser.Parse(args.Name, bytes, new DemofileParserOptions() {
-
-                }, cts.Token);
-
-                if (ret.IsOk == false) {
-                    _Logger.LogError($"failed to parse demofile [path={args.FullPath}] [error={ret.Error}]");
-                    return;
-                }
-
-                _Logger.LogInformation($"found new match [path={args.FullPath}] [gameID={ret.Value.ID}]");
-                NewMatchReady?.Invoke(this, ret.Value);
-            } catch (Exception ex) {
-                _Logger.LogError(ex, $"failed to parse demofile [path={args.FullPath}]");
+            // instead of immediately parsing the processing the game, wait 2 seconds for any future writes
+            // this is useful when downloading a replay
+            lock (_WriteTimeout) {
+                _WriteTimeout[args.FullPath] = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                _Logger.LogDebug($"write timeout updated for file [path={args.FullPath}] [timeout={_WriteTimeout[args.FullPath]:u}]");
             }
-
         }
 
         public async Task LoadAll(CancellationToken cancel) {
@@ -237,6 +265,23 @@ namespace gex.Coven.Services {
                 } catch (Exception ex) {
                     _Logger.LogError(ex, $"failed to parse demofile [path={demofile}]");
                 }
+            }
+        }
+
+        private async Task _ProcessMatch(string path, CancellationToken cancel) {
+            try {
+                byte[] bytes = await File.ReadAllBytesAsync(path, cancel);
+                Result<BarMatch, string> ret = await _DemofileParser.Parse(Path.GetFileName(path), bytes, new DemofileParserOptions() {}, cancel);
+
+                if (ret.IsOk == false) {
+                    _Logger.LogError($"failed to parse demofile [path={path}] [error={ret.Error}]");
+                    return;
+                }
+
+                _Logger.LogInformation($"found new match [path={path}] [gameID={ret.Value.ID}]");
+                NewMatchReady?.Invoke(this, ret.Value);
+            } catch (Exception ex) {
+                _Logger.LogError(ex, $"failed to parse demofile [path={path}]");
             }
         }
 

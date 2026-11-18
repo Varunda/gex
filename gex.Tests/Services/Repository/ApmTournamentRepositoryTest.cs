@@ -21,41 +21,49 @@ namespace gex.Tests.Services.Repository {
     [TestClass]
     public class ApmTournamentRepositoryTest {
 
+        private static SemaphoreSlim _InitSemaphore = new(1, 1);
         private static ApmTournamentRepository? _Api = null;
         private static async Task<ApmTournamentRepository> _Make() {
-            if (_Api == null) {
-                Assert.IsTrue(File.Exists("secrets.json"), $"missing secrets.json");
+            _InitSemaphore.Wait();
 
-                string s = await File.ReadAllTextAsync("secrets.json");
-                JsonElement json = JsonSerializer.Deserialize<JsonElement>(s);
+            try {
+                if (_Api == null) {
+                    Assert.IsTrue(File.Exists("secrets.json"), $"missing secrets.json");
 
-                JsonElement? apmWebsite = json.GetChild("ApmWebsite");
-                Assert.IsNotNull(apmWebsite, $"missing .ApmWebsite from {json}");
+                    string s = await File.ReadAllTextAsync("secrets.json");
+                    JsonElement json = JsonSerializer.Deserialize<JsonElement>(s);
 
-                bool enabled = apmWebsite.Value.GetRequiredChild("Enabled").GetBoolean();
-                Assert.IsTrue(enabled, $".ApmWebsite.Enabled is not true");
+                    JsonElement? apmWebsite = json.GetChild("ApmWebsite");
+                    Assert.IsNotNull(apmWebsite, $"missing .ApmWebsite from {json}");
 
-                string? apiKey = apmWebsite.Value.GetRequiredChild("ApiKey").GetString();
-                Assert.IsNotNull(apiKey, $".ApmWebsite.ApiKey is null");
+                    bool enabled = apmWebsite.Value.GetRequiredChild("Enabled").GetBoolean();
+                    Assert.IsTrue(enabled, $".ApmWebsite.Enabled is not true");
 
-                string? apiUrl = apmWebsite.Value.GetRequiredChild("ApiUrl").GetString();
-                Assert.IsNotNull(apiUrl, $".ApmWebsite.ApiUrl is null");
+                    string? apiKey = apmWebsite.Value.GetRequiredChild("ApiKey").GetString();
+                    Assert.IsNotNull(apiKey, $".ApmWebsite.ApiKey is null");
 
-                _Api = new ApmTournamentRepository(
-                    new TestLogger<ApmTournamentRepository>(),
-                    new ApmWebsiteApi(new TestLogger<ApmWebsiteApi>(), Options.Create<ApmWebsiteOptions>(new ApmWebsiteOptions() {
-                        Enabled = enabled,
-                        ApiKey = apiKey!,
-                        ApiUrl = apiUrl!,
-                    })),
-                    new NonCachingCache()
-                );
+                    string? apiUrl = apmWebsite.Value.GetRequiredChild("ApiUrl").GetString();
+                    Assert.IsNotNull(apiUrl, $".ApmWebsite.ApiUrl is null");
+
+                    _Api = new ApmTournamentRepository(
+                        new TestLogger<ApmTournamentRepository>(),
+                        new ApmWebsiteApi(new TestLogger<ApmWebsiteApi>(), Options.Create<ApmWebsiteOptions>(new ApmWebsiteOptions() {
+                            Enabled = enabled,
+                            ApiKey = apiKey,
+                            ApiUrl = apiUrl,
+                        })),
+                        new NonCachingCache()
+                    );
+                }
+            } finally {
+                _InitSemaphore.Release();
             }
 
             return _Api;
         }
 
         [TestMethod]
+        [Timeout(10_000)]
         public async Task Test_GetAll() {
             ApmTournamentRepository repo = await _Make();
 
@@ -66,6 +74,7 @@ namespace gex.Tests.Services.Repository {
         }
 
         [TestMethod]
+        [Timeout(10_000)]
         public async Task Test_GetInfo() {
             ApmTournamentRepository repo = await _Make();
 

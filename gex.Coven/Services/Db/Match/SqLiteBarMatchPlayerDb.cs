@@ -39,6 +39,10 @@ namespace gex.Coven.Services.Db.Match {
             throw new NotImplementedException();
         }
 
+        public Task<List<BarMatchPlayer>> SearchByName(string name, CancellationToken cancel) {
+            throw new NotImplementedException();
+        }
+
         public async Task<List<BarMatchPlayer>> GetAll(CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection();
             return await conn.QueryListAsync<BarMatchPlayer>(

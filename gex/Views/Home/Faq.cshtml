@@ -321,6 +321,13 @@
                         </tr>
 
                         <tr>
+                            <td><code>player(lab:$ap)</code></td>
+                            <td>
+                                Games where a player opened with a lab that ends in the string <kbd>ap</kbd> (which would match the air lab of all factions)
+                            </td>
+                        </tr>
+
+                        <tr>
                             <td><code>limit:50 offset:50</code></td>
                             <td>
                                 Limit the results to <kbd>50</kbd> matches, and skip the first <kbd>50</kbd> results
@@ -730,6 +737,83 @@
                                 <td><code>player(current_name:alice)</code></td>
                                 <td>
                                     The current name of the player
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>opening_lab</code></td>
+                                <td><code>string</code></td>
+                                <td><code>player(opening_lab:corlab)</code></td>
+                                <td>
+                                    <p>
+                                        The opening lab of the player. Case-sensitive
+                                        <br>
+                                        Useful values follow the format of <code>{FACTION}{LAB NAME}</code>, where <code>{FACTION}</code> is:
+
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td><code>arm</code></td>
+                                                    <td>Armada</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>cor</code></td>
+                                                    <td>Cortex</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>leg</code></td>
+                                                    <td>Legion</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        and where <code>{LAB NAME}</code> is:
+
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td><code>ap</code></td>
+                                                    <td>Air lab</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>fhp</code></td>
+                                                    <td>Naval hover lab</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>hp</code></td>
+                                                    <td>Hover lab</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>lab</code></td>
+                                                    <td>Bot lab</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>sy</code></td>
+                                                    <td>Sea lab</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>vp</code></td>
+                                                    <td>Vehicle lab</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        For example: <code>armsy</code> would be an Armada sea lab,
+                                        <code>corfhp</code> would be Cortex naval hover lab,
+                                        and <code>legap</code> would be Legion air lab
+                                    </p>
+                                    <p>
+                                        <code>lab</code> aliases to this field
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><code>widget_hash</code></td>
+                                <td><code>string</code></td>
+                                <td><code>player(widget_hash:"wiR49Rs0Ua43LLBKo6Q6sA==")</code></td>
+                                <td>
+                                    Players who used a widget matching a specific hash
                                 </td>
                             </tr>
 

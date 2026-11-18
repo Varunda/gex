@@ -48,7 +48,9 @@
                         
                         <div class="players">
                             <template v-for="(team, index) in getTeamsByAllyTeam(allyTeam.allyTeamID)"> 
-                                <match-team-entry :key="index" :players="getPlayersOfTeam(team.teamID)" :team="team" :show-debug="showDebug" :show-prediction="showPrediction" />
+                                <match-team-entry :key="index" :players="getPlayersOfTeam(team.teamID)" :team="team" 
+                                    :show-debug="showDebug" :show-prediction="showPrediction">
+                                </match-team-entry>
                             </template>
                         </div>
 
@@ -80,9 +82,11 @@
                     <tbody>
                         <tr v-for="index in maxTeamSize" :key="index">
                             <td v-for="allyTeam in match.allyTeams" :key="allyTeam.allyTeamID">
-                                <match-player-item v-if="index <= allyTeam.playerCount" :player="getPlayersByAllyTeam(allyTeam.allyTeamID)[index - 1]"
+                                <match-team-entry v-if="index <= allyTeam.playerCount"
+                                    :players="getPlayersOfTeam(getTeamsByAllyTeam(allyTeam.allyTeamID)[index - 1].teamID)"
+                                    :team="getTeamsByAllyTeam(allyTeam.allyTeamID)[index - 1]"
                                     :show-debug="showDebug" :show-prediction="showPrediction">
-                                </match-player-item>
+                                </match-team-entry>
 
                                 <span v-else>
                                     <!-- uneven team placeholder -->
@@ -93,19 +97,79 @@
                 </table>
             </div>
 
-            <toggle-button class="btn-small" v-model="showWinner">
-                Show winner
-            </toggle-button>
+            <div class="mb-3">
+                <toggle-button class="btn-small" v-model="showWinner">
+                    Show winner
+                </toggle-button>
 
-            <!--
-            <toggle-button class="btn-small" v-model="showPrediction">
-                Show winner prediction %
-            </toggle-button>
-            -->
+                <!--
+                <toggle-button class="btn-small" v-model="showWidgets">
+                    Show widgets
+                </toggle-button>
+                -->
 
-            <toggle-button class="btn-small" v-model="showDebug">
-                debug
-            </toggle-button>
+                <toggle-button class="btn-small" v-model="showDebug">
+                    debug
+                </toggle-button>
+            </div>
+
+            <div v-if="showWidgets == true">
+                <h4 class="wt-header">
+                    Player widgets
+
+                    <toggle-button v-model="showWidgetHash" false-color="btn-secondary">
+                        Show hashes
+                    </toggle-button>
+                </h4>
+
+                <table class="table table-sm table-borderless table-hover">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Widget</th>
+                            <th>Author</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <template v-for="group in groupedWidgets">
+                            <tr class="border-top">
+                                <td>
+                                    <b>
+                                        {{ group.username }}
+                                    </b>
+                                </td>
+                                <td colspan="3">
+                                    <span :class="{ 'text-muted': group.widgets.length == 0 }">
+                                        Count: {{ group.widgets.length }}
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr v-for="widget in group.widgets">
+                                <td>
+                                    <code v-if="showWidgetHash">{{ widget.hash }}</code>
+                                </td>
+                                <td :title="widget.name">
+                                    <span :class="{ 'text-muted': widget.state != 1 }">
+                                        {{ widget.name }}
+                                    </span>
+                                    <span v-if="widget.state != 1" class="text-muted">
+                                        (disabled)
+                                    </span>
+                                </td>
+                                <td :title="widget.author">{{ widget.author }}</td>
+                                <td :title="widget.description">{{ widget.description }}</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <small>
+                    Only shows widgets for players, spectator widgets are not recorded in Gex (but are recorded in demofiles)
+                </small>
+            </div>
 
             <div v-if="match.spectators.length > 0" class="mt-2">
                 <collapsible :header-text="'Spectators (' + match.spectators.length + ')'" size-class="h5" :show="false">
@@ -191,13 +255,20 @@
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
     import { BarMatchTeam } from "model/BarMatchTeam";
+    import { BarMatchPlayerWidget } from "model/BarMatchPlayerWidget";
 
     import { GamemodeUtil } from "util/Gamemode";
     import { MatchUtil } from "util/MatchUtil";
 
     type GroupedPlayers = {
         allyTeamID: number,
-        players: BarMatchPlayer[]
+        players: BarMatchPlayer[],
+    }
+
+    type GroupedPlayerWidget = {
+        userID: number,
+        username: string,
+        widgets: BarMatchPlayerWidget[],
     }
 
     export const MatchTeams = Vue.extend({
@@ -210,7 +281,10 @@
             return {
                 showWinner: false as boolean,
                 showPrediction: false as boolean,
-                showDebug: false as boolean
+                showWidgets: false as boolean,
+                showDebug: false as boolean,
+
+                showWidgetHash: false as boolean,
             }
         },
 
@@ -229,6 +303,10 @@
 
             getTeamsByAllyTeam: function(allyTeamID: number): BarMatchTeam[] {
                 return [...this.match.teams.filter(iter => iter.allyTeamID == allyTeamID)].sort((a, b) => a.teamID - b.teamID);
+            },
+
+            getTeamWidgets: function(teamID: number): BarMatchPlayerWidget[] {
+                return [...this.match.widgets];
             },
 
             getTeamNameStyle(allyTeam: BarMatchAllyTeam) {
@@ -325,7 +403,27 @@
                 }
 
                 return GamemodeUtil.UNKNOWN;
-            }
+            },
+
+            groupedWidgets: function(): GroupedPlayerWidget[] {
+                const ret: GroupedPlayerWidget[] = [];
+
+                for (const player of this.match.players) {
+                    const widgets: BarMatchPlayerWidget[] = this.match.widgets.filter(iter => iter.userID == player.userID);
+
+                    const group: GroupedPlayerWidget = {
+                        userID: player.userID,
+                        username: player.username,
+                        widgets: widgets
+                    };
+
+                    if (widgets.length > 0) {
+                        ret.push(group);
+                    }
+                }
+
+                return ret;
+            },
         },
 
         components: {
