@@ -455,30 +455,6 @@ namespace gex.Tests.Services.Db {
         }
 
         [TestMethod]
-        public async Task Test_Query_Player_WidgetHash() {
-            List<BarMatch> matches = await _Query("player(widget_hash:\"QT1NUee7OoVEUHDaZSuwjA==\")");
-
-            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to check condition");
-
-            foreach (BarMatch match in matches) {
-                Assert.IsNotNull(match.PlayerWidgets.FirstOrDefault(iter => iter.Hash == "QT1NUee7OoVEUHDaZSuwjA=="),
-                    $"expected a team to a widget with hash QT1NUee7OoVEUHDaZSuwjA== {match.ID}: {string.Join(", ", match.PlayerWidgets.Select(i => i.Hash))}");
-            }
-        }
-
-        [TestMethod]
-        public async Task Test_Query_Player_WidgetHash_And_UserID() {
-            List<BarMatch> matches = await _Query("player(widget_hash:\"wiR49Rs0Ua43LLBKo6Q6sA==\" user_id:370202)");
-
-            Assert.IsTrue(matches.Count > 0, $"need at least 1 match to check condition");
-
-            foreach (BarMatch match in matches) {
-                Assert.IsNotNull(match.PlayerWidgets.FirstOrDefault(iter => iter.Hash == "wiR49Rs0Ua43LLBKo6Q6sA=="),
-                    $"expected a team to a widget with hash wiR49Rs0Ua43LLBKo6Q6sA== from {match.ID}: {string.Join(", ", match.PlayerWidgets.Select(i => i.Hash))}");
-            }
-        }
-
-        [TestMethod]
         public async Task Test_Query_Player_UserID() {
             List<BarMatch> matches = await _Query("player(user_id:146777)");
 

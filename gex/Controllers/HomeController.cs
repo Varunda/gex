@@ -426,5 +426,9 @@ namespace gex.Controllers {
             return View();
         }
 
+        public IActionResult Tweaks() {
+            return View();
+        }
+
     }
 }

@@ -201,7 +201,7 @@ namespace gex.Common.Services.Parser {
                 map.SpecularMapFilename = resources.GetValueOrDefault("speculartex")?.ToString() ?? "";
 
                 // parse header
-                Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, options, cancel);
+                Result<BarMapFileHeader, string> header = await ParseSmf(smfLocation, options, table.GetValueOrDefault("smf") as Dictionary<object, object>, cancel);
                 if (header.IsOk == false) {
                     return $"failed to read .smf at '{smfLocation}': {header.Error}";
                 }
@@ -210,7 +210,10 @@ namespace gex.Common.Services.Parser {
 
                 // parse tile map
                 if (options.Smts == true) {
-                    Result<BarMapSmt, string> smtResult = await ParseSmt(smtLocation!, map.Header.TileIndexes, map.Header.Width / 128, map.Header.Height / 128, 32);
+                    Result<BarMapSmt, string> smtResult = await ParseSmt(
+                        smtLocation!, map.Header.TileIndexes, map.Header.Width / 128, map.Header.Height / 128, 32, cancel
+                    );
+
                     if (smtResult.IsOk == false) {
                         return $"failed to parse smt at '{smtLocation}': {smtResult.Error}";
                     }
@@ -221,8 +224,9 @@ namespace gex.Common.Services.Parser {
 
                 // extract metal spots from metal map
                 if (options.Metal == true) {
-                    Result<List<BarMapMetalSpot>, string> metalSpots 
-                        = await ExtractMetalSpots(header.Value.MetalMap, map.MaxMetal, map.Header.Width / 2, map.Header.Height / 2);
+                    Result<List<BarMapMetalSpot>, string> metalSpots = await ExtractMetalSpots(
+                        header.Value.MetalMap, map.MaxMetal, map.Header.Width / 2, map.Header.Height / 2
+                    );
 
                     if (metalSpots.IsOk == false) {
                         return $"failed to extract map spots: {metalSpots.Error}";
@@ -364,7 +368,9 @@ namespace gex.Common.Services.Parser {
         /// <param name="cancel">cancellation token</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, ParseOptions options, CancellationToken cancel) {
+        private async Task<Result<BarMapFileHeader, string>> ParseSmf(string location, ParseOptions options,
+            Dictionary<object, object>? smfOptions, CancellationToken cancel) {
+
             if (File.Exists(location) == false) {
                 return $"failed to open SMF at '{location}'";
             }
@@ -400,6 +406,25 @@ namespace gex.Common.Services.Parser {
             header.FeatureMapOffset = reader.ReadInt32LE();
             header.ExtraHeaderCount = reader.ReadInt32LE();
 
+            if (smfOptions != null) {
+                if (smfOptions.ContainsKey("minheight")) {
+                    string minH = smfOptions.GetValueOrDefault("minheight")?.ToString() ?? "";
+                    if (float.TryParse(minH, out float minHF) == true) {
+                        header.MinHeight = minHF;
+                    } else {
+                        _Logger.LogWarning($"failed to parse minheight to a valid float [value={minH}] [location={location}]");
+                    }
+                }
+                if (smfOptions.ContainsKey("maxheight")) {
+                    string maxH = smfOptions.GetValueOrDefault("maxheight")?.ToString() ?? "";
+                    if (float.TryParse(maxH, out float maxHF) == true) {
+                        header.MaxHeight = maxHF;
+                    } else {
+                        _Logger.LogWarning($"failed to parse maxheight to a valid float [value={maxH}] [location={location}]");
+                    }
+                }
+            }
+
             for (int i = 0; i < header.ExtraHeaderCount; ++i) {
                 int size = reader.ReadInt32LE();
                 int type = reader.ReadInt32LE();
@@ -414,6 +439,7 @@ namespace gex.Common.Services.Parser {
 
                 Span<byte> rawHeights = reader.Read(heightMapSize * 2);
                 ByteArrayReader heightReader = new(rawHeights.ToArray());
+
                 for (int i = 0; i < heightMapSize; ++i) {
                     ushort val = heightReader.ReadUInt16LE();
                     header.HeightMap[i] = val;

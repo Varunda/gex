@@ -93,7 +93,8 @@
     let material: three.MeshStandardMaterial | null = null;
     let light: three.AmbientLight | null = null;
     let mapMesh: three.Mesh | null = null;
-    let water: Water | null = null;
+    //let water: Water | null = null;
+    let water: three.Mesh | null = null;
     let normalMap: three.Texture | null = null;
     let specularMap: three.Texture | null = null;
 
@@ -124,7 +125,7 @@
 
         data: function() {
             return {
-                mapFilename: "hooked_1.1.1" as string,
+                mapFilename: "supreme_isthmus_v2.1" as string,
                 mapData: Loadable.idle() as Loading<BarMapData>,
 
                 mapList: Loadable.idle() as Loading<BarMap[]>,
@@ -208,6 +209,7 @@
                 scene?.add(light);
 
                 const waterGeo = new three.BoxGeometry(1, 0.01, 1);
+                /*
                 water = new Water(waterGeo, {
                     textureHeight: 512,
                     textureWidth: 512,
@@ -219,6 +221,8 @@
                     waterColor: 0x006994cc,
                     distortionScale: 3.7
                 });
+                */
+                water = new three.Mesh(waterGeo, new three.MeshStandardMaterial({ color: new three.Color(0, 0.3, 0.8), opacity: 0.20, transparent: true }));
                 scene?.add(water);
 
                 render();
@@ -251,11 +255,15 @@
                 const header: BarMapFileHeader = this.mapData.data.header;
                 this.heightMapData = header.heightMap;
                 this.originalHeightMapData = header.heightMap;
-
+                
                 const mapGeometry = new three.PlaneGeometry(header.width / 100, header.height / 100, header.width + 1, header.height + 1);
                 mapGeometry.rotateX(-Math.PI / 2);
 
                 if (water != null) {
+                    if (header.minHeight < 0) {
+                        water.position.y = Math.abs(header.minHeight / (header.maxHeight - header.minHeight));
+                    }
+                    console.log(`MapMod> initial water position y ${water.position.y}`);
                     water.scale.x = header.width / 100;
                     water.scale.z = header.height / 100;
                 }
@@ -325,7 +333,7 @@
 
                 gui.add(settings, "waterDistortion").min(0).max(100).onChange((value: number) => {
                     if (water != null) {
-                        water.material.uniforms["distortionScale"].value = value;
+                        //water.material.uniforms["distortionScale"].value = value;
                     }
                 });
 
@@ -384,8 +392,18 @@
                 const image: ImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const imageData: Uint8ClampedArray = image.data;
 
+                const mod: number = (header.maxHeight - header.minHeight) / 65536.0;
+                console.log(`MapMod> heightmap mod is ${mod}`);
+
                 for (let i = 0; i < this.originalHeightMapData.length; ++i) {
-                    const byte = (this.originalHeightMapData[i] / 65536) * 255;
+                    let byte = (this.originalHeightMapData[i] / 65536) * 255;
+                //for (let i = 0; i < this.heightMapF.length; ++i) {
+                //    const byte = this.heightMapF[i] / 255;
+
+                    //byte = header.minHeight + (this.originalHeightMapData[i]) * mod;
+                    //byte += (-header.minHeight * mod);
+
+                    byte = ((this.originalHeightMapData[i] * mod) / header.maxHeight) * 255;
 
                     imageData[(i * 4) + 0] = Math.min(255, byte);
                     imageData[(i * 4) + 1] = Math.min(255, byte);

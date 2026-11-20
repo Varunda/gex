@@ -11,6 +11,7 @@ using gex.Common.Services.Repository.Match;
 using gex.Models.Options;
 using gex.Models.Queues;
 using gex.Services.Db;
+using gex.Services.Db.Bar;
 using gex.Services.Db.Match;
 using gex.Services.Db.UserStats;
 using gex.Services.Queues;
@@ -43,18 +44,19 @@ namespace gex.Services.Hosted.QueueProcessor {
         private readonly IBarMatchPlayerLeftDb _PlayerLeftDb;
         private readonly IBarMatchTextPingDb _TextPingDb;
         private readonly IBarMatchPlayerWidgetDb _PlayerWidgetDb;
-
         private readonly BarMatchProcessingRepository _ProcessingRepository;
-        private readonly IOptions<FileStorageOptions> _Options;
         private readonly BarDemofileParser _Parser;
+
         private readonly BaseQueue<HeadlessRunQueueEntry> _HeadlessRunQueue;
         private readonly BaseQueue<MapStatUpdateQueueEntry> _MapStatUpdateQueue;
-        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
-        private readonly IOptions<InstanceOptions> _InstanceOptions;
-
         private readonly BaseQueue<UserMapStatUpdateQueueEntry> _UserMapStatUpdateQueue;
         private readonly BaseQueue<UserFactionStatUpdateQueueEntry> _FactionStatUpdateQueue;
         private readonly BaseQueue<MatchProcessingWebhookQueueEntry> _WebhookQueue;
+        private readonly BarTweakEntryNeedsUpdateDb _TweakNeedsUpdateDb;
+
+        private readonly IOptions<FileStorageOptions> _Options;
+        private readonly IOptions<FocusPlayerModeOptions> _FocusUserOptions;
+        private readonly IOptions<InstanceOptions> _InstanceOptions;
 
         public GameReplayParseQueueProcessor(ILoggerFactory factory,
             BaseQueue<GameReplayParseQueueEntry> queue, ServiceHealthMonitor serviceHealthMonitor,
@@ -69,7 +71,8 @@ namespace gex.Services.Hosted.QueueProcessor {
             IBarMatchTeamDeathDb teamDeathDb, IBarMatchPlayerLeftDb playerLeftDb,
             IBarMatchTextPingDb textPingDb, IOptions<FocusPlayerModeOptions> focusUserOptions,
             BaseQueue<MatchProcessingWebhookQueueEntry> webhookQueue, IOptions<InstanceOptions> instanceOptions,
-            BarMatchTeamRepository matchTeamRepository, IBarMatchPlayerWidgetDb playerWidgetDb)
+            BarMatchTeamRepository matchTeamRepository, IBarMatchPlayerWidgetDb playerWidgetDb,
+            BarTweakEntryNeedsUpdateDb tweakNeedsUpdateDb)
         : base("game_replay_parse_queue", factory, queue, serviceHealthMonitor) {
 
             _ProcessingRepository = processingRepository;
@@ -95,6 +98,7 @@ namespace gex.Services.Hosted.QueueProcessor {
             _InstanceOptions = instanceOptions;
             _MatchTeamRepository = matchTeamRepository;
             _PlayerWidgetDb = playerWidgetDb;
+            _TweakNeedsUpdateDb = tweakNeedsUpdateDb;
         }
 
         protected override async Task<bool> _ProcessQueueEntry(GameReplayParseQueueEntry entry, CancellationToken cancel) {
@@ -207,6 +211,15 @@ namespace gex.Services.Hosted.QueueProcessor {
                                 Gamemode = parsed.Gamemode
                             });
                         }
+                    }
+
+                    try {
+                        await _TweakNeedsUpdateDb.Upsert(new Models.Bar.BarTweakEntryNeedsUpdate() {
+                            Day = parsed.StartTime.Date,
+                            LastDirtied = DateTime.UtcNow
+                        }, cancel);
+                    } catch (Exception ex) {
+                        _Logger.LogError(ex, $"failed to upsert tweak needs update [day={parsed.StartTime.Date:u}] [gameID={parsed.ID}]");
                     }
                 }
             }

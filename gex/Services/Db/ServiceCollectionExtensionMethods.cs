@@ -104,6 +104,8 @@ namespace gex.Services.Db {
             services.AddSingleton<MapEngineUsageDb>();
             services.AddSingleton<MatchProcessingWebhookDb>();
             services.AddSingleton<BarWidgetEntryDb>();
+            services.AddSingleton<BarTweakEntryDb>();
+            services.AddSingleton<BarTweakEntryNeedsUpdateDb>();
         }
 
     }
