@@ -32,7 +32,7 @@
     "graphology-layout-noverlap": "^0.4.2",
     "graphology-metrics": "^2.1.0",
     "highcharts": "^10.2.1",
-    "js-md5": "^0.11.0",
+    "js-sha512": "^0.10.0",
     "jsframe.js": "^1.6.8",
     "leaflet": "^1.7.1",
     "leaflet-contextmenu": "^1.4.0",
@@ -49,6 +49,7 @@
     "vue-fragment": "^1.5.2",
     "vue-loader": "^15.9.8",
     "vue-template-compiler": "^2.6.14",
+    "vuedraggable": "^2.24.3",
     "vuex": "^3.6.2",
     "webpack": "^5.65.0"
   },

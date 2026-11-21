@@ -25,76 +25,96 @@ namespace gex.Services.Db.Bar {
             _DbHelper = dbHelper;
         }
 
+        /// <summary>
+        ///     get all <see cref="BarTweakEntry"/>s from the DB
+        /// </summary>
+        /// <param name="cancel">cancellation token</param>
+        /// <returns>a list of <see cref="BarTweakEntry"/>s</returns>
         public async Task<List<BarTweakEntry>> GetAll(CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
             return await conn.QueryListAsync<BarTweakEntry>(@"SELECT * FROM bar_tweak_entry;", cancel);
         }
 
+        /// <summary>
+        ///     generate the <see cref="BarTweakEntry"/>s for a specific day
+        /// </summary>
+        /// <param name="day">day to use</param>
+        /// <param name="cancel">cancellation token</param>
         public async Task Generate(DateTime day, CancellationToken cancel) {
+            List<BarTweakEntry> tweaks = await GetTweakKind(day, "unit", cancel);
+            tweaks.AddRange(await GetTweakKind(day, "def", cancel));
+
+            foreach (BarTweakEntry entry in tweaks) {
+                try {
+                    await Upsert(entry, cancel);
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to update entry [hash={entry.Hash}] [day={entry.Day}] [name={entry.Name}]");
+                }
+            }
+        }
+
+        private async Task Upsert(BarTweakEntry entry, CancellationToken cancel) {
             using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            List<BarTweakEntry> entries = await conn.QueryListAsync<BarTweakEntry>(@"
+            using DbCommand cmd = await _DbHelper.Command(conn, @"
+                INSERT INTO bar_tweak_entry (
+                    hash, name, type, base64, day, count
+                ) VALUES (
+                    @Hash, @Name, @Type, @Base64, @Day, @Count
+                ) ON CONFLICT (hash, day, type) DO UPDATE
+                    SET count = @Count;
+            ", cancel);
+
+            cmd.AddParameter("Hash", entry.Hash);
+            cmd.AddParameter("Name", entry.Name);
+            cmd.AddParameter("Type", entry.Type);
+            cmd.AddParameter("Base64", entry.Base64);
+            cmd.AddParameter("Day", entry.Day);
+            cmd.AddParameter("Count", entry.Count);
+            await cmd.PrepareAsync(cancel);
+
+            await cmd.ExecuteNonQueryAsync(cancel);
+            await conn.CloseAsync();
+        }
+
+        private async Task<List<BarTweakEntry>> GetTweakKind(DateTime day, string type, CancellationToken cancel) {
+            if (type != "unit" && type != "def") {
+                throw new ArgumentException($"expected {nameof(type)} to be either 'unit' or 'def'");
+            }
+
+            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
+            List<BarTweakEntry> entries = await conn.QueryListAsync<BarTweakEntry>(@$"
                     WITH tweaks AS (
                         select array_agg(array[
-                            game_settings->>'tweakunits',
-                            game_settings->>'tweakunits1',
-                            game_settings->>'tweakunits2',
-                            game_settings->>'tweakunits3',
-                            game_settings->>'tweakunits4',
-                            game_settings->>'tweakunits5',
-                            game_settings->>'tweakunits6',
-                            game_settings->>'tweakunits7',
-                            game_settings->>'tweakunits8',
-                            game_settings->>'tweakunits9',
-                            game_settings->>'tweakunits10',
-                            game_settings->>'tweakunits11',
-                            game_settings->>'tweakunits12',
-                            game_settings->>'tweakunits13',
-                            game_settings->>'tweakunits14',
-                            game_settings->>'tweakunits15',
-                            game_settings->>'tweakunits16',
-                            game_settings->>'tweakunits17',
-                            game_settings->>'tweakunits18',
-                            game_settings->>'tweakunits19',
-                            game_settings->>'tweakunits20',
-                            game_settings->>'tweakunits21',
-                            game_settings->>'tweakunits22',
-                            game_settings->>'tweakunits23',
-                            game_settings->>'tweakunits24',
-                            game_settings->>'tweakunits25',
-                            game_settings->>'tweakunits26',
-                            game_settings->>'tweakunits27',
-                            game_settings->>'tweakunits28',
-                            game_settings->>'tweakunits29',
-                            game_settings->>'tweakdefs',
-                            game_settings->>'tweakdefs1',
-                            game_settings->>'tweakdefs2',
-                            game_settings->>'tweakdefs3',
-                            game_settings->>'tweakdefs4',
-                            game_settings->>'tweakdefs5',
-                            game_settings->>'tweakdefs6',
-                            game_settings->>'tweakdefs7',
-                            game_settings->>'tweakdefs8',
-                            game_settings->>'tweakdefs9',
-                            game_settings->>'tweakdefs10',
-                            game_settings->>'tweakdefs11',
-                            game_settings->>'tweakdefs12',
-                            game_settings->>'tweakdefs13',
-                            game_settings->>'tweakdefs14',
-                            game_settings->>'tweakdefs15',
-                            game_settings->>'tweakdefs16',
-                            game_settings->>'tweakdefs17',
-                            game_settings->>'tweakdefs18',
-                            game_settings->>'tweakdefs19',
-                            game_settings->>'tweakdefs20',
-                            game_settings->>'tweakdefs21',
-                            game_settings->>'tweakdefs22',
-                            game_settings->>'tweakdefs23',
-                            game_settings->>'tweakdefs24',
-                            game_settings->>'tweakdefs25',
-                            game_settings->>'tweakdefs26',
-                            game_settings->>'tweakdefs27',
-                            game_settings->>'tweakdefs28',
-                            game_settings->>'tweakdefs29'
+                            game_settings->>'tweak{type}s',
+                            game_settings->>'tweak{type}s1',
+                            game_settings->>'tweak{type}s2',
+                            game_settings->>'tweak{type}s3',
+                            game_settings->>'tweak{type}s4',
+                            game_settings->>'tweak{type}s5',
+                            game_settings->>'tweak{type}s6',
+                            game_settings->>'tweak{type}s7',
+                            game_settings->>'tweak{type}s8',
+                            game_settings->>'tweak{type}s9',
+                            game_settings->>'tweak{type}s10',
+                            game_settings->>'tweak{type}s11',
+                            game_settings->>'tweak{type}s12',
+                            game_settings->>'tweak{type}s13',
+                            game_settings->>'tweak{type}s14',
+                            game_settings->>'tweak{type}s15',
+                            game_settings->>'tweak{type}s16',
+                            game_settings->>'tweak{type}s17',
+                            game_settings->>'tweak{type}s18',
+                            game_settings->>'tweak{type}s19',
+                            game_settings->>'tweak{type}s20',
+                            game_settings->>'tweak{type}s21',
+                            game_settings->>'tweak{type}s22',
+                            game_settings->>'tweak{type}s23',
+                            game_settings->>'tweak{type}s24',
+                            game_settings->>'tweak{type}s25',
+                            game_settings->>'tweak{type}s26',
+                            game_settings->>'tweak{type}s27',
+                            game_settings->>'tweak{type}s28',
+                            game_settings->>'tweak{type}s29'
                         ]) ""b64s""
                         from bar_match
                         where date_trunc('day', start_time) = @Day
@@ -105,7 +125,7 @@ namespace gex.Services.Db.Bar {
                         tweak ""base64"",
                         count(*)
                     FROM unnested 
-                    WHERE tweak <> '' AND tweak <> '0'
+                    WHERE tweak <> '' AND tweak <> '0' AND tweak <> 'Ow'
                     GROUP BY 1, 2;
                 ",
                 new {
@@ -116,6 +136,7 @@ namespace gex.Services.Db.Bar {
 
             foreach (BarTweakEntry entry in entries) {
                 entry.Day = day.Date;
+                entry.Type = type;
 
                 byte[] decoded;
                 try {
@@ -135,35 +156,9 @@ namespace gex.Services.Db.Bar {
 
                     entry.Name = str[2..end];
                 }
-
-                try {
-                    await Upsert(entry, cancel);
-                } catch (Exception ex) {
-                    _Logger.LogError(ex, $"failed to update entry [hash={entry.Hash}] [day={entry.Day}] [name={entry.Name}]");
-                }
             }
-        }
 
-        private async Task Upsert(BarTweakEntry entry, CancellationToken cancel) {
-            using DbConnection conn = _DbHelper.Connection(Dbs.MAIN);
-            using DbCommand cmd = await _DbHelper.Command(conn, @"
-                INSERT INTO bar_tweak_entry (
-                    hash, name, base64, day, count
-                ) VALUES (
-                    @Hash, @Name, @Base64, @Day, @Count
-                ) ON CONFLICT (hash, day) DO UPDATE
-                    SET count = @Count;
-            ", cancel);
-
-            cmd.AddParameter("Hash", entry.Hash);
-            cmd.AddParameter("Name", entry.Name);
-            cmd.AddParameter("Base64", entry.Base64);
-            cmd.AddParameter("Day", entry.Day);
-            cmd.AddParameter("Count", entry.Count);
-            await cmd.PrepareAsync(cancel);
-
-            await cmd.ExecuteNonQueryAsync(cancel);
-            await conn.CloseAsync();
+            return entries;
         }
 
     }

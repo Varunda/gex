@@ -11,4 +11,8 @@ export class BarTweakEntryApi extends ApiWrapper<BarTweakEntry> {
         return BarTweakEntryApi.get().readList(`/api/tweak-entry/all`, BarTweakEntry.parse);
     }
 
+    public static getAggregate(): Promise<Loading<BarTweakEntry[]>> {
+        return BarTweakEntryApi.get().readList(`/api/tweak-entry/aggregate`, BarTweakEntry.parse);
+    }
+
 }

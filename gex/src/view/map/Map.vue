@@ -100,30 +100,31 @@
                     </table>
 
                     <h5 class="mb-0 text-center">Mex distribution</h5>
-                    <table class="table table-borderless" style="table-layout: fixed;">
-                        <tr class="table-info-row">
-                            <td>Mex value</td>
-                            <td>Count</td>
-                        </tr>
+                    <div style="max-height: 20vh; overflow: auto">
+                        <table class="table table-borderless table-sticky-header" style="table-layout: fixed;">
+                            <tr class="table-info-row">
+                                <td>Mex value</td>
+                                <td>Count</td>
+                            </tr>
 
-                        <tr v-for="stat in metalSpotStats" :key="stat.value" class="table-info-row">
-                            <td>{{ stat.value }}</td>
-                            <td>{{ stat.count }}</td>
-                        </tr>
+                            <tr v-for="stat in metalSpotStats" :key="stat.value" class="table-info-row">
+                                <td>{{ stat.value }}</td>
+                                <td>{{ stat.count }}</td>
+                            </tr>
 
-                        <tr class="table-info-row fw-bold">
-                            <td>Total</td>
-                            <td>
-                                <span v-if="mapData.state == 'loaded' && mapData.data.metalSpots != null">
-                                    {{ mapData.data.metalSpots.length }}
-                                </span>
-                                <span v-else>
-                                    --
-                                </span>
-                            </td>
-                        </tr>
-
-                    </table>
+                            <tr class="table-info-row fw-bold">
+                                <td>Total</td>
+                                <td>
+                                    <span v-if="mapData.state == 'loaded' && mapData.data.metalSpots != null">
+                                        {{ mapData.data.metalSpots.length }}
+                                    </span>
+                                    <span v-else>
+                                        --
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
 
                 </div>
             </div>

@@ -15,12 +15,13 @@ namespace gex.Services.Db.Patches {
                 CREATE TABLE IF NOT EXISTS bar_tweak_entry (
                     hash varchar NOT NULL,
                     day timestamptz NOT NULL,
+                    type varchar NOT NULL,
 
                     name varchar NOT NULL,
                     base64 varchar NOT NULL,
                     count int NOT NULL,
 
-                    PRIMARY KEY (hash, day)
+                    PRIMARY KEY (hash, type, day)
                 );
 
                 CREATE TABLE IF NOT EXISTS bar_tweak_entry_needs_update (
