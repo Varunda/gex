@@ -1,5 +1,5 @@
 ﻿<template>
-    <input type="date" :value="str" @input="handleInput" />
+    <input type="date" :value="str" @input="handleInput" class="form-control" />
 </template>
 
 <script lang="ts">
@@ -28,7 +28,8 @@
             updateDate: function(): void {
                 this.date = this.value;
                 if (this.date != null) {
-                    this.str = DateUtil.getLocalDateOnlyString(DateUtil.zeroParts(this.date, { hours: true, minutes: true, seconds: true }));
+                    //this.str = DateUtil.getLocalDateOnlyString(DateUtil.zeroParts(this.date, { hours: true, minutes: true, seconds: true }));
+                    this.str = DateUtil.getLocalDateOnlyString(this.date);
                 } else {
                     this.str = "";
                 }

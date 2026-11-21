@@ -17,6 +17,7 @@
                 <select class="form-control" v-model="sortBy">
                     <option value="count">Uses</option>
                     <option value="name">Name</option>
+                    <option value="seen">First seen</option>
                     <option value="random">Random</option>
                 </select>
             </div>
@@ -80,11 +81,23 @@
 
             <h3 class="wt-header">Tweaks found ({{ groupedByHash.length | locale(0) }})</h3>
 
-            <div class="mb-3">
-                <div>
+            <div class="mb-3 row">
+                <div class="col-4">
                     <label>Filter by name</label>
                     <input type="text" class="form-control" v-model="filter.name">
                 </div>
+
+                <!--
+                <div class="col-4">
+                    <label>Filter by first seen before</label>
+                    <date-input v-model="filter.seenBefore" :allow-null="true"></date-input>
+                </div>
+
+                <div class="col-4">
+                    <label>Filter by first seen after</label>
+                    <date-input v-model="filter.seenAfter" :allow-null="true"></date-input>
+                </div>
+                -->
 
             </div>
 
@@ -101,7 +114,7 @@
                             <div class="fs-6">
                                 <span>
                                     <label :for="'tweak-toggle-' + entry.hash">
-                                        seen {{ entry.count | locale(0) }} times
+                                        seen {{ entry.count | locale(0) }} times since {{ entry.day | moment("yyyy-MM-dd") }}
                                     </label>
                                 </span>
                             </div>
@@ -139,9 +152,12 @@
 
     import Busy from "components/Busy.vue";
     import Collapsible from "components/Collapsible.vue";
+    import DateTimeInput from "components/DateTimeInput.vue";
+    import DateInput from "components/DateInput.vue";
     import draggable from "vuedraggable";
 
     import "filters/LocaleFilter";
+    import "filters/MomentFilter";
 
     import { BarTweakEntry } from "model/BarTweakEntry";
 
@@ -158,11 +174,13 @@
 
                 selected: [] as BarTweakEntry[],
 
-                sortBy: "count" as "count" | "name" | "random",
+                sortBy: "count" as "count" | "name" | "seen" | "random",
                 sortDir: "desc" as "desc" | "asc",
 
                 filter: {
-                    name: "" as string
+                    name: "" as string,
+                    seenBefore: null as Date | null,
+                    seenAfter: null as Date | null
                 }
             }
         },
@@ -259,6 +277,16 @@
                             continue;
                         }
                     }
+                    if (this.filter.seenBefore != null) {
+                        if (entry.day.getTime() > this.filter.seenBefore.getTime()) {
+                            continue;
+                        }
+                    }
+                    if (this.filter.seenAfter != null) {
+                        if (entry.day.getTime() < this.filter.seenAfter.getTime()) {
+                            continue;
+                        }
+                    }
 
                     if (map.has(entry.hash) == false) {
                         map.set(entry.hash, entry);
@@ -279,6 +307,8 @@
                             return a.count - b.count;
                         } else if (this.sortBy == "name") {
                             return a.name.localeCompare(b.name);
+                        } else if (this.sortBy == "seen") {
+                            return a.day.getTime() - b.day.getTime();
                         } else {
                             throw `unchecked sortBy '${this.sortBy}'`;
                         }
@@ -303,7 +333,7 @@
         },
 
         components: {
-            Busy, Collapsible, draggable
+            Busy, Collapsible, draggable, DateTimeInput, DateInput
         }
     });
     export default Tweaks;

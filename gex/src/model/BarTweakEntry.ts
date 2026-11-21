@@ -23,6 +23,7 @@ export class BarTweakEntry {
         return {
             ...elem,
 
+            day: new Date(elem.day),
             code: Base64Util.decode(elem.base64),
             lobbyHash: btoa(h.hex()),
             fullName: elem.name + " = " + elem.base64.length + ":" + btoa(h.hex()).substring(0, 4),
