@@ -31,6 +31,50 @@
         </div>
 
         <div>
+            <h3 class="wt-header d-flex">
+                <div class="d-inline flex-grow-1">
+                    Win/Loss per {{ winLossPerDay.range }}
+                </div>
+
+                <div class="d-inline-block flex-grow-0">
+                    <div class="btn-group">
+                        <button class="btn" :class="[ winLossPerDay.range == 'day' ? 'btn-primary' : 'btn-secondary' ]" @click="winLossPerDay.range = 'day'">
+                            Day
+                        </button>
+                        <button class="btn" :class="[ winLossPerDay.range == 'week' ? 'btn-primary' : 'btn-secondary' ]" @click="winLossPerDay.range = 'week'">
+                            Week
+                        </button>
+                        <button class="btn" :class="[ winLossPerDay.range == 'month' ? 'btn-primary' : 'btn-secondary' ]" @click="winLossPerDay.range = 'month'">
+                            Month
+                        </button>
+                    </div>
+                </div>
+            </h3>
+
+            <div class="mb-1">
+                <div style="height: 200px; max-height: 200px;">
+                    <canvas id="user-win-loss-per-day"></canvas>
+                </div>
+
+                <button class="btn btn-secondary btn-sm" @click="resetZoom">
+                    Reset zoom
+                </button>
+            </div>
+
+            <div class="mb-3 text-center">
+                Showing win/loss per {{ winLossPerDay.range }} for
+                <span v-if="gamemode == null">
+                    all
+                </span>
+                <span v-else>
+                    {{ gamemode | gamemode }}
+                </span>
+                games
+                ({{ filteredMatches.length | locale }})
+            </div>
+        </div>
+
+        <div>
             <h3 class="wt-header">Win rate by duration</h3>
 
             <div class="mb-1">
@@ -106,25 +150,22 @@
 
 <script lang="ts">
     import Vue, { PropType } from "vue";
-    import { Loading, Loadable } from "Loading";
 
-    import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
-    Chart.defaults.font.family = "Atkinson Hyperlegible";
+    import Chart from "chart.js/auto/auto.esm";
+    import zoomPlugin from "chartjs-plugin-zoom";
     import "chartjs-adapter-luxon";
+    Chart.defaults.font.family = "Atkinson Hyperlegible";
+    Chart.register(zoomPlugin);
+
+    import * as lx from "luxon";
 
     import { BarUser } from "model/BarUser";
     import { BarMatch } from "model/BarMatch";
     import { BarMatchPlayer } from "model/BarMatchPlayer";
     import { BarMatchAllyTeam } from "model/BarMatchAllyTeam";
 
-    import { FactionUtil } from "util/Faction";
-    import { GamemodeUtil } from "util/Gamemode";
-    import ColorUtils from "util/Color";
-    import LocaleUtil from "util/Locale";
-    import { MapUtil } from "util/MapUtil";
     import TimeUtils from "util/Time";
-
-    import { GroupedFaction, GroupedFactionGamemode } from "./common";
+    import DateUtil from "util/Date";
 
     import "filters/LocaleFilter";
 
@@ -132,6 +173,12 @@
         minute: number;
         wins: number;
         total: number;
+    }
+
+    interface WinLossPerDayEntry {
+        day: Date;
+        wins: number;
+        losses: number;
     }
 
     export const UserCharts = Vue.extend({
@@ -155,6 +202,12 @@
 
                 skillDiff: {
                     chart: null as Chart | null
+                },
+
+                winLossPerDay: {
+                    chart: null as Chart | null,
+                    data: new Map() as Map<number, WinLossPerDayEntry>,
+                    range: "week" as "day" | "week" | "month",
                 }
 
             }
@@ -169,9 +222,181 @@
         methods: {
 
             makeAll: function(): void {
+                this.makeWinLossPerDayChart();
                 this.makeWinRateDurationChart();
                 this.makeDuration();
                 this.makeSkillDiff();
+            },
+
+            makeWinLossPerDayChart: function(): void {
+                if (this.winLossPerDay.chart != null) {
+                    this.winLossPerDay.chart.destroy();
+                    this.winLossPerDay.chart = null;
+                }
+
+                const canvas = document.getElementById("user-win-loss-per-day") as HTMLCanvasElement | null;
+                if (canvas == null) {
+                    return console.error(`missing #user-win-loss-per-day`);
+                }
+
+                this.winLossPerDay.data.clear();
+                for (const match of this.filteredMatches) {
+                    const matchPlayer: BarMatchPlayer | undefined = match.players.find(iter => iter.userID == this.user.userID);
+                    if (matchPlayer == undefined) {
+                        debugger;
+                        throw `UserInfo> user ${this.user.userID} was not found in match ${match.id}: ${match.players.map(iter => `${iter.username}/${iter.userID}`).join(", ")}`;
+                    }
+
+                    const allyTeam: BarMatchAllyTeam | undefined = match.allyTeams.find(iter => iter.allyTeamID == matchPlayer.allyTeamID);
+                    if (allyTeam == undefined) {
+                        debugger;
+                        throw `UserInfo> user ${this.user.userID} on ally team ${matchPlayer.allyTeamID} was not found in match ${match.id}: ${match.allyTeams.map(iter => iter.allyTeamID).join(", ")}`;
+                    }
+
+                    let period: Date = new Date(match.startTime.toDateString());
+                    if (this.winLossPerDay.range == "week") {
+                        const dt = lx.DateTime.fromJSDate(match.startTime);
+                        period = lx.DateTime.fromISO(`${dt.year}W${dt.weekNumber}`).toJSDate();
+                    } else if (this.winLossPerDay.range == "month") {
+                        const dt = lx.DateTime.fromJSDate(match.startTime);
+                        period = lx.DateTime.fromISO(`${dt.year}-${dt.month.toString().padStart(2, '0')}`).toJSDate();
+                    }
+
+                    const day: number = period.getTime();
+
+                    if (this.winLossPerDay.data.has(day) == false) {
+                        console.log(`UserCharts> win-loss-per-day ${match.startTime} -> ${day}`);
+                    }
+
+                    let entry: WinLossPerDayEntry = this.winLossPerDay.data.get(day) ?? { 
+                        day: new Date(day),
+                        wins: 0,
+                        losses: 0
+                    };
+
+                    if (allyTeam.won == true) {
+                        ++entry.wins;
+                    } else {
+                        ++entry.losses;
+                    }
+
+                    this.winLossPerDay.data.set(day, entry);
+                }
+
+                this.winLossPerDay.chart = new Chart(canvas.getContext("2d")!, {
+                    type: "bar",
+                    data: {
+                        datasets: [
+                            {
+                                label: "Wins",
+                                backgroundColor: "green",
+                                borderColor: "green",
+                                data: Array.from(this.winLossPerDay.data.values()).sort((a, b) => {
+                                    return a.day.getTime() - b.day.getTime();
+                                }).map(iter => {
+                                    return {
+                                        x: iter.day.getTime(),
+                                        y: iter.wins
+                                    }
+                                })
+                            },
+                            {
+                                label: "Losses",
+                                backgroundColor: "red",
+                                borderColor: "red",
+                                data: Array.from(this.winLossPerDay.data.values()).sort((a, b) => {
+                                    return a.day.getTime() - b.day.getTime();
+                                }).map(iter => {
+                                    return {
+                                        x: iter.day.getTime(),
+                                        y: iter.losses
+                                    }
+                                })
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: "linear",
+                                ticks: {
+                                    color: "#fff",
+                                    autoSkip: false,
+                                    callback: function(value) {
+                                        if (typeof(value) == "string") {
+                                            return value;
+                                        }
+
+                                        return DateUtil.getLocalDateOnlyString(new Date(value));
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: "#555"
+                                },
+                                stacked: true,
+                                max: Math.max(...this.filteredMatches.map(iter => iter.startTime.getTime()))
+                            },
+                            y: {
+                                stacked: true,
+                                ticks: {
+                                    color: "#fff",
+                                    precision: 0
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    color: "#777"
+                                }
+                            },
+                        },
+
+                        interaction: {
+                            intersect: false,
+                            mode: "index"
+                        }
+                        ,
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                display: false,
+                                labels: {
+                                    color: "#fff",
+                                    font: {
+                                        family: "Atkinson Hyperlegible"
+                                    },
+                                }
+                            },
+
+                            tooltip: {
+                                mode: "index",
+
+                                callbacks: {
+                                    title: (tooltip) => {
+                                        const time: number = tooltip[0].parsed.x;
+                                        return DateUtil.getLocalDateOnlyString(new Date(time));
+                                    },
+                                }
+                            },
+
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    modifierKey: "ctrl",
+                                    mode: "x",
+                                },
+                                zoom: {
+                                    drag: {
+                                        enabled: true
+                                    },
+                                    mode: "x"
+                                }
+                            },
+                        },
+                    },
+                });
+
             },
 
             makeWinRateDurationChart: function(): void {
@@ -512,7 +737,11 @@
                         },
                     },
                 });
-            }
+            },
+
+            resetZoom: function(): void {
+                this.winLossPerDay.chart?.resetZoom();
+            },
 
         },
 
@@ -530,6 +759,10 @@
         watch: {
             gamemode: function(): void {
                 this.makeAll();
+            },
+
+            "winLossPerDay.range": function(): void {
+                this.makeWinLossPerDayChart();
             }
         },
 

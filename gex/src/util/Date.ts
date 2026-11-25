@@ -47,6 +47,10 @@ export default class DateUtil {
 			date.setDate(0);
         }
 
+        if (parts.hours == true) {
+            date.setHours(0);
+        }
+
 		if (parts.minutes == true) {
 			date.setMinutes(0);
         }

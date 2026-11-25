@@ -43,31 +43,6 @@
                     <span style="color: var(--bs-danger-text-emphasis)">{{ lossCount }}</span>)
                 </h3>
             </div>
-
-                <!--
-            <div class="flex-grow-1 text-center flex-basis-0">
-                <table class="table table-sm table-borderless" style="table-layout: fixed">
-                    <tbody>
-                        <tr v-for="gamemode in groupedFactionData" :key="gamemode.gamemode">
-                            <td style="text-align: end;">
-                                {{ gamemode.gamemode | gamemode }}
-                            </td>
-
-                            <td style="text-align: start">
-                                <span style="color: var(--bs-success-text-emphasis)">
-                                    {{gamemode.sum.winCount}}
-                                </span>
-                                /
-                                <span style="color: var(--bs-danger-text-emphasis)">
-                                    {{ (gamemode.sum.playCount - gamemode.sum.winCount) }}
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-                -->
-
         </div>
 
         <hr class="border"/>
@@ -213,13 +188,23 @@
                 </div>
             </div>
 
-            <div style="height: 200px; max-height: 200px;">
-                <canvas id="user-info-skill-changes"></canvas>
-            </div>
+            <div>
+                <div style="height: 200px; max-height: 200px;">
+                    <canvas id="user-info-skill-changes"></canvas>
+                </div>
 
-            <div class="text-muted mt-2">
-                Data is pulled from demofiles, which can provide incorrect data under certain conditions.
-                <a href="/faq#gamemode-demofile-ratings">Learn more here.</a>
+                <div>
+                    Drag to zoom in
+
+                    <button class="btn btn-secondary btn-sm" @click="resetZoom">
+                        Reset zoom
+                    </button>
+                </div>
+
+                <div class="text-muted mt-2">
+                    Data is pulled from demofiles, which can provide incorrect data under certain conditions.
+                    <a href="/faq#gamemode-demofile-ratings">Learn more here.</a>
+                </div>
             </div>
         </div>
     </div>
@@ -305,8 +290,10 @@
     import { Loading, Loadable } from "Loading";
 
     import Chart, { ChartDataset, Element } from "chart.js/auto/auto.esm";
-    Chart.defaults.font.family = "Atkinson Hyperlegible";
+    import zoomPlugin from "chartjs-plugin-zoom";
     import "chartjs-adapter-luxon";
+    Chart.defaults.font.family = "Atkinson Hyperlegible";
+    Chart.register(zoomPlugin);
 
     import { FactionIcon } from "components/app/FactionIcon";
     import InfoHover from "components/InfoHover.vue";
@@ -430,7 +417,8 @@
                     options: {
                         plugins: {
                             legend: { display: false, },
-                            tooltip: { enabled: false }
+                            tooltip: { enabled: false },
+
                         },
                         responsive: false,
                         maintainAspectRatio: false,
@@ -623,10 +611,28 @@
                                         family: "Atkinson Hyperlegible"
                                     }
                                 }
-                            }
+                            },
+
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    modifierKey: "ctrl",
+                                    mode: "x",
+                                },
+                                zoom: {
+                                    drag: {
+                                        enabled: true
+                                    },
+                                    mode: "x"
+                                }
+                            },
                         },
                     },
                 });
+            },
+
+            resetZoom: function(): void {
+                this.skillChanges.chart?.resetZoom();
             },
 
         },
