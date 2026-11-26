@@ -1,5 +1,7 @@
 ﻿using gex.Common.Models.Match;
 using gex.Common.Models.Search;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 
 namespace gex.Models.Api {
@@ -22,6 +24,8 @@ namespace gex.Models.Api {
         public List<ApiMatch> Results { get; set; } = [];
 
         public int Found { get; set; } = 0;
+
+        public ProblemDetails? Error { get; set; } = null;
 
     }
 }

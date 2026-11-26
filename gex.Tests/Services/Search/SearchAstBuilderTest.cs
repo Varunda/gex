@@ -40,61 +40,6 @@ namespace gex.Tests.Services.Search {
         }
 
         /// <summary>
-        ///     ensure a field without an operator or value defaults =true
-        /// </summary>
-        [TestMethod]
-        public void Test_BasicField_ImplicitTrue() {
-            // engine
-            List<SearchToken> tokens = [
-                new SearchToken(SearchTokenType.WORD, "engine"),
-            ];
-
-            SearchAst ast = _a(tokens);
-
-            _CheckNodeTree(ast.Root,
-                SearchNodeType.AND,
-                [
-                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
-                    ]),
-                ]
-            );
-        }
-
-        /// <summary>
-        ///     ensure two fields without an operator or value default to =true
-        /// </summary>
-        [TestMethod]
-        public void Test_TwoBasicField_ImplicitTrue() {
-            // engine gamemode
-            List<SearchToken> tokens = [
-                new SearchToken(SearchTokenType.WORD, "engine"),
-                new SearchToken(SearchTokenType.WORD, "gamemode"),
-            ];
-
-            SearchAst ast = _a(tokens);
-
-            // engine=true AND gamemode=true
-            _CheckNodeTree(ast.Root,
-                SearchNodeType.AND,
-                [
-                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "engine"),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
-                    ]),
-                    (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "gamemode"),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
-                        (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "true"),
-                    ]),
-                ]
-            );
-        }
-
-        /// <summary>
         ///     ensure that both a field name of 'engines' and 'e' are alised to 'engine'
         /// </summary>
         [TestMethod]
@@ -1149,7 +1094,7 @@ namespace gex.Tests.Services.Search {
 
             SearchAst ast = _a(tokens);
 
-            // (player = alice AND player = beth) OR (map = supreme AND mode = duel)
+            // player(name=alice & skill>20) player != beth
             _CheckNodeTree(ast.Root,
                 SearchNodeType.AND,
                 [
@@ -1181,6 +1126,109 @@ namespace gex.Tests.Services.Search {
                     ]),
                 ]
             );
+        }
+
+        /// <summary>
+        ///     test combining operators for greater than or equal
+        /// </summary>
+        [TestMethod]
+        public void Test_Query_PlayerImplicitRole() {
+            // player(name=alice position=geo position=sea)
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.PARAMETERS_START, "("),
+                new SearchToken(SearchTokenType.WORD, "position"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "geo"),
+                new SearchToken(SearchTokenType.WORD, "sea"),
+                new SearchToken(SearchTokenType.PARAMETERS_END, ")"),
+            ];
+
+            // player=(name=alice position=geo position=sea)
+            SearchAst ast1 = _a(tokens);
+            _CheckNodeTree(ast1.Root, SearchNodeType.AND, [
+                (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.AND, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
+                            ]),
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "geo"),
+                            ]),
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "sea"),
+                            ]),
+                        ])
+                    ]),
+                ])
+            ]);
+        }
+
+        /// <summary>
+        ///     test combining operators for greater than or equal
+        /// </summary>
+        [TestMethod]
+        public void Test_Query_PreviousNameOp_GroupStack() {
+            // player(name=alice position=geo position=sea)
+            List<SearchToken> tokens = [
+                new SearchToken(SearchTokenType.WORD, "player"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "alice"),
+                new SearchToken(SearchTokenType.PARAMETERS_START, "("),
+                new SearchToken(SearchTokenType.WORD, "position"),
+                new SearchToken(SearchTokenType.OPERATOR, ":"),
+                new SearchToken(SearchTokenType.WORD, "geo"),
+                new SearchToken(SearchTokenType.WORD, "sea"),
+                new SearchToken(SearchTokenType.PARAMETERS_END, ")"),
+                new SearchToken(SearchTokenType.NOT, "!"),
+                new SearchToken(SearchTokenType.WORD, "beth"),
+            ];
+
+            // player=(name=alice position=geo position=sea)
+            SearchAst ast1 = _a(tokens);
+            _CheckNodeTree(ast1.Root, SearchNodeType.AND, [
+                (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                    (node) => _CheckNodeTree(node, SearchNodeType.FIELD_VALUE, [
+                        (node) => _CheckNodeTree(node, SearchNodeType.AND, [
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "name"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "alice"),
+                            ]),
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "geo"),
+                            ]),
+                            (node) => _CheckNodeTree(node, SearchNodeType.BASIC_FIELD, [
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "position"),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.EQ),
+                                (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "sea"),
+                            ]),
+                        ])
+                    ]),
+                ]),
+
+                // !beth
+                (node) => _CheckNodeTree(node, SearchNodeType.COMPLEX_FIELD, [
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_NAME, "player"),
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_OP, SearchOp.NOT),
+                    (node) => _CheckNode(node, SearchNodeType.FIELD_VALUE, "beth"),
+                ]),
+            ]);
         }
 
         /// <summary>
@@ -1243,7 +1291,7 @@ namespace gex.Tests.Services.Search {
 
         [TestMethod]
         public void Test_CombineOperator_StartsWith() {
-            // player:*alice
+            // player:^alice
             List<SearchToken> tokens = [
                 new SearchToken(SearchTokenType.WORD, "player"),
                 new SearchToken(SearchTokenType.OPERATOR, ":"),
@@ -1372,6 +1420,7 @@ namespace gex.Tests.Services.Search {
             _CheckNodeTree(ast4.Root, SearchNodeType.AND, children);
         }
 
+
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Tests that throw
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1487,6 +1536,8 @@ namespace gex.Tests.Services.Search {
                 SearchToken.GROUP_START,
                 SearchToken.GROUP_START,
                 new SearchToken(SearchTokenType.WORD, "map"),
+                new SearchToken(SearchTokenType.OPERATOR, SearchOp.EQ),
+                new SearchToken(SearchTokenType.WORD, "true"),
                 SearchToken.GROUP_END
             ];
 

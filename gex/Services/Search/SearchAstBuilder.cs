@@ -30,11 +30,28 @@ namespace gex.Services.Search {
             Stack<SearchNode> stack = [];
             stack.Push(root);
 
+            Stack<PreviousFieldNameOp> previousStack = [];
+            previousStack.Push(new PreviousFieldNameOp(null, null));
+
             SearchToken? previousFieldName = null;
             SearchToken? previousFieldOp = null;
 
             // _c(reate) a node with the parent as the node on top of the stack
             SearchNode _c(SearchNodeType type, SearchToken token) => new SearchNode(type, token, stack.Peek());
+
+            void _pushPrev() {
+                _Logger.LogTrace($"pushing previous field name//op onto previous stack [name={previousFieldName?.Value}] [op={previousFieldOp?.Value}]");
+                previousStack.Push(new PreviousFieldNameOp(previousFieldName, previousFieldOp));
+                previousFieldName = null;
+                previousFieldOp = null;
+            }
+
+            void _popPrev() {
+                _Logger.LogTrace($"popping previous field name//op off of previous stack");
+                PreviousFieldNameOp prev = previousStack.Pop();
+                previousFieldName = prev.Name;
+                previousFieldOp = prev.Op;
+            }
 
             while (iter != null) {
                 _Logger.LogTrace($"AST iteration [iter.Type={iter.Type}] [iter.Value={iter.Value}] [parent={stack.Peek().Type}] [parent.Children count={stack.Peek().Children.Count}]");
@@ -163,13 +180,9 @@ namespace gex.Services.Search {
 
                         value = valueToken;
 
-                        if (stack.Peek().Token.Type != SearchTokenType.PARAMETERS_START) {
-                            previousFieldName = name;
-                            previousFieldOp = op;
-                        }
-                    } else {
-                        op = new SearchToken(SearchTokenType.OPERATOR, SearchOp.EQ);
-                        value = new SearchToken(SearchTokenType.OPERATOR, "true");
+                        previousFieldName = name;
+                        previousFieldOp = op;
+                        _Logger.LogTrace($"changed previous field name//op [name={name.Value}] [op={op.Value}]");
                     }
 
                     if (op == null || value == null) {
@@ -250,20 +263,18 @@ namespace gex.Services.Search {
                     _c(SearchNodeType.FIELD_VALUE, fieldValue.Token);
                     stack.Pop();
                     _Logger.LogTrace($"for PARAMETERS_START, popped FIELD off");
+
+                    _pushPrev();
                 }
 
                 // PARAMETERS_END
                 else if (iter.Type == SearchTokenType.PARAMETERS_END) {
-                    // if the top node is an OR, implicitly assume an end and pop it off too
-                    if (stack.Peek().Type == SearchNodeType.OR) {
-                        //stack.Pop();
-                        //_Logger.LogTrace($"for PARAMETERS_END, parent is OR, popping");
-                    }
-
                     SearchNode group = stack.Pop(); // pop the AND/OR off
                     SearchNode fieldValue = stack.Pop(); // pop the FIELD_VALUE off
                     SearchNode field = stack.Pop(); // pop the FIELD off
                     _Logger.LogTrace($"got PARAMETERS_END, popping 3 [value={fieldValue.Type}] [field={field.Type}] [group={group.Type} (want OR/AND)]");
+
+                    _popPrev();
                 }
 
                 // GROUP_START
@@ -296,6 +307,8 @@ namespace gex.Services.Search {
                         throw new SearchAstParseException(iter, $"missing a OR_CONTINUE or GROUP_END in the token stream");
                     }
 
+                    _pushPrev();
+
                     SearchNodeType type = token.Type == SearchTokenType.OR_CONTINUE ? SearchNodeType.OR : SearchNodeType.AND;
 
                     stack.Push(_c(type, iter));
@@ -312,6 +325,8 @@ namespace gex.Services.Search {
 
                     _Logger.LogTrace($"got GROUP_END, popping");
                     stack.Pop();
+
+                    _popPrev();
                 }
 
                 // OR_CONTINUE
@@ -409,10 +424,8 @@ namespace gex.Services.Search {
                 throw new SearchAstParseException(null, $"invalid token list: expected one {nameof(SearchNode)} in stack after consuming all tokens, had {stack.Count} instead");
             }
 
-            SearchNode? treeRoot = stack.PopOrDefault();
-            if (treeRoot == null) {
-                throw new SearchAstParseException(null, $"failed to get root tree node, stack has no nodes left on it (did a double pop occur?)");
-            }
+            SearchNode treeRoot = stack.PopOrDefault()
+                ?? throw new SearchAstParseException(null, $"failed to get root tree node, stack has no nodes left on it (did a double pop occur?)");
 
             void FixAndWithOrChildren(SearchNode node) {
                 // skip the root node by checking if parent is null
@@ -490,6 +503,16 @@ namespace gex.Services.Search {
         /// </summary>
         /// <param name="fieldName">field name, may or may not be an alias</param>
         private static string _FieldNameAlias(string fieldName) => FieldNameAliases.GetValueOrDefault(fieldName) ?? fieldName;
+
+        private class PreviousFieldNameOp {
+            public SearchToken? Name;
+            public SearchToken? Op;
+
+            public PreviousFieldNameOp(SearchToken? name, SearchToken? op) {
+                this.Name = name;
+                this.Op = op;
+            }
+        }
 
     }
 }

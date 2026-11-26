@@ -353,7 +353,13 @@
 
             <match-list :matches="queryResult.data.results" :group-match-override="true"></match-list>
 
-            <div v-if="queryResult.data.results.length == 0">
+            <div v-if="queryResult.data.error != null" class="alert alert-danger text-center">
+                <b>Error performing query</b>
+                <br>
+                Error: {{ queryResult.data.error.title }}
+            </div>
+
+            <div v-if="queryResult.data.error == null && queryResult.data.results.length == 0">
                 No matches found!
             </div>
 

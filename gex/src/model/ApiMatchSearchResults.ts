@@ -1,3 +1,4 @@
+import { ProblemDetails } from "Loading";
 import { BarMatch } from "./BarMatch";
 
 export class ApiMatchSearchResults {
@@ -8,6 +9,7 @@ export class ApiMatchSearchResults {
     public ast: SearchNode = new SearchNode();
     public results: BarMatch[] = [];
     public found: number = 0;
+    public error: ProblemDetails | null = null;
 
     public static parse(elem: any): ApiMatchSearchResults {
         return {
@@ -16,7 +18,8 @@ export class ApiMatchSearchResults {
             tokens: elem.tokens.map((iter: any) => SearchToken.parse(iter)),
             ast: SearchNode.parse(elem.ast.root),
             results: elem.results.map((iter: any) => BarMatch.parse(iter)),
-            found: elem.found
+            found: elem.found,
+            error: elem.error == null ? null : ProblemDetails.parse(elem.error)
         };
     }
 

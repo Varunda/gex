@@ -19,6 +19,17 @@ export class ProblemDetails {
     public status: number = 0;
     public detail: string = "";
     public instance: string = "";
+
+    public static parse(elem: any): ProblemDetails {
+        return {
+            type: elem.type,
+            title: elem.title,
+            status: elem.status,
+            detail: elem.detail,
+            instance: elem.instance
+        };
+    }
+
 };
 
 function isProblemDetails(obj: object): obj is ProblemDetails {

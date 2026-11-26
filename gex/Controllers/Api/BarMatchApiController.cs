@@ -34,6 +34,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using OpenSkillSharp.Models;
 using OpenSkillSharp.Rating;
 using System;
@@ -633,13 +634,29 @@ namespace gex.Controllers.Api {
                 return ApiBadRequest<ApiMatchSearchResults>($"bad argument: {aex.Message}");
             }
 
-            Result<List<BarMatch>, string> matches = await _MatchRepository.Search(ast, cancel);
+            Result<List<BarMatch>, string> matches;
+            Exception? ex = null;
+            try {
+                matches = await _MatchRepository.Search(ast, cancel);
+            } catch (Exception eex) {
+                matches = Result<List<BarMatch>, string>.Ok([]);
+                ex = eex;
+                _Logger.LogError(ex, $"failed to perform DB query [query={q}]");
+            }
 
             if (matches.IsOk == false) {
                 return ApiBadRequest<ApiMatchSearchResults>($"failed to perform query: {matches.Error}");
             }
 
             ApiMatchSearchResults results = new(q, ast);
+            if (ex != null) {
+                results.Error = new ProblemDetails();
+                // specially handle database time outs
+                if (ex is NpgsqlException && ex.InnerException is TimeoutException) {
+                    results.Error.Title = $"Database timeout";
+                }
+            }
+
             foreach (BarMatch m in matches.Value) {
                 if (includeTeams == true) {
                     m.Teams = await _TeamRepository.GetByGameID(m.ID, cancel);

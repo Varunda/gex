@@ -384,6 +384,11 @@ namespace gex.Common.Services.Search {
                     cmd += $" team.faction {GetDbOperation(fieldOp)} {addParameter(query, faction, fieldOp)} ";
                 }
 
+                // player.position / team.start_spot_label
+                else if (fieldName == "team.start_spot_label") {
+                    cmd += $" lower({fieldName}) {addOpAndParam(query, fieldValue.Token.Value.ToLower(), fieldOp, typeof(string))} ";
+                }
+
                 // map.name
                 else if (fieldName == "map.name") {
                     query.MapCache ??= await _MapRepository.GetAll(cancel);

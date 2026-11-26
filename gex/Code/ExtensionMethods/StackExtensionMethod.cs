@@ -19,5 +19,19 @@ namespace gex.Code.ExtensionMethods {
             return null;
         }
 
+        /// <summary>
+        ///     peek the 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="stack"></param>
+        /// <returns></returns>
+        public static T? PeekOrDefault<T>(this Stack<T> stack) where T : class {
+            if (stack.TryPeek(out T? result) == true) {
+                return result;
+            }
+
+            return null;
+        }
+
     }
 }
