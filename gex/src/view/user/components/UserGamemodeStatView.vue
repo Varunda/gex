@@ -47,7 +47,7 @@
         </table>
 
         <span class="text-muted mb-3">
-            Average opponent skill is 
+            Average opponent skill is {{ gamemode.averageSkill | locale(2) }}, which is 
             <span v-if="gamemode.averageSkillDiff > 0">
                 {{ gamemode.averageSkillDiff | locale(2) }} <abbr title="OpenSkill (elo)">OS</abbr> below this user
             </span>
