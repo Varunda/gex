@@ -451,9 +451,18 @@ namespace gex.Controllers.Api {
                 return ApiNotFound($"{nameof(BarMap)} {mapFilename}");
             }
 
-            _Logger.LogDebug($"fixing start spot [map={mapFilename}]");
-            await _PlayerStartSpotMigration.FixMap(map, cancel);
-            _Logger.LogInformation($"fixed start spots for map [map={mapFilename}]");
+            _Logger.LogDebug($"starting fixing start spots in a thread [map={mapFilename}]");
+            // put this task into a different thread, we don't want to wait it
+            _ = Task.Run(async () => {
+                try {
+                    _Logger.LogDebug($"fixing start spot [map={mapFilename}]");
+                    using CancellationTokenSource cts = new(TimeSpan.FromMinutes(5));
+                    await _PlayerStartSpotMigration.FixMap(map, cts.Token);
+                    _Logger.LogInformation($"fixed start spots for map [map={mapFilename}]");
+                } catch (Exception ex) {
+                    _Logger.LogError(ex, $"failed to fix map start spots [map={mapFilename}]");
+                }
+            }, CancellationToken.None);
 
             return ApiOk();
         }
